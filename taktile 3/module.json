@@ -1,0 +1,17 @@
+{
+    "id": "taktile",
+    "name": "Taktile",
+    "abbrev": "TKT",
+    "version": "5.3.4",
+    "description": "Taktile: overtake groovebox - 16 tracks up to 128 steps (one at a time on 32 pads: pitch, repeat or steps), clips and scenes (each clip with its own sound), 1210 sounds + your own samples + synth options, per-track delay, reverb, chorus, phaser and 10 insert effects, 10 MIDI effects, HOME tile menu, drum tracks (16 sounds each, max 4), master bus, euclid",
+    "author": "TaktOnMusic",
+    "component_type": "overtake",
+    "ui": "ui.js",
+    "dsp": "dsp.so",
+    "api_version": 2,
+    "capabilities": {
+        "claims_master_knob": true,
+        "suspend_keeps_js": true,
+        "suspend_self_managed": true
+    }
+}
