@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="Taktile: groovebox for Ableton Move">
+<rect width="1200" height="300" rx="18" fill="#12141a"/>
+<rect x="60" y="220" width="46" height="46" rx="8" fill="#ff4d6d"/>
+<rect x="116" y="220" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="172" y="220" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="228" y="220" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="284" y="220" width="46" height="46" rx="8" fill="#ff4d6d"/>
+<rect x="340" y="220" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="396" y="220" width="46" height="46" rx="8" fill="#ff4d6d"/>
+<rect x="452" y="220" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="60" y="164" width="46" height="46" rx="8" fill="#ffb703"/>
+<rect x="116" y="164" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="172" y="164" width="46" height="46" rx="8" fill="#ffb703"/>
+<rect x="228" y="164" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="284" y="164" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="340" y="164" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="396" y="164" width="46" height="46" rx="8" fill="#ffb703"/>
+<rect x="452" y="164" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="60" y="108" width="46" height="46" rx="8" fill="#2ec4b6"/>
+<rect x="116" y="108" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="172" y="108" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="228" y="108" width="46" height="46" rx="8" fill="#2ec4b6"/>
+<rect x="284" y="108" width="46" height="46" rx="8" fill="#2ec4b6"/>
+<rect x="340" y="108" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="396" y="108" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="452" y="108" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="60" y="52" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="116" y="52" width="46" height="46" rx="8" fill="#8d6bff"/>
+<rect x="172" y="52" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="228" y="52" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="284" y="52" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="340" y="52" width="46" height="46" rx="8" fill="#8d6bff"/>
+<rect x="396" y="52" width="46" height="46" rx="8" fill="#23262f"/>
+<rect x="452" y="52" width="46" height="46" rx="8" fill="#8d6bff"/>
+<g font-family="Helvetica, Arial, sans-serif">
+<text x="560" y="150" font-size="86" font-weight="800" fill="#f4f4f6" letter-spacing="6">TAKTILE</text>
+<text x="564" y="192" font-size="24" fill="#a9adbb">Overtake groovebox for Ableton Move (Schwung)</text>
+<text x="564" y="232" font-size="18" fill="#6f7485" font-family="Menlo, Consolas, monospace">16 tracks · step sequencer · synths &amp; drums · live FX</text>
+</g>
+</svg>

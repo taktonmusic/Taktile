@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 170" role="img" aria-label="Signal flow">
+<rect width="1100" height="170" rx="14" fill="#12141a"/>
+<g font-family="Helvetica, Arial, sans-serif"><rect x="40" y="40" width="180" height="90" rx="12" fill="#1c1f27" stroke="#3a3f4d"/>
+<text x="130" y="80" text-anchor="middle" font-size="20" font-weight="700" fill="#f4f4f6">Sequencer</text>
+<text x="130" y="106" text-anchor="middle" font-size="12" fill="#a9adbb">steps · clips · locks</text>
+<path d="M224 85 H278" stroke="#ff4d6d" stroke-width="3"/><path d="M278 77 L288 85 L278 93 z" fill="#ff4d6d"/>
+<rect x="250" y="40" width="180" height="90" rx="12" fill="#1c1f27" stroke="#3a3f4d"/>
+<text x="340" y="80" text-anchor="middle" font-size="20" font-weight="700" fill="#f4f4f6">Track</text>
+<text x="340" y="106" text-anchor="middle" font-size="12" fill="#a9adbb">synth / drum / sample</text>
+<path d="M434 85 H488" stroke="#ff4d6d" stroke-width="3"/><path d="M488 77 L498 85 L488 93 z" fill="#ff4d6d"/>
+<rect x="460" y="40" width="180" height="90" rx="12" fill="#1c1f27" stroke="#3a3f4d"/>
+<text x="550" y="80" text-anchor="middle" font-size="20" font-weight="700" fill="#f4f4f6">Insert FX</text>
+<text x="550" y="106" text-anchor="middle" font-size="12" fill="#a9adbb">10 effects</text>
+<path d="M644 85 H698" stroke="#ff4d6d" stroke-width="3"/><path d="M698 77 L708 85 L698 93 z" fill="#ff4d6d"/>
+<rect x="670" y="40" width="180" height="90" rx="12" fill="#1c1f27" stroke="#3a3f4d"/>
+<text x="760" y="80" text-anchor="middle" font-size="20" font-weight="700" fill="#f4f4f6">Send FX</text>
+<text x="760" y="106" text-anchor="middle" font-size="12" fill="#a9adbb">delay · reverb · chorus · phaser</text>
+<path d="M854 85 H908" stroke="#ff4d6d" stroke-width="3"/><path d="M908 77 L918 85 L908 93 z" fill="#ff4d6d"/>
+<rect x="880" y="40" width="180" height="90" rx="12" fill="#1c1f27" stroke="#3a3f4d"/>
+<text x="970" y="80" text-anchor="middle" font-size="20" font-weight="700" fill="#f4f4f6">Master</text>
+<text x="970" y="106" text-anchor="middle" font-size="12" fill="#a9adbb">filter · comp · EQ · limiter</text>
+<text x="550" y="158" text-anchor="middle" font-size="12" fill="#6f7485">MIDI effects → note out (USB-A) and MIDI clock run alongside the audio path</text></g>
+</svg>
