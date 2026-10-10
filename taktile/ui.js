@@ -25,6 +25,7 @@
  *  Loop + jogwheel            loop length +/-1 (Shift: +/-16 and the whole track)
  *  Loop + knob 3              loop length +/-1 (Shift +16)
  *  Mute + track button        mute / unmute that track      Hold step or step-pad + knobs 1-7: Vel Pitch Prob Gate Ratchet Nudge Cond
+ *  Note repeat                Shift + step 8 switches it on and off; while it is on, Back (on the SEQ page) switches it off too
  *  Shift + step (same symbols as the Move): 1 CLIPS 2 OPTIONS 3 HOME 5 TEMPO 6 METRONOME 7 SWING 8 PAD MODE (PITCH/REPEAT/STEPS)
  *                                 9 KEY+SCALE 10 FULL VEL 11 REPEAT RATE 15 DOUBLE 16 QUANT   (4, 12, 13, 14: unused)
  */
@@ -660,8 +661,13 @@ function clipAction(t, c) {
 }
 const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS'];
 function cycleTop(d) {
+    const was = topModes[sel];
     topModes[sel] = (topModes[sel] + d + 3) % 3;
-    showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[topModes[sel]], topModes[sel] / 2); markEdited(); needsRedraw = true;
+    const m = topModes[sel];
+    if (m === 1) showToast('NOTE REPEAT ON', 'BACK = OFF', 1);                                 /* say how to get out again */
+    else if (was === 1) showToast('NOTE REPEAT OFF', TOP_NAMES[m], 0);
+    else showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[m], m / 2);
+    markEdited(); needsRedraw = true;
 }
 let layS = 0, layD = 0;                                    /* pad layouts: synth 0 MOVE (in key, rows 3 degrees apart) 1 SEQ 2 OCT 3 CHR (chromatic, rows a fourth apart); drum 0 sounds left 1 sounds right */
 const LAYS_NAME = ['MOVE', 'SEQ', 'OCT', 'CHR'], LAYD_NAME = ['SND L', 'SND R'];
@@ -2918,6 +2924,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (d2 > 0 && (isHub(view) || navStack.length)) { hubBack(); return; }
         if (d2 > 0 && anySymLit()) { closeSym(); return; }
         if (d2 > 0 && padMenu) { padMenu = false; view = prevPM; needsRedraw = true; return; }
+        if (d2 > 0 && !shiftHeld && view === 0 && topModes[sel] === 1) { cycleTop(-1); syncPadsOff(); return; }      /* NOTE REPEAT is on: Back switches it off (a second Back opens the exit dialog) */
         if (d2 > 0) {
             if (shiftHeld) exitModule();
             else { exitDlg = 0; needsRedraw = true; }
