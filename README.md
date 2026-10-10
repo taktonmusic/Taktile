@@ -13,7 +13,7 @@
 <p align="center"><b>16 tracks of synths and drums, a step sequencer, sounds, effects and live performance tools – all running as a Schwung overtake module on the Ableton Move.</b></p>
 
 > [!NOTE]
-> **Status:** UI logic and DSP are tested on a desktop (UI simulator, 60,000-event fuzzing, native ASAN/UBSAN runs). **Nothing has been verified on real hardware yet.** Background suspend, CPU headroom, display legibility and MIDI out still need confirmation on a Move.
+> **Status:** Tested on a real Ableton Move. UI logic and DSP are also checked on a desktop (UI simulator, 60,000-event fuzzing, native ASAN/UBSAN runs).
 
 ---
 
