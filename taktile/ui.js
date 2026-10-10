@@ -1,7 +1,7 @@
 /*
  * Taktile - overtake groovebox for Ableton Move (Schwung)
  *
- * 16 tracks (synth or drum) x up to 128 steps x 8 clips per track, 240 sounds, arp, per-track filter, delay, reverb, chorus, phaser, master bus.
+ * 16 tracks (synth or drum) x up to 128 steps x 8 clips per track, 1210 sounds, arp, per-track filter, delay, reverb, chorus, phaser, master bus.
  *
  *  Pads 1-16 (bottom 2 rows)  select + play a track      Pads 17-32: scale keyboard      Shift + pad: select silently
  *  Shift + Up/Down            top 16 pads per sound: PITCH keys / CLIPS (scenes + clips) / STEPS (16-step sequencer)
@@ -88,7 +88,8 @@ const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'C
 const TAB_SYM = { 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'FX', 39: 'DELAY', 27: 'MIDI', 36: 'EUCLID' };
 const TAB_NAME = { 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX SENDS', 39: 'FX TIMES', 27: 'MIDI FX', 36: 'EUCLID' };
 function isTab(v) { return v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 27 || v === 36; }
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359; return [1, 2, 3, 38, 39, 36, 27, (!kind[sel] && !smp) ? 9 : 28]; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359; return (!kind[sel] && !smp) ? [9, 1, 2, 3, 38, 39, 36, 27] : [1, 2, 3, 38, 39, 36, 27, 28]; }      /* synth track: SYNTH first, then SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX. Drum track / sample sound: SAMPLE last instead of SYNTH */
+function varTab(tabs) { return tabs[0] === 9 ? 9 : tabs[7]; }      /* the SYNTH-or-SAMPLE page of this track (first resp. last tab) */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -1470,7 +1471,7 @@ let hot = { v: -1, i: -1, t: 0 };                       /* the knob you touched 
 function tw(s) { return (typeof text_width === 'function') ? text_width(s) : s.length * 6; }
 let tabStrip = false;
 const GW = { MIDI: 19, FX: 18, SAMPLE: 18, EUCLID: 17, DELAY: 16 };
-function tabIndex(tabs) { return tabs.indexOf((view === 9 || view === 28) ? tabs[7] : view); }
+function tabIndex(tabs) { return tabs.indexOf((view === 9 || view === 28) ? varTab(tabs) : view); }
 let exitDlg = -1, suspended = false, selfTestT = 0;
 function selfTest() {                                       /* once after start: can Taktile really save, and is the sample folder there? */
     let bad = '';
@@ -1501,7 +1502,7 @@ function tabMove(dl) {
 }
 function tabNormalize() {
     if (view !== 9 && view !== 28) return;
-    const w = trackTabs()[7]; if (view !== w) { if (view === 28 && broOpen) return; tabEnter(w); }
+    const w = varTab(trackTabs()); if (view !== w) { if (view === 28 && broOpen) return; tabEnter(w); }
 }
 const VIEW_BADGE = {};
 function titleBar(left, right) {                            /* black header, white text, a thin line below */
@@ -2344,7 +2345,7 @@ function hubEnter() {
     const t = HUBS[view][1][hubSel[view]];
     if (t[1] === -1) { menuOpen = true; menuIdx = 0; menuGrp = -1; menuSub = 0; needsRedraw = true; return; }
     navStack.push(view); view = t[1]; acc.fill(0); needsRedraw = true;
-    if (view === 1 && lastTab[sel] && lastTab[sel] !== 1) { const w = lastTab[sel] === 9 ? trackTabs()[7] : lastTab[sel]; tabEnter(w); }
+    if (view === 1 && lastTab[sel] && lastTab[sel] !== 1) { const w = lastTab[sel] === 9 ? varTab(trackTabs()) : lastTab[sel]; tabEnter(w); }
     if (view === 28) { smpPage = 0; broOpen = false; sampleRescan(); }
     if (view === 36) euSetPage(euPage);
     if (view === 35) projScan();
@@ -2956,7 +2957,7 @@ globalThis.onMidiMessageInternal = function (data) {
             if (dl) { if (isTab(view)) tabMove(dl); else { tabEnter(1); } }
             return; }
         if (dl && view === 7 && !menuOpen) { stepTrack(dl > 0 ? 1 : -1); }   /* clip view: jog = scroll through the tracks (right = down) */
-        else if (dl && !menuOpen && view === 0) {                          /* SEQ: turning walks through the track pages (SOUND, FILTER, MOD ...), a click opens the preset folders */
+        else if (dl && !menuOpen && view === 0) {                          /* SEQ: turning opens the track pages (starts on SOUND; SYNTH is the tab to its left, then FILTER, MOD ...), a click opens the preset folders */
             if (shiftHeld) fbOpen();
             else { navStack = [0]; hubReturn = 0; symOpen = -1; tabEnter(1); showToast(TAB_NAME[1], 'TURN = NEXT PAGE', 0); }
         }
