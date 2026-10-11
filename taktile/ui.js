@@ -453,7 +453,7 @@ function fmtVal(key, v) {
     if (key === 'rst') return rsState === 2 ? rsPct + '%' : (rsState === 1 ? 'ARMED' : 'IDLE');
     if (key === 'kslot') return kitSlot >= 16 ? FACTORY[kitSlot - 16][0] : String(kitSlot + 1);
     if (key === 'ksave') return 'TURN >'; if (key === 'kload') return 'TURN >'; if (key === 'kinf') return kitInfo();
-    if (key === 'pslot') return String(projSlot + 1); if (key === 'psave' || key === 'pload') return 'TURN >'; if (key === 'rdens') return Math.round(rndDens * 100) + '%'; if (key === 'rvar') return Math.round(rndVar * 100) + '%'; if (key === 'rkey') return rndKey ? 'IN KEY' : 'FREE'; if (key === 'rrat') return Math.round(rndRat * 100) + '%'; if (key === 'tcol') return tcolO[sel] ? 'C' + tcolO[sel] : 'AUTO'; if (key === 'pnew') return 'TURN >>'; if (key === 'prst') return 'TURN >'; if (key === 'pinf') return projUsed[projSlot] ? 'USED' : 'EMPTY';
+    if (key === 'pslot') return String(projSlot + 1); if (key === 'pload' && projQueued >= 0) return 'NEXT ' + (projQueued + 1); if (key === 'psave' || key === 'pload') return 'TURN >'; if (key === 'rdens') return Math.round(rndDens * 100) + '%'; if (key === 'rvar') return Math.round(rndVar * 100) + '%'; if (key === 'rkey') return rndKey ? 'IN KEY' : 'FREE'; if (key === 'rrat') return Math.round(rndRat * 100) + '%'; if (key === 'tcol') return tcolO[sel] ? 'C' + tcolO[sel] : 'AUTO'; if (key === 'pnew') return 'TURN >>'; if (key === 'prst') return 'TURN >'; if (key === 'pinf') return projUsed[projSlot] ? 'USED' : 'EMPTY';
     if (EU_KEYS[key]) return euGet(key)[1];
     if (key === 'moclk') return moClk ? 'ON' : 'OFF'; if (key === 'motn') return 'T' + (moTrk + 1); if (key === 'mont') return ((moMask >> moTrk) & 1) ? 'ON' : 'OFF'; if (key === 'moall') return moMask === 65535 ? 'ALL ON' : (moMask ? 'SOME' : 'NONE'); if (key === 'mochn') return 'T1=' + (moChn + 1); if (key === 'moxp') return (moXp > 0 ? '+' : '') + moXp; if (key === 'movel') return (100 + moVp) + '%'; if (key === 'modn') return moNoteName(36 + moDn);
     if (key === 'sgsl') return (songSlot + 1) + '/' + songList.length;
@@ -545,7 +545,7 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'pnew') { acc[idx] += delta; if (acc[idx] < 5) return false; acc[idx] = 0; newProject(); return false; }
         else if (key === 'pslot') { acc[idx] += delta; if (Math.abs(acc[idx]) < 1) return false; projSlot = clamp(projSlot + (acc[idx] > 0 ? 1 : -1), 0, 31); acc[idx] = 0; }
         else if (key === 'psave') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; projSave(); return false; }
-        else if (key === 'pload') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; projLoad(); return false; }
+        else if (key === 'pload') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; projLoadOrQueue(); return false; }
         else if (EU_KEYS[key]) { if (!euEdit(key, delta, idx)) return false; }
         else if (key === 'moclk') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; moClk ^= 1; moPush(); }
         else if (key === 'motn') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; moTrk = clamp(moTrk + (acc[idx] > 0 ? 1 : -1), 0, 15); acc[idx] = 0; }
@@ -780,7 +780,7 @@ const HELP = {
     20: ['Pegel aller Tracks', 'Shift+Pfeil: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
     31: ['Pads = Song-Schritte', 'Change: HARD/FILL/DRUMS', 'Song: OFF/LOOP/ONCE'],
-    35: ['32 Projekt-Slots', 'New = leeres Projekt', 'Revert = Sicherung'],
+    35: ['32 Projekt-Slots', 'Load beim Spielen = Wechsel am Taktende', 'Nochmal = abbrechen'],
     34: ['Kits: 16 Pad-Sounds. Slot 17+ = fertige Kits. Preview: rechts drehen = anhoeren, links = zurueck. Load = behalten.'],
     33: ['Resample nimmt Master', 'oder Track auf', 'Ergebnis = Sample'],
     37: ['MIDI Clock + Noten', 'ueber USB-A', 'Track + Ton einstellen'],
@@ -2006,6 +2006,51 @@ function applyStateText(t, msg) {
     queue = []; qEverything(); initialPush = 100; sel = 0; stepPage = 0; heldStep = -1; heldPad = -1; navStack = []; view = 0;
     showToast(msg, 'DONE', 1); needsRedraw = true;
 }
+/* LIVE PROJECT SWITCH: while the sequencer plays, "Load" does not stop it. The chosen project is queued and swaps in at the end of the
+   current bar: everything is muted (delay / reverb tails keep ringing), the new project is sent to the DSP quickly, then the transport
+   restarts at step 1 with the new project. Turning Load again for the same slot cancels the queue. */
+const FAST_FLUSH = 48;                                            /* messages per tick while a project is swapped in (normal: 3). A full project is about 1000 messages */
+let projQueued = -1, projLive = 0, projBar = -1, fastFlush = false;
+function projReadChecked(slot) {
+    let t = null; try { t = host_read_file(projFile(slot)); } catch (e) { t = null; }
+    if (!t) { showToast('PROJECT ' + (slot + 1), 'EMPTY', 0); return null; }
+    try { const chk = JSON.parse(t); if (!chk || typeof chk !== 'object' || Array.isArray(chk)) throw new Error('not a project'); } catch (e) { showToast('PROJECT ' + (slot + 1), 'CORRUPT', 0); return null; }
+    return t;
+}
+function projLoadOrQueue() {
+    if (projLive) return;
+    if (!playing) { projQueued = -1; projLoad(); return; }
+    if (projQueued === projSlot) { projQueued = -1; showToast('NEXT PROJECT', 'CANCELLED', 0); needsRedraw = true; return; }
+    if (projReadChecked(projSlot) === null) return;
+    projQueued = projSlot; projBar = -1; showToast('NEXT: PROJECT ' + (projSlot + 1), 'AT END OF BAR', 1); needsRedraw = true;
+}
+function projLiveStart() {
+    const slot = projQueued; projQueued = -1;
+    const t = projReadChecked(slot); if (t === null) return;
+    for (let tt = 0; tt < NTRK; tt++) dspSet('mute', tt + ',1');
+    saveState(); try { const cur = host_read_file(STATE_FILE); if (cur) host_write_file('/data/UserData/schwung/taktile-proj-undo.json', cur); } catch (e) { /* ignore */ }
+    host_write_file(STATE_FILE, t);
+    AUTO = {}; autoLast = {};
+    loadState(); ensureCs(); for (let tt = 0; tt < NTRK; tt++) applyClipSound(tt, ed[tt]);
+    queue = []; qEverything(); initialPush = 100; sel = 0; stepPage = 0; heldStep = -1; heldPad = -1; navStack = []; view = 0;
+    projSlot = slot; projLive = 1; fastFlush = true;
+    showToast('PROJECT ' + (slot + 1), 'LOADING', 0.5); needsRedraw = true;
+}
+function projLiveTick() {
+    if (projLive) {                                                    /* the new project is on its way to the DSP */
+        if (queue.length) return;
+        fastFlush = false; projLive = 0;
+        dspSet('play', '0'); dspSet('play', '1'); playing = true; gs = 0;
+        for (let tt = 0; tt < NTRK; tt++) dspSet('mute', tt + ',' + mutes[tt]);
+        showToast('PROJECT ' + (projSlot + 1), 'NOW PLAYING', 1); needsRedraw = true;
+        return;
+    }
+    if (projQueued < 0) return;
+    if (!playing) { projQueued = -1; showToast('NEXT PROJECT', 'CANCELLED', 0); needsRedraw = true; return; }
+    const g = Math.max(0, gs - 1), bar = Math.floor(g / 16);
+    if (g % 16 >= 14 && bar !== projBar) { projBar = bar; projLiveStart(); }
+}
+
 function projLoad() {
     let t = null; try { t = host_read_file(projFile(projSlot)); } catch (e) { t = null; }
     if (!t) { showToast('PROJECT ' + (projSlot + 1), 'EMPTY', 0); return; }
@@ -2776,7 +2821,7 @@ globalThis.tick = function () {
     if (fbPend > 0 && --fbPend === 0 && fb && !playing && !recArmed) { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) { fbApply(); if (!tp.node.kits) fbAudition(); } }
     if (fbT > 0 && --fbT === 0 && fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; }
     if (deleteHeld && ++delAge > 300) { deleteHeld = false; needsRedraw = true; }      /* safety: Delete never stays on without any input */
-    flushQueue(3);
+    flushQueue(fastFlush ? FAST_FLUSH : 3);
     if (!queue.length) {
         if (initialPush > 0 && --initialPush === 0) qEverything();
         else if (healTicks > 0 && --healTicks === 0) { qPad(ln()); qSeq(ed[sel], ln()); }
@@ -2796,7 +2841,7 @@ globalThis.tick = function () {
         const np = a[0] === '1', ng = parseInt(a[1]) || 0;
         posFr = parseInt(a[3]) || 0;
         if (np !== playing || ng !== gs) { playing = np; gs = ng; needsRedraw = true; }
-        autoPlay(); songTick(); rsTick(); meterTick(); scopeTick(); fillTick(); kitPrevTick(); if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
+        projLiveTick(); if (!projLive) { autoPlay(); songTick(); } rsTick(); meterTick(); scopeTick(); fillTick(); kitPrevTick(); if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
         if (playing && followHold > 0) followHold--;
         if (playing && followHold === 0 && heldStep < 0 && LL() > 16) {   /* screen + step buttons follow the playing bar */
             const pg = Math.floor((((gs - 1 + 1024 * LL()) % LL())) / 16);

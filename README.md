@@ -128,6 +128,15 @@ State is stored under `/data/UserData/schwung/taktile-*`.
 | **Shift + Jog click** | HOME from anywhere (on the TEMPO page: tap tempo) |
 | **Shift + Left / Right** | previous / next sub-page on MIX, EUCLID, SAMPLE and SCOPE. On the sequencer: previous / next step page |
 
+## Playing long live sets
+
+Taktile is made for sets that run for a long time without stopping the music:
+
+- **Song list** (MORE → SONG): up to 32 entries with scenes, bars, repeats, own tempo and a way in (HARD, FILL, DRUMS 1ST)
+- **Live project switch** (MORE → PROJECT): pick a slot with *Slot*, turn *Load* while the sequencer plays. The project is queued and swaps in at the end of the bar, with a short silence while it loads. Turn *Load* again to cancel
+- **Background mode**: Back on the top level asks BACKGROUND / CLOSE, the sequencer keeps playing while you use the Move
+- **Safety**: 32 project slots, rolling backups, undo history
+
 ## Contributing and bug reports
 
 Found a bug or have an idea? Open an [issue](../../issues/new/choose). The template asks for your firmware, Schwung version and the steps to reproduce. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
