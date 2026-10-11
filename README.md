@@ -56,10 +56,14 @@ Taktile is a pattern-based groove box built for jamming live. It takes over the 
 
 ## Install
 
-**Easiest:** download `taktile-module.tar.gz` from the [latest release](../../releases/latest) and unpack it. You get a `taktile/` folder (`module.json`, `ui.js`, `dsp.so`).
+**Easiest (no SSH, no unpacking):** download `taktile-module.tar.gz` from the [latest release](../../releases/latest) and upload it as a custom module through Schwung's web interface:
 
-1. Copy that `taktile/` folder to `/data/UserData/schwung/modules/overtake/` on the Move (e.g. with `scp -r taktile ableton@move.local:/data/UserData/schwung/modules/overtake/`).
-2. Restart Schwung / the Move.
+1. Put the Move and your computer (or phone) in the **same Wi-Fi network**.
+2. Open **http://move.local:7700** in a browser.
+3. Upload the `taktile-module.tar.gz` file as a custom module. Keep the `.tar.gz` as it is, do not unpack it.
+4. Restart Schwung / the Move if Taktile does not show up right away.
+
+**Manual alternative:** unpack the archive and copy the `taktile/` folder (`module.json`, `ui.js`, `dsp.so`) to `/data/UserData/schwung/modules/overtake/` on the Move, e.g. `scp -r taktile ableton@move.local:/data/UserData/schwung/modules/overtake/`, then restart Schwung.
 
 Building it yourself: see below. After a build, `taktile/scripts/install.sh` does the copy over SSH (`ableton@move.local`, set `DEVICE=user@host` to change it).
 
