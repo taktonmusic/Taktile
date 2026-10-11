@@ -39,7 +39,7 @@ Taktile is a pattern-based groove box built for jamming live. It takes over the 
 | 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 10 insert effects, 10 MIDI effects, sidechain (auto / all / off) |
 | 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator, MIDI clock + note out (USB-A) |
 | 🧪 **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |
-| 💾 **Workflow** | 8 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
+| 💾 **Workflow** | 32 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
 
 ## Signal flow
 
@@ -80,7 +80,7 @@ If your Schwung is a different version, build with `SCHWUNG_REF=<tag> ./scripts/
 ## Limits
 
 - Up to 16 tracks, max. 4 of them drum tracks (16 sounds each), up to 128 steps per track, 8 clips per track
-- Own samples: 64 slots / 40 MB in total. WAV only: 8/16/24/32-bit PCM or 32-bit float, 8 kHz to 192 kHz; mono and stereo (more channels are reduced to stereo)
+- Own samples: 64 slots / 40 MB in total. WAV only: 8/16/24/32-bit PCM or 32-bit float, 8 kHz to 192 kHz; stereo files are accepted but played back as mono (L+R), so mono files use half the memory
 - State is stored under `/data/UserData/schwung/taktile-*`. A project from an unreadable file is rejected with `CORRUPT` and your current state stays untouched
 
 ## Troubleshooting

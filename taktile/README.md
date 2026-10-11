@@ -13,7 +13,7 @@ A pattern-based groove box for the **Ableton Move**, written as an *overtake* mo
 - Per-track delay, reverb, chorus, phaser, 10 insert effects, 10 MIDI effects, sidechain (auto / all / off)
 - Per-step parameter locks, per-track swing, Euclid generator, MIDI clock + note out (USB-A)
 - Master: filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter
-- 8 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu
+- 32 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu
 
 ## Documentation
 - English manual: [docs/Taktile-Manual-EN.pdf](docs/Taktile-Manual-EN.pdf) (includes technical notes and open questions for Schwung developers)
