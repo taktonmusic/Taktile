@@ -118,6 +118,15 @@ taktile/
 
 State is stored under `/data/UserData/schwung/taktile-*`.
 
+## Controls in short
+
+| | |
+|---|---|
+| **Jog turn** | walks through the track pages / the list on the current page |
+| **Jog click** | open or confirm (SEQ/SOUND: preset browser; menus and lists: the selected entry). On a track tab: back to the last tab. Elsewhere: HOME |
+| **Shift + Jog click** | HOME from anywhere (on the TEMPO page: tap tempo) |
+| **Shift + Left / Right** | previous / next sub-page on MIX, EUCLID, SAMPLE and SCOPE. On the sequencer: previous / next step page |
+
 ## Contributing and bug reports
 
 Found a bug or have an idea? Open an [issue](../../issues/new/choose). The template asks for your firmware, Schwung version and the steps to reproduce. Changes are listed in [CHANGELOG.md](CHANGELOG.md).

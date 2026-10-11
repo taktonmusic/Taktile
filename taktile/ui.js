@@ -13,7 +13,7 @@
  *  |||  (Note/Session)        CLIP VIEW: tap = latch, hold = peek. Pads = clips of 4 tracks, Up/Down = group,
  *                             steps = select track, Loop + step 1-8 = scenes, Shift+pad = stop track
  *  Jog turn                   presets of the track's sound category (Shift = next category)
- *  Jog click                  SEQ or SOUND page: opens the preset browser (folders > sounds). Shift + jog click = HOME tiles on every page (also Shift + step 3). Other pages: jog click = HOME / last tab. Jog = choose, click = open, Back = up one level
+ *  Jog click                  SEQ or SOUND page: opens the preset browser (folders > sounds). Shift + jog click = HOME tiles on every page (also Shift + step 3). Track tabs: jog click = back to the last tab. Other pages: jog click = HOME. Pages with several sub-pages (MIX, EUCLID, SAMPLE, SCOPE): Shift + Left / Right. Jog = choose, click = open, Back = up one level
  *                               FX tiles:     DELAY REVERB CHORUS PHASER   (every track has its own set)
  *                               HOME also has TRACK (synth/drum, volume, pad mode, drum sound)
  *                               MASTER tiles: MIX BUS TEMPO QUANT OPTION MORE
@@ -770,14 +770,14 @@ const HELP = {
     2: ['Filter: LP, HP, Crush', 'Jog: Reiter wechseln', 'Jog klick: letzter Reiter'],
     3: ['Mod: Ring, Pump, Arp', 'Duck = Sidechain Tiefe', 'Jog: Reiter wechseln'],
     9: ['Synth: Wave, Sub, Hue', 'Knoepfe 1-7', 'Jog: Reiter wechseln'],
-    28: ['Sample: Datei=Knopf 1. Shift+Jog klick: Browser. Dort Shift+Klick auf Ordner = Kit aus 16 WAVs. Jog klick: Slice/ENV. Slice teilt auf 16 Pads.'],
+    28: ['Sample: Datei=Knopf 1. Shift+Jog klick: Browser. Dort Shift+Klick auf Ordner = Kit aus 16 WAVs. Shift+Pfeil: Sample/Slice/ENV. Jog klick: letzter Reiter. Slice teilt auf 16 Pads.'],
     27: ['MIDI-Effekt waehlen', 'Amount + Param', 'Jog: Reiter wechseln'],
-    36: ['Euklid: 4 Seiten', 'Jog klick: Seite', 'Aendert das Pattern'],
+    36: ['Euklid: 2 Seiten', 'Shift+Pfeil: Seite', 'Jog klick: letzter Reiter', 'Aendert das Pattern'],
     38: ['Sends: Delay, Reverb', 'Chorus, Phaser, Insert', 'FX 2 = Zeiten'],
     39: ['Zeiten der Effekte', 'Delay, Reverb, Chorus', 'Phaser'],
     16: ['SOUND = Track-Seiten', 'EDIT = Aktionen', 'MORE = Projekt, Song'],
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
-    20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
+    20: ['Pegel aller Tracks', 'Shift+Pfeil: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
     31: ['Pads = Song-Schritte', 'Change: HARD/FILL/DRUMS', 'Song: OFF/LOOP/ONCE'],
     35: ['32 Projekt-Slots', 'New = leeres Projekt', 'Revert = Sicherung'],
@@ -789,7 +789,7 @@ const HELP = {
     7: ['Clips: Pad = starten', 'Jog: Tracks scrollen', 'Copy+Pad = kopieren'],
     41: ['Master EQ 3 Baender', 'Low / Mid / High +-12dB', 'Limiter = Obergrenze'],
     43: ['EQ pro Sound/Track', 'Low 100Hz Mid 1k High 8k', '+-12 dB, Mitte = aus'],
-    42: ['Scope + 8 Baender', 'Jog klick: Ansicht', 'Master-Ausgang live'],
+    42: ['Scope + 8 Baender', 'Shift+Pfeil: Ansicht', 'Master-Ausgang live'],
     40: ['Letzte Aenderungen', 'Jog waehlen', 'Klick = zurueck bis dort'],
     4: ['Master: Vol, Filter', 'Satur, Width, Comp', 'EQ + Limiter'],
 };
@@ -1090,6 +1090,17 @@ function shiftStep(i) {
     acc.fill(0); needsRedraw = true;
 }
 const SYM_VIEW_SET = {}; Object.keys(SYM_VIEW).forEach(k => SYM_VIEW_SET[SYM_VIEW[k]] = true);
+
+/* Shift + Left / Right = previous / next sub-page on the pages that have several (MIX, EUCLID, SAMPLE, SCOPE).
+   The jog click never cycles pages any more: click = open / confirm / back to the last tab. Returns true if handled. */
+function subPageNav(dir) {
+    if (menuOpen || padMenu) return false;
+    if (view === 20) { mixMode = (mixMode + dir + 3) % 3; needsRedraw = true; showToast('MIX', ['VOLUME', 'DELAY SEND', 'REVERB SEND'][mixMode], mixMode / 2); return true; }
+    if (view === 36) { euSetPage(euPage + dir); showToast('EUCLID ' + EU_PGNAME[euPage], (euPage + 1) + '/2', euPage); return true; }
+    if (view === 28 && !broOpen) { smpPage = (smpPage + dir + 3) % 3; acc.fill(0); showToast(['SAMPLE', 'SLICE', 'ENVELOPE'][smpPage], ['START / END', 'MARKERS', 'GAIN / ATK / REL'][smpPage], smpPage / 2); needsRedraw = true; return true; }
+    if (view === 42) { scopeMode = (scopeMode + dir + 3) % 3; needsRedraw = true; return true; }
+    return false;
+}
 
 function setView(v) { view = v; acc.fill(0); needsRedraw = true; }
 function cycleMaster(key, vals) {
@@ -2943,9 +2954,9 @@ globalThis.onMidiMessageInternal = function (data) {
         }
         return;
     case CC.LEFT:  if (d2 > 0 && recDown && !playing) { recHead = (recHead + LL() - 1) % LL(); recStepUsed = true; showToast('REC HEAD', String(recHead + 1), recHead / MAXSTEP); return; }
-    case CC.LEFT_:  if (d2 > 0) { if (shiftHeld) { if (pageCount() > 1) { stepPage = clamp(stepPage - 1, 0, pageCount() - 1); followHold = 180; showToast('STEP PAGE', (stepPage + 1) + '/' + pageCount(), stepPage / Math.max(1, pageCount() - 1)); needsRedraw = true; } } else cycleTop(-1); } return;
+    case CC.LEFT_:  if (d2 > 0) { if (shiftHeld) { if (subPageNav(-1)) return; if (pageCount() > 1) { stepPage = clamp(stepPage - 1, 0, pageCount() - 1); followHold = 180; showToast('STEP PAGE', (stepPage + 1) + '/' + pageCount(), stepPage / Math.max(1, pageCount() - 1)); needsRedraw = true; } } else cycleTop(-1); } return;
     case CC.RIGHT: if (d2 > 0 && recDown && !playing) { recHead = (recHead + 1) % LL(); recStepUsed = true; showToast('REC HEAD', String(recHead + 1), recHead / MAXSTEP); return; }
-    case CC.RIGHT_: if (d2 > 0) { if (shiftHeld) { if (pageCount() > 1) { stepPage = clamp(stepPage + 1, 0, pageCount() - 1); followHold = 180; showToast('STEP PAGE', (stepPage + 1) + '/' + pageCount(), stepPage / Math.max(1, pageCount() - 1)); needsRedraw = true; } } else cycleTop(1); } return;
+    case CC.RIGHT_: if (d2 > 0) { if (shiftHeld) { if (subPageNav(1)) return; if (pageCount() > 1) { stepPage = clamp(stepPage + 1, 0, pageCount() - 1); followHold = 180; showToast('STEP PAGE', (stepPage + 1) + '/' + pageCount(), stepPage / Math.max(1, pageCount() - 1)); needsRedraw = true; } } else cycleTop(1); } return;
     case CC.CAPTURE: if (d2 > 0) { if (shiftHeld) fillBar(); else doCapture(); } return;
     case CC.UP:    if (d2 > 0) { if (view === 7 || shiftHeld || recDown) stepTrack(-1); else octMove(1); } return;      /* Up / Down = pad octave; Shift + Up / Down (or the clip view) = the track above / below */
     case CC.DOWN:  if (d2 > 0) { if (view === 7 || shiftHeld || recDown) stepTrack(1); else octMove(-1); } return;
@@ -2973,14 +2984,11 @@ globalThis.onMidiMessageInternal = function (data) {
         else if (dl && !menuOpen) jogFirst(dl);                              /* every other page: the jogwheel turns the first parameter (like knob 1) */
         return; }
     case CC.JOGCLICK:
-        if (d2 > 0 && view === 42 && !menuOpen && !shiftHeld) { scopeMode = (scopeMode + 1) % 3; needsRedraw = true; return; }
         if (d2 > 0 && view === 40 && !menuOpen && !shiftHeld) { if (undoStack.length) histApply(); return; }
-        if (d2 > 0 && view === 20 && !menuOpen && !padMenu && !shiftHeld) { mixMode = (mixMode + 1) % 3; needsRedraw = true; showToast('MIX', ['VOLUME', 'DELAY SEND', 'REVERB SEND'][mixMode], mixMode / 2); return; }
         if (d2 > 0 && (view === 0 || view === 1) && !menuOpen && !padMenu && !shiftHeld && askKind < 0 && !fb) { fbOpen(); acc.fill(0); needsRedraw = true; return; }   /* jog click on SEQ/SOUND = preset browser (HOME: Shift + step 3) */
-        if (d2 > 0 && isTab(view) && view !== 36 && view !== 28 && !menuOpen && !shiftHeld) { const pv = prevTabView; if (pv !== view && isTab(pv)) { tabEnter(pv); showToast(TAB_NAME[view], 'BACK TO LAST', 0.5); } return; }
-        if (d2 > 0 && view === 36 && !menuOpen && !padMenu && !shiftHeld) { euSetPage(euPage + 1); showToast('EUCLID ' + EU_PGNAME[euPage], (euPage + 1) + '/2', euPage); return; }
+        if (d2 > 0 && isTab(view) && !(view === 28 && broOpen) && !menuOpen && !shiftHeld) { const pv = prevTabView; if (pv !== view && isTab(pv)) { tabEnter(pv); showToast(TAB_NAME[view], 'BACK TO LAST', 0.5); } return; }
         if (d2 > 0 && view === 28 && broOpen && !menuOpen) { broClick(); return; }
-        if (d2 > 0 && view === 28 && !menuOpen && !padMenu) { if (shiftHeld) { if (smpPage === 1) sliceApply(); else if (smpPage === 0) broOpenNow(); else sampleRescan(); } else { smpPage = (smpPage + 1) % 3; acc.fill(0); showToast(['SAMPLE', 'SLICE', 'ENVELOPE'][smpPage], ['START / END', 'MARKERS', 'GAIN / ATK / REL'][smpPage], smpPage / 2); needsRedraw = true; } return; }
+        if (d2 > 0 && view === 28 && !menuOpen && !padMenu && shiftHeld) { if (smpPage === 1) sliceApply(); else if (smpPage === 0) broOpenNow(); else sampleRescan(); return; }
         if (d2 > 0 && shiftHeld && view === 10) { tapTempo(); return; }      /* tap tempo lives on the TEMPO page now */
         if (d2 > 0) {
             if (isHub(view)) hubEnter();

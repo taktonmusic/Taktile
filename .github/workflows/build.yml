@@ -25,6 +25,9 @@ jobs:
       - name: Check UI syntax
         run: node --check ui.js
 
+      - name: UI behaviour tests (mocked host, fuzzing)
+        run: node tools/test/test_jog.js
+
       - name: Native build with sanitizers (compile check)
         run: |
           ./scripts/fetch-header.sh
