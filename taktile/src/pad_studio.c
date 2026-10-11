@@ -55,7 +55,7 @@ __asm__(".symver powf,powf@GLIBC_2.17");
 #include "variants_n.h"
 #include "variants3_n.h"
 #include "variants4_n.h"
-enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_N };
+enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_N };
 #define NGH 24                       /* ghost voices: released tails of retriggered notes in POLY mode */
 
 enum {
@@ -134,6 +134,9 @@ static const pd_t PD[PP_N] = {
     { "fmode", "F Mode", 0, 0.00f },
     { "rmb",   "Rumble", 0, 0.00f },
     { "rmt",   "R Tail", 0, 0.50f },
+    { "eql",   "EQ Low", 0, 0.50f },
+    { "eqm",   "EQ Mid", 0, 0.50f },
+    { "eqh",   "EQ High",0, 0.50f },
 };
 
 static const char *TYPE_NAME[T_COUNT] = {
@@ -692,6 +695,7 @@ typedef struct {
     float bpm, swing;
     float pump_ph, wob_ph;
     float mf_z[2][2], mf_a, comp_env; int mf_mode;
+    float eq_c[NLANE][3][5], eq_z[NLANE][3][2][2], eq_g[NLANE][3]; int eq_on[NLANE];       /* per-sound 3-band EQ (low shelf, peak, high shelf) */
     float rm_buf[4][4096], rm_lp, rm_env, rm_hp; int rm_w, rm_act;       /* kick rumble bus: dark comb reverb, ducked by the kicks */
     float eq_lo[2], eq_hi[2], lim_g;                              /* master EQ band splitters + limiter gain */
     float met_env, met_ph, met_f;
@@ -2388,6 +2392,22 @@ static int get_error(void *instance, char *buf, int buf_len) {
     return 0;
 }
 
+static void eq_coef(float *c, int band, float gdb, float sr) {     /* RBJ biquad: band 0 low shelf 100 Hz, 1 peak 1 kHz, 2 high shelf 8 kHz; c = b0 b1 b2 a1 a2 (normalised) */
+    const float f = band == 0 ? 100.0f : (band == 1 ? 1000.0f : 8000.0f);
+    const float A = powf(10.0f, gdb / 40.0f), w0 = 6.2831853f * f / sr, cw = cosf(w0), sw = sinf(w0);
+    float b0, b1, b2, a0, a1, a2;
+    if (band == 1) {
+        const float al = sw / (2.0f * 0.9f);
+        b0 = 1.0f + al * A; b1 = -2.0f * cw; b2 = 1.0f - al * A; a0 = 1.0f + al / A; a1 = -2.0f * cw; a2 = 1.0f - al / A;
+    } else {
+        const float al = sw * 0.70710678f, sa = 2.0f * sqrtf(A) * al;
+        if (band == 0) { b0 = A * ((A + 1.0f) - (A - 1.0f) * cw + sa); b1 = 2.0f * A * ((A - 1.0f) - (A + 1.0f) * cw); b2 = A * ((A + 1.0f) - (A - 1.0f) * cw - sa);
+                         a0 = (A + 1.0f) + (A - 1.0f) * cw + sa; a1 = -2.0f * ((A - 1.0f) + (A + 1.0f) * cw); a2 = (A + 1.0f) + (A - 1.0f) * cw - sa; }
+        else         { b0 = A * ((A + 1.0f) + (A - 1.0f) * cw + sa); b1 = -2.0f * A * ((A - 1.0f) + (A + 1.0f) * cw); b2 = A * ((A + 1.0f) + (A - 1.0f) * cw - sa);
+                         a0 = (A + 1.0f) - (A - 1.0f) * cw + sa; a1 = 2.0f * ((A - 1.0f) - (A + 1.0f) * cw); a2 = (A + 1.0f) - (A - 1.0f) * cw - sa; }
+    }
+    c[0] = b0 / a0; c[1] = b1 / a0; c[2] = b2 / a0; c[3] = a1 / a0; c[4] = a2 / a0;
+}
 static void render_block_impl(void *instance, int16_t *out_lr, int frames);
 static void render_block(void *instance, int16_t *out_lr, int frames) {
     inst_t *s = (inst_t *)instance;
@@ -2706,6 +2726,24 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                     if (!(fabsf(l) < 16.0f)) l = 0.0f;
                     if (!(fabsf(r_) < 16.0f)) r_ = 0.0f;
                 }
+            }
+            {   /* per-sound EQ: low shelf 100 Hz, peak 1 kHz, high shelf 8 kHz, +-12 dB (skipped while flat) */
+                const float gq[3] = { (q[PP_EQL] - 0.5f) * 24.0f, (q[PP_EQM] - 0.5f) * 24.0f, (q[PP_EQH] - 0.5f) * 24.0f };
+                if (fabsf(gq[0]) > 0.15f || fabsf(gq[1]) > 0.15f || fabsf(gq[2]) > 0.15f) {
+                    if (!s->eq_on[t]) { memset(s->eq_z[t], 0, sizeof s->eq_z[t]); for (int b = 0; b < 3; b++) s->eq_g[t][b] = 999.0f; s->eq_on[t] = 1; }
+                    for (int b = 0; b < 3; b++) if (s->eq_g[t][b] != gq[b]) { eq_coef(s->eq_c[t][b], b, gq[b], s->sr); s->eq_g[t][b] = gq[b]; }
+                    float io[2] = { l, r_ };
+                    for (int c = 0; c < 2; c++) {
+                        float x = io[c];
+                        for (int b = 0; b < 3; b++) {
+                            const float *k = s->eq_c[t][b]; float *z = s->eq_z[t][b][c];
+                            float y = k[0] * x + z[0]; z[0] = k[1] * x - k[3] * y + z[1]; z[1] = k[2] * x - k[4] * y; x = y;
+                        }
+                        if (!(fabsf(x) < 16.0f)) { x = 0.0f; memset(s->eq_z[t], 0, sizeof s->eq_z[t]); }
+                        io[c] = x;
+                    }
+                    l = io[0]; r_ = io[1];
+                } else s->eq_on[t] = 0;
             }
             L += l; R += r_;
 

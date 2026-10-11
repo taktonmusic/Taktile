@@ -1,0 +1,38 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Taktile version
+      description: Shown in the release name or in module.json
+      placeholder: "5.4.1"
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Ableton Move firmware and Schwung version
+      placeholder: "Move firmware x.y.z, Schwung v1.7.3"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. ... 2. ... 3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect, what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (optional)
+      description: "Contents of /data/UserData/schwung/taktile-error.log and taktile-boot.log, if they exist"
+      render: text

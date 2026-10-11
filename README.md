@@ -6,7 +6,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-ff4d6d">
   <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-8d6bff">
   <img alt="Language" src="https://img.shields.io/badge/DSP-C-2ec4b6">
-  <img alt="Version" src="https://img.shields.io/badge/version-5.3.3-ffb703">
+  <img alt="Version" src="https://img.shields.io/badge/version-5.4.1-ffb703">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-lightgrey">
 </p>
 
@@ -56,10 +56,32 @@ Taktile is a pattern-based groove box built for jamming live. It takes over the 
 
 ## Install
 
-1. Build it (see below) or download the `taktile-module` artifact from CI.
-2. Copy the `taktile/` folder (`module.json`, `ui.js`, `dsp.so`) to the Move's Schwung modules directory.
+**Easiest:** download `taktile-module.tar.gz` from the [latest release](../../releases/latest) and unpack it. You get a `taktile/` folder (`module.json`, `ui.js`, `dsp.so`).
 
-`taktile/scripts/install.sh` does this over SSH (`ableton@move.local`, into `/data/UserData/schwung/modules/overtake/taktile/`). Restart Schwung / the Move afterwards.
+1. Copy that `taktile/` folder to `/data/UserData/schwung/modules/overtake/` on the Move (e.g. with `scp -r taktile ableton@move.local:/data/UserData/schwung/modules/overtake/`).
+2. Restart Schwung / the Move.
+
+Building it yourself: see below. After a build, `taktile/scripts/install.sh` does the copy over SSH (`ableton@move.local`, set `DEVICE=user@host` to change it).
+
+## Compatibility
+
+| | |
+|---|---|
+| Module format | Schwung overtake module, `api_version` 2 |
+| Built against | Schwung plugin API header from tag **v1.7.3** (`plugin_api_v1.h`, pinned in `fetch-header.sh`) |
+| Move firmware | Not recorded yet. When you report a problem, please name your firmware and Schwung version |
+
+If your Schwung is a different version, build with `SCHWUNG_REF=<tag> ./scripts/fetch-header.sh` first. The header has to match the host exactly.
+
+## Limits
+
+- Up to 16 tracks, max. 4 of them drum tracks (16 sounds each), up to 128 steps per track, 8 clips per track
+- Own samples: 64 slots / 40 MB in total. WAV only: 8/16/24/32-bit PCM or 32-bit float, 8 kHz to 192 kHz; mono and stereo (more channels are reduced to stereo)
+- State is stored under `/data/UserData/schwung/taktile-*`. A project from an unreadable file is rejected with `CORRUPT` and your current state stays untouched
+
+## Troubleshooting
+
+If something goes wrong, Taktile writes logs to `/data/UserData/schwung/`: `taktile-error.log` (crash in a handler) and `taktile-boot.log` (start-up). Attach them to a bug report.
 
 ## Build
 
@@ -67,7 +89,7 @@ Needs `gcc-aarch64-linux-gnu`.
 
 ```bash
 cd taktile
-./scripts/build.sh      # fetches Schwung's plugin_api_v1.h, builds dist/taktile-module.tar.gz
+./scripts/build.sh      # fetches Schwung's plugin_api_v1.h (v1.7.3), builds dist/taktile-module.tar.gz
 ```
 
 ### Desktop test of the DSP
@@ -91,6 +113,10 @@ taktile/
 ```
 
 State is stored under `/data/UserData/schwung/taktile-*`.
+
+## Contributing and bug reports
+
+Found a bug or have an idea? Open an [issue](../../issues/new/choose). The template asks for your firmware, Schwung version and the steps to reproduce. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits and license
 

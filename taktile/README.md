@@ -20,7 +20,9 @@ A pattern-based groove box for the **Ableton Move**, written as an *overtake* mo
 - German manual: [docs/Taktile-Handbuch-DE.pdf](docs/Taktile-Handbuch-DE.pdf)
 
 ## Install
-Build (below) or download the `taktile-module` artifact from CI, then copy the `taktile/` folder (`module.json`, `ui.js`, `dsp.so`) to the Move's Schwung modules directory. `scripts/install.sh` does this over SSH (`ableton@move.local`, into `/data/UserData/schwung/modules/overtake/taktile/`).
+Download `taktile-module.tar.gz` from the [latest release](../../../releases/latest), unpack it and copy the `taktile/` folder (`module.json`, `ui.js`, `dsp.so`) to `/data/UserData/schwung/modules/overtake/` on the Move, then restart Schwung. Or build it yourself (below); `scripts/install.sh` copies the build over SSH (`ableton@move.local`, set `DEVICE=user@host` to change it).
+
+Built against Schwung plugin API **v1.7.3** (see the root README, "Compatibility").
 
 ## Build
 Needs `gcc-aarch64-linux-gnu`.
