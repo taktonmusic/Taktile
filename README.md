@@ -80,7 +80,8 @@ If your Schwung is a different version, build with `SCHWUNG_REF=<tag> ./scripts/
 ## Limits
 
 - Up to 16 tracks, max. 4 of them drum tracks (16 sounds each), up to 128 steps per track, 8 clips per track
-- Own samples: 64 slots / 40 MB in total. WAV only: 8/16/24/32-bit PCM or 32-bit float, 8 kHz to 192 kHz; stereo files are accepted but played back as mono (L+R), so mono files use half the memory
+- Own samples: 64 slots / 40 MB in total. WAV only: 8/16/24/32-bit PCM or 32-bit float, 8 kHz to 192 kHz. Files are stored as mono (stereo = L+R averaged), so a stereo file needs no more space than a mono one
+- Resample takes: up to 16 bars, at most 40 seconds (fewer bars are chosen automatically at slow tempi)
 - State is stored under `/data/UserData/schwung/taktile-*`. A project from an unreadable file is rejected with `CORRUPT` and your current state stays untouched
 
 ## Troubleshooting

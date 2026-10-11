@@ -26,7 +26,12 @@ jobs:
         run: node --check ui.js
 
       - name: UI behaviour tests (mocked host, fuzzing)
-        run: node tools/test/test_jog.js
+        run: |
+          node tools/test/test_jog.js
+          node tools/test/test_resample.js
+
+      - name: DSP tests (sample import, resample limit; sanitizers)
+        run: ./tools/test/run_dsp_test.sh
 
       - name: Native build with sanitizers (compile check)
         run: |

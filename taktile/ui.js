@@ -1682,7 +1682,13 @@ const RS_BARS = [1, 2, 4, 8, 16];
 let rsSrc = 0, rsBarI = 1, rsState = 0, rsPct = 0, rsPoll = 0, rsLane = 0;
 function rsArm() {
     if (rsState) return;
-    dspSet('recarm', (rsSrc - 1) + ',' + RS_BARS[rsBarI]);
+    let bars = RS_BARS[rsBarI];
+    const mx = parseInt(dspGet('recmaxbars')) || 16;                  /* the take buffer holds 40 s: fewer bars at slow tempi */
+    if (bars > mx) { while (rsBarI > 0 && RS_BARS[rsBarI] > mx) rsBarI--; bars = RS_BARS[rsBarI]; showToast('RESAMPLE ' + bars + ' BARS', 'MAX 40 SEC AT ' + Math.round(bpm) + ' BPM', 0.5); }
+    smpMem = parseInt(dspGet('smpmem')) || smpMem;
+    const need = 44100 * bars * 4 * 60 / Math.max(40, bpm) * 2, free = 40 * 1048576 * (100 - smpMem) / 100;   /* a take is stored as mono 16-bit */
+    if (need > free) { showToast('SAMPLE BANK FULL', 'FREE SPACE FIRST', 0); needsRedraw = true; return; }
+    dspSet('recarm', (rsSrc - 1) + ',' + bars);
     if (!playing) { dspSet('play', '1'); playing = true; gs = 0; }
     rsState = 1; rsPct = 0; rsLane = ln(); needsRedraw = true; showToast('RESAMPLE', 'WAITING FOR BAR 1', 0);
 }

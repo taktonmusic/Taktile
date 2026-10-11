@@ -444,6 +444,13 @@ static const smp_t *smp_get(int i) {
 }
 static int rd_u16(const uint8_t *p) { return p[0] | (p[1] << 8); }
 static uint32_t rd_u32(const uint8_t *p) { return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24); }
+static float smp_decode(const uint8_t *q, int fmt, int bits) {      /* one PCM / float sample -> 16-bit range */
+    if (fmt == 3) { float fv; memcpy(&fv, q, 4); return fv * 32767.0f; }
+    if (bits == 8) return ((float)q[0] - 128.0f) * 256.0f;
+    if (bits == 16) return (float)(int16_t)(q[0] | (q[1] << 8));
+    if (bits == 24) return (float)((int32_t)((uint32_t)q[0] << 8 | (uint32_t)q[1] << 16 | (uint32_t)q[2] << 24) >> 16);
+    return (float)((int32_t)rd_u32(q) >> 16);
+}
 static int smp_load(smp_t *m, const char *path) {
     FILE *f = fopen(path, "rb"); if (!f) return 0;
     fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
@@ -468,21 +475,18 @@ static int smp_load(smp_t *m, const char *path) {
         int bps = bits / 8;
         if (data && ch >= 1 && sr >= 8000 && sr <= 192000 && ((fmt == 1 && (bits == 8 || bits == 16 || bits == 24 || bits == 32)) || (fmt == 3 && bits == 32))) {
             long frames = dlen / (long)(bps * ch);
-            int oc = ch >= 2 ? 2 : 1;
+            int oc = 1;                                   /* the engine plays every sample as mono (L+R)/2, so store it that way: half the memory for stereo files */
             long room = (long)((SMP_MAX_BYTES - smp_bytes) / (unsigned)(2 * oc));
             if (frames > room) frames = room;
             if (frames > 8) {
                 int16_t *o = (int16_t *)malloc((size_t)frames * (size_t)oc * 2);
                 if (o) {
-                    for (long i = 0; i < frames; i++) for (int k = 0; k < oc; k++) {
-                        const uint8_t *q = data + (i * ch + k) * bps; float v;
-                        if (fmt == 3) { float fv; memcpy(&fv, q, 4); v = fv * 32767.0f; }
-                        else if (bits == 8) v = ((float)q[0] - 128.0f) * 256.0f;
-                        else if (bits == 16) v = (float)(int16_t)(q[0] | (q[1] << 8));
-                        else if (bits == 24) v = (float)((int32_t)((uint32_t)q[0] << 8 | (uint32_t)q[1] << 16 | (uint32_t)q[2] << 24) >> 16);
-                        else v = (float)((int32_t)rd_u32(q) >> 16);
+                    for (long i = 0; i < frames; i++) {
+                        const uint8_t *q = data + (i * ch) * bps;
+                        float v = smp_decode(q, fmt, bits);
+                        if (ch >= 2) v = (v + smp_decode(q + bps, fmt, bits)) * 0.5f;
                         if (v > 32767.0f) v = 32767.0f; if (v < -32768.0f) v = -32768.0f;
-                        o[i * oc + k] = (int16_t)v;
+                        o[i] = (int16_t)v;
                     }
                     m->n = (int)frames; m->ch = oc; m->sr = (float)sr;
                     smp_bytes += (unsigned)(frames * oc * 2);
@@ -2279,6 +2283,10 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
     if (strcmp(key, "brres") == 0) return snprintf(buf, (size_t)buf_len, "%d", br_res);
     if (strcmp(key, "brpath") == 0) return snprintf(buf, (size_t)buf_len, "%s", BR_DIR);
     if (strncmp(key, "br_", 3) == 0) { int i = atoi(key + 3); if (i < 0 || i >= br_n) return -1; return snprintf(buf, (size_t)buf_len, "%c|%s", BR[i].dir ? 'd' : 'f', BR[i].name); }
+    if (strcmp(key, "recmaxbars") == 0) {            /* longest resample take that fits the 40 s buffer at the current tempo */
+        int b = (int)(40.0f * s->bpm / 240.0f); if (b < 1) b = 1; if (b > 16) b = 16;
+        return snprintf(buf, (size_t)buf_len, "%d", b);
+    }
     if (strcmp(key, "smpmem") == 0) return snprintf(buf, (size_t)buf_len, "%u", (unsigned)(((unsigned long long)smp_bytes * 100ull) / SMP_MAX_BYTES));
     if (strcmp(key, "smpn") == 0) { int n = 0; for (int i = 0; i < NSMP; i++) if (SMP[i].name[0]) n = i + 1; return snprintf(buf, (size_t)buf_len, "%d", n); }
     if (strncmp(key, "smp_", 4) == 0) {
