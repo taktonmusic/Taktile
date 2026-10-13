@@ -44,8 +44,8 @@ const NTRK = 16, NPAT = 8, MAXSTEP = 128, NLANE = 80;     /* lanes 0-15 = the 16
 const STATE_FILE = '/data/UserData/schwung/taktile-state.json';
 const OLD_STATE_FILE = '/data/UserData/schwung/takton-groove-state.json';
 
-const TYPE_NAME = ['Kick','KickHrd','KickGoa','RumbKick','Sub808','Clap','Snare','Rim','HatCl','HatOp','Shaker','Crash','Ride','Tom','Conga','Cowbell','PercFM','Zap','Riser','SubBass','RollBass','Acid','Reese','Pluck','Stab','Pad','Lead','Bell','Sweep','Impact','KickDeep','KickClick','KickPsy','KickDub','Kick909','Sub808Lo','Sub808Hi','SnrTight','SnrFat','ClapLong','ClapShrt','HatTick','HatLong','ShakeLng','RimClick','TomLo','TomHi','CongaHi','CongaLo','PercHi','PercLo','ZapHi','ZapLo','Bass1','BassHi','AcidLo','AcidHi','ReeseLo','ReeseHi','SubLow','PluckLo','PluckHi','StabLo','StabHi','PadLo','PadSlow','LeadLo','LeadHi','BellLo','BellHi','SweepLng','ImpactLo','RiserLng','SynLead','SynBass','SuperSaw','EPiano','Organ','Strings','FMBass','Hoover','LeadSoft','LeadHi','SawBass','BassHi','SuperHi','SuperLo','KeysHi','KeysLo','OrganLo','OrganHi','StringLo','StringSlw','FMBassHi','HooverLo','HooverHi','Kick707','KickTight','KickBoom','KickSoft','KickPunch','KickGabba','KickFull','KickTrnc','RumbShrt','RumbHuge','Sub808Mid','Sub808Hrt','KickSnap','KickWarm','KickRave','Snr909','SnrDeep','SnrSnap','SnrRoll','SnrLoFi','SnrBig','ClapDry','ClapRoom','ClapTrap','ClapSnap','RimTick','RimWood','RimLong','HatClsd','HatMid','HatSoft','HatTrap','HatOp909','HatShort','HatSizzl','HatHalf','ShakeSht','ShakeMed','ShakeSft','CrashShr','CrashLng','Splash','RideShrt','RideBell','RideSoft','TomMid','TomFloor','TomRack','TomSynth','CongaMid','BongoHi','BongoLo','CowShort','CowLong','FMclick','FMtom','FMmetal','FMblip','ZapMid','ZapLaser','ZapDown','SweepShrt','SweepSlow','ImpactHi','ImpactBig','ImpactMid','ImpactDry','SubSoft','SubPunch','SubMid','SubLong','RollFast','RollLong','RollDeep','Roll909','Acid303','AcidSlide','AcidShort','AcidDeep','AcidRave','ReeseDark','ReeseWide','ReeseFast','ReeseHigh','SqrBass','TriBass','PulsBass','FatBass','SineBass','PluckBass','LongBass','FMBass2','FMGrowl','FMDeep','FMHard','LeadMid','LeadFast','LeadSlow','SqrLead','TriLead','PulseLead','SineLead','FatLead','TranceLd','SoloLead','LeadLow','HoovFat','HoovDeep','HoovMid','HoovSqr','PluckMid','PluckShrt','PluckLong','PluckDeep','PluckSoft','StabShrt','StabLong','StabRave','StabHoov','PadWarm','PadFast','PadHuge','PadAir','BellMid','BellLong','BellSoft','Glass','SuperSqr','SuperFat','SuperTite','SuperPls','SuperSub','EPsoft','EPbright','EPbell','EPtine','OrganSft','OrganFull','OrganStac','OrganJazz','StringSaw','StringSqr','StringPls','StrWide','Kick90s','KickDry','KickLow','KickMid','KickHigh','KickThmp','KickClik','KickLng','KickShrt','KickDub2','KickHard','KickMax','KickNu','KickAcid','808Boom','808Tight','808Long','808Mid','808Pop','808Deep','RumbTrnc','RumbDark','RumbPsy','RumbGoa','SnrDry','SnrWide','SnrTop','SnrLow','SnrCrck','SnrRoom','SnrAcst','SnrTrap','ClapTght','ClapWide','ClapHigh','ClapStk','ClapRev','RimDry','RimHi','RimBox','HatTight','HatDust','HatSnap','HatLoose','HatOpen','HatSwsh','HatSemi','HatAir','ShakTght','ShakLoos','CrashBig','CrashDry','RideTink','RideWash','TomDeep','TomHigh','TomFat','TomPunch','CongaSlp','CongaOpn','CowMute','CowRing','FMBlip','FMBell','FMClang','FMTick','ZapDive','ZapRise','ZapBeam','SweepUp','SweepDwn','ImpactHg','ImpactTg','SubSine','SubDeep','SubTight','RollDown','RollUp','RollGoa','AcidSlam','AcidLong','Acid303','ReeseSub','ReeseMid','ReeseAir','PluckHi','PluckLow','PluckHarp','PluckMute','StabHard','StabSoft','StabRave2','StabHouse','PadDark','PadChoir','PadSlow2','PadGlas','LeadAcid','LeadSwor','LeadFlut','LeadReso','BellDeep','BellTine','BellGong','SawLead','SqrLead2','PulsLead','DetSaw','HugeSaw','OctSaw','TrncSaw','FoldSaw','VowelPad','SyncLead','HollowKy','StairBas','DigiLead','HalfSin','RampBas','Sample','KckTch1','KckTch2','KckTch3','KckTch4','KckTch5','KckTch6','KckTch7','KckTch8','KckHse1','KckHse2','KckHse3','KckHse4','KckHse5','KckHse6','KckTrn1','KckTrn2','KckTrn3','KckTrn4','KckTrn5','KckTrn6','KckPsy1','KckPsy2','KckPsy3','KckPsy4','KckPsy5','KckPsy6','KckHrd1','KckHrd2','KckHrd3','KckHrd4','KckHrd5','KckHrd6','KckDub1','KckDub2','KckDub3','KckDub4','KckDub5','KckDub6','808Kck1','808Kck2','808Kck3','808Kck4','808Kck5','808Kck6','SnrTch1','SnrTch2','SnrTch3','SnrTch4','SnrTch5','SnrTch6','SnrTch7','SnrTch8','SnrBig1','SnrBig2','SnrBig3','SnrBig4','SnrBig5','SnrBig6','SnrLof1','SnrLof2','SnrLof3','SnrLof4','SnrLof5','SnrLof6','ClpDry1','ClpDry2','ClpDry3','ClpDry4','ClpDry5','ClpDry6','ClpRoom1','ClpRoom2','ClpRoom3','ClpRoom4','ClpRoom5','ClpRoom6','ClpTrp1','ClpTrp2','ClpTrp3','ClpTrp4','RimTk1','RimTk2','RimTk3','RimTk4','RimTk5','RimTk6','HatCl01','HatCl02','HatCl03','HatCl04','HatCl05','HatCl06','HatCl07','HatCl08','HatCl09','HatCl10','HatOp01','HatOp02','HatOp03','HatOp04','HatOp05','HatOp06','HatOp07','HatOp08','HatOp09','HatOp10','ShkGrv1','ShkGrv2','ShkGrv3','ShkGrv4','ShkGrv5','ShkGrv6','CrsCym1','CrsCym2','CrsCym3','CrsCym4','CrsCym5','CrsCym6','RdeCym1','RdeCym2','RdeCym3','RdeCym4','RdeCym5','RdeCym6','TomSet1','TomSet2','TomSet3','TomSet4','TomSet5','TomSet6','TomSet7','TomSet8','CngSet1','CngSet2','CngSet3','CngSet4','CngSet5','CngSet6','BngSet1','BngSet2','BngSet3','BngSet4','CowSet1','CowSet2','CowSet3','CowSet4','FMPerc1','FMPerc2','FMPerc3','FMPerc4','FMPerc5','FMPerc6','FMPerc7','FMPerc8','ZapSet1','ZapSet2','ZapSet3','ZapSet4','ZapSet5','ZapSet6','ZapSet7','ZapSet8','SweepX1','SweepX2','SweepX3','SweepX4','SweepX5','SweepX6','SweepX7','SweepX8','ImpactX1','ImpactX2','ImpactX3','ImpactX4','ImpactX5','ImpactX6','ImpactX7','ImpactX8','SubBs1','SubBs2','SubBs3','SubBs4','SubBs5','SubBs6','SubBs7','SubBs8','RollBs1','RollBs2','RollBs3','RollBs4','RollBs5','RollBs6','RollBs7','RollBs8','AcidBs01','AcidBs02','AcidBs03','AcidBs04','AcidBs05','AcidBs06','AcidBs07','AcidBs08','AcidBs09','AcidBs10','ReeseBs1','ReeseBs2','ReeseBs3','ReeseBs4','ReeseBs5','ReeseBs6','ReeseBs7','ReeseBs8','SynBs01','SynBs02','SynBs03','SynBs04','SynBs05','SynBs06','SynBs07','SynBs08','SynBs09','SynBs10','SynBs11','SynBs12','FMBs1','FMBs2','FMBs3','FMBs4','FMBs5','FMBs6','FMBs7','FMBs8','Pluck01','Pluck02','Pluck03','Pluck04','Pluck05','Pluck06','Pluck07','Pluck08','Pluck09','Pluck10','Pluck11','Pluck12','SynLd01','SynLd02','SynLd03','SynLd04','SynLd05','SynLd06','SynLd07','SynLd08','SynLd09','SynLd10','SynLd11','SynLd12','Hoov1','Hoov2','Hoov3','Hoov4','Hoov5','Hoov6','Hoov7','Hoov8','Lead1','Lead2','Lead3','Lead4','Lead5','Lead6','Lead7','Lead8','Stab01','Stab02','Stab03','Stab04','Stab05','Stab06','Stab07','Stab08','Stab09','Stab10','Stab11','Stab12','Pad01','Pad02','Pad03','Pad04','Pad05','Pad06','Pad07','Pad08','Pad09','Pad10','Pad11','Pad12','Pad13','Pad14','Bell01','Bell02','Bell03','Bell04','Bell05','Bell06','Bell07','Bell08','Bell09','Bell10','Super01','Super02','Super03','Super04','Super05','Super06','Super07','Super08','Super09','Super10','EPno1','EPno2','EPno3','EPno4','EPno5','EPno6','EPno7','EPno8','Organ1','Organ2','Organ3','Organ4','Organ5','Organ6','Strng1','Strng2','Strng3','Strng4','Strng5','Strng6','Strng7','Strng8','DeepBs1','DeepBs2','DeepBs3','DeepBs4','DeepBs5','DeepBs6','DeepBs7','DeepBs8','DubBs1','DubBs2','DubBs3','DubBs4','DubBs5','DubBs6','DubBs7','DubBs8','TechBs1','TechBs2','TechBs3','TechBs4','TechBs5','TechBs6','TechBs7','TechBs8','AcdSqr1','AcdSqr2','AcdSqr3','AcdSqr4','AcdSqr5','AcdSqr6','AcdSqr7','AcdSqr8','RvDark1','RvDark2','RvDark3','RvDark4','RvDark5','RvDark6','RvDark7','RvDark8','GoaBs1','GoaBs2','GoaBs3','GoaBs4','GoaBs5','GoaBs6','GoaBs7','GoaBs8','WobBs1','WobBs2','WobBs3','WobBs4','WobBs5','WobBs6','WobBs7','WobBs8','DnbBs1','DnbBs2','DnbBs3','DnbBs4','DnbBs5','DnbBs6','DnbBs7','DnbBs8','HseBs1','HseBs2','HseBs3','HseBs4','HseBs5','HseBs6','HseBs7','HseBs8','AcdLd1','AcdLd2','AcdLd3','AcdLd4','AcdLd5','AcdLd6','AcdLd7','AcdLd8','TrcLd1','TrcLd2','TrcLd3','TrcLd4','TrcLd5','TrcLd6','TrcLd7','TrcLd8','PsyLd1','PsyLd2','PsyLd3','PsyLd4','PsyLd5','PsyLd6','PsyLd7','PsyLd8','SqrLd1','SqrLd2','SqrLd3','SqrLd4','SqrLd5','SqrLd6','SqrLd7','SqrLd8','SftLd1','SftLd2','SftLd3','SftLd4','SftLd5','SftLd6','SftLd7','SftLd8','SyncLd1','SyncLd2','SyncLd3','SyncLd4','SyncLd5','SyncLd6','HoovRv1','HoovRv2','HoovRv3','HoovRv4','HoovRv5','HoovRv6','HoovRv7','HoovRv8','ArpPl01','ArpPl02','ArpPl03','ArpPl04','ArpPl05','ArpPl06','ArpPl07','ArpPl08','ArpPl09','ArpPl10','ArpPl11','ArpPl12','PlkHrp1','PlkHrp2','PlkHrp3','PlkHrp4','PlkHrp5','PlkHrp6','PlkHrp7','PlkHrp8','PlkMut1','PlkMut2','PlkMut3','PlkMut4','PlkMut5','PlkMut6','PlkMut7','PlkMut8','DubCrd1','DubCrd2','DubCrd3','DubCrd4','DubCrd5','DubCrd6','DubCrd7','DubCrd8','HseStb01','HseStb02','HseStb03','HseStb04','HseStb05','HseStb06','HseStb07','HseStb08','HseStb09','HseStb10','RvStb1','RvStb2','RvStb3','RvStb4','RvStb5','RvStb6','RvStb7','RvStb8','TrcChd1','TrcChd2','TrcChd3','TrcChd4','TrcChd5','TrcChd6','TrcChd7','TrcChd8','DrkPad1','DrkPad2','DrkPad3','DrkPad4','DrkPad5','DrkPad6','DrkPad7','DrkPad8','WrmPad1','WrmPad2','WrmPad3','WrmPad4','WrmPad5','WrmPad6','WrmPad7','WrmPad8','AtmPad1','AtmPad2','AtmPad3','AtmPad4','AtmPad5','AtmPad6','AtmPad7','AtmPad8','GlsPad1','GlsPad2','GlsPad3','GlsPad4','GlsPad5','GlsPad6','GlsPad7','GlsPad8','TrcSaw1','TrcSaw2','TrcSaw3','TrcSaw4','TrcSaw5','TrcSaw6','TrcSaw7','TrcSaw8','SawStk1','SawStk2','SawStk3','SawStk4','SawStk5','SawStk6','SawStk7','SawStk8','Rhodes1','Rhodes2','Rhodes3','Rhodes4','Rhodes5','Rhodes6','Rhodes7','Rhodes8','Clav1','Clav2','Clav3','Clav4','Clav5','Clav6','Clav7','Clav8','Wurli1','Wurli2','Wurli3','Wurli4','Wurli5','Wurli6','OrgJzz1','OrgJzz2','OrgJzz3','OrgJzz4','OrgJzz5','OrgJzz6','OrgRck1','OrgRck2','OrgRck3','OrgRck4','OrgRck5','OrgRck6','BellMlt1','BellMlt2','BellMlt3','BellMlt4','BellMlt5','BellMlt6','BellMlt7','BellMlt8','Chime1','Chime2','Chime3','Chime4','Chime5','Chime6','Chime7','Chime8','Gong1','Gong2','Gong3','Gong4','Gong5','Gong6','StrSlw1','StrSlw2','StrSlw3','StrSlw4','StrSlw5','StrSlw6','StrSlw7','StrSlw8','Choir1','Choir2','Choir3','Choir4','Choir5','Choir6','Choir7','Choir8','Brass1','Brass2','Brass3','Brass4','Brass5','Brass6','RiseX1','RiseX2','RiseX3','RiseX4','RiseX5','RiseX6','RiseX7','RiseX8','DownX1','DownX2','DownX3','DownX4','DownX5','DownX6','DownX7','DownX8','NoiseSw1','NoiseSw2','NoiseSw3','NoiseSw4','NoiseSw5','NoiseSw6','NoiseSw7','NoiseSw8','ImpHit1','ImpHit2','ImpHit3','ImpHit4','ImpHit5','ImpHit6','ImpHit7','ImpHit8','GlchX01','GlchX02','GlchX03','GlchX04','GlchX05','GlchX06','GlchX07','GlchX08','GlchX09','GlchX10','LaserX1','LaserX2','LaserX3','LaserX4','LaserX5','LaserX6','LaserX7','LaserX8','MarimLo','MarimMid','MarimHi','MarimHard','MarimSft','VibesMid','VibesLo','VibesFst','XyloMid','XyloHi','KalimLo','KalimHi','Celesta','GlockHi','Tubular','ChurchLo','ChurchHi','SteelLo','SteelHi','Crystal','GlassTap','BowlLo','BowlHi','GamelanL','GamelanH','PlateLo','PlateHi','HarpLo','HarpMid','HarpHi','NylonLo','NylonHi','Koto','Hollow','TimpLo','TimpHi','Taiko','TablaLo','TablaHi','Bongo','TomModLo','TomModMd','TomModHi','WoodLo','WoodHi','Clave','MetalHit','Anvil','TinCan','PipeHit','EpTine','EpWarm','EpBright','EpSoft','FmClav','FmOrgan','FmOrgan2','FmMarim','FmVibe','FmBell','FmChime','FmGlass','FmPluck','FmHarp','FmKalim','FmSlap','FmSub','FmGrowl','FmWobble','FmReedBs','FmBrass','FmLead','FmSaw','FmPad','FmChoir','FmTom','FmZap','FmMetal','FmHat','FmClick','ChoirAh','ChoirOh','ChoirEe','ChoirOo','MaleAh','FemaleAh','VoxWow','VoxYoi','Talkbox','Robot','Whisper','GhostCh','Gospel','VoxBass','Pulse12','Pulse25','Pulse50','PwmSweep','Crunch4','ChipBass','ChipBs12','ChipSiren','ArpMaj','ArpMin','ArpOct','ArpPower','ArpFifth','Coin','PowerUp','ChipLaser','NoiseHat','NoiseOpen','NoiseSnr','NoiseMet','ChipKick','ChipTom','MBassDp','MBassGr','MBassWb','MBassCl','MBassSn','MBassSb','MBassRs','MLeadBr','MLeadSw','MLeadGl','MLeadSt','MLeadAr','MLeadHm','MLeadDk','MLeadAc','MPadDrk','MPadAir','MPadGls','MPadSwl','MPadWrm','MPadEvo','MPadOrg','MPadDst','MKeyPlk','MKeyStb','MKeyBel','MKeyWrm','MKeyArp','MKeyTr','MKeyGlw','MKeyOrg'];
-const BASE_T = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,0,1,2,3,0,4,4,6,6,5,5,8,9,10,7,13,13,14,14,16,16,17,17,20,20,21,21,22,22,19,23,23,24,24,25,25,26,26,27,27,28,29,18,73,74,75,76,77,78,79,80,73,73,74,74,75,75,76,76,77,77,78,78,79,80,80,0,0,0,0,1,1,2,2,3,3,4,4,0,0,2,6,6,6,6,6,6,5,5,5,5,7,7,7,8,8,8,8,9,9,9,9,10,10,10,11,11,11,12,12,12,13,13,13,13,14,14,14,15,15,16,16,16,16,17,17,17,28,28,29,29,29,29,19,19,19,19,20,20,20,20,21,21,21,21,21,22,22,22,22,74,74,74,74,74,74,74,79,79,79,79,26,26,26,73,73,73,73,73,73,73,73,80,80,80,80,23,23,23,23,23,24,24,24,24,25,25,25,25,27,27,27,27,75,75,75,75,75,76,76,76,76,77,77,77,77,78,78,78,78,0,0,0,0,0,1,1,2,2,0,1,1,2,0,4,4,4,4,4,4,3,3,3,3,6,6,6,6,6,6,6,6,5,5,5,5,5,7,7,7,8,8,8,8,9,9,9,9,10,10,11,11,12,12,13,13,13,13,14,14,15,15,16,16,16,16,17,17,17,28,28,29,29,19,19,19,20,20,20,21,21,21,22,22,22,23,23,23,23,24,24,24,24,25,25,25,25,26,26,26,26,27,27,27,73,73,73,75,75,75,75,74,78,73,76,74,73,77,74,359,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,3,3,3,3,3,3,1,1,1,1,1,1,0,0,0,0,0,0,4,4,4,4,4,4,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,7,7,7,7,7,7,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9,9,9,10,10,10,10,10,10,11,11,11,11,11,11,12,12,12,12,12,12,13,13,13,13,13,13,13,13,14,14,14,14,14,14,14,14,14,14,15,15,15,15,16,16,16,16,16,16,16,16,17,17,17,17,17,17,17,17,28,28,28,28,28,28,28,28,29,29,29,29,29,29,29,29,19,19,19,19,19,19,19,19,20,20,20,20,20,20,20,20,21,21,21,21,21,21,21,21,21,21,22,22,22,22,22,22,22,22,74,74,74,74,74,74,74,74,74,74,74,74,79,79,79,79,79,79,79,79,23,23,23,23,23,23,23,23,23,23,23,23,73,73,73,73,73,73,73,73,73,73,73,73,80,80,80,80,80,80,80,80,26,26,26,26,26,26,26,26,24,24,24,24,24,24,24,24,24,24,24,24,25,25,25,25,25,25,25,25,25,25,25,25,25,25,27,27,27,27,27,27,27,27,27,27,75,75,75,75,75,75,75,75,75,75,76,76,76,76,76,76,76,76,77,77,77,77,77,77,78,78,78,78,78,78,78,78,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,74,74,74,74,74,74,74,74,21,21,21,21,21,21,21,21,22,22,22,22,22,22,22,22,20,20,20,20,20,20,20,20,79,79,79,79,79,79,79,79,74,74,74,74,74,74,74,74,74,74,74,74,74,74,74,74,26,26,26,26,26,26,26,26,73,73,73,73,73,73,73,73,26,26,26,26,26,26,26,26,73,73,73,73,73,73,73,73,73,73,73,73,73,73,73,73,26,26,26,26,26,26,80,80,80,80,80,80,80,80,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,75,75,75,75,75,75,75,75,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,75,75,75,75,75,75,75,75,75,75,75,75,75,75,75,75,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,77,77,77,77,77,77,77,77,77,77,77,77,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,75,75,75,75,75,75,18,18,18,18,18,18,18,18,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,29,29,29,29,29,29,29,29,16,16,16,16,16,16,16,16,16,16,17,17,17,17,17,17,17,17,23,23,23,23,23,27,27,27,23,23,23,23,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,23,23,23,23,23,23,23,14,14,13,14,14,14,13,13,13,7,7,7,15,15,7,15,76,76,76,76,76,77,77,23,27,27,27,27,23,23,23,74,74,79,79,74,73,73,73,25,78,13,17,16,8,7,78,78,78,78,25,25,26,26,26,26,25,25,78,74,26,26,26,26,26,74,74,26,23,23,23,23,23,23,17,17,8,9,6,7,0,13,74,74,79,74,74,19,22,73,26,26,26,26,26,26,26,25,25,25,25,25,25,25,25,23,24,27,76,23,24,27,77];
+const TYPE_NAME = ['Kick','KickHrd','KickGoa','RumbKick','Sub808','Clap','Snare','Rim','HatCl','HatOp','Shaker','Crash','Ride','Tom','Conga','Cowbell','PercFM','Zap','Riser','SubBass','RollBass','Acid','Reese','Pluck','Stab','Pad','Lead','Bell','Sweep','Impact','KickDeep','KickClick','KickPsy','KickDub','Kick909','Sub808Lo','Sub808Hi','SnrTight','SnrFat','ClapLong','ClapShrt','HatTick','HatLong','ShakeLng','RimClick','TomLo','TomHi','CongaHi','CongaLo','PercHi','PercLo','ZapHi','ZapLo','Bass1','BassHi','AcidLo','AcidHi','ReeseLo','ReeseHi','SubLow','PluckLo','PluckHi','StabLo','StabHi','PadLo','PadSlow','LeadLo','LeadHi','BellLo','BellHi','SweepLng','ImpactLo','RiserLng','SynLead','SynBass','SuperSaw','EPiano','Organ','Strings','FMBass','Hoover','LeadSoft','LeadHi','SawBass','BassHi','SuperHi','SuperLo','KeysHi','KeysLo','OrganLo','OrganHi','StringLo','StringSlw','FMBassHi','HooverLo','HooverHi','Kick707','KickTight','KickBoom','KickSoft','KickPunch','KickGabba','KickFull','KickTrnc','RumbShrt','RumbHuge','Sub808Mid','Sub808Hrt','KickSnap','KickWarm','KickRave','Snr909','SnrDeep','SnrSnap','SnrRoll','SnrLoFi','SnrBig','ClapDry','ClapRoom','ClapTrap','ClapSnap','RimTick','RimWood','RimLong','HatClsd','HatMid','HatSoft','HatTrap','HatOp909','HatShort','HatSizzl','HatHalf','ShakeSht','ShakeMed','ShakeSft','CrashShr','CrashLng','Splash','RideShrt','RideBell','RideSoft','TomMid','TomFloor','TomRack','TomSynth','CongaMid','BongoHi','BongoLo','CowShort','CowLong','FMclick','FMtom','FMmetal','FMblip','ZapMid','ZapLaser','ZapDown','SweepShrt','SweepSlow','ImpactHi','ImpactBig','ImpactMid','ImpactDry','SubSoft','SubPunch','SubMid','SubLong','RollFast','RollLong','RollDeep','Roll909','Acid303','AcidSlide','AcidShort','AcidDeep','AcidRave','ReeseDark','ReeseWide','ReeseFast','ReeseHigh','SqrBass','TriBass','PulsBass','FatBass','SineBass','PluckBass','LongBass','FMBass2','FMGrowl','FMDeep','FMHard','LeadMid','LeadFast','LeadSlow','SqrLead','TriLead','PulseLead','SineLead','FatLead','TranceLd','SoloLead','LeadLow','HoovFat','HoovDeep','HoovMid','HoovSqr','PluckMid','PluckShrt','PluckLong','PluckDeep','PluckSoft','StabShrt','StabLong','StabRave','StabHoov','PadWarm','PadFast','PadHuge','PadAir','BellMid','BellLong','BellSoft','Glass','SuperSqr','SuperFat','SuperTite','SuperPls','SuperSub','EPsoft','EPbright','EPbell','EPtine','OrganSft','OrganFull','OrganStac','OrganJazz','StringSaw','StringSqr','StringPls','StrWide','Kick90s','KickDry','KickLow','KickMid','KickHigh','KickThmp','KickClik','KickLng','KickShrt','KickDub2','KickHard','KickMax','KickNu','KickAcid','808Boom','808Tight','808Long','808Mid','808Pop','808Deep','RumbTrnc','RumbDark','RumbPsy','RumbGoa','SnrDry','SnrWide','SnrTop','SnrLow','SnrCrck','SnrRoom','SnrAcst','SnrTrap','ClapTght','ClapWide','ClapHigh','ClapStk','ClapRev','RimDry','RimHi','RimBox','HatTight','HatDust','HatSnap','HatLoose','HatOpen','HatSwsh','HatSemi','HatAir','ShakTght','ShakLoos','CrashBig','CrashDry','RideTink','RideWash','TomDeep','TomHigh','TomFat','TomPunch','CongaSlp','CongaOpn','CowMute','CowRing','FMBlip','FMBell','FMClang','FMTick','ZapDive','ZapRise','ZapBeam','SweepUp','SweepDwn','ImpactHg','ImpactTg','SubSine','SubDeep','SubTight','RollDown','RollUp','RollGoa','AcidSlam','AcidLong','Acid303','ReeseSub','ReeseMid','ReeseAir','PluckHi','PluckLow','PluckHarp','PluckMute','StabHard','StabSoft','StabRave2','StabHouse','PadDark','PadChoir','PadSlow2','PadGlas','LeadAcid','LeadSwor','LeadFlut','LeadReso','BellDeep','BellTine','BellGong','SawLead','SqrLead2','PulsLead','DetSaw','HugeSaw','OctSaw','TrncSaw','FoldSaw','VowelPad','SyncLead','HollowKy','StairBas','DigiLead','HalfSin','RampBas','Sample','KckTch1','KckTch2','KckTch3','KckTch4','KckTch5','KckTch6','KckTch7','KckTch8','KckHse1','KckHse2','KckHse3','KckHse4','KckHse5','KckHse6','KckTrn1','KckTrn2','KckTrn3','KckTrn4','KckTrn5','KckTrn6','KckPsy1','KckPsy2','KckPsy3','KckPsy4','KckPsy5','KckPsy6','KckHrd1','KckHrd2','KckHrd3','KckHrd4','KckHrd5','KckHrd6','KckDub1','KckDub2','KckDub3','KckDub4','KckDub5','KckDub6','808Kck1','808Kck2','808Kck3','808Kck4','808Kck5','808Kck6','SnrTch1','SnrTch2','SnrTch3','SnrTch4','SnrTch5','SnrTch6','SnrTch7','SnrTch8','SnrBig1','SnrBig2','SnrBig3','SnrBig4','SnrBig5','SnrBig6','SnrLof1','SnrLof2','SnrLof3','SnrLof4','SnrLof5','SnrLof6','ClpDry1','ClpDry2','ClpDry3','ClpDry4','ClpDry5','ClpDry6','ClpRoom1','ClpRoom2','ClpRoom3','ClpRoom4','ClpRoom5','ClpRoom6','ClpTrp1','ClpTrp2','ClpTrp3','ClpTrp4','RimTk1','RimTk2','RimTk3','RimTk4','RimTk5','RimTk6','HatCl01','HatCl02','HatCl03','HatCl04','HatCl05','HatCl06','HatCl07','HatCl08','HatCl09','HatCl10','HatOp01','HatOp02','HatOp03','HatOp04','HatOp05','HatOp06','HatOp07','HatOp08','HatOp09','HatOp10','ShkGrv1','ShkGrv2','ShkGrv3','ShkGrv4','ShkGrv5','ShkGrv6','CrsCym1','CrsCym2','CrsCym3','CrsCym4','CrsCym5','CrsCym6','RdeCym1','RdeCym2','RdeCym3','RdeCym4','RdeCym5','RdeCym6','TomSet1','TomSet2','TomSet3','TomSet4','TomSet5','TomSet6','TomSet7','TomSet8','CngSet1','CngSet2','CngSet3','CngSet4','CngSet5','CngSet6','BngSet1','BngSet2','BngSet3','BngSet4','CowSet1','CowSet2','CowSet3','CowSet4','FMPerc1','FMPerc2','FMPerc3','FMPerc4','FMPerc5','FMPerc6','FMPerc7','FMPerc8','ZapSet1','ZapSet2','ZapSet3','ZapSet4','ZapSet5','ZapSet6','ZapSet7','ZapSet8','SweepX1','SweepX2','SweepX3','SweepX4','SweepX5','SweepX6','SweepX7','SweepX8','ImpactX1','ImpactX2','ImpactX3','ImpactX4','ImpactX5','ImpactX6','ImpactX7','ImpactX8','SubBs1','SubBs2','SubBs3','SubBs4','SubBs5','SubBs6','SubBs7','SubBs8','RollBs1','RollBs2','RollBs3','RollBs4','RollBs5','RollBs6','RollBs7','RollBs8','AcidBs01','AcidBs02','AcidBs03','AcidBs04','AcidBs05','AcidBs06','AcidBs07','AcidBs08','AcidBs09','AcidBs10','ReeseBs1','ReeseBs2','ReeseBs3','ReeseBs4','ReeseBs5','ReeseBs6','ReeseBs7','ReeseBs8','SynBs01','SynBs02','SynBs03','SynBs04','SynBs05','SynBs06','SynBs07','SynBs08','SynBs09','SynBs10','SynBs11','SynBs12','FMBs1','FMBs2','FMBs3','FMBs4','FMBs5','FMBs6','FMBs7','FMBs8','Pluck01','Pluck02','Pluck03','Pluck04','Pluck05','Pluck06','Pluck07','Pluck08','Pluck09','Pluck10','Pluck11','Pluck12','SynLd01','SynLd02','SynLd03','SynLd04','SynLd05','SynLd06','SynLd07','SynLd08','SynLd09','SynLd10','SynLd11','SynLd12','Hoov1','Hoov2','Hoov3','Hoov4','Hoov5','Hoov6','Hoov7','Hoov8','Lead1','Lead2','Lead3','Lead4','Lead5','Lead6','Lead7','Lead8','Stab01','Stab02','Stab03','Stab04','Stab05','Stab06','Stab07','Stab08','Stab09','Stab10','Stab11','Stab12','Pad01','Pad02','Pad03','Pad04','Pad05','Pad06','Pad07','Pad08','Pad09','Pad10','Pad11','Pad12','Pad13','Pad14','Bell01','Bell02','Bell03','Bell04','Bell05','Bell06','Bell07','Bell08','Bell09','Bell10','Super01','Super02','Super03','Super04','Super05','Super06','Super07','Super08','Super09','Super10','EPno1','EPno2','EPno3','EPno4','EPno5','EPno6','EPno7','EPno8','Organ1','Organ2','Organ3','Organ4','Organ5','Organ6','Strng1','Strng2','Strng3','Strng4','Strng5','Strng6','Strng7','Strng8','DeepBs1','DeepBs2','DeepBs3','DeepBs4','DeepBs5','DeepBs6','DeepBs7','DeepBs8','DubBs1','DubBs2','DubBs3','DubBs4','DubBs5','DubBs6','DubBs7','DubBs8','TechBs1','TechBs2','TechBs3','TechBs4','TechBs5','TechBs6','TechBs7','TechBs8','AcdSqr1','AcdSqr2','AcdSqr3','AcdSqr4','AcdSqr5','AcdSqr6','AcdSqr7','AcdSqr8','RvDark1','RvDark2','RvDark3','RvDark4','RvDark5','RvDark6','RvDark7','RvDark8','GoaBs1','GoaBs2','GoaBs3','GoaBs4','GoaBs5','GoaBs6','GoaBs7','GoaBs8','WobBs1','WobBs2','WobBs3','WobBs4','WobBs5','WobBs6','WobBs7','WobBs8','DnbBs1','DnbBs2','DnbBs3','DnbBs4','DnbBs5','DnbBs6','DnbBs7','DnbBs8','HseBs1','HseBs2','HseBs3','HseBs4','HseBs5','HseBs6','HseBs7','HseBs8','AcdLd1','AcdLd2','AcdLd3','AcdLd4','AcdLd5','AcdLd6','AcdLd7','AcdLd8','TrcLd1','TrcLd2','TrcLd3','TrcLd4','TrcLd5','TrcLd6','TrcLd7','TrcLd8','PsyLd1','PsyLd2','PsyLd3','PsyLd4','PsyLd5','PsyLd6','PsyLd7','PsyLd8','SqrLd1','SqrLd2','SqrLd3','SqrLd4','SqrLd5','SqrLd6','SqrLd7','SqrLd8','SftLd1','SftLd2','SftLd3','SftLd4','SftLd5','SftLd6','SftLd7','SftLd8','SyncLd1','SyncLd2','SyncLd3','SyncLd4','SyncLd5','SyncLd6','HoovRv1','HoovRv2','HoovRv3','HoovRv4','HoovRv5','HoovRv6','HoovRv7','HoovRv8','ArpPl01','ArpPl02','ArpPl03','ArpPl04','ArpPl05','ArpPl06','ArpPl07','ArpPl08','ArpPl09','ArpPl10','ArpPl11','ArpPl12','PlkHrp1','PlkHrp2','PlkHrp3','PlkHrp4','PlkHrp5','PlkHrp6','PlkHrp7','PlkHrp8','PlkMut1','PlkMut2','PlkMut3','PlkMut4','PlkMut5','PlkMut6','PlkMut7','PlkMut8','DubCrd1','DubCrd2','DubCrd3','DubCrd4','DubCrd5','DubCrd6','DubCrd7','DubCrd8','HseStb01','HseStb02','HseStb03','HseStb04','HseStb05','HseStb06','HseStb07','HseStb08','HseStb09','HseStb10','RvStb1','RvStb2','RvStb3','RvStb4','RvStb5','RvStb6','RvStb7','RvStb8','TrcChd1','TrcChd2','TrcChd3','TrcChd4','TrcChd5','TrcChd6','TrcChd7','TrcChd8','DrkPad1','DrkPad2','DrkPad3','DrkPad4','DrkPad5','DrkPad6','DrkPad7','DrkPad8','WrmPad1','WrmPad2','WrmPad3','WrmPad4','WrmPad5','WrmPad6','WrmPad7','WrmPad8','AtmPad1','AtmPad2','AtmPad3','AtmPad4','AtmPad5','AtmPad6','AtmPad7','AtmPad8','GlsPad1','GlsPad2','GlsPad3','GlsPad4','GlsPad5','GlsPad6','GlsPad7','GlsPad8','TrcSaw1','TrcSaw2','TrcSaw3','TrcSaw4','TrcSaw5','TrcSaw6','TrcSaw7','TrcSaw8','SawStk1','SawStk2','SawStk3','SawStk4','SawStk5','SawStk6','SawStk7','SawStk8','Rhodes1','Rhodes2','Rhodes3','Rhodes4','Rhodes5','Rhodes6','Rhodes7','Rhodes8','Clav1','Clav2','Clav3','Clav4','Clav5','Clav6','Clav7','Clav8','Wurli1','Wurli2','Wurli3','Wurli4','Wurli5','Wurli6','OrgJzz1','OrgJzz2','OrgJzz3','OrgJzz4','OrgJzz5','OrgJzz6','OrgRck1','OrgRck2','OrgRck3','OrgRck4','OrgRck5','OrgRck6','BellMlt1','BellMlt2','BellMlt3','BellMlt4','BellMlt5','BellMlt6','BellMlt7','BellMlt8','Chime1','Chime2','Chime3','Chime4','Chime5','Chime6','Chime7','Chime8','Gong1','Gong2','Gong3','Gong4','Gong5','Gong6','StrSlw1','StrSlw2','StrSlw3','StrSlw4','StrSlw5','StrSlw6','StrSlw7','StrSlw8','Choir1','Choir2','Choir3','Choir4','Choir5','Choir6','Choir7','Choir8','Brass1','Brass2','Brass3','Brass4','Brass5','Brass6','RiseX1','RiseX2','RiseX3','RiseX4','RiseX5','RiseX6','RiseX7','RiseX8','DownX1','DownX2','DownX3','DownX4','DownX5','DownX6','DownX7','DownX8','NoiseSw1','NoiseSw2','NoiseSw3','NoiseSw4','NoiseSw5','NoiseSw6','NoiseSw7','NoiseSw8','ImpHit1','ImpHit2','ImpHit3','ImpHit4','ImpHit5','ImpHit6','ImpHit7','ImpHit8','GlchX01','GlchX02','GlchX03','GlchX04','GlchX05','GlchX06','GlchX07','GlchX08','GlchX09','GlchX10','LaserX1','LaserX2','LaserX3','LaserX4','LaserX5','LaserX6','LaserX7','LaserX8','MarimLo','MarimMid','MarimHi','MarimHard','MarimSft','VibesMid','VibesLo','VibesFst','XyloMid','XyloHi','KalimLo','KalimHi','Celesta','GlockHi','Tubular','ChurchLo','ChurchHi','SteelLo','SteelHi','Crystal','GlassTap','BowlLo','BowlHi','GamelanL','GamelanH','PlateLo','PlateHi','HarpLo','HarpMid','HarpHi','NylonLo','NylonHi','Koto','Hollow','TimpLo','TimpHi','Taiko','TablaLo','TablaHi','Bongo','TomModLo','TomModMd','TomModHi','WoodLo','WoodHi','Clave','MetalHit','Anvil','TinCan','PipeHit','EpTine','EpWarm','EpBright','EpSoft','FmClav','FmOrgan','FmOrgan2','FmMarim','FmVibe','FmBell','FmChime','FmGlass','FmPluck','FmHarp','FmKalim','FmSlap','FmSub','FmGrowl','FmWobble','FmReedBs','FmBrass','FmLead','FmSaw','FmPad','FmChoir','FmTom','FmZap','FmMetal','FmHat','FmClick','ChoirAh','ChoirOh','ChoirEe','ChoirOo','MaleAh','FemaleAh','VoxWow','VoxYoi','Talkbox','Robot','Whisper','GhostCh','Gospel','VoxBass','Pulse12','Pulse25','Pulse50','PwmSweep','Crunch4','ChipBass','ChipBs12','ChipSiren','ArpMaj','ArpMin','ArpOct','ArpPower','ArpFifth','Coin','PowerUp','ChipLaser','NoiseHat','NoiseOpen','NoiseSnr','NoiseMet','ChipKick','ChipTom','MBassDp','MBassGr','MBassWb','MBassCl','MBassSn','MBassSb','MBassRs','MLeadBr','MLeadSw','MLeadGl','MLeadSt','MLeadAr','MLeadHm','MLeadDk','MLeadAc','MPadDrk','MPadAir','MPadGls','MPadSwl','MPadWrm','MPadEvo','MPadOrg','MPadDst','MKeyPlk','MKeyStb','MKeyBel','MKeyWrm','MKeyArp','MKeyTr','MKeyGlw','MKeyOrg','ModINIT','FMINIT','VoxINIT','ChpINIT','MrpINIT'];
+const BASE_T = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,0,1,2,3,0,4,4,6,6,5,5,8,9,10,7,13,13,14,14,16,16,17,17,20,20,21,21,22,22,19,23,23,24,24,25,25,26,26,27,27,28,29,18,73,74,75,76,77,78,79,80,73,73,74,74,75,75,76,76,77,77,78,78,79,80,80,0,0,0,0,1,1,2,2,3,3,4,4,0,0,2,6,6,6,6,6,6,5,5,5,5,7,7,7,8,8,8,8,9,9,9,9,10,10,10,11,11,11,12,12,12,13,13,13,13,14,14,14,15,15,16,16,16,16,17,17,17,28,28,29,29,29,29,19,19,19,19,20,20,20,20,21,21,21,21,21,22,22,22,22,74,74,74,74,74,74,74,79,79,79,79,26,26,26,73,73,73,73,73,73,73,73,80,80,80,80,23,23,23,23,23,24,24,24,24,25,25,25,25,27,27,27,27,75,75,75,75,75,76,76,76,76,77,77,77,77,78,78,78,78,0,0,0,0,0,1,1,2,2,0,1,1,2,0,4,4,4,4,4,4,3,3,3,3,6,6,6,6,6,6,6,6,5,5,5,5,5,7,7,7,8,8,8,8,9,9,9,9,10,10,11,11,12,12,13,13,13,13,14,14,15,15,16,16,16,16,17,17,17,28,28,29,29,19,19,19,20,20,20,21,21,21,22,22,22,23,23,23,23,24,24,24,24,25,25,25,25,26,26,26,26,27,27,27,73,73,73,75,75,75,75,74,78,73,76,74,73,77,74,359,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,3,3,3,3,3,3,1,1,1,1,1,1,0,0,0,0,0,0,4,4,4,4,4,4,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,7,7,7,7,7,7,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9,9,9,10,10,10,10,10,10,11,11,11,11,11,11,12,12,12,12,12,12,13,13,13,13,13,13,13,13,14,14,14,14,14,14,14,14,14,14,15,15,15,15,16,16,16,16,16,16,16,16,17,17,17,17,17,17,17,17,28,28,28,28,28,28,28,28,29,29,29,29,29,29,29,29,19,19,19,19,19,19,19,19,20,20,20,20,20,20,20,20,21,21,21,21,21,21,21,21,21,21,22,22,22,22,22,22,22,22,74,74,74,74,74,74,74,74,74,74,74,74,79,79,79,79,79,79,79,79,23,23,23,23,23,23,23,23,23,23,23,23,73,73,73,73,73,73,73,73,73,73,73,73,80,80,80,80,80,80,80,80,26,26,26,26,26,26,26,26,24,24,24,24,24,24,24,24,24,24,24,24,25,25,25,25,25,25,25,25,25,25,25,25,25,25,27,27,27,27,27,27,27,27,27,27,75,75,75,75,75,75,75,75,75,75,76,76,76,76,76,76,76,76,77,77,77,77,77,77,78,78,78,78,78,78,78,78,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,74,74,74,74,74,74,74,74,21,21,21,21,21,21,21,21,22,22,22,22,22,22,22,22,20,20,20,20,20,20,20,20,79,79,79,79,79,79,79,79,74,74,74,74,74,74,74,74,74,74,74,74,74,74,74,74,26,26,26,26,26,26,26,26,73,73,73,73,73,73,73,73,26,26,26,26,26,26,26,26,73,73,73,73,73,73,73,73,73,73,73,73,73,73,73,73,26,26,26,26,26,26,80,80,80,80,80,80,80,80,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,75,75,75,75,75,75,75,75,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,75,75,75,75,75,75,75,75,75,75,75,75,75,75,75,75,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,76,77,77,77,77,77,77,77,77,77,77,77,77,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,75,75,75,75,75,75,18,18,18,18,18,18,18,18,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,29,29,29,29,29,29,29,29,16,16,16,16,16,16,16,16,16,16,17,17,17,17,17,17,17,17,23,23,23,23,23,27,27,27,23,23,23,23,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,23,23,23,23,23,23,23,14,14,13,14,14,14,13,13,13,7,7,7,15,15,7,15,76,76,76,76,76,77,77,23,27,27,27,27,23,23,23,74,74,79,79,74,73,73,73,25,78,13,17,16,8,7,78,78,78,78,25,25,26,26,26,26,25,25,78,74,26,26,26,26,26,74,74,26,23,23,23,23,23,23,17,17,8,9,6,7,0,13,74,74,79,74,74,19,22,73,26,26,26,26,26,26,26,25,25,25,25,25,25,25,25,23,24,27,76,23,24,27,77,23,73,78,26,26];
 const ENUMS = {
     type: TYPE_NAME,
     wave: ['Auto','Saw','Square','Tri','Sine','Pulse','Pulse12','RampDn','HalfSin','Organ','Hollow','Fold','Stair','Digi','Vowel','Sync'],
@@ -59,16 +59,18 @@ const ENUMS = {
     scale: ['Minor','Phryg','Major'],
     dly_time: ['1/8','3/16','1/4','1/16'],
 };
-const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh'];
-const PDEF = { 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5 };
+const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','e0','e1','e2','e3','e4','e5','e6','e7','e8','e9','aoct'];
+const EK0 = 61, EKEY = /^e\d$/;                        /* e0..e9: the 10 values of a NEW ENGINE sound, 0..1, -1 = the preset's own value (mirrors the DSP) */
+const PDEF = { 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 61: -1, 62: -1, 63: -1, 64: -1, 65: -1, 66: -1, 67: -1, 68: -1, 69: -1, 70: -1 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
 const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp'];
 const PI = {}; PK.forEach((k, i) => PI[k] = i);
 const MI = {}; MK.forEach((k, i) => MI[k] = i);
 const SCALE7 = [[0,2,3,5,7,8,10],[0,1,3,5,7,8,10],[0,2,4,5,7,9,11]];
 const PROB_PCT = Array.from({ length: 32 }, (_, i) => Math.round(100 - i * 100 / 32));   /* 32 levels */
-const NUD_MAX = 28;                                                       /* nudge 0..28 = 0..70 % of a step in 2.5 % steps */
-function nudTxt(n) { return '+' + (n * 2.5).toFixed(n % 2 ? 1 : 0) + '%'; }
+const NUD_MAX = 28;                                                       /* nudge -28..+28 = 70 % of a step earlier (-) or later (+) in 2.5 % steps */
+function nudTxt(n) { return (n < 0 ? '-' : '+') + (Math.abs(n) * 2.5).toFixed(Math.abs(n) % 2 ? 1 : 0) + '%'; }
+function nudPos(n) { return (n + NUD_MAX) / (2 * NUD_MAX); }
 
 /* default sounds for the 16 tracks: type, tune, decay, arp, rate, dly, rvb (mirrors the DSP) */
 const LAYOUT = [
@@ -89,7 +91,7 @@ const TAB_SYM = { 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3
 const TAB_NAME = { 43: 'SOUND EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX SENDS', 39: 'FX TIMES', 27: 'MIDI FX', 36: 'EUCLID' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 27 || v === 36; }
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359; return [1, 2, 43, 3, 38, 39, 36, 27, (!kind[sel] && !smp) ? 9 : 28]; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359; return [1, (!kind[sel] && !smp) ? 9 : 28, 2, 3, 38, 43, 36, 27]; }      /* SOUND, SYNTH/SAMPLE, FILTER, MOD, FX, EQ, EUCLID, MIDI FX */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -100,6 +102,7 @@ function catOf(t) {
     if (b === 26 || b === 73 || b === 80 || b === 23) return 6;
     return 7;
 }
+function catListA(c) { return catList(c).filter(t => t < NX0); }                     /* the classic sounds of a category (the new engines have their own lists) */
 function catList(c) { const l = []; for (let t = 0; t < TYPE_NAME.length; t++) if (catOf(t) === c) l.push(t); return l; }
 let brw = null, brwTicks = 0;
 function drawBrowse() {                                    /* preset list: 5 rows, current in the middle */
@@ -120,19 +123,24 @@ function sampleList(d) {                                   /* sample file knob: 
 }
 function browseSound(dl) {                                 /* jog: presets inside the category of the track's sound (Shift = next category) */
     const L = ln(), cur = Math.round(pads[L][0]);
-    let c = catOf(cur), l = catList(c), i = l.indexOf(cur), nt;
+    let c = catOf(cur), l = catListA(c), i = l.indexOf(cur), nt;
     if (shiftHeld) { fbOpen(); return; }
+    else if (engOfType(cur) > 0) {                          /* a NEW ENGINES sound: the presets of its own engine, INIT first */
+        const e = engOfType(cur); l = engList(e); i = Math.max(0, l.indexOf(cur)); const ni = clamp(i + (dl > 0 ? 1 : -1), 0, l.length - 1);
+        nt = l[ni]; brw = { c: 0, l: l, i: ni, title: engName(e) }; brwTicks = 55; needsRedraw = true;
+        if (nt !== cur) applyType(L, nt);
+        return;
+    }
     else if (favOnly && favs.length) { l = favs.slice().sort((a, b) => a - b); const at = l.indexOf(cur); i = at >= 0 ? clamp(at + (dl > 0 ? 1 : -1), 0, l.length - 1) : (dl > 0 ? l.findIndex(x => x > cur) : l.length - 1 - l.slice().reverse().findIndex(x => x < cur)); if (i < 0 || i >= l.length) i = dl > 0 ? l.length - 1 : 0; nt = l[i]; c = catOf(nt); }
     else if (browseAll) { l = TYPE_NAME.map((x, k) => k); i = clamp(cur + (dl > 0 ? 1 : -1), 0, l.length - 1); nt = i; c = catOf(nt); }
     else {                                                  /* one long list: past the end of a category the next one continues */
         let ni = i + (dl > 0 ? 1 : -1);
-        if (ni < 0 && c > 0) { c--; l = catList(c); ni = l.length - 1; } else if (ni >= l.length && c < 7) { c++; l = catList(c); ni = 0; }
+        if (ni < 0 && c > 0) { c--; l = catListA(c); ni = l.length - 1; } else if (ni >= l.length && c < 7) { c++; l = catListA(c); ni = 0; }
         i = clamp(ni, 0, l.length - 1); nt = l[i];
     }
     brw = { c: c, l: l, i: Math.max(0, l.indexOf(nt)) }; brwTicks = 55; needsRedraw = true;
     if (nt === cur) return;
-    pads[L][0] = nt; if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); storeCs(L);
-    markEdited(); needsRedraw = true;
+    applyType(L, nt); needsRedraw = true;
 }
 function jogFirst(dl) {
     const items = VIEW_ITEMS[view]; if (!items || !items.length) return;
@@ -149,7 +157,7 @@ const VIEW_ITEMS = {
     1: [['type','Type'],['tune','Tune'],['decay','Decay','Dcy'],['tone','Tone'],['drive','Drive','Drv'],['pan','Pan'],['poly','Voices','Poly'],['vol','Vol']],
     2: [['cut','LPCut','LPF'],['res','Reso'],['locut','HPCut','HPF'],['fenv','FltEnv','FEnv'],['fdec','FltDecay','FDec'],['fkey','KeyTrack','FKey'],['fmode','Mode'],['crush','Crush','Crsh']],
     3: [['ring','Ring'],['pump','Pump'],['wob','Wobble','Wob'],['arp','Arp'],['rate','Rate'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc']],       /* synth tracks; drum tracks swap Arp / Rate for the kick rumble (viewItemsFix) */
-    38: [['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['chor','Chorus','Cho'],['phas','Phaser','Pha'],['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth']],
+    38: [['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['chor','Chorus','Cho'],['phas','Phaser','Pha'],['dtime','DlyTime','DTim'],['rsize','RvbSize','RSiz'],['dfb','DlyFdbk','DFb']],
     39: [['dtime','DlyTime','DTim'],['dfb','DlyFdbk','DFb'],['rsize','RvbSize','RSiz'],['rdark','RvbDark','RDrk'],['chrt','ChoRate','CRt'],['chdp','ChoDepth','CDp'],['phrt','PhaRate','PRt'],['phfb','PhaFdbk','PFb']],
     41: [['m_eql','Low'],['m_eqm','Mid'],['m_eqh','High'],['m_lim','Limiter','Lim'],['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_comp','Comp']],
     4: [['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_wid','Width','Wid'],['m_comp','Comp'],['dly_ret','DlyRet'],['rvb_ret','RvbRet'],['m_lim','Limiter','Lim']],
@@ -159,9 +167,9 @@ const VIEW_ITEMS = {
     19: [['phas','Mix'],['phrt','Rate'],['phfb','Fdbk'],['chor','Chorus','Cho'],['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['vol','Vol'],['pan','Pan']],
     8: [['browse','Jog'],['fullvel','FullVel'],['rqoff','RecSnap'],['rdens','RndDens','Dens'],['rvar','RndVel','RVel'],['rkey','RndKey','RKey'],['rrat','RndRatch','RRat'],['m_met','Metro','Met']],
     10: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
-    15: [['m_qnt','Launch'],['rqoff','RecSnap'],['qscale','ScaleQ'],['key','Key'],['scale','Scale'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum']],
+    15: [['m_qnt','ClipStart','Start'],['rqoff','RecTiming','RecT'],['qscale','ToScale','2Scl'],['key','Key'],['scale','Scale']],       /* QUANT: only what quantizes, nothing else */
     24: [['xfx','Effect'],['xmix','Amount'],['xrt','Rate'],['xdp','Depth'],['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['chor','Chorus','Cho'],['phas','Phaser','Pha']],
-    27: [['mfx','MIDI FX','Effect'],['mamt','Amount'],['mprm','Param'],['arp','Arp'],['rate','ArpRate','Rate'],['tsw','Swing+','Swg+'],['vol','Vol'],['pan','Pan']],
+    27: [['mfx','MIDI FX','Effect'],['mamt','Amount'],['mprm','Param'],['arp','Arp'],['aoct','ArpOct','Oct'],['rate','ArpRate','Rate']],
     25: [['key','Key'],['scale','Scale'],['qscale','ScaleQ'],['m_qnt','Launch','Lnch'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met']],
     26: [['rrate','Rate'],['fullvel','FullVel'],['rqoff','RecSnap'],['qscale','ScaleQ'],['arp','Arp'],['rate','ArpRate','ARate'],['bpm','BPM'],['swing','Swing','Swg']],
     22: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ']],
@@ -183,8 +191,8 @@ const VIEW_ITEMS = {
 /* home / fx / master hubs: tiles you pick with the jogwheel (turn = choose, click = open, Back = up one level) */
 const HUBS = {
     16: ['HOME', [['SOUND', 1], ['TRACK', 21], ['MIX', 20], ['BUS', 4], ['EDIT', -1], ['MORE', 18]]],
-    17: ['FX', [['DELAY', 5], ['REVERB', 6], ['CHORUS', 14], ['PHASER', 19], ['MULTI', 24], ['MIDI', 27], ['DUCK', 30]]],
-    18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['SCOPE', 42]]],
+    17: ['FX', [['DELAY', 5], ['REVERB', 6], ['CHORUS', 14], ['PHASER', 19], ['DUCK', 30]]],
+    18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['SCOPE', 42], ['LIVE', -2]]],
 };
 let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
 
@@ -251,14 +259,14 @@ function defaultPads() {
 function hex2(n) { return (n < 16 ? '0' : '') + n.toString(16); }
 function encStep(st) {                                    /* 10 hex chars: on+vel, prob, semi+64, ratchet|gate<<2|cond<<5, nudge */
     const x = ((st[4] | 0) & 3) | (((st[5] | 0) & 7) << 2) | (((st[7] | 0) & 7) << 5);
-    return hex2((st[0] ? 0x80 : 0) | (st[1] & 0x7F)) + hex2(0x80 | (clamp(st[3] | 0, 0, 31) & 0x1F)) + hex2(clamp(st[2], -64, 63) + 64) + hex2(x) + hex2(0x40 | (clamp(st[6] | 0, 0, NUD_MAX) & 0x3F)) + hex2((st[8] | 0) & 0x7F);
+    return hex2((st[0] ? 0x80 : 0) | (st[1] & 0x7F)) + hex2(0x80 | (clamp(st[3] | 0, 0, 31) & 0x1F)) + hex2(clamp(st[2], -64, 63) + 64) + hex2(x) + hex2(0x40 | (clamp(st[6] | 0, -NUD_MAX, NUD_MAX) & 0x3F)) + hex2((st[8] | 0) & 0x7F);
 }
 function decProb(b) { return (b & 0x80) ? (b & 0x1F) : ((((b & 7) << 1) | ((b >> 3) & 1)) << 1); }
 function decStep(h) {
     const a = parseInt(h.substr(0, 2), 16), b = parseInt(h.substr(2, 2), 16), c = parseInt(h.substr(4, 2), 16);
     if (h.length >= 10) {
         const x = parseInt(h.substr(6, 2), 16) || 0, n = parseInt(h.substr(8, 2), 16) || 0;
-        const r = [(a & 0x80) ? 1 : 0, (a & 0x7F) || 100, (c || 0) - 64, decProb(b), x & 3, (x >> 2) & 7, (n & 0x40) ? (n & 0x3F) : (n & 7) * 4, (x >> 5) & 7];
+        const r = [(a & 0x80) ? 1 : 0, (a & 0x7F) || 100, (c || 0) - 64, decProb(b), x & 3, (x >> 2) & 7, (n & 0x40) ? ((n & 0x3F) >= 32 ? (n & 0x3F) - 64 : (n & 0x3F)) : (n & 7) * 4, (x >> 5) & 7];
         if (h.length >= 12) { const lk = (parseInt(h.substr(10, 2), 16) || 0) & 0x7F; if (lk) r.push(lk); }
         return r;
     }
@@ -288,7 +296,7 @@ function enqueue(uk, dk, val) {
 function flushPad(l) {                                    /* a pad that is hit must already have its new sound: send its waiting sound data first */
     for (let i = 0; i < queue.length; i++) if (queue[i][0] === 'setpad' + l) { const q = queue.splice(i, 1)[0]; dspSet(q[1], q[2]); break; }
 }
-function padStr(v) { return v.map((x, k) => (k === 0 || k === 9 || k === 10 || k === 19) ? String(Math.round(x)) : x.toFixed(3)).join(','); }
+function padStr(v) { return v.map((x, k) => (k === 0 || k === 9 || k === 10 || k === 19) ? String(Math.round(x)) : (k >= EK0 ? x.toFixed(5) : x.toFixed(3))).join(','); }
 /* every clip keeps its own sound: csnd[clip][track] = full pad row (volume + pan stay track-wide) */
 let csnd = null;
 function ensureCs() {
@@ -375,7 +383,7 @@ function loadState() {
         favs = Array.isArray(o.fv) ? o.fv.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length) : []; favOnly = !!o.fo; if (Array.isArray(o.ui)) { splashOn = o.ui[0] !== 0; idleOn = o.ui[1] === 1; dispInv = o.ui[2] === 1; repAllowed = o.ui[3] !== 0; if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0; } recent = Array.isArray(o.rc) ? o.rc.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length).slice(0, 12) : [];
         if (Array.isArray(o.rn) && o.rn.length === 4) { rndDens = clamp(Number(o.rn[0]) || 0.28, 0.02, 0.9); rndVar = clamp(Number(o.rn[1]) || 0.5, 0, 1); rndKey = o.rn[2] ? 1 : 0; rndRat = clamp(Number(o.rn[3]) || 0, 0, 1); }
         if (typeof o.bp === 'string' && o.bp.charAt(0) === '/' && o.bp.length < 200) broPath = o.bp;
-        if (Array.isArray(o.ep)) for (let i = 0; i < NLANE && i < o.ep.length; i++) { const q = o.ep[i] || {}, d = euDef(); euP[i] = { keep: q.keep ? 1 : 0, rev: q.rev ? 1 : 0, inv: q.inv ? 1 : 0, acc: clamp(q.acc | 0, 0, 60), hum: clamp(q.hum | 0, 0, 40), mut: clamp(q.mut | 0, 0, 100), nud: clamp((q.nud | 0) * (o.pf === 2 ? 1 : 4), 0, NUD_MAX), prb: clamp((q.prb | 0) * (o.pf === 2 ? 1 : (o.pf === 1 ? 2 : 4)), 0, 31), gat: clamp(q.gat | 0, 0, 6), rat: clamp(q.rat | 0, 0, 3), cond: clamp(q.cond | 0, 0, 7), seed: clamp(q.seed | 0, 1, 9972) || d.seed }; }
+        if (Array.isArray(o.ep)) for (let i = 0; i < NLANE && i < o.ep.length; i++) { const q = o.ep[i] || {}, d = euDef(); euP[i] = { keep: q.keep ? 1 : 0, rev: q.rev ? 1 : 0, inv: q.inv ? 1 : 0, acc: clamp(q.acc | 0, 0, 60), hum: clamp(q.hum | 0, 0, 40), mut: clamp(q.mut | 0, 0, 100), nud: clamp((q.nud | 0) * (o.pf === 2 ? 1 : 4), -NUD_MAX, NUD_MAX), prb: clamp((q.prb | 0) * (o.pf === 2 ? 1 : (o.pf === 1 ? 2 : 4)), 0, 31), gat: clamp(q.gat | 0, 0, 6), rat: clamp(q.rat | 0, 0, 3), cond: clamp(q.cond | 0, 0, 7), seed: clamp(q.seed | 0, 1, 9972) || d.seed }; }
         if (o.au && typeof o.au === 'object') { AUTO = {}; for (const id in o.au) if (/^\d+\|\d+\|[a-z]+$/.test(id) && o.au[id] && typeof o.au[id] === 'object') { const m = {}; for (const k in o.au[id]) { const v = Number(o.au[id][k]); if (isFinite(v)) m[k] = clamp(v, 0, 12); } AUTO[id] = m; } }
         if (o.sg && Array.isArray(o.sg.l) && o.sg.l.length >= 1 && o.sg.l.length <= 32) { songList = o.sg.l.map(songNorm); songOn = !!o.sg.on; songLoop = o.sg.lp === undefined ? true : !!o.sg.lp; songSlot = 0; }
         if (Array.isArray(o.sm) && o.sm.length >= 1 && o.sm.length <= 16) { slm = o.sm.map(x => clamp(Number(x) || 0, 0, 0.998)).sort((a, b) => a - b); slN = slm.length; slSel = 0; }
@@ -418,6 +426,8 @@ function markEdited() { needsRedraw = true; dirty = true; ticksSinceEdit = 0; he
 /* ---- value helpers ---- */
 function scopeOf(key) { return PI[key] !== undefined ? 'pad' : (MI[key] !== undefined ? 'master' : 'sys'); }
 function getVal(scope, key) {
+    if (key === 'eng') return engLane(ln()) / 5;
+    if (EKEY.test(key)) return eNorm(keyLane(key), +key.slice(1));
     if (scope === 'sys') { if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return topModes[sel] / 2; if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
         if (key === 'kslot') return kitSlot / (15 + FACTORY.length); if (key === 'ksave' || key === 'kload' || key === 'psave' || key === 'pload') return 0; if (key === 'kinf') return kitInfo() === 'EMPTY' ? 0 : 1;
         if (key === 'rdens') return rndDens; if (key === 'rvar') return rndVar; if (key === 'favo') return favOnly ? 1 : 0; if (key === 'kprev') return 0; if (key === 'rkey') return rndKey; if (key === 'rrat') return rndRat; if (key === 'tcol') return (tcolO[sel] || 0) / 26; if (key === 'pnew' || key === 'prst') return 0; if (key === 'pslot') return projSlot / 31; if (key === 'pinf') return projUsed[projSlot] ? 1 : 0;
@@ -427,6 +437,9 @@ function getVal(scope, key) {
     return scope === 'pad' ? pads[keyLane(key)][PI[key]] : master[MI[key]];
 }
 function fmtVal(key, v) {
+    if (key === 'eng') return engName(engLane(ln()));
+    if (EKEY.test(key)) return eFmt(keyLane(key), +key.slice(1));
+    if (key === 'att' && view === 9 && engLane(ln()) > 0) return v < 0.01 ? 'PRESET' : String(Math.round(v * 100));
     if (key === 'bpm') return String(Math.round(40 + v * 200));
     if (key === 'swing') return String(50 + Math.round(v * 25));
     if (key === 'fullvel') return v > 0.5 ? 'ON' : 'OFF';
@@ -473,6 +486,7 @@ function fmtVal(key, v) {
     if (key === 'smp') { const i = Math.round(v * 63); return smpInfo[i] && smpInfo[i][0] ? String(i + 1) : '--'; }
     if (key === 'sst' || key === 'sen') return String(Math.round(v * 100));
     if (key === 'smd') return ['ONE', 'REV', 'LOOP'][Math.min(2, Math.round(v * 2))];
+    if (key === 'aoct') return String(1 + Math.min(3, Math.round(v * 3)));
     if (key === 'fmode') return ['LP', 'BP', 'HP'][Math.min(2, Math.round(v * 2))];
     if (key === 'lay') return kind[sel] ? LAYD_NAME[layD] : LAYS_NAME[layS];
     if (key === 'dsel') return kind[sel] ? String(Math.round(v * 15) + 1) : '-';
@@ -516,6 +530,7 @@ function showToast(label, text, f) {
 }
 
 function editParam(scope, key, delta, idx) {
+    if (key === 'eng') return engEdit(delta, idx);
     if (scope === 'sys') {
         if (key === 'bpm' || key === 'swing') pSnap('sys', 0, key);
         if (key === 'bpm') { bpm = clamp(bpm + delta * (shiftHeld ? 2 : 1), 40, 240); enqueue('bpm', 'bpm', String(bpm)); }
@@ -578,8 +593,11 @@ function editParam(scope, key, delta, idx) {
         return { v: getVal('sys', key) };
     }
     if (key === 'smp') { selectSample(delta > 0 ? 1 : -1, true); return { v: getVal(scope, key) }; }
+    if (key === 'aoct') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'aoct', clamp(Math.round(pads[ln()][PI.aoct] * 3) + d, 0, 3) / 3); return { v: pads[ln()][PI.aoct] }; }
     if (key === 'smd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'smd', clamp(Math.round(pads[ln()][PI.smd] * 2) + d, 0, 2) / 2); return { v: pads[ln()][PI.smd] }; }
     if (key === 'fmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'fmode', clamp(Math.round(pads[ln()][PI.fmode] * 2) + d, 0, 2) / 2); return { v: pads[ln()][PI.fmode] }; }
+    if (scope === 'pad' && EKEY.test(key)) return editE(keyLane(key), +key.slice(1), delta, idx);
+    if (scope === 'pad' && key === 'type' && !kind[sel] && Math.round(pads[ln()][0]) !== 359) return engPresetKnob(delta, idx);
     let v = getVal(scope, key);
     if (ENUMS[key]) {
         acc[idx] += delta;
@@ -589,7 +607,7 @@ function editParam(scope, key, delta, idx) {
     if (scope === 'pad') {
         const L = keyLane(key);
         if (deleteHeld) { autoClear(L, key); return { v: pads[L][PI[key]] }; }
-        pSnap('pad', L, key); pads[L][PI[key]] = v;
+        pSnap('pad', L, key); pads[L][PI[key]] = v; if (key === 'type') resetE(L);
         if (recArmed && playing && PI[key] !== 0) autoRec(L, key, v);
         if (liveOk(sel) || key === 'vol' || key === 'pan') enqueue('p' + L + key, 'p' + p2(L + 1) + '_' + key, ENUMS[key] ? String(Math.round(v)) : v.toFixed(3));
         if (key !== 'vol' && key !== 'pan' && true) storeCs(L);
@@ -665,6 +683,7 @@ let repAllowed = true;                                     /* off: Note Repeat i
 function nextTopMode(cur, d) { let m = cur; for (let i = 0; i < 3; i++) { m = (m + d + 3) % 3; if (m !== 1 || repAllowed) return m; } return cur === 1 ? 0 : cur; }
 function cycleTop(d) {
     topModes[sel] = nextTopMode(topModes[sel], d);
+    if (topModes[sel] === 2 && fxLive) fxSetLive(false);          /* the step pads need the whole grid */
     showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[topModes[sel]], topModes[sel] / 2); markEdited(); needsRedraw = true;
 }
 let layS = 0, layD = 0;                                    /* pad layouts: synth 0 MOVE (in key, rows 3 degrees apart) 1 SEQ 2 OCT 3 CHR (chromatic, rows a fourth apart); drum 0 sounds left 1 sounds right */
@@ -705,6 +724,7 @@ function clipTrig(t, c) {                                  /* does the playing c
 function pulseLow() { const p = playing ? (((gs - 1) % 4) + 4) % 4 : Math.floor(Date.now() / 250) & 3; return p >= 2; }      /* beat-locked blink phase of the pulsing pads */
 function padLedBase(i) {                                 /* LED colour of pad i (0..31) of the selected track */
     const dr = kind[sel], m = topModes[sel], tc = trkCol(sel), cc = i & 7, rr = i >> 3;
+    { const fk = fxIdxOf(i); if (fk >= 0) return fxHeld[fk] ? 120 : fxColor(fk); }       /* FX pads: own colours, never the note colour */
     if (dr && soundArea(cc)) {                                   /* drum track, left block: the 16 sounds (white = selected, colour = sound family) */
         const k = rr * 4 + (cc & 3);
         if (lmutes[laneOf(sel, k)]) return k === dsel[sel] ? 124 : dimCol(trackColor(pads[laneOf(sel, k)][0]));                   /* muted sound: dark (faint if selected) */
@@ -746,12 +766,16 @@ function padLed(i) {
     if (view === 31) return songLed(i);
     const c = padLedBase(i);
     if (askKind >= 0 || view === 7 || view === 20) return c;
+    if (fxIdxOf(i) >= 0) return c;
     const dr = kind[sel], m = topModes[sel], cc = i & 7, rr = i >> 3;
-    if (dr && soundArea(cc)) {                                       /* drum sounds: used = bright, empty = dim, hit right now = flash */
-        const k = rr * 4 + (cc & 3);
-        if (lmutes[laneOf(sel, k)]) return c;
-        if (k === dsel[sel]) return seqUse.lplay[k] ? trackColor(pads[laneOf(sel, k)][0]) : c;      /* selected = white, pulses in its colour on a hit */
-        return seqUse.lplay[k] ? 126 : c;                        /* steady family colour, pulse (white) only while a note triggers */                            /* every sound pad has the track colour; sequenced ones pulse */
+    if (dr && soundArea(cc)) {                                       /* drum sounds: used = bright, empty = dim, hit = white flash that stays for a moment (easy to see) */
+        const k = rr * 4 + (cc & 3), l = laneOf(sel, k);
+        if (lmutes[l]) return c;
+        const now = Date.now(), hit = seqUse.lplay[k] ? (hitUntil[l] = now + HIT_MS, true) : (hitUntil[l] || 0) > now;
+        const fam = trackColor(pads[l][0]);
+        if (k === dsel[sel]) return hit ? fam : c;                  /* selected = white, flashes in its colour on a hit */
+        if (hit) return 126;
+        return seqUse.lanes[k] ? c : dimCol(fam);                  /* sounds with steps: full colour, empty ones: dark */
     }
     if (m === 2 || (dr && m === 1)) return c;
     const j = dr ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8), sm = notePadSemi(j) + oct();
@@ -768,12 +792,12 @@ const HELP = {
     0: ['Shift+Jog = Sound-Ordner. Step halten + Knoepfe 1-8 = Lock. Shift+Menu = Hilfe'],
     1: ['Knoepfe 1-8 = Klang', 'Jog: Reiter wechseln', 'Shift+Jog: Presets'],
     2: ['Filter: LP, HP, Crush', 'Jog: Reiter wechseln', 'Jog klick: letzter Reiter'],
-    3: ['Mod: Ring, Pump, Arp', 'Duck = Sidechain Tiefe', 'Jog: Reiter wechseln'],
+    3: ['Mod: Ring, Pump, Wobble', 'Duck = Sidechain Tiefe', 'Jog: Reiter wechseln'],
     9: ['Synth: Wave, Sub, Hue', 'Knoepfe 1-7', 'Jog: Reiter wechseln'],
     28: ['Sample: Datei=Knopf 1. Shift+Jog klick: Browser. Dort Shift+Klick auf Ordner = Kit aus 16 WAVs. Shift+Pfeil: Sample/Slice/ENV. Jog klick: letzter Reiter. Slice teilt auf 16 Pads.'],
     27: ['MIDI-Effekt waehlen', 'Amount + Param', 'Jog: Reiter wechseln'],
     36: ['Euklid: 2 Seiten', 'Shift+Pfeil: Seite', 'Jog klick: letzter Reiter', 'Aendert das Pattern'],
-    38: ['Sends: Delay, Reverb', 'Chorus, Phaser, Insert', 'FX 2 = Zeiten'],
+    38: ['Sends: Delay, Reverb', 'Chorus, Phaser', 'Jog klick = FX-Kacheln'],
     39: ['Zeiten der Effekte', 'Delay, Reverb, Chorus', 'Phaser'],
     16: ['SOUND = Track-Seiten', 'EDIT = Aktionen', 'MORE = Projekt, Song'],
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
@@ -1072,9 +1096,10 @@ function closeSym() {
     acc.fill(0); needsRedraw = true;
 }
 function anySymLit() { return symOpen >= 0 && symLit(symOpen); }
-const SHIFT_OK = { 0: 1, 1: 1, 2: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 14: 1, 15: 1 };      /* same symbols as the Move itself; steps 4, 12, 13, 14 have no function and stay dark */
+const SHIFT_OK = { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 14: 1, 15: 1 };      /* same symbols as the Move itself; steps 4, 12, 13, 14 have no function and stay dark */
 function shiftStep(i) {
     if (!SHIFT_OK[i]) return;                                       /* only symbols with a real function light up */
+    if (i === 3) { fxSetLive(!fxLive); return; }                    /* step 4: LIVE FX pads on / off (own symbol, lit while on) */
     if (i === 7) { const m = topModes[sel]; cycleTop(m === 0 ? 1 : (m === 1 ? -1 : -2)); return; }   /* step 8: note repeat on/off (PITCH <> REPEAT; from STEPS back to PITCH); STEPS via the track button or the menu */
     if (i === 5) { const v = cycleMaster('m_met', [0, 0.6]); showToast('METRONOME', v > 0 ? 'ON' : 'OFF', v); return; }
     if (i === 9) { fullVel = !fullVel; showToast('FULL VELOCITY', fullVel ? 'ON' : 'OFF', fullVel ? 1 : 0); markEdited(); return; }
@@ -1096,6 +1121,7 @@ const SYM_VIEW_SET = {}; Object.keys(SYM_VIEW).forEach(k => SYM_VIEW_SET[SYM_VIE
 function subPageNav(dir) {
     if (menuOpen || padMenu) return false;
     if (view === 20) { mixMode = (mixMode + dir + 3) % 3; needsRedraw = true; showToast('MIX', ['VOLUME', 'DELAY SEND', 'REVERB SEND'][mixMode], mixMode / 2); return true; }
+    if (view === 9 && synPages(ln()) > 1) { const n = synPages(ln()); synPage = (clamp(synPage, 0, n - 1) + dir + n) % n; acc.fill(0); needsRedraw = true; showToast(engName(engLane(ln())), 'PAGE ' + (synPage + 1) + '/' + n, synPage / (n - 1)); return true; }
     if (view === 36) { euSetPage(euPage + dir); showToast('EUCLID ' + EU_PGNAME[euPage], (euPage + 1) + '/2', euPage); return true; }
     if (view === 28 && !broOpen) { smpPage = (smpPage + dir + 3) % 3; acc.fill(0); showToast(['SAMPLE', 'SLICE', 'ENVELOPE'][smpPage], ['START / END', 'MARKERS', 'GAIN / ATK / REL'][smpPage], smpPage / 2); needsRedraw = true; return true; }
     if (view === 42) { scopeMode = (scopeMode + dir + 3) % 3; needsRedraw = true; return true; }
@@ -1173,11 +1199,11 @@ function knobTouch(i) {
 }
 const LONG_NAME = { dtime: 'Delay Time', dfb: 'Delay Feedback', rsize: 'Reverb Size', rdark: 'Reverb Damping', chrt: 'Chorus Rate', chdp: 'Chorus Depth', phrt: 'Phaser Rate', phfb: 'Phaser Feedback',
     dly: 'Delay Send', rvb: 'Reverb Send', cut: 'Lowpass Cutoff', locut: 'Highpass Cutoff', res: 'Resonance', fenv: 'Filter Envelope', crush: 'Bit Crusher', ring: 'Ring Modulator', pump: 'Pump', wob: 'Wobble',
-    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_wid: 'Stereo Width',
+    arp: 'Arpeggiator', aoct: 'Arp Octaves', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_wid: 'Stereo Width',
     m_comp: 'Compressor', dly_ret: 'Delay Return', rvb_ret: 'Reverb Return', eql: 'Sound EQ Low', eqm: 'Sound EQ Mid', eqh: 'Sound EQ High', m_eql: 'EQ Low', m_eqm: 'EQ Mid', m_eqh: 'EQ High', m_lim: 'Limiter', poly: 'Voices', wave: 'Waveform', det: 'Detune',
     sub: 'Sub Oscillator', att: 'Attack', vol: 'Volume', tvol: 'Track Volume', pmode: 'Pad Mode', dsel: 'Drum Sound', lay: 'Pad Layout', tcol: 'Track Color', tsw: 'Track Swing', rdens: 'Random Density',
     rvar: 'Random Velocity', rkey: 'Random In Key', rrat: 'Random Ratchet', rqoff: 'Record Snap', fullvel: 'Full Velocity', m_hum: 'Humanize', m_met: 'Metronome', m_qnt: 'Launch Quantize',
-    qscale: 'Quantize To Scale', sst: 'Sample Start', sen: 'Sample End', smd: 'Sample Mode', smp: 'Sample File', sgn: 'Sample Gain', satk: 'Sample Attack', srel: 'Sample Release', sstr: 'Time Stretch',
+    qscale: 'Quantize Notes To Scale', m_qnt: 'Clip Start Quantize', sst: 'Sample Start', sen: 'Sample End', smd: 'Sample Mode', smp: 'Sample File', sgn: 'Sample Gain', satk: 'Sample Attack', srel: 'Sample Release', sstr: 'Time Stretch',
     rmb: 'Kick Rumble', rmt: 'Rumble Tail', ehit: 'Euclid Hits', erot: 'Euclid Rotate', elen: 'Euclid Length', emut: 'Euclid Mutate', mamt: 'MIDI FX Amount', mprm: 'MIDI FX Param', mfx: 'MIDI Effect', xfx: 'Insert Effect', xmix: 'Insert Amount',
     xrt: 'Insert Rate', xdp: 'Insert Depth', fdec: 'Filter Env Decay', fkey: 'Filter Key Track', fmode: 'Filter Mode', slg: 'Slices To Pads' };
 function fullLabel(v, i, items) {                          /* the whole parameter name (the grid uses short names) */
@@ -1200,6 +1226,14 @@ const MENU_GROUPS = [
     ['SYSTEM', ['MIDI monitor', 'Scope', 'Start animation on/off', 'Idle screen on/off', 'Invert display', 'Note repeat on/off', 'Save now', 'Exit Taktile']],
 ].map(g => [g[0], g[1].map(n => MENU_ITEMS.find(m => m[0] === n)).filter(Boolean)]);
 function menuLen() { return menuGrp < 0 ? MENU_GROUPS.length : MENU_GROUPS[menuGrp][1].length; }
+/* the jogwheel sends many ticks per click: menus, lists and pages move one step per `div` ticks, so they are easy to hit */
+let jogAccN = 0, jogAccT = 0;
+function jogStep(dl, div) {
+    if (!dl || globalThis.__NOJOGDIV) return dl;
+    const now = Date.now(); if (now - jogAccT > 350 || (jogAccN !== 0 && (jogAccN > 0) !== (dl > 0))) jogAccN = 0;
+    jogAccT = now; jogAccN += dl; if (Math.abs(jogAccN) < div) return 0;
+    jogAccN = 0; return dl > 0 ? 1 : -1;
+}
 function menuMove(d) { if (menuGrp < 0) menuIdx = clamp(menuIdx + (d > 0 ? 1 : -1), 0, MENU_GROUPS.length - 1); else menuSub = clamp(menuSub + (d > 0 ? 1 : -1), 0, menuLen() - 1); needsRedraw = true; }
 function menuSelect() { if (menuGrp < 0) { menuGrp = menuIdx; menuSub = 0; needsRedraw = true; return; } const it = MENU_GROUPS[menuGrp][1][menuSub]; menuOpen = false; it[1](); needsRedraw = true; }
 function menuBack() { if (menuGrp >= 0) { menuGrp = -1; needsRedraw = true; } else { menuOpen = false; needsRedraw = true; } }
@@ -1251,7 +1285,7 @@ function stepKnob(i, delta) {
         if (i === 2) { st[3] = clamp(st[3] - d, 0, 31); showToast('PROBABILITY', PROB_PCT[st[3]] + '%', PROB_PCT[st[3]] / 100); }
         else if (i === 3) { st[5] = clamp(st[5] + d, 0, 6); showToast('GATE', GATE_NAME[st[5]], st[5] / 6); }
         else if (i === 4) { st[4] = clamp(st[4] + d, 0, 3); showToast('RATCHET', (st[4] + 1) + 'x', st[4] / 3); }
-        else if (i === 5) { st[6] = clamp(st[6] + d, 0, NUD_MAX); showToast('NUDGE', nudTxt(st[6]), st[6] / NUD_MAX); }
+        else if (i === 5) { st[6] = clamp(st[6] + d, -NUD_MAX, NUD_MAX); showToast('NUDGE', nudTxt(st[6]), nudPos(st[6])); }
         else { st[7] = clamp(st[7] + d, 0, 7); showToast('CONDITION', COND_NAME[st[7]], st[7] / 7); }
     }
     heldEdited = true; qStep(ed[sel], ln(), heldStep); markEdited();
@@ -1260,7 +1294,7 @@ function drawStepEdit() {
     const st = stepAt(heldStep);
     titleBar('STEP ' + (heldStep + 1) + '  ' + (kind[sel] ? 'D' + (dsel[sel] + 1) : p2(sel + 1)), 'CLIP ' + (ed[sel] + 1));
     const L = [['Vel', String(st[1]), st[1] / 127], ['Pitch', (st[2] > 0 ? '+' : '') + st[2], (st[2] + 64) / 127], ['Prob', PROB_PCT[st[3]] + '%', PROB_PCT[st[3]] / 100],
-               ['Gate', GATE_NAME[st[5]], st[5] / 6], ['Ratch', (st[4] + 1) + 'x', st[4] / 3], ['Nudge', nudTxt(st[6]), st[6] / NUD_MAX], ['Cond', COND_NAME[st[7]], st[7] / 7], [LOCK_NAME[lockT[ln()]], st[8] ? String(Math.round((st[8] - 1) / 126 * 100)) : 'OFF', st[8] / 127]];
+               ['Gate', GATE_NAME[st[5]], st[5] / 6], ['Ratch', (st[4] + 1) + 'x', st[4] / 3], ['Nudge', nudTxt(st[6]), nudPos(st[6])], ['Cond', COND_NAME[st[7]], st[7] / 7], [LOCK_NAME[lockT[ln()]], st[8] ? String(Math.round((st[8] - 1) / 126 * 100)) : 'OFF', st[8] / 127]];
     for (let i = 0; i < L.length; i++) cell((i % 4) * 32, 13 + ((i / 4) | 0) * 26, L[i][0], L[i][1], L[i][2], 32);
 }
 
@@ -1268,7 +1302,7 @@ function drawStepEdit() {
 const TRK_COL = [1, 3, 8, 9, 11, 13, 14, 16, 17, 21, 22, 23, 25, 26, 24, 4];      /* one colour per track, all have dim variants */
 function accent(tc, pref) { for (const c of pref) if (c !== tc && c !== dimCol(tc)) return c; return 19; }      /* a clearly different hue than the track colour */
 function yellowish(c) { return c === 8 || c === 19 || Math.abs(c - 8) === 1 || Math.abs(c - 19) === 1; }      /* 8 and 19 both look yellow: a yellow track needs a different accent */
-function rootCol(tc) { return yellowish(tc) ? 120 : accent(tc, [19, 8, 11]); }
+function rootCol(tc) { return 120; }                 /* root notes: white on every track, clearly different from the track colour */
 function usedCol(tc) { return yellowish(tc) ? 120 : accent(tc, [11, 3, 8]); }
 function dimCol(c) { return c >= 1 && c <= 26 ? 65 + 2 * (c - 1) : 124; }
 let tcolO = new Array(NTRK).fill(0);
@@ -1383,6 +1417,45 @@ function padCopy(k) {                                       /* Copy + pad = pick
     else { pads[b] = pads[a].slice(); qPad(b); showToast('COPIED', (cpPad + 1) + ' > ' + (k + 1), 1); }
     cpPad = -1; markEdited();
 }
+
+/* ---- FX PADS (pad mode 4): momentary performance effects on the master bus. Hold a pad = the effect is on, release = back to the Master page values.
+   Synth track: the two top rows (8 + 8), the two lower rows keep playing notes. Drum track: the right 4x4 block. Costs no CPU of its own. ---- */
+const FX_PADS = [
+    ['LP SWEEP', 0, [[9, 0.18]]], ['HP SWEEP', 0, [[9, 0.85]]],
+    ['LOW KILL', 1, [[16, 0]]], ['MID KILL', 1, [[17, 0]]], ['HIGH KILL', 1, [[18, 0]]], ['PHONE', 1, [[16, 0], [17, 1], [18, 0]]],
+    ['DRIVE', 2, [[10, 0.6]]], ['CRUSH', 2, [[10, 1], [12, 0.9]]],
+    ['DULL', 3, [[9, 0.32]]], ['THIN', 3, [[9, 0.68]]], ['MONO', 3, [[11, 0]]], ['WIDE', 3, [[11, 1]]],
+    ['SQUASH', 3, [[12, 1]]], ['BOOM', 3, [[16, 1], [10, 0.3]]], ['AIR', 3, [[18, 1]]], ['TAPE', 3, [[10, 0.4], [9, 0.38]]]];
+const FX_KEYS = [9, 10, 11, 12, 16, 17, 18];
+const FX_COL = [12, 60, 100, 85];                           /* the groups 2 / 4 / 2 and the second row: none of them is a track colour */
+let fxHeld = {}, fxPadOf = {}, fxLive = false;      /* fxLive: Shift + step 4 (or MORE > LIVE) puts the FX pads on the grid, any pad mode */
+function fxSetLive(on) {
+    fxLive = !!on;
+    if (fxLive && topModes[sel] === 2) topModes[sel] = 0;     /* STEPS uses the whole grid: back to PITCH */
+    showToast('LIVE FX PADS', fxLive ? 'ON' : 'OFF', fxLive ? 1 : 0); needsRedraw = true;
+}
+function fxColor(k) { const tc = trkCol(sel); let c = FX_COL[FX_PADS[k][1]]; if (c === tc || c === dimCol(tc)) c = 40; return c; }
+function fxIdxOf(i) {                                       /* pad i -> FX number 0..15, -1 = not an FX pad */
+    if (!fxLive) return -1;
+    const cc = i & 7, rr = i >> 3;
+    if (kind[sel]) return soundArea(cc) ? -1 : (3 - rr) * 4 + (cc & 3);
+    return rr >= 2 ? (3 - rr) * 8 + cc : -1;
+}
+function fxApply() {
+    const eff = master.slice();
+    for (const k in fxHeld) for (const e of FX_PADS[k][2]) eff[e[0]] = e[1];
+    for (const mi of FX_KEYS) {
+        for (let q = queue.length - 1; q >= 0; q--) if (queue[q][0] === 'm' + MK[mi]) queue.splice(q, 1);
+        dspSet(MK[mi], eff[mi].toFixed(3));
+    }
+}
+function fxPad(i, on) {
+    if (on) { const k = fxIdxOf(i); if (k < 0) return false; if (fxPadOf[i] !== undefined) { const o = fxPadOf[i]; delete fxPadOf[i]; let st = false; for (const j in fxPadOf) if (fxPadOf[j] === o) st = true; if (!st) delete fxHeld[o]; } fxHeld[k] = 1; fxPadOf[i] = k; showToast('FX', FX_PADS[k][0], k / 15); }
+    else { const k = fxPadOf[i]; if (k === undefined) return false; delete fxPadOf[i]; let still = false; for (const j in fxPadOf) if (fxPadOf[j] === k) still = true; if (!still) delete fxHeld[k]; }
+    fxApply(); needsRedraw = true; return true;
+}
+const HIT_MS = 160; let hitUntil = {};                  /* drum pad LEDs: a hit keeps its flash for 160 ms, so it is visible between two refreshes */
+let lastPadSemi = {};                                    /* the note pad you played last, per sound: a step you enter afterwards gets the same pitch */
 function drumPad(idx, on, vel) {                          /* drum track: left 4x4 = the 16 sounds, right 4x4 = PITCH / REPEAT / STEPS of the selected sound */
     const cc = idx & 7, rr = idx >> 3, m = topModes[sel];
     if (soundArea(cc)) {
@@ -1399,15 +1472,18 @@ function drumPad(idx, on, vel) {                          /* drum track: left 4x
             }
             const v = fullVel ? 127 : Math.max(1, vel);
             recordHit(l, 0, v); logHit(l, 0, v);
+            hitUntil[l] = Date.now() + HIT_MS;
             flushPad(l); dspSet('dhit', l + ',' + v + ',' + (m === 1 ? 1 : 0));        /* Note Repeat: the sound pads repeat at the speed chosen on the right block */
         } else dspSet('dhit', l + ',0,0');
         return;
     }
+    if (fxIdxOf(idx) >= 0) { if (on) fxPad(idx, true); return; }
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
     if (m === 1) { if (on) setRepRate(rr * 4 + (cc & 3)); return; }      /* Note Repeat: the 16 pads on the right are the speeds */
     if (shiftHeld) return;
     const j = degOf(cc & 3, rr, 4), L = ln();
     if (on && deleteHeld) { delNote(L, notePadSemi(j) + oct()); return; }
+    if (on && heldStep < 0) lastPadSemi[L] = clamp(notePadSemi(j) + oct(), -64, 63);
     if (on && heldStep < 0) { recordHit(L, notePadSemi(j) + oct(), vel); logHit(L, notePadSemi(j) + oct(), vel); }
     if (on && heldStep >= 0) {
         const st = stepAt(heldStep); st[2] = clamp(notePadSemi(j) + oct(), -64, 63);
@@ -1423,6 +1499,7 @@ function delNote(L, semi) {                                 /* Delete + note pad
     showToast(n ? 'NOTE DELETED' : 'NO NOTE HERE', n ? n + ' STEPS' : '', 0);
 }
 function onPad(idx, on, vel) {
+    if (!on && fxPadOf[idx] !== undefined) { fxPad(idx, false); return; }       /* an FX pad is always released, even after a mode / track change */
     if (muteHeld || view === 20) {                            /* MUTE + pad (session / mixer: just the pad) = mute without leaving the page */
         if (on) {
             if (view === 7) { muteUsed = true; const t = bank * 4 + (3 - (idx >> 3)); if (t >= 0 && t < NTRK) { if (shiftHeld) soloTrack(t); else toggleMute(t); } }
@@ -1436,9 +1513,11 @@ function onPad(idx, on, vel) {
     if (view === 7) { if (on) clipsPad(idx); return; }       /* session: pick track + launch clip */
     if (kind[sel]) { drumPad(idx, on, vel); return; }
     const m = topModes[sel];
+    if (fxIdxOf(idx) >= 0) { if (on) fxPad(idx, true); return; }
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
     const dg = degOf(idx & 7, idx >> 3, 8);
     if (on && deleteHeld) { delNote(sel, notePadSemi(dg) + oct()); return; }
+    if (on && heldStep < 0) lastPadSemi[sel] = clamp(notePadSemi(dg) + oct(), -64, 63);
     if (on && heldStep < 0) { recordHit(sel, notePadSemi(dg) + oct(), vel); logHit(sel, notePadSemi(dg) + oct(), vel); }
     if (on && heldStep >= 0) {                                       /* hold step + pad = set pitch */
         const st = stepAt(heldStep); st[2] = clamp(notePadSemi(dg) + oct(), -64, 63);
@@ -1462,7 +1541,7 @@ function onStep(i, on) {
         if (deleteHeld) { snap(ed[sel], L); steps[ed[sel]][L][s] = [0, 100, 0, 0]; qStep(ed[sel], L, s); markEdited(); return; }
         snap(ed[sel], L); heldStep = s; heldEdited = false;
         const st = stepAt(s); heldWasOn = !!st[0];
-        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; qStep(ed[sel], L, s); markEdited(); }
+        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; if (lastPadSemi[L] !== undefined) st[2] = lastPadSemi[L]; qStep(ed[sel], L, s); markEdited(); }
     } else if (heldStep === s) {
         const L = ln();
         if (heldWasOn && !heldEdited) { steps[ed[sel]][L][s] = [0, 100, 0, 0]; qStep(ed[sel], L, s); markEdited(); }
@@ -1488,8 +1567,8 @@ let hot = { v: -1, i: -1, t: 0 };                       /* the knob you touched 
 function tw(s) { return (typeof text_width === 'function') ? text_width(s) : s.length * 6; }
 let tabStrip = false;
 const GW = { MIDI: 19, FX: 18, SAMPLE: 18, EUCLID: 17, DELAY: 16 };
-function lastTabId() { const t = trackTabs(); return t[t.length - 1]; }      /* SYNTH or SAMPLE: always the last tab */
-function tabIndex(tabs) { return tabs.indexOf((view === 9 || view === 28) ? tabs[tabs.length - 1] : view); }
+function lastTabId() { return trackTabs()[1]; }      /* SYNTH or SAMPLE: always the second tab */
+function tabIndex(tabs) { return tabs.indexOf((view === 9 || view === 28) ? tabs[1] : view); }
 let exitDlg = -1, suspended = false, selfTestT = 0;
 function selfTest() {                                       /* once after start: can Taktile really save, and is the sample folder there? */
     let bad = '';
@@ -1592,6 +1671,7 @@ function smpRefresh() {
 function smpLoaded() { const l = []; for (let i = 0; i < smpInfo.length; i++) if (smpInfo[i][0] > 0) l.push(i); return l; }
 function smpIdx(L) { return Math.round(pads[L][PI.smp] * 63); }
 function setLaneP(L, key, v) {
+    if (key === 'type' && Math.round(pads[L][0]) !== Math.round(v)) resetE(L);
     pads[L][PI[key]] = v;
     enqueue('p' + L + key, 'p' + p2(L + 1) + '_' + key, key === 'type' ? String(Math.round(v)) : v.toFixed(3));
     storeCs(L); markEdited();
@@ -1794,7 +1874,10 @@ function kitLoad() {
     const ls = kind[sel] ? lanesOf(sel) : [sel];
     for (let j = 0; j < ls.length && j < k.r.length; j++) {
         const row = k.r[j]; if (!Array.isArray(row)) continue;
-        for (let i = 0; i < PK.length && i < row.length; i++) if (soundIdx(i)) pads[ls[j]][i] = clamp(Number(row[i]) || 0, 0, i === 0 ? TYPE_NAME.length : 12);
+        for (let i = 0; i < PK.length; i++) if (soundIdx(i)) {
+            if (i >= EK0 && i < EK0 + 10) { const x = i < row.length ? Number(row[i]) : -1; pads[ls[j]][i] = clamp(Number.isFinite(x) ? x : -1, -1, 1); }      /* a kit saved before the engine values: the sound's own */
+            else if (i < row.length) pads[ls[j]][i] = clamp(Number(row[i]) || 0, 0, i === 0 ? TYPE_NAME.length : 12);
+        }
         qPad(ls[j]); flushPad(ls[j]);                                 /* the whole kit reaches the engine at once, not 3 pads per tick */
     }
     markEdited(); showToast('KIT ' + kitName(kitSlot), 'LOADED', 1); needsRedraw = true;
@@ -1826,9 +1909,9 @@ const FB_SUB = {
     6: [['PLUCK', /^Pluck/], ['HOOVER', /^Hoov/], ['LEAD', /./]],
     7: [['STAB', /^Stab/], ['PAD', /^(Pad|Vowel|Hollow|Half)/], ['BELL', /^(Bell|Glass)/], ['SUPERSAW', /^(Super|Det|Huge|Oct|Trnc)/], ['KEYS + STRINGS', /./]],
 };
-function fbSub(name, c) {
+function fbSub(name, c, classicOnly) {
     const kids = FB_SUB[c].map(x => ({ n: x[0], l: [] }));
-    for (const t of catList(c)) { for (let k = 0; k < kids.length; k++) if (FB_SUB[c][k][1].test(TYPE_NAME[t])) { kids[k].l.push(t); break; } }
+    for (const t of (classicOnly ? catListA(c) : catList(c))) { for (let k = 0; k < kids.length; k++) if (FB_SUB[c][k][1].test(TYPE_NAME[t])) { kids[k].l.push(t); break; } }
     return { n: name, kids: kids.filter(k => k.l.length) };
 }
 /* synth sounds: ordered rules decide the folder (group > sub folder); anything unmatched lands in the default folder of its family */
@@ -1844,6 +1927,7 @@ const SYN_RULES = [
     ['LEAD', 'HOOVER', /^Hoov/], ['LEAD', 'ACID LEAD', /^(AcdLd|LeadAcid)/], ['LEAD', 'TRANCE LEAD', /^(TrcLd|TranceLd)/], ['LEAD', 'PSY LEAD', /^PsyLd/], ['LEAD', 'RETRO', /^(SqrLd|SqrLead|PulsLead|PulseLead|TriLead|SqrLead2)/], ['LEAD', 'SOFT', /^(SftLd|LeadSoft|SineLead)/], ['LEAD', 'SYNC', /^SyncL/],
 ];
 /*NXBEGIN*/const NX_GROUPS = [["MALLETS",[1064,1065,1066,1067,1068,1069,1070,1071,1072,1073,1074,1075,1076]],["BELLS + GONGS",[1077,1078,1079,1080,1081,1082,1083,1084,1085,1086,1087,1088,1089,1090]],["STRINGS",[1091,1092,1093,1094,1095,1096,1097]],["MODAL PERC",[1098,1099,1100,1101,1102,1103,1104,1105,1106,1107,1108,1109,1110,1111,1112,1113]],["FM KEYS",[1114,1115,1116,1117,1118,1119,1120]],["FM BELLS + PLUCK",[1121,1122,1123,1124,1125,1126,1127,1128]],["FM BASS",[1129,1130,1131,1132,1133]],["FM LEAD + PAD",[1134,1135,1136,1137,1138]],["FM PERC + FX",[1139,1140,1141,1142,1143]],["VOCAL",[1144,1145,1146,1147,1148,1149,1150,1151,1152,1153,1154,1155,1156,1157]],["CHIP LEADS",[1158,1159,1160,1161,1162,1163,1164,1165]],["CHIP ARPS",[1166,1167,1168,1169,1170,1171,1172]],["CHIP DRUMS",[1173,1174,1175,1176,1177,1178,1179]],["MORPH BASS",[1180,1181,1182,1183,1184,1185,1186]],["MORPH LEAD",[1187,1188,1189,1190,1191,1192,1193,1194]],["MORPH PAD",[1195,1196,1197,1198,1199,1200,1201,1202]],["MORPH KEYS",[1203,1204,1205,1206,1207,1208,1209,1210]]];/*NXEND*/
+/*ENGBEGIN*/const ENG = [{"n":"MODAL","att":false,"p":[{"s":0,"n":"Set","a":"Set","lo":0,"hi":18,"k":"e","d":0,"u":"","e":["MARIMB","VIBES","XYLO","KALIMB","GLOCK","TUBULR","CHURCH","STEELD","HARP","NYLON","KOTO","TIMP","MEMBRN","WOOD","BOWL","GAMLAN","CRYSTL","PLATE","HOLLOW"]},{"s":1,"n":"Bright","a":"Brt","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":2,"n":"BurstMs","a":"Burst","lo":0.5,"hi":20,"k":"f","d":1,"u":""},{"s":3,"n":"Tilt","a":"Tilt","lo":0,"hi":2,"k":"f","d":2,"u":""},{"s":4,"n":"Stretch","a":"Strc","lo":0,"hi":0.1,"k":"f","d":3,"u":""},{"s":5,"n":"Click","a":"Click","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":6,"n":"TremDepth","a":"TrmD","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":7,"n":"TremHz","a":"TrmR","lo":0,"hi":12,"k":"f","d":1,"u":""}],"l":[["INIT",[1211]],["MALLETS",[1064,1065,1066,1067,1068,1069,1070,1071,1072,1073,1074,1075,1076]],["BELLS + GONGS",[1077,1078,1079,1080,1081,1082,1083,1084,1085,1086,1087,1088,1089,1090]],["STRINGS",[1091,1092,1093,1094,1095,1096,1097]],["MODAL PERC",[1098,1099,1100,1101,1102,1103,1104,1105,1106,1107,1108,1109,1110,1111,1112,1113]]]},{"n":"FM","att":true,"p":[{"s":0,"n":"RatioB","a":"RatB","lo":0.25,"hi":16,"k":"f","d":2,"u":""},{"s":1,"n":"IndexB","a":"IdxB","lo":0,"hi":8,"k":"f","d":2,"u":""},{"s":2,"n":"RatioC","a":"RatC","lo":0.25,"hi":16,"k":"f","d":2,"u":""},{"s":3,"n":"IndexC","a":"IdxC","lo":0,"hi":8,"k":"f","d":2,"u":""},{"s":4,"n":"Feedback","a":"Fdbk","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":8,"n":"Algo","a":"Algo","lo":0,"hi":2,"k":"e","d":0,"u":"","e":["C>B>A","B+C>A","PAIRS"]},{"s":6,"n":"Sub","a":"Sub","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":7,"n":"VelSens","a":"Vel","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":5,"n":"RatioA","a":"RatA","lo":0.25,"hi":8,"k":"f","d":2,"u":""},{"s":9,"n":"IdxEnv","a":"IEnv","lo":0,"hi":1,"k":"f","d":2,"u":""}],"l":[["INIT",[1212]],["FM KEYS",[1114,1115,1116,1117,1118,1119,1120]],["FM BELLS + PLUCK",[1121,1122,1123,1124,1125,1126,1127,1128]],["FM BASS",[1129,1130,1131,1132,1133]],["FM LEAD + PAD",[1134,1135,1136,1137,1138]],["FM PERC + FX",[1139,1140,1141,1142,1143]]]},{"n":"VOX","att":true,"p":[{"s":0,"n":"VowelA","a":"VowA","lo":0,"hi":6,"k":"e","d":0,"u":"","e":["AH","EH","EE","OH","OO","AE","UH"]},{"s":1,"n":"VowelB","a":"VowB","lo":0,"hi":6,"k":"e","d":0,"u":"","e":["AH","EH","EE","OH","OO","AE","UH"]},{"s":3,"n":"Voice","a":"Voice","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":6,"n":"Breath","a":"Brth","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":4,"n":"VibDepth","a":"VibD","lo":0,"hi":0.02,"k":"f","d":3,"u":""},{"s":5,"n":"VibHz","a":"VibR","lo":3,"hi":8,"k":"f","d":1,"u":""},{"s":7,"n":"Damp","a":"Damp","lo":0.4,"hi":1.6,"k":"f","d":2,"u":""},{"s":8,"n":"Tilt","a":"Tilt","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":9,"n":"Gender","a":"Gndr","lo":0.6,"hi":1.5,"k":"f","d":2,"u":""}],"l":[["INIT",[1213]],["VOCAL",[1144,1145,1146,1147,1148,1149,1150,1151,1152,1153,1154,1155,1156,1157]]]},{"n":"CHIP","att":true,"p":[{"s":0,"n":"Duty","a":"Duty","lo":0,"hi":0.5,"k":"f","d":2,"u":""},{"s":6,"n":"Noise","a":"Noise","lo":0,"hi":2,"k":"e","d":0,"u":"","e":["OFF","LONG","SHORT"]},{"s":1,"n":"Arp","a":"Arp","lo":0,"hi":6,"k":"e","d":0,"u":"","e":["OFF","MAJ","MIN","OCT","5TH","MAJ B","PWR"]},{"s":2,"n":"ArpRate","a":"ArpR","lo":0,"hi":32,"k":"f","d":0,"u":""},{"s":3,"n":"VibDepth","a":"VibD","lo":0,"hi":0.15,"k":"f","d":3,"u":""},{"s":4,"n":"VibDelay","a":"VibT","lo":0,"hi":0.5,"k":"f","d":2,"u":""},{"s":5,"n":"Bits","a":"Bits","lo":0,"hi":8,"k":"e","d":0,"u":"","e":["OFF","1","2","3","4","5","6","7","8"]},{"s":7,"n":"Slide","a":"Slide","lo":-96,"hi":12,"k":"f","d":0,"u":""},{"s":8,"n":"DutySweep","a":"Swp","lo":-0.5,"hi":0.5,"k":"f","d":2,"u":""},{"s":9,"n":"Hold","a":"Hold","lo":1,"hi":8,"k":"i","d":0,"u":""}],"l":[["INIT",[1214]],["CHIP LEADS",[1158,1159,1160,1161,1162,1163,1164,1165]],["CHIP ARPS",[1166,1167,1168,1169,1170,1171,1172]],["CHIP DRUMS",[1173,1174,1175,1176,1177,1178,1179]]]},{"n":"MORPH","att":true,"p":[{"s":0,"n":"WaveA","a":"WavA","lo":0,"hi":639,"k":"i","d":0,"u":""},{"s":1,"n":"WaveB","a":"WavB","lo":0,"hi":639,"k":"i","d":0,"u":""},{"s":2,"n":"MorphStart","a":"Mrp0","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":3,"n":"MorphEnd","a":"Mrp1","lo":0,"hi":1,"k":"f","d":2,"u":""},{"s":4,"n":"LfoHz","a":"LfoR","lo":0,"hi":8,"k":"f","d":2,"u":""},{"s":5,"n":"LfoDepth","a":"LfoD","lo":0,"hi":0.5,"k":"f","d":2,"u":""},{"s":6,"n":"Unison","a":"Uni","lo":0,"hi":0.03,"k":"f","d":3,"u":""},{"s":7,"n":"FiltRatio","a":"Filt","lo":1,"hi":16,"k":"f","d":1,"u":""},{"s":8,"n":"FiltEnv","a":"FEnv","lo":0,"hi":4,"k":"f","d":2,"u":""},{"s":9,"n":"Sub","a":"Sub","lo":0,"hi":1,"k":"f","d":2,"u":""}],"l":[["INIT",[1215]],["MORPH BASS",[1180,1181,1182,1183,1184,1185,1186]],["MORPH LEAD",[1187,1188,1189,1190,1191,1192,1193,1194]],["MORPH PAD",[1195,1196,1197,1198,1199,1200,1201,1202]],["MORPH KEYS",[1203,1204,1205,1206,1207,1208,1209,1210]]]}];const NX_EID = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,1,2,3,4];const NXP = [[0,0.55,3,0.9,0,0.35,0,0,0,0],[0,0.6,3,0.9,0,0.3,0,0,0,0],[0,0.7,2,0.8,0,0.25,0,0,0,0],[0,0.95,1.5,0.7,0,0.5,0,0,0,0],[0,0.15,8,1.6,0,0.05,0,0,0,0],[1,0.5,4,0.4,0,0.15,0.35,5.2,0,0],[1,0.4,5,0.5,0,0.1,0.5,3.5,0,0],[1,0.85,2,0.3,0.004,0.3,0.9,9,0,0],[2,0.85,1.5,0.6,0,0.5,0,0,0,0],[2,0.9,1.2,0.5,0,0.5,0,0,0,0],[3,0.6,2,0.7,0.01,0.4,0,0,0,0],[3,0.7,2,0.7,0.01,0.4,0,0,0,0],[4,0.3,4,0.6,0,0.1,0,0,0,0],[4,0.8,1.5,0.35,0,0.3,0,0,0,0],[5,0.3,4,0.25,0.002,0.4,0,0,0,0],[6,0.3,5,0.15,0,0.5,0,0,0,0],[6,0.55,3,0.2,0,0.4,0,0,0,0],[7,0.55,3,0.55,0,0.35,0,0,0,0],[7,0.7,2,0.55,0,0.3,0,0,0,0],[16,0.75,1.5,0.4,0.02,0.2,0,0,0,0],[16,1,0.8,0.8,0.03,0.7,0,0,0,0],[14,0.35,8,0.1,0,0.15,0,0,0,0],[14,0.5,6,0.15,0,0.15,0,0,0,0],[15,0.55,3,0.3,0,0.4,0,0,0,0],[15,0.65,2,0.35,0,0.4,0,0,0,0],[17,0.9,1.5,0.3,0.08,0.6,0,0,0,0],[17,0.8,1.5,0.4,0,0.5,0,0,0,0],[8,0.3,5,0.9,0,0.1,0,0,0,0],[8,0.5,4,0.8,0,0.1,0,0,0,0],[8,0.6,3,0.9,0,0.1,0,0,0,0],[9,0.4,5,1,0,0.25,0,0,0,0],[9,0.75,3,1,0,0.35,0,0,0,0],[10,0.85,1.5,0.6,0.003,0.6,0,0,0,0],[18,0.5,3,0.4,0,0.2,0,0,0,0],[11,0.5,5,0.3,0,0.4,0,0,0,0],[11,0.55,4,0.3,0,0.4,0,0,0,0],[11,0.35,8,0.25,0.002,0.5,0,0,0,0],[12,0.95,1.5,0.5,0.03,0.6,0,0,0,0],[12,0.8,1.5,0.5,0,0.5,0,0,0,0],[12,0.85,1.2,0.6,0,0.6,0,0,0,0],[12,0.5,3,0.35,0,0.4,0,0,0,0],[12,0.55,3,0.35,0,0.4,0,0,0,0],[12,0.45,4,0.35,0,0.3,0,0,0,0],[13,0.9,1,0.8,0,0.6,0,0,0,0],[13,0.95,0.8,0.8,0,0.6,0,0,0,0],[13,1,0.5,0.4,0,0.7,0,0,0,0],[17,0.85,1,0.3,0,0.6,0,0,0,0],[17,0.95,1,0.2,0,0.8,0,0,0,0],[17,0.9,1,0.9,0.01,0.7,0,0,0,0],[18,0.8,1.5,0.3,0,0.5,0,0,0,0],[14,1.1,1,1.6,0,1,0,0.8,1,0],[1,1.3,7,0.35,0.05,1,0.1,0.6,1,0.05],[14,1.9,1,2.4,0,1,0,0.9,1,0],[1,0.8,14,0.5,0,1,0.1,0.5,1,0.1],[1,3.2,3,1.5,0.4,1,0,0.7,2,0],[2,0.5,3,0.35,0.1,1,0.25,0,1,0.8],[3,0.7,5,0.3,0,1,0.4,0,1,0.9],[3.99,2.2,1,0.2,0,1,0,0.7,0,0],[4,1.6,1,0.1,0,1,0,0.6,0,0],[3.5,4.5,1.4,2,0,1,0,0.5,0,0],[5.04,3.5,7.1,1.6,0,1,0,0.6,1,0],[2.01,3,4.2,1.2,0,1,0,0.3,0,0.2],[2,3.5,3,2.2,0.5,1,0,0.8,2,0],[4,2,2,1,0,1,0,0.6,0,0],[5.4,1.4,1,0.1,0,1,0,0.6,0,0],[1,4.5,2,1,0.35,1,0.3,0.7,0,0],[1,2,1,0.3,0.1,1,0.6,0.4,0,0.2],[2,3,3,2.5,0.8,1,0.3,0.3,0,0.6],[1,5,1.5,1,0.5,1,0.4,0.2,0,0.3],[2,1.6,3,2.4,0.2,1,0.2,0.5,2,0.3],[1,2.5,1,1,0.15,1,0,0.3,0,0.5],[1,2.2,2,0.8,0.55,1,0.1,0.4,0,0.6],[1,2.8,1,0,0.9,1,0,0.3,0,1],[1.001,1.2,2,0.6,0,1,0.2,0,1,0.7],[3,0.6,5,0.25,0.1,1,0.1,0,1,0.8],[1.5,3,2.3,1,0.1,1,0,0.6,0,0],[2.7,6,1.1,2,0.3,1,0,0.2,0,0],[1.4142,5,2.76,3.5,0.5,1,0,0.4,2,0],[1.4142,6,2.31,5,0.8,1,0,0.2,2,0],[7.3,4,1,1,0,1,0,0.5,0,0],[0,0,0,0.1,0.006,5.2,0.06,1,0.5,1],[3,3,0,0.1,0.006,5,0.06,1,0.5,1],[2,2,0,0.15,0.006,5.5,0.05,1,0.6,1],[4,4,0,0.05,0.007,4.8,0.08,1,0.4,1],[0,0,0,0.2,0.008,5,0.04,0.9,0.6,0.85],[0,0,0,0.1,0.007,5.6,0.05,1,0.5,1.22],[0,4,0,0.3,0.004,5,0.02,1,0.6,1],[2,3,0,0.4,0.005,5,0.02,0.9,0.7,1],[1,0,0,0.6,0,5,0.01,0.7,0.8,1],[0,0,0,1,0,5,0,0.6,0.7,1],[1,3,0,0,0,5,1,1.2,0.5,1],[4,0,0,0.05,0.01,4,0.55,1.1,0.3,1.1],[3,0,0,0.15,0.012,5.8,0.05,1,0.6,1],[3,0,0,0.35,0.004,5,0.02,0.8,0.8,0.7],[0.125,0,0,0.004,0.2,0,0,0,0,1],[0.25,0,0,0.004,0.25,0,0,0,0,1],[0.5,0,0,0.012,0.15,5,0,0,0,2],[0.5,0,0,0.003,0.3,0,0,0,-0.35,1],[0.25,0,0,0.004,0.2,4,0,0,0,2],[0.5,0,0,0,0,4,0,0,0,1],[0.125,0,0,0,0,3,0,0,0,1],[0.25,0,0,0.12,0,4,0,0,0,1],[0.25,1,18,0.003,0.3,0,0,0,0,1],[0.125,2,12,0.005,0.3,3,0,0,0,1],[0.5,3,24,0,0,0,0,0,0,1],[0.125,4,20,0,0,4,0,0,0,1],[0.5,6,14,0.003,0.2,0,0,0,0,1],[0.5,6,30,0,0,0,0,0,0,1],[0.25,1,28,0,0,0,0,12,0,1],[0.25,0,0,0,0,0,0,-40,0,1],[0,0,0,0,0,0,1,0,0,1],[0,0,0,0,0,0,1,0,0,1],[0,0,0,0,0,0,1,-6,0,1],[0,0,0,0,0,0,2,0,0,1],[0.5,0,0,0,0,4,0,-90,0,1],[0.5,0,0,0,0,4,0,-40,0,1],[48,370,0.1,0.9,0.2,0.15,0,6,1.5,0.4],[85,423,0.8,0.2,0.4,0.2,0.01,8,2,0.3],[122,476,0.2,0.8,2.5,0.35,0,5,1.2,0.3],[159,529,0.5,0.5,0,0,0,10,0,0.5],[196,582,0,1,0,0,0,7,1,0.2],[233,305,0.3,0.6,0.3,0.1,0,3,0,0.8],[270,358,0.2,0.7,0.3,0.1,0.018,6,1,0.4],[7,411,0.7,0.2,0,0,0.006,7,1.4,0],[44,464,0.1,0.9,0.5,0.3,0.008,9,0,0],[81,517,0.6,0.6,5,0.25,0.004,12,0,0],[118,570,0,0.5,0,0,0.012,8,1,0],[155,623,0.4,0.4,0,0,0,14,0,0],[192,346,0.9,0.1,0.2,0.2,0.02,6,2,0],[229,399,0.2,0.45,0.15,0.1,0.003,5,1,0.2],[266,452,0,0.8,0,0,0,5,3,0],[3,505,0.1,0.9,0.08,0.25,0.012,3,0.5,0.2],[40,558,0.3,0.8,0.12,0.3,0.014,7,0.6,0],[77,611,0.9,0.2,0.2,0.2,0.01,12,0,0],[114,334,0,1,0.25,0.4,0.016,5,0.8,0.1],[151,387,0.4,0.6,0.1,0.1,0.008,4,0.4,0.3],[188,440,0,1,0.05,0.3,0.018,6,1,0],[225,493,0.5,0.5,0.3,0.15,0.005,8,0,0.3],[262,546,0.7,0.3,0.4,0.4,0.02,9,0.7,0],[299,599,0.8,0.1,0,0,0.004,8,3,0],[36,322,0.7,0.2,0,0,0.01,9,2,0],[73,375,0.1,0.9,0,0,0.002,14,0,0],[110,428,0.3,0.3,4,0.1,0.003,7,1,0.2],[147,481,0,0.6,0,0,0.006,10,2.5,0],[184,534,0.5,0,0,0,0.02,8,1.5,0],[221,587,0,1,0,0,0.012,11,0,0],[258,310,0.4,0.6,3,0.2,0.005,9,0,0.5],[0,0.6,3,0.9,0,0.3,0,0,0,0],[1,1,1,0,0,1,0,0.3,0,1],[0,0,0,0.1,0.006,5.2,0.06,1,0.5,1],[0.5,0,0,0,0,0,0,0,0,1],[3,305,0,0,0,0,0,8,0,0]];/*ENGEND*/
 const SYN_ORDER = ['BASS', 'LEAD', 'ARP + PLUCK', 'STABS + CHORDS', 'PADS + ATMOS', 'SUPERSAW', 'KEYS + ORGAN', 'BELLS + MALLET', 'STRINGS + CHOIR'];
 let synTreeCache = null, synTreeN = 0;
 function fbSynGroups() {
@@ -1868,7 +1952,14 @@ function fbTree() {
     const nx = [{ n: 'NEW ENGINES', kids: NX_GROUPS.map(g => ({ n: g[0], l: g[1].slice() })) }];
     const cat = (n, c) => fbSub(n, c);
     if (kind[sel]) return { n: 'DRUMS', kids: [{ n: 'KIT STYLES', kits: true }, cat('KICK', 0), cat('SNARE + CLAP', 1), cat('HATS + CYMBALS', 2), cat('PERCUSSION', 3), cat('FX', 4)].concat(rec, fav, nx, smp) };
-    return { n: 'SOUNDS', kids: rec.concat(fav, nx, [].concat(fbSynGroups(), [cat('FX', 4), cat('PERCUSSION', 3), cat('KICK', 0), cat('SNARE + CLAP', 1), cat('HATS + CYMBALS', 2)], smp, [{ n: 'ALL SOUNDS', l: TYPE_NAME.map((x, k) => k).filter(k => BASE_T[k] !== 359) }])) };
+    const eg = engLane(ln());
+    if (eg > 0) {                                                         /* a NEW ENGINES sound: only the sounds of its engine, INIT first */
+        const mine = t => engOfType(t) === eg, r2 = recent.filter(mine), f2 = favs.filter(mine).sort((a, b) => a - b);
+        return { n: engName(eg), kids: [].concat(r2.length ? [{ n: 'RECENT', l: r2 }] : [], f2.length ? [{ n: 'FAVORITES', l: f2 }] : [], ENG[eg - 1].l.map(g => ({ n: g[0], l: g[1].slice() }))) };
+    }
+    const rA = recent.filter(t => t < NX0), fA = favs.filter(t => t < NX0).sort((a, b) => a - b);
+    const catA = (n, c) => fbSub(n, c, true);                              /* the folders of a classic sound hold classic sounds only */
+    return { n: 'SOUNDS', kids: [].concat(rA.length ? [{ n: 'RECENT', l: rA }] : [], fA.length ? [{ n: 'FAVORITES', l: fA }] : [], [].concat(fbSynGroups(), [catA('FX', 4), catA('PERCUSSION', 3), catA('KICK', 0), catA('SNARE + CLAP', 1), catA('HATS + CYMBALS', 2)], smp, [{ n: 'ALL SOUNDS', l: TYPE_NAME.map((x, k) => k).filter(k => BASE_T[k] !== 359 && k < NX0) }])) };
 }
 function fbItems(node) {
     if (node.kids) return node.kids.map(k => ({ label: k.n, kid: k, cnt: fbCount(k) }));
@@ -1882,6 +1973,7 @@ function fbOpen() {
     if (padMenu) { padMenu = false; }
     fb = { st: [{ node: fbTree(), i: 0 }], orig: { t: Math.round(pads[L][0]), smp: pads[L][PI.smp], sst: pads[L][PI.sst], sen: pads[L][PI.sen], flt: FLT_KEYS.map(k => pads[L][PI[k]]) } };
     if (kind[sel] && !padMenu) fbDive(fb.orig.t);
+    else if (!kind[sel] && engLane(L) > 0) fbDiveEng(fb.orig.t);
     needsRedraw = true;
 }
 const FB_ROLE_CAT = { K: 0, S: 1, H: 2, C: 2, T: 3, P: 3 }, FB_CAT_NAME = ['KICK', 'SNARE + CLAP', 'HATS + CYMBALS', 'PERCUSSION', 'FX'];
@@ -1899,10 +1991,108 @@ function fbDive(t) {                                       /* a drum pad opens t
     }
     if (node.l) { const f = node.l.indexOf(t); if (f >= 0) fb.st[fb.st.length - 1].i = f; }
 }
-function fbSetType(nt) {
-    const L = ln(); if (Math.round(pads[L][0]) === nt) return;
-    pads[L][0] = nt; if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); storeCs(L); markEdited();
+function fbDiveEng(t) {                                    /* synth sound of a NEW ENGINE: open the browser in its folder, on the sound that is on the track */
+    const root = fb.st[0].node, j = root.kids.findIndex(k => fbHas(k, t)); if (j < 0) return;
+    fb.st[0].i = j; const node = root.kids[j]; fb.st.push({ node, i: Math.max(0, node.l.indexOf(t)) });
 }
+function fbSetType(nt) { applyType(ln(), nt); }
+/* ---- ENGINES: every synth sound belongs to an engine: 0 ANALOG (the classic sounds) or 1..5 the NEW ENGINES (MODAL FM VOX CHIP MORPH, an INIT sound each).
+   SOUND page: Engine + Preset (only the sounds of that engine). SYNTH page: the 10 values of the engine with their own names, 8 knobs per page (Shift + Left / Right = next page).
+   The values live in the pad parameters e0..e9: 0..1 (mapped to the range of that knob in the DSP), -1 = "as the preset" until a knob is turned. ---- */
+const NX0 = 1064;                                          /* the first NEW ENGINES sound number */
+function engName(e) { return e === 0 ? 'ANALOG' : ENG[e - 1].n; }
+function engOfType(t) { return (t >= NX0 && t - NX0 < NX_EID.length) ? NX_EID[t - NX0] + 1 : 0; }
+function engLane(L) { return engOfType(Math.round(pads[L][0])); }
+let analogCache = null;
+function engList(e) {                                      /* the sounds of an engine in browsing order (INIT first) */
+    if (e > 0) { const a = []; ENG[e - 1].l.forEach(g => g[1].forEach(t => a.push(t))); return a; }
+    if (!analogCache) { analogCache = []; for (let c = 0; c <= 7; c++) catListA(c).forEach(t => analogCache.push(t)); }
+    return analogCache;
+}
+function resetE(L) { for (let i = 0; i < 10; i++) pads[L][EK0 + i] = -1; }
+function applyType(L, nt) {                                /* every change of a lane's sound goes through here: the new sound starts with its own values */
+    if (Math.round(pads[L][0]) === nt) return;
+    pads[L][0] = nt; resetE(L);
+    if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); storeCs(L); markEdited();
+}
+const engMem = {};                                         /* the last sound of every engine on a lane, so switching back finds it again */
+function setEngine(L, e) {
+    const cur = Math.round(pads[L][0]), ce = engOfType(cur); if (e === ce) return;
+    engMem[L + ':' + ce] = cur;
+    let nt = engMem[L + ':' + e]; if (nt === undefined || engOfType(nt) !== e) nt = e === 0 ? catListA(6)[0] : engList(e)[0];
+    applyType(L, nt); fltSet(L, FLT_OPEN);                 /* a new sound starts with the filter wide open */
+    synPage = 0; needsRedraw = true;
+}
+function engEdit(delta, idx) {
+    if (kind[sel] || Math.round(pads[ln()][0]) === 359) return false;
+    acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false;
+    const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0;
+    setEngine(ln(), clamp(engLane(ln()) + d, 0, ENG.length));
+    return { v: engLane(ln()) / 5 };
+}
+function engPresetKnob(delta, idx) {                       /* SOUND page, Preset knob: next / previous sound of the same engine */
+    const L = ln(), cur = Math.round(pads[L][0]), l = engList(engOfType(cur));
+    acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false;
+    const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0;
+    let i = l.indexOf(cur); if (i < 0) i = d > 0 ? -1 : l.length;
+    const ni = clamp(i + d * (shiftHeld ? 5 : 1), 0, l.length - 1);
+    if (l[ni] !== cur) applyType(L, l[ni]);
+    return { v: pads[L][0] };
+}
+function eSpec(e, slot) { const q = ENG[e - 1].p; for (let k = 0; k < q.length; k++) if (q[k].s === slot) return q[k]; return null; }
+function eNorm(L, i) {                                     /* the value of knob i as 0..1: its own, or the one the preset has */
+    const v = pads[L][EK0 + i]; if (v >= 0) return v;
+    const t = Math.round(pads[L][0]), e = engOfType(t), sp = e ? eSpec(e, i) : null;
+    if (!sp || !(sp.hi > sp.lo)) return 0;
+    return clamp((NXP[t - NX0][i] - sp.lo) / (sp.hi - sp.lo), 0, 1);
+}
+function eReal(L, i) {
+    const e = engLane(L), sp = e ? eSpec(e, i) : null; if (!sp) return 0;
+    const r = sp.lo + eNorm(L, i) * (sp.hi - sp.lo); return sp.k === 'f' ? r : Math.round(r);
+}
+function eFmt(L, i) {
+    const e = engLane(L), sp = e ? eSpec(e, i) : null; if (!sp) return '--';
+    const r = eReal(L, i);
+    if (sp.k === 'e') return String(sp.e[clamp(r - sp.lo, 0, sp.e.length - 1)]);
+    return sp.k === 'i' ? String(r) + sp.u : r.toFixed(sp.d) + sp.u;
+}
+function eMaterialize(L) {                                 /* the first touch writes the preset's values into all ten, so only the turned knob changes the sound */
+    let ch = false;
+    for (let i = 0; i < 10; i++) if (pads[L][EK0 + i] < 0) { pads[L][EK0 + i] = eNorm(L, i); ch = true; }
+    return ch;
+}
+function editE(L, i, delta, idx) {
+    const e = engLane(L), sp = e ? eSpec(e, i) : null; if (!sp) return false;
+    if (deleteHeld) { resetE(L); qPad(L); showToast('ENGINE', 'PRESET VALUES', 0); return { v: eNorm(L, i) }; }      /* Delete + knob: back to the sound's own values */
+    const n = eNorm(L, i); let nn;
+    if (sp.k === 'f') nn = clamp(n + delta * (shiftHeld ? 0.02 : 0.004), 0, 1);
+    else {
+        const wide = sp.hi - sp.lo > 40;
+        acc[idx] += delta; if (Math.abs(acc[idx]) < (wide ? 1 : 2)) return false;
+        const st = (acc[idx] > 0 ? 1 : -1) * (wide && shiftHeld ? 10 : 1); acc[idx] = 0;
+        const nv = clamp(Math.round(sp.lo + n * (sp.hi - sp.lo)) + st, sp.lo, sp.hi); nn = (nv - sp.lo) / (sp.hi - sp.lo);
+        if (nv === Math.round(sp.lo + n * (sp.hi - sp.lo))) return false;
+    }
+    pSnap('pad', L, 'e' + i);
+    const first = eMaterialize(L); pads[L][EK0 + i] = nn;
+    if (first) qPad(L);                                    /* the whole row once: all ten values are now the preset's, one of them changed */
+    else { if (liveOk(sel)) enqueue('p' + L + 'e' + i, 'p' + p2(L + 1) + '_e' + i, nn.toFixed(5)); storeCs(L); }
+    return { v: nn };
+}
+let synPage = 0;
+const SYN_ANALOG = VIEW_ITEMS[9], SOUND_STD = VIEW_ITEMS[1];
+const SOUND_SYN = [['eng','Engine','Eng'],['type','Preset','Pre'],['tune','Tune'],['decay','Decay','Dcy'],['tone','Tone'],['drive','Drive','Drv'],['poly','Voices','Poly'],['vol','Vol']];
+const synCache = {};
+function synAll(e) {                                       /* the named knobs of an engine: its values, then Attack for the ones that sustain */
+    const g = ENG[e - 1], a = g.p.map(q => ['e' + q.s, q.n, q.a]); if (g.att) a.push(['att', 'Attack', 'Atk']); return a;
+}
+function synPages(L) { const e = engLane(L); return e ? Math.ceil(synAll(e).length / 8) : 1; }
+function synItems(L) {
+    const e = engLane(L); if (!e) return SYN_ANALOG;
+    const pg = clamp(synPage, 0, synPages(L) - 1), k = e + ':' + pg;
+    return synCache[k] || (synCache[k] = synAll(e).slice(pg * 8, pg * 8 + 8));
+}
+function engTitle() { const L = ln(), e = engLane(L), n = synPages(L); return e ? engName(e) + (n > 1 ? ' ' + (clamp(synPage, 0, n - 1) + 1) + '/' + n : '') : 'SYNTH'; }
 function fbAudition() {
     if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; }
     if (kind[sel]) { const l = ln(); flushPad(l); dspSet('dhit', l + ',100,0'); fbOff = ['dhit', l + ',0,0']; } else { flushPad(sel); dspSet('npad', '0,100,0'); fbOff = ['npad', '0,0,0']; }
@@ -2088,7 +2278,7 @@ function euGet(key) {                                     /* [fraction 0..1, tex
         case 'evel': return [euV / 127, String(euV)];
         case 'eacc': return [P.acc / 60, '+' + P.acc];
         case 'ehum': return [P.hum / 40, P.hum + '%'];
-        case 'enud': return [P.nud / NUD_MAX, nudTxt(P.nud)];
+        case 'enud': return [nudPos(P.nud), nudTxt(P.nud)];
         case 'eprb': return [PROB_PCT[P.prb] / 100, PROB_PCT[P.prb] + '%'];
         case 'egat': return [P.gat / 6, GATE_NAME[P.gat]];
         case 'erat': return [P.rat / 3, (P.rat + 1) + 'x'];
@@ -2112,7 +2302,7 @@ function euEdit(key, delta, idx) {
         else if (key === 'erev') P.rev = d > 0 ? 1 : 0;
         else if (key === 'einv') P.inv = d > 0 ? 1 : 0;
         else if (key === 'eclr') { if (d < 0) return true; const c = ed[sel]; snap(c, L); for (let s = 0; s < MAXSTEP; s++) steps[c][L][s] = [0, 100, 0, 0, 0, 0, 0, 0]; qSeq(c, L); markEdited(); showToast('EUCLID', 'PATTERN CLEARED', 0); return true; }
-        else if (key === 'enud') P.nud = clamp(P.nud + d, 0, NUD_MAX);
+        else if (key === 'enud') P.nud = clamp(P.nud + d, -NUD_MAX, NUD_MAX);
         else if (key === 'eprb') P.prb = clamp(P.prb - d, 0, 31);
         else if (key === 'egat') P.gat = clamp(P.gat + d, 0, 6);
         else if (key === 'erat') P.rat = clamp(P.rat + d, 0, 3);
@@ -2325,7 +2515,7 @@ function drawSample() {
 }
 function drawSeq() {
     if (heldStep >= 0 && !recDown) { drawStepEdit(); return; }
-    titleBar('C' + (ed[sel] + 1) + '  ' + bpm + ' BPM', recArmed ? (playing ? 'REC' : 'REC ARM') : (topModes[sel] === 1 ? 'RPT ' + REP_NAME[repRate] : (playing ? 'PLAY' : 'STOP')));
+    titleBar('C' + (ed[sel] + 1) + '  ' + bpm + ' BPM', recArmed ? (playing ? 'REC' : 'REC ARM') : (fxLive ? 'FX LIVE' : (topModes[sel] === 1 ? 'RPT ' + REP_NAME[repRate] : (playing ? 'PLAY' : 'STOP'))));
     const star = llen[ln()] ? '*' : '', pgTxt = LL() > 16 ? (stepPage + 1) + '/' + pageCount() + ' L' + LL() + star : 'L' + LL() + star;
     txt(0, 11, fit(p2(sel + 1) + ' ' + laneName() + (mutes[sel] ? ' M' : ''), 120 - tw(pgTxt)), 1);
     txt(126 - tw(pgTxt), 11, pgTxt, 1);
@@ -2413,6 +2603,7 @@ function openHub(v) { navStack = []; hubReturn = isHub(view) ? hubReturn : (view
 function hubMove(dl) { const n = HUBS[view][1].length; hubSel[view] = clamp(hubSel[view] + (dl > 0 ? 1 : -1), 0, n - 1); needsRedraw = true; }
 function hubEnter() {
     const t = HUBS[view][1][hubSel[view]];
+    if (t[1] === -2) { fxSetLive(!fxLive); return; }                  /* LIVE: the FX pads on / off (same as Shift + step 4) */
     if (t[1] === -1) { menuOpen = true; menuIdx = 0; menuGrp = -1; menuSub = 0; needsRedraw = true; return; }
     navStack.push(view); view = t[1]; acc.fill(0); needsRedraw = true;
     if (view === 1 && lastTab[sel] && lastTab[sel] !== 1) { const w = lastTab[sel] === 9 ? lastTabId() : lastTab[sel]; tabEnter(w); }
@@ -2476,6 +2667,7 @@ function drawGlyph(n, x, y, c) {
     else if (n === 'TEMPO') { for (let j = 0; j < 7; j++) set_pixel(x + 8 - Math.floor(j / 2), y + 7 - j, c); fill_rect(x + 8, y + 7, 7, 1, c); }
     else if (n === 'QUANT') { for (let j = 0; j < 4; j++) fill_rect(x + 2 + j * 4, y + 3 + (j % 2) * 3, 3, 3, c); }
     else if (n === 'OPTION') { for (let j = 0; j < 3; j++) fill_rect(x + 2, y + 2 + j * 3, 17, 1, c); }
+    else if (n === 'LIVE') { for (let a = 0; a < 2; a++) for (let b = 0; b < 3; b++) { if (a === 0 && b !== 1) draw_rect(x + 1 + b * 6, y + a * 5, 5, 4, c); else fill_rect(x + 1 + b * 6, y + a * 5, 5, 4, c); } }
     else if (n === 'MORE') { for (let j = 0; j < 3; j++) fill_rect(x + 4 + j * 5, y + 5, 2, 2, c); }
 }
 function drawHub() {
@@ -2535,7 +2727,7 @@ function drawSong() {
 }
 function drawParams() {
     const items = VIEW_ITEMS[view], scope = padView(view) ? 'pad' : 'master';
-    titleBar(scope === 'pad' || view === 36 ? (p2(sel + 1) + ' ' + laneName()) : (view === 21 ? p2(sel + 1) + ' ' + (kind[sel] ? 'DRUM ' + (slot[sel] + 1) : 'SYNTH') : (view === 8 ? 'OPT' : 'MASTER')), view === 8 ? 'CPU ' + cpuAvg + '%' : VIEWS[view]);
+    titleBar(scope === 'pad' || view === 36 ? (p2(sel + 1) + ' ' + laneName()) : (view === 21 ? p2(sel + 1) + ' ' + (kind[sel] ? 'DRUM ' + (slot[sel] + 1) : 'SYNTH') : (view === 8 ? 'OPT' : 'MASTER')), view === 8 ? 'CPU ' + cpuAvg + '%' : (view === 9 ? engTitle() : VIEWS[view]));
     const ps = PAGE_STYLE[view] || 0;
     if (view === 2) drawFilterCurve();
     for (let i = 0; i < items.length; i++) {
@@ -2575,9 +2767,12 @@ function drawParams() {
     if (view === 33 && rsState === 2) { draw_rect(1, 44, 126, 6, 1); const w = Math.round(122 * rsPct / 100); if (w > 0) fill_rect(3, 46, w, 2, 1); }
     if (view === 8 && lastErr) { fill_rect(0, 38, 128, 26, 0); txt(1, 41, 'ERR ' + errCount, 1); txt(1, 50, lastErr.substring(0, 21), 1); txt(1, 58, lastErr.substring(21, 42), 1); }
 }
-const MOD_SYN = [['ring','Ring'],['pump','Pump'],['wob','Wobble','Wob'],['arp','Arp'],['rate','Rate'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc']];
+const MOD_SYN = [['ring','Ring'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc']];
 const MOD_DRM = [['ring','Ring'],['pump','Pump'],['wob','Wobble','Wob'],['rmb','Rumble','Rmbl'],['rmt','RumbleTail','RTail'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc']];
-function viewItemsFix() { VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN; }
+function viewItemsFix() {
+    VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
+    const L = ln(); VIEW_ITEMS[1] = (kind[sel] || Math.round(pads[L][0]) === 359) ? SOUND_STD : SOUND_SYN; VIEW_ITEMS[9] = synItems(L);
+}
 
 /* ---- scope page: master output wave (triggered) and 8 band levels, polled from the DSP ---- */
 let scopeStr = '', scopeMode = 0, scopePoll = 0;
@@ -2711,7 +2906,7 @@ function updateLeds() {
     for (let b = 0; b < 4; b++) { const t = bank * 4 + b; btn(43 - b, t === sel ? 120 : trkCol(t)); }
     btn(CC.MENU, view === 7 ? 126 : 16);
     btn(CC.CAPTURE, 16);
-    for (let i = 0; i < 16; i++) btn(16 + i, ((shiftHeld && SHIFT_OK[i]) || symLit(i)) ? 126 : 0);
+    for (let i = 0; i < 16; i++) btn(16 + i, ((shiftHeld && SHIFT_OK[i]) || symLit(i) || (i === 3 && fxLive)) ? 126 : 0);
     btn(CC.PLAY, playing ? 126 : 16);
     btn(CC.REC, recArmed ? 127 : 16);
 }
@@ -2787,7 +2982,7 @@ globalThis.init = function () {
 };
 
 function syncPadsOff() {
-    const want = (menuOpen || askKind >= 0 || shiftHeld || view === 7 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : 0);
+    const want = (menuOpen || askKind >= 0 || shiftHeld || muteHeld || view === 7 || view === 20 || kind[sel] || topModes[sel] === 2) ? 1 : (fxLive ? (topModes[sel] === 1 ? 5 : 4) : (topModes[sel] === 1 ? 3 : 0));
     if (want !== padsOffSent) { padsOffSent = want; dspSet('padsoff', String(want)); }
 }
 function hostSuspend() {                                   /* keep Taktile running in the background (the sequencer keeps playing while you browse Move) */
@@ -2907,7 +3102,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (type === 0xB0 && (d1 === CC.SHIFT || d1 === CC.PLAY)) { /* fall through */ } else return;
     }
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
-        if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) fbMove(dl); return; }
+        if (type === 0xB0 && d1 === CC.JOG) { const dl = jogStep(decodeDelta(d2), 2); if (dl) fbMove(dl); return; }
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) fbClick(); return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
         if (type === 0xB0 && d1 === CC.MENU) { if (d2 > 0) { while (fb) fbBack(); } return; }
@@ -2929,7 +3124,7 @@ globalThis.onMidiMessageInternal = function (data) {
     if (type !== 0xB0) return;
     if (d1 !== CC.DELETE) delAge = 0;
     if (menuOpen && d1 !== CC.SHIFT) {
-        if (d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) menuMove(dl); }
+        if (d1 === CC.JOG) { const dl = jogStep(decodeDelta(d2), 2); if (dl) menuMove(dl); }
         else if (d1 === CC.JOGCLICK) { if (d2 > 0) menuSelect(); }
         else if (d1 === CC.BACK) { if (d2 > 0) menuBack(); }
         else if (d1 === CC.MENU) { if (d2 > 0) { menuOpen = false; menuGrp = -1; needsRedraw = true; } }
@@ -3015,19 +3210,20 @@ globalThis.onMidiMessageInternal = function (data) {
         const dl = decodeDelta(d2);
         if (loopHeld && !menuOpen && !fb && view !== 31 && !(view === 28 && broOpen)) { if (dl) setLen(LL() + (dl > 0 ? 1 : -1) * (shiftHeld ? 16 : 1), shiftHeld); return; }   /* Loop + jogwheel = loop length (Shift = whole track), on every page, before anything else */
         if (trkHeld >= 0) { trackVol(trkHeld, dl); return; }                  /* track button held + jogwheel works as well */
-        if (isHub(view)) { if (dl) hubMove(dl); return; }
-        if (view === 40) { if (dl) { histSel = clamp(histSel + (dl > 0 ? 1 : -1), 0, Math.max(0, undoStack.length - 1)); needsRedraw = true; } return; }
-        if (isTab(view) && !menuOpen && !(view === 28 && broOpen) && (view === 28 ? (smpPage === 1 ? shiftHeld : true) : (!shiftHeld || view !== 1))) { if (dl) tabMove(dl); return; }
-        if (view === 28 && broOpen && !menuOpen) { if (dl) { broSel = clamp(broSel + (dl > 0 ? 1 : -1), 0, broList.length - 1); needsRedraw = true; } return; }
-        if (view === 28 && smpPage === 1 && !padMenu && !menuOpen) { if (dl) { slSel = clamp(slSel + (dl > 0 ? 1 : -1), 0, slN - 1); needsRedraw = true; } return; }
+        const dls = dl ? jogStep(dl, 2) : 0;                                   /* slow steps for menus, hubs, tabs and lists */
+        if (isHub(view)) { if (dls) hubMove(dls); return; }
+        if (view === 40) { if (dls) { histSel = clamp(histSel + (dl > 0 ? 1 : -1), 0, Math.max(0, undoStack.length - 1)); needsRedraw = true; } return; }
+        if (isTab(view) && !menuOpen && !(view === 28 && broOpen) && (view === 28 ? (smpPage === 1 ? shiftHeld : true) : (!shiftHeld || view !== 1))) { if (dls) tabMove(dls); return; }
+        if (view === 28 && broOpen && !menuOpen) { if (dls) { broSel = clamp(broSel + (dls > 0 ? 1 : -1), 0, broList.length - 1); needsRedraw = true; } return; }
+        if (view === 28 && smpPage === 1 && !padMenu && !menuOpen) { if (dls) { slSel = clamp(slSel + (dls > 0 ? 1 : -1), 0, slN - 1); needsRedraw = true; } return; }
         if (view === 28 && smpPage === 2 && !padMenu && !menuOpen) return;
-        if (view === 28 && !padMenu && !menuOpen) { if (dl) { selectSample(dl > 0 ? 1 : -1); needsRedraw = true; } return; }
-        if (view === 20) { if (dl) { mixPage ^= 1; needsRedraw = true; } return; }
+        if (view === 28 && !padMenu && !menuOpen) { if (dls) { selectSample(dls > 0 ? 1 : -1); needsRedraw = true; } return; }
+        if (view === 20) { if (dls) { mixPage ^= 1; needsRedraw = true; } return; }
         if (padMenu) {
-            if (dl) { if (isTab(view)) tabMove(dl); else { tabEnter(1); } }
+            if (dls) { if (isTab(view)) tabMove(dls); else { tabEnter(1); } }
             return; }
-        if (dl && view === 7 && !menuOpen) { stepTrack(dl > 0 ? 1 : -1); }   /* clip view: jog = scroll through the tracks (right = down) */
-        else if (dl && !menuOpen && view === 0) {                          /* SEQ: turning walks through the track pages (SOUND, FILTER, MOD ...), a click opens the preset folders */
+        if (dls && view === 7 && !menuOpen) { stepTrack(dls > 0 ? 1 : -1); }   /* clip view: jog = scroll through the tracks (right = down) */
+        else if (dls && !menuOpen && view === 0) {                          /* SEQ: turning walks through the track pages (SOUND, FILTER, MOD ...), a click opens the preset folders */
             if (shiftHeld) fbOpen();
             else { navStack = [0]; hubReturn = 0; symOpen = -1; tabEnter(1); showToast(TAB_NAME[1], 'TURN = NEXT PAGE', 0); }
         }
@@ -3035,8 +3231,10 @@ globalThis.onMidiMessageInternal = function (data) {
         else if (dl && !menuOpen) jogFirst(dl);                              /* every other page: the jogwheel turns the first parameter (like knob 1) */
         return; }
     case CC.JOGCLICK:
+        if (d2 > 0 && view === 20 && !menuOpen && !padMenu && !shiftHeld && !muteHeld) { subPageNav(1); return; }      /* MIX: jog click = next page (Volume > Delay > Reverb) */
         if (d2 > 0 && view === 40 && !menuOpen && !shiftHeld) { if (undoStack.length) histApply(); return; }
         if (d2 > 0 && (view === 0 || view === 1) && !menuOpen && !padMenu && !shiftHeld && askKind < 0 && !fb) { fbOpen(); acc.fill(0); needsRedraw = true; return; }   /* jog click on SEQ/SOUND = preset browser (HOME: Shift + step 3) */
+        if (d2 > 0 && view === 38 && !menuOpen && !padMenu && !shiftHeld) { openHub(17); return; }      /* FX tab: jog click opens the FX tiles (Delay, Reverb, Chorus, Phaser, Duck) */
         if (d2 > 0 && isTab(view) && !(view === 28 && broOpen) && !menuOpen && !shiftHeld) { const pv = prevTabView; if (pv !== view && isTab(pv)) { tabEnter(pv); showToast(TAB_NAME[view], 'BACK TO LAST', 0.5); } return; }
         if (d2 > 0 && view === 28 && broOpen && !menuOpen) { broClick(); return; }
         if (d2 > 0 && view === 28 && !menuOpen && !padMenu && shiftHeld) { if (smpPage === 1) sliceApply(); else if (smpPage === 0) broOpenNow(); else sampleRescan(); return; }
@@ -3059,7 +3257,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (view === 20) { mixKnob(i, delta); return; }
         const items = VIEW_ITEMS[view === 28 && smpPage ? (smpPage === 1 ? 29 : 32) : view];
         if (!items || i >= items.length) return;
-        if (!shiftHeld && view === 1 && items[i][0] === 'type') { browseSound(delta > 0 ? 1 : -1); return; }       /* sound knob = list that opens and scrolls */
+        if (!shiftHeld && view === 1 && items[i][0] === 'type') { const pd = jogStep(delta > 0 ? 1 : -1, 3); if (pd) browseSound(pd); return; }       /* sound knob = list that opens and scrolls */
         if (!shiftHeld && view === 28 && !smpPage && items[i][0] === 'smp') { acc[i] += delta; if (Math.abs(acc[i]) < 2) return; sampleList(acc[i] > 0 ? 1 : -1); acc[i] = 0; return; }
         const ts0 = toastSeq;
         if (editParam(scopeOf(items[i][0]), items[i][0], delta, i)) { markEdited(); if (toastSeq !== ts0) return; const v2 = getVal(scopeOf(items[i][0]), items[i][0]); curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v2), fracVal(items[i][0], v2)); }

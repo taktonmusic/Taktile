@@ -6,7 +6,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-ff4d6d">
   <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-8d6bff">
   <img alt="Language" src="https://img.shields.io/badge/DSP-C-2ec4b6">
-  <img alt="Version" src="https://img.shields.io/badge/version-5.4.1-ffb703">
+  <img alt="Version" src="https://img.shields.io/badge/version-5.5.0-ffb703">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-lightgrey">
 </p>
 
@@ -34,9 +34,9 @@ Taktile is a pattern-based groove box built for jamming live. It takes over the 
 | | |
 |---|---|
 | 🎹 **Tracks** | 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain |
-| 🔊 **Sounds** | 1210 built-in sounds, your own WAV samples (64 slots / 40 MB), slicing, kits from 16 WAVs, time-stretch, resampling |
-| 🗂️ **Track pages** | Tabs on a synth track: SYNTH → SOUND → FILTER → MOD → FX → FX 2 → EUCLID → MIDI FX. Drum tracks and sample sounds get SAMPLE as the last tab instead of SYNTH |
-| 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 10 insert effects, 10 MIDI effects, sidechain (auto / all / off) |
+| 🔊 **Sounds** | 1215 built-in sounds (classic list + 5 sound engines: Modal, FM, Vox, Chip, Morph), your own WAV samples (64 slots / 40 MB), slicing, kits from 16 WAVs, time-stretch, resampling |
+| 🗂️ **Track pages** | Tabs on a synth track: SOUND → SYNTH → FILTER → MOD → FX → EQ → EUCLID → MIDI FX. Drum tracks and sample sounds get SAMPLE as the last tab instead of SYNTH |
+| 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 10 MIDI effects incl. chords, 16 FX pads (performance effects), sidechain (auto / all / off) |
 | 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator, MIDI clock + note out (USB-A) |
 | 🧪 **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |
 | 💾 **Workflow** | 32 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
@@ -125,6 +125,7 @@ State is stored under `/data/UserData/schwung/taktile-*`.
 |---|---|
 | **Jog turn** | walks through the track pages / the list on the current page |
 | **Jog click** | open or confirm (SEQ/SOUND: preset browser; menus and lists: the selected entry). On a track tab: back to the last tab. Elsewhere: HOME |
+| **Shift + step 4** | live FX pads on / off (hold a pad = effect, release = back) |
 | **Shift + Jog click** | HOME from anywhere (on the TEMPO page: tap tempo) |
 | **Shift + Left / Right** | previous / next sub-page on MIX, EUCLID, SAMPLE and SCOPE. On the sequencer: previous / next step page |
 

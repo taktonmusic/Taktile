@@ -1,7 +1,7 @@
 const vm = require('vm'), fs = require('fs');
 const files = {}; const writes = []; const params = {}; const setCalls = [];
 const ctx = vm.createContext({ console, Math, JSON, Date, Array, Object, String, Number, parseInt, parseFloat, isNaN, Float32Array, Int16Array, Uint8Array, setTimeout, clearTimeout });
-ctx.globalThis = ctx;
+ctx.globalThis = ctx; ctx.__NOJOGDIV = true;
 Object.assign(ctx, {
   host_read_file: (f) => (f in files ? files[f] : null), host_write_file: (f, t) => { files[f] = t; if (/error\.log/.test(f)) writes.push(t); },
   host_module_set_param: (k, v) => { setCalls.push([k, v]); }, host_module_get_param: (k) => (k in params ? params[k] : ''), fill_rect() {}, draw_rect() {}, set_pixel() {}, clear_screen() {}, print() {}, text_width: (s) => String(s).length * 5,
