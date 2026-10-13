@@ -31,6 +31,7 @@ jobs:
           node tools/test/test_resample.js
           node tools/test/test_projswitch.js
           node tools/test/test_engines.js
+          node tools/test/test_fxpads.js
 
       - name: DSP tests (sample import, resample limit; sanitizers)
         run: ./tools/test/run_dsp_test.sh

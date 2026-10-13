@@ -90,7 +90,7 @@ const TAB_SYM = { 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3
 const TAB_NAME = { 43: 'SOUND EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX SENDS', 39: 'FX TIMES', 27: 'MIDI FX', 36: 'EUCLID' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 27 || v === 36; }
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359; return [1, (!kind[sel] && !smp) ? 9 : 28, 2, 3, 38, 39, 43, 36, 27]; }      /* SOUND, SYNTH/SAMPLE, FILTER, MOD, FX, FX 2, EQ, EUCLID, MIDI FX */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359; return [1, (!kind[sel] && !smp) ? 9 : 28, 2, 3, 38, 43, 36, 27]; }      /* SOUND, SYNTH/SAMPLE, FILTER, MOD, FX, EQ, EUCLID, MIDI FX */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -156,7 +156,7 @@ const VIEW_ITEMS = {
     1: [['type','Type'],['tune','Tune'],['decay','Decay','Dcy'],['tone','Tone'],['drive','Drive','Drv'],['pan','Pan'],['poly','Voices','Poly'],['vol','Vol']],
     2: [['cut','LPCut','LPF'],['res','Reso'],['locut','HPCut','HPF'],['fenv','FltEnv','FEnv'],['fdec','FltDecay','FDec'],['fkey','KeyTrack','FKey'],['fmode','Mode'],['crush','Crush','Crsh']],
     3: [['ring','Ring'],['pump','Pump'],['wob','Wobble','Wob'],['arp','Arp'],['rate','Rate'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc']],       /* synth tracks; drum tracks swap Arp / Rate for the kick rumble (viewItemsFix) */
-    38: [['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['chor','Chorus','Cho'],['phas','Phaser','Pha'],['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth']],
+    38: [['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['chor','Chorus','Cho'],['phas','Phaser','Pha'],['dtime','DlyTime','DTim'],['rsize','RvbSize','RSiz'],['dfb','DlyFdbk','DFb']],
     39: [['dtime','DlyTime','DTim'],['dfb','DlyFdbk','DFb'],['rsize','RvbSize','RSiz'],['rdark','RvbDark','RDrk'],['chrt','ChoRate','CRt'],['chdp','ChoDepth','CDp'],['phrt','PhaRate','PRt'],['phfb','PhaFdbk','PFb']],
     41: [['m_eql','Low'],['m_eqm','Mid'],['m_eqh','High'],['m_lim','Limiter','Lim'],['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_comp','Comp']],
     4: [['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_wid','Width','Wid'],['m_comp','Comp'],['dly_ret','DlyRet'],['rvb_ret','RvbRet'],['m_lim','Limiter','Lim']],
@@ -168,7 +168,7 @@ const VIEW_ITEMS = {
     10: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
     15: [['m_qnt','Launch'],['rqoff','RecSnap'],['qscale','ScaleQ'],['key','Key'],['scale','Scale'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum']],
     24: [['xfx','Effect'],['xmix','Amount'],['xrt','Rate'],['xdp','Depth'],['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['chor','Chorus','Cho'],['phas','Phaser','Pha']],
-    27: [['mfx','MIDI FX','Effect'],['mamt','Amount'],['mprm','Param'],['arp','Arp'],['rate','ArpRate','Rate'],['tsw','Swing+','Swg+'],['vol','Vol'],['pan','Pan']],
+    27: [['mfx','MIDI FX','Effect'],['mamt','Amount'],['mprm','Param'],['arp','Arp'],['rate','ArpRate','Rate']],
     25: [['key','Key'],['scale','Scale'],['qscale','ScaleQ'],['m_qnt','Launch','Lnch'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met']],
     26: [['rrate','Rate'],['fullvel','FullVel'],['rqoff','RecSnap'],['qscale','ScaleQ'],['arp','Arp'],['rate','ArpRate','ARate'],['bpm','BPM'],['swing','Swing','Swg']],
     22: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ']],
@@ -190,7 +190,7 @@ const VIEW_ITEMS = {
 /* home / fx / master hubs: tiles you pick with the jogwheel (turn = choose, click = open, Back = up one level) */
 const HUBS = {
     16: ['HOME', [['SOUND', 1], ['TRACK', 21], ['MIX', 20], ['BUS', 4], ['EDIT', -1], ['MORE', 18]]],
-    17: ['FX', [['DELAY', 5], ['REVERB', 6], ['CHORUS', 14], ['PHASER', 19], ['MULTI', 24], ['MIDI', 27], ['DUCK', 30]]],
+    17: ['FX', [['DELAY', 5], ['REVERB', 6], ['CHORUS', 14], ['PHASER', 19], ['MIDI', 27], ['DUCK', 30]]],
     18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['SCOPE', 42]]],
 };
 let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
@@ -412,7 +412,7 @@ function loadState() {
         }
         if (typeof o.rr === 'number') repRate = clamp(o.rr | 0, 0, 15);
         browseAll = !!o.ba; if (typeof o.rq === 'number') rqOff = clamp(o.rq, 0, 1);
-        if (Array.isArray(o.pm) && o.pm.length === NTRK) topModes = o.pm.map(x => clamp(Number(x) || 0, 0, 2));
+        if (Array.isArray(o.pm) && o.pm.length === NTRK) topModes = o.pm.map(x => clamp(Number(x) || 0, 0, 3));
         if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0;
         if (Array.isArray(o.lens)) lens = o.lens.map(Number);
         if (Array.isArray(o.mutes)) mutes = o.mutes.map(Number);
@@ -427,7 +427,7 @@ function scopeOf(key) { return PI[key] !== undefined ? 'pad' : (MI[key] !== unde
 function getVal(scope, key) {
     if (key === 'eng') return engLane(ln()) / 5;
     if (EKEY.test(key)) return eNorm(keyLane(key), +key.slice(1));
-    if (scope === 'sys') { if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return topModes[sel] / 2; if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
+    if (scope === 'sys') { if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return topModes[sel] / 3; if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
         if (key === 'kslot') return kitSlot / (15 + FACTORY.length); if (key === 'ksave' || key === 'kload' || key === 'psave' || key === 'pload') return 0; if (key === 'kinf') return kitInfo() === 'EMPTY' ? 0 : 1;
         if (key === 'rdens') return rndDens; if (key === 'rvar') return rndVar; if (key === 'favo') return favOnly ? 1 : 0; if (key === 'kprev') return 0; if (key === 'rkey') return rndKey; if (key === 'rrat') return rndRat; if (key === 'tcol') return (tcolO[sel] || 0) / 26; if (key === 'pnew' || key === 'prst') return 0; if (key === 'pslot') return projSlot / 31; if (key === 'pinf') return projUsed[projSlot] ? 1 : 0;
         if (EU_KEYS[key]) return euGet(key)[0];
@@ -447,7 +447,7 @@ function fmtVal(key, v) {
     if (key === 'm_qnt') return ['1/16', '1/8', '1/4', '1/2', 'BAR', '2 BAR', '4 BAR'][Math.min(6, Math.floor(v * 7))];
     if (key === 'kind') return v > 0.5 ? 'DRUM' : 'SYN';
     if (key === 'mprm') { const t = Math.round(pads[ln()][PI.mfx]); if (t === 1) return OCT_NAME[Math.min(3, Math.floor(v * 4))]; if (t === 2) return CHORD_NAME[Math.min(7, Math.floor(v * 8))]; if (t === 3) return ARP_RATE[v < 0.33 ? 0 : (v < 0.66 ? 1 : 2)]; if (t === 10) { const st = Math.round((v - 0.5) * 48); return (st > 0 ? '+' : '') + st; } }
-    if (key === 'pmode') return PM_SHORT[Math.round(v * 2)];
+    if (key === 'pmode') return PM_SHORT[Math.round(v * 3)];
     if (key === 'sgn') return (((v - 0.5) * 6) * 6.02).toFixed(0) + 'dB';
     if (key === 'satk' || key === 'srel') return String(Math.round(v * 100));
     if (key === 'snorm') return 'TURN >';
@@ -497,7 +497,7 @@ function fmtVal(key, v) {
     return String(Math.round(v * 100));
 }
 function fracVal(key, v) { return ENUMS[key] ? Math.round(v) / Math.max(1, ENUMS[key].length - 1) : clamp(v, 0, 1); }
-const PM_SHORT = ['KEYS', 'REPT', 'STEP'];
+const PM_SHORT = ['KEYS', 'REPT', 'STEP', 'FX'];
 let toastSeq = 0;
 
 /* ---- curve preview: while a knob is turned, a small box shows the envelope / filter / duck / drive shape the value makes ---- */
@@ -539,7 +539,7 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'qscale') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opScaleQ(); }
         else if (key === 'kind') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : 0; acc[idx] = 0; setKind(sel, d); }
         else if (key === 'tvol') { setTV(sel, clamp(getTV(sel) + delta * (shiftHeld ? 0.02 : 0.004), 0, 1)); }
-        else if (key === 'pmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; { const dr = acc[idx] > 0 ? 1 : -1; let m = clamp(topModes[sel] + dr, 0, 2); if (m === 1 && !repAllowed) m = clamp(topModes[sel] + 2 * dr, 0, 2); topModes[sel] = m; } acc[idx] = 0; heldStep = -1; heldPad = -1; }
+        else if (key === 'pmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; { const dr = acc[idx] > 0 ? 1 : -1; let m = clamp(topModes[sel] + dr, 0, 3); if (m === 1 && !repAllowed) m = clamp(topModes[sel] + 2 * dr, 0, 3); topModes[sel] = m; } acc[idx] = 0; heldStep = -1; heldPad = -1; }
         else if (key === 'rsrc') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; rsSrc = clamp(rsSrc + (acc[idx] > 0 ? 1 : -1), 0, 16); acc[idx] = 0; }
         else if (key === 'rbar') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; rsBarI = clamp(rsBarI + (acc[idx] > 0 ? 1 : -1), 0, 4); acc[idx] = 0; }
         else if (key === 'rgo') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0; acc[idx] = 0; if (d) rsArm(); else rsCancel(); }
@@ -675,12 +675,12 @@ function clipAction(t, c) {
     if (shiftHeld) { dspSet('clip', t + ',-1'); clipsQ[t] = playing ? -1 : -2; if (!playing) clipsCur[t] = -1; showToast('TRACK ' + p2(t + 1), 'STOP', 0); needsRedraw = true; return; }
     launchClip(t, c);
 }
-const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS'];
+const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS', 'FX PADS'];
 let repAllowed = true;                                     /* off: Note Repeat is skipped when switching the pad mode */
-function nextTopMode(cur, d) { let m = cur; for (let i = 0; i < 3; i++) { m = (m + d + 3) % 3; if (m !== 1 || repAllowed) return m; } return cur === 1 ? 0 : cur; }
+function nextTopMode(cur, d) { let m = cur; for (let i = 0; i < 4; i++) { m = (m + d + 4) % 4; if (m !== 1 || repAllowed) return m; } return cur === 1 ? 0 : cur; }
 function cycleTop(d) {
     topModes[sel] = nextTopMode(topModes[sel], d);
-    showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[topModes[sel]], topModes[sel] / 2); markEdited(); needsRedraw = true;
+    showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[topModes[sel]], topModes[sel] / 3); markEdited(); needsRedraw = true;
 }
 let layS = 0, layD = 0;                                    /* pad layouts: synth 0 MOVE (in key, rows 3 degrees apart) 1 SEQ 2 OCT 3 CHR (chromatic, rows a fourth apart); drum 0 sounds left 1 sounds right */
 const LAYS_NAME = ['MOVE', 'SEQ', 'OCT', 'CHR'], LAYD_NAME = ['SND L', 'SND R'];
@@ -720,6 +720,7 @@ function clipTrig(t, c) {                                  /* does the playing c
 function pulseLow() { const p = playing ? (((gs - 1) % 4) + 4) % 4 : Math.floor(Date.now() / 250) & 3; return p >= 2; }      /* beat-locked blink phase of the pulsing pads */
 function padLedBase(i) {                                 /* LED colour of pad i (0..31) of the selected track */
     const dr = kind[sel], m = topModes[sel], tc = trkCol(sel), cc = i & 7, rr = i >> 3;
+    { const fk = fxIdxOf(i); if (fk >= 0) return fxHeld[fk] ? 120 : fxColor(fk); }       /* FX pads: own colours, never the note colour */
     if (dr && soundArea(cc)) {                                   /* drum track, left block: the 16 sounds (white = selected, colour = sound family) */
         const k = rr * 4 + (cc & 3);
         if (lmutes[laneOf(sel, k)]) return k === dsel[sel] ? 124 : dimCol(trackColor(pads[laneOf(sel, k)][0]));                   /* muted sound: dark (faint if selected) */
@@ -761,6 +762,7 @@ function padLed(i) {
     if (view === 31) return songLed(i);
     const c = padLedBase(i);
     if (askKind >= 0 || view === 7 || view === 20) return c;
+    if (fxIdxOf(i) >= 0) return c;
     const dr = kind[sel], m = topModes[sel], cc = i & 7, rr = i >> 3;
     if (dr && soundArea(cc)) {                                       /* drum sounds: used = bright, empty = dim, hit right now = flash */
         const k = rr * 4 + (cc & 3);
@@ -768,7 +770,7 @@ function padLed(i) {
         if (k === dsel[sel]) return seqUse.lplay[k] ? trackColor(pads[laneOf(sel, k)][0]) : c;      /* selected = white, pulses in its colour on a hit */
         return seqUse.lplay[k] ? 126 : c;                        /* steady family colour, pulse (white) only while a note triggers */                            /* every sound pad has the track colour; sequenced ones pulse */
     }
-    if (m === 2 || (dr && m === 1)) return c;
+    if (m === 2 || (dr && m === 1) || (dr && m === 3)) return c;
     const j = dr ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8), sm = notePadSemi(j) + oct();
     if (seqUse.play === sm) return 126;
     return c;
@@ -788,7 +790,7 @@ const HELP = {
     28: ['Sample: Datei=Knopf 1. Shift+Jog klick: Browser. Dort Shift+Klick auf Ordner = Kit aus 16 WAVs. Shift+Pfeil: Sample/Slice/ENV. Jog klick: letzter Reiter. Slice teilt auf 16 Pads.'],
     27: ['MIDI-Effekt waehlen', 'Amount + Param', 'Jog: Reiter wechseln'],
     36: ['Euklid: 2 Seiten', 'Shift+Pfeil: Seite', 'Jog klick: letzter Reiter', 'Aendert das Pattern'],
-    38: ['Sends: Delay, Reverb', 'Chorus, Phaser, Insert', 'FX 2 = Zeiten'],
+    38: ['Sends: Delay, Reverb', 'Chorus, Phaser', 'Zeiten: DTim, RSiz, DFb'],
     39: ['Zeiten der Effekte', 'Delay, Reverb, Chorus', 'Phaser'],
     16: ['SOUND = Track-Seiten', 'EDIT = Aktionen', 'MORE = Projekt, Song'],
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
@@ -1090,7 +1092,7 @@ function anySymLit() { return symOpen >= 0 && symLit(symOpen); }
 const SHIFT_OK = { 0: 1, 1: 1, 2: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 14: 1, 15: 1 };      /* same symbols as the Move itself; steps 4, 12, 13, 14 have no function and stay dark */
 function shiftStep(i) {
     if (!SHIFT_OK[i]) return;                                       /* only symbols with a real function light up */
-    if (i === 7) { const m = topModes[sel]; cycleTop(m === 0 ? 1 : (m === 1 ? -1 : -2)); return; }   /* step 8: note repeat on/off (PITCH <> REPEAT; from STEPS back to PITCH); STEPS via the track button or the menu */
+    if (i === 7) { const m = topModes[sel]; cycleTop(m === 0 ? 1 : (m === 1 ? -1 : -m)); return; }   /* step 8: note repeat on/off (PITCH <> REPEAT; from STEPS back to PITCH); STEPS via the track button or the menu */
     if (i === 5) { const v = cycleMaster('m_met', [0, 0.6]); showToast('METRONOME', v > 0 ? 'ON' : 'OFF', v); return; }
     if (i === 9) { fullVel = !fullVel; showToast('FULL VELOCITY', fullVel ? 'ON' : 'OFF', fullVel ? 1 : 0); markEdited(); return; }
     if (i === 14) { opDouble(); return; }
@@ -1399,6 +1401,38 @@ function padCopy(k) {                                       /* Copy + pad = pick
     else { pads[b] = pads[a].slice(); qPad(b); showToast('COPIED', (cpPad + 1) + ' > ' + (k + 1), 1); }
     cpPad = -1; markEdited();
 }
+
+/* ---- FX PADS (pad mode 4): momentary performance effects on the master bus. Hold a pad = the effect is on, release = back to the Master page values.
+   Synth track: the two top rows (8 + 8), the two lower rows keep playing notes. Drum track: the right 4x4 block. Costs no CPU of its own. ---- */
+const FX_PADS = [
+    ['LP SWEEP', 0, [[9, 0.18]]], ['HP SWEEP', 0, [[9, 0.85]]],
+    ['LOW KILL', 1, [[16, 0]]], ['MID KILL', 1, [[17, 0]]], ['HIGH KILL', 1, [[18, 0]]], ['PHONE', 1, [[16, 0], [17, 1], [18, 0]]],
+    ['DRIVE', 2, [[10, 0.6]]], ['CRUSH', 2, [[10, 1], [12, 0.9]]],
+    ['DULL', 3, [[9, 0.32]]], ['THIN', 3, [[9, 0.68]]], ['MONO', 3, [[11, 0]]], ['WIDE', 3, [[11, 1]]],
+    ['SQUASH', 3, [[12, 1]]], ['BOOM', 3, [[16, 1], [10, 0.3]]], ['AIR', 3, [[18, 1]]], ['TAPE', 3, [[10, 0.4], [9, 0.38]]]];
+const FX_KEYS = [9, 10, 11, 12, 16, 17, 18];
+const FX_COL = [12, 60, 100, 85];                           /* the groups 2 / 4 / 2 and the second row: none of them is a track colour */
+let fxHeld = {}, fxPadOf = {};
+function fxColor(k) { const tc = trkCol(sel); let c = FX_COL[FX_PADS[k][1]]; if (c === tc || c === dimCol(tc)) c = 40; return c; }
+function fxIdxOf(i) {                                       /* pad i -> FX number 0..15, -1 = not an FX pad */
+    if (topModes[sel] !== 3) return -1;
+    const cc = i & 7, rr = i >> 3;
+    if (kind[sel]) return soundArea(cc) ? -1 : (3 - rr) * 4 + (cc & 3);
+    return rr >= 2 ? (3 - rr) * 8 + cc : -1;
+}
+function fxApply() {
+    const eff = master.slice();
+    for (const k in fxHeld) for (const e of FX_PADS[k][2]) eff[e[0]] = e[1];
+    for (const mi of FX_KEYS) {
+        for (let q = queue.length - 1; q >= 0; q--) if (queue[q][0] === 'm' + MK[mi]) queue.splice(q, 1);
+        dspSet(MK[mi], eff[mi].toFixed(3));
+    }
+}
+function fxPad(i, on) {
+    if (on) { const k = fxIdxOf(i); if (k < 0) return false; if (fxPadOf[i] !== undefined) { const o = fxPadOf[i]; delete fxPadOf[i]; let st = false; for (const j in fxPadOf) if (fxPadOf[j] === o) st = true; if (!st) delete fxHeld[o]; } fxHeld[k] = 1; fxPadOf[i] = k; showToast('FX', FX_PADS[k][0], k / 15); }
+    else { const k = fxPadOf[i]; if (k === undefined) return false; delete fxPadOf[i]; let still = false; for (const j in fxPadOf) if (fxPadOf[j] === k) still = true; if (!still) delete fxHeld[k]; }
+    fxApply(); needsRedraw = true; return true;
+}
 function drumPad(idx, on, vel) {                          /* drum track: left 4x4 = the 16 sounds, right 4x4 = PITCH / REPEAT / STEPS of the selected sound */
     const cc = idx & 7, rr = idx >> 3, m = topModes[sel];
     if (soundArea(cc)) {
@@ -1420,6 +1454,7 @@ function drumPad(idx, on, vel) {                          /* drum track: left 4x
         return;
     }
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
+    if (m === 3) { if (on) fxPad(idx, true); return; }
     if (m === 1) { if (on) setRepRate(rr * 4 + (cc & 3)); return; }      /* Note Repeat: the 16 pads on the right are the speeds */
     if (shiftHeld) return;
     const j = degOf(cc & 3, rr, 4), L = ln();
@@ -1439,6 +1474,7 @@ function delNote(L, semi) {                                 /* Delete + note pad
     showToast(n ? 'NOTE DELETED' : 'NO NOTE HERE', n ? n + ' STEPS' : '', 0);
 }
 function onPad(idx, on, vel) {
+    if (!on && fxPadOf[idx] !== undefined) { fxPad(idx, false); return; }       /* an FX pad is always released, even after a mode / track change */
     if (muteHeld || view === 20) {                            /* MUTE + pad (session / mixer: just the pad) = mute without leaving the page */
         if (on) {
             if (view === 7) { muteUsed = true; const t = bank * 4 + (3 - (idx >> 3)); if (t >= 0 && t < NTRK) { if (shiftHeld) soloTrack(t); else toggleMute(t); } }
@@ -1453,6 +1489,8 @@ function onPad(idx, on, vel) {
     if (kind[sel]) { drumPad(idx, on, vel); return; }
     const m = topModes[sel];
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
+    if (m === 3 && on && fxIdxOf(idx) >= 0) { fxPad(idx, true); return; }
+    if (m === 3 && fxIdxOf(idx) >= 0) return;
     const dg = degOf(idx & 7, idx >> 3, 8);
     if (on && deleteHeld) { delNote(sel, notePadSemi(dg) + oct()); return; }
     if (on && heldStep < 0) { recordHit(sel, notePadSemi(dg) + oct(), vel); logHit(sel, notePadSemi(dg) + oct(), vel); }
@@ -2917,7 +2955,7 @@ globalThis.init = function () {
 };
 
 function syncPadsOff() {
-    const want = (menuOpen || askKind >= 0 || shiftHeld || view === 7 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : 0);
+    const want = (menuOpen || askKind >= 0 || shiftHeld || view === 7 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : (topModes[sel] === 3 ? 4 : 0));
     if (want !== padsOffSent) { padsOffSent = want; dspSet('padsoff', String(want)); }
 }
 function hostSuspend() {                                   /* keep Taktile running in the background (the sequencer keeps playing while you browse Move) */

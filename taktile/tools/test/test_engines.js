@@ -19,9 +19,9 @@ let all = 0; for (let e = 1; e <= 5; e++) all += run('engList(' + e + ').length'
 
 // --- tab order: SOUND, SYNTH, FILTER, MOD, FX, FX 2, EQ, EUCLID, MIDI
 setup(1);
-ok(JSON.stringify(run('trackTabs()')) === '[1,9,2,3,38,39,43,36,27]', 'tabs on a synth track: SOUND SYNTH FILTER MOD FX FX2 EQ EUCLID MIDI');
+ok(JSON.stringify(run('trackTabs()')) === '[1,9,2,3,38,43,36,27]', 'tabs on a synth track: SOUND SYNTH FILTER MOD FX EQ EUCLID MIDI');
 ok(run('lastTabId()') === 9, 'the SYNTH tab is the second tab');
-run('setKind(0, 1)'); ok(JSON.stringify(run('trackTabs()')) === '[1,28,2,3,38,39,43,36,27]', 'drum track: SAMPLE is the second tab'); run('setKind(0, 0)');
+run('setKind(0, 1)'); ok(JSON.stringify(run('trackTabs()')) === '[1,28,2,3,38,43,36,27]', 'drum track: SAMPLE is the second tab'); run('setKind(0, 0)');
 
 // --- SOUND page: Engine + Preset
 setup(1);

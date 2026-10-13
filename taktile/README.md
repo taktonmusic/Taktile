@@ -9,8 +9,8 @@ A pattern-based groove box for the **Ableton Move**, written as an *overtake* mo
 ## Features
 - 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain
 - 1215 built-in sounds (classic list + 5 engines with their own parameters and presets), own WAV samples (64 slots / 40 MB), slicing, kits from 16 WAVs, time-stretch, resampling
-- Track pages as tabs (synth track): SOUND, SYNTH, FILTER, MOD, FX, FX 2, EQ, TYPE, EUCLID, MIDI FX, PRESETS (drum tracks and sample sounds: SAMPLE last instead of SYNTH)
-- Per-track delay, reverb, chorus, phaser, 10 insert effects, 10 MIDI effects, sidechain (auto / all / off)
+- Track pages as tabs (synth track): SOUND, SYNTH, FILTER, MOD, FX, EQ, EUCLID, MIDI FX (drum tracks and sample sounds: SAMPLE last instead of SYNTH)
+- Per-track delay, reverb, chorus, phaser, 10 MIDI effects incl. chords, 16 FX pads (performance effects), sidechain (auto / all / off)
 - Per-step parameter locks, per-track swing, Euclid generator, MIDI clock + note out (USB-A)
 - Master: filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter
 - 32 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu

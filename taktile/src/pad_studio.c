@@ -1935,11 +1935,13 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
     int p = note_to_pad(msg[1]);
     if (p < 0) return;
     int vel = (st == 0x90 && msg[2] > 0) ? msg[2] : 0;
+    const int fx_row = (msg[1] >= 68 && msg[1] <= 99) ? (p >> 3) : -1;
     if (msg[1] >= 68 && msg[1] <= 99) {                                 /* a Move pad: the same layout as the UI (MOVE rows 3 degrees apart, SEQ, OCT, CHR) */
         const int col = p & 7, row = p >> 3;
         p = s->lay_s == 3 ? 32 + col + 5 * row : (s->lay_s == 0 ? col + 3 * row : (s->lay_s == 1 ? row * 8 + col : col + 7 * row));
     }
     if (s->pads_off == 1) { if (!vel) sel_pad(s, p, 0, 0); return; }     /* UI owns the pads (session, steps, menus) */
+    if (s->pads_off == 4 && fx_row >= 2) { if (!vel) sel_pad(s, p, 0, 0); return; }   /* FX PADS mode: the two top rows belong to the UI (performance effects), the lower rows play notes */
     sel_pad(s, p, vel, s->pads_off == 3);
 }
 
@@ -2670,7 +2672,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 l = in2[0]; r_ = in2[1];
             }
             {   /* insert effect: 10 types (xfx), amount / rate / depth meaning depends on the type */
-                const int xt = (int)(q[PP_XFX] + 0.5f);
+                const int xt = 0; (void)q[PP_XFX];   /* insert effect removed (CPU): old projects keep the values, nothing is processed */
                 if (xt > 0 && xt <= 10) {
                     const float am = q[PP_XMIX], pa = q[PP_XRT], pb = q[PP_XDP];
                     float in2[2] = { l, r_ }, out2[2] = { l, r_ };

@@ -35,8 +35,8 @@ Taktile is a pattern-based groove box built for jamming live. It takes over the 
 |---|---|
 | 🎹 **Tracks** | 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain |
 | 🔊 **Sounds** | 1215 built-in sounds (classic list + 5 sound engines: Modal, FM, Vox, Chip, Morph), your own WAV samples (64 slots / 40 MB), slicing, kits from 16 WAVs, time-stretch, resampling |
-| 🗂️ **Track pages** | Tabs on a synth track: SOUND → SYNTH → FILTER → MOD → FX → FX 2 → EQ → TYPE → EUCLID → MIDI FX → PRESETS. Drum tracks and sample sounds get SAMPLE as the last tab instead of SYNTH |
-| 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 10 insert effects, 10 MIDI effects, sidechain (auto / all / off) |
+| 🗂️ **Track pages** | Tabs on a synth track: SOUND → SYNTH → FILTER → MOD → FX → EQ → EUCLID → MIDI FX. Drum tracks and sample sounds get SAMPLE as the last tab instead of SYNTH |
+| 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 10 MIDI effects incl. chords, 16 FX pads (performance effects), sidechain (auto / all / off) |
 | 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator, MIDI clock + note out (USB-A) |
 | 🧪 **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |
 | 💾 **Workflow** | 32 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
