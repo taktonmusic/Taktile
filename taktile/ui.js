@@ -68,8 +68,9 @@ const PI = {}; PK.forEach((k, i) => PI[k] = i);
 const MI = {}; MK.forEach((k, i) => MI[k] = i);
 const SCALE7 = [[0,2,3,5,7,8,10],[0,1,3,5,7,8,10],[0,2,4,5,7,9,11]];
 const PROB_PCT = Array.from({ length: 32 }, (_, i) => Math.round(100 - i * 100 / 32));   /* 32 levels */
-const NUD_MAX = 28;                                                       /* nudge 0..28 = 0..70 % of a step in 2.5 % steps */
-function nudTxt(n) { return '+' + (n * 2.5).toFixed(n % 2 ? 1 : 0) + '%'; }
+const NUD_MAX = 28;                                                       /* nudge -28..+28 = 70 % of a step earlier (-) or later (+) in 2.5 % steps */
+function nudTxt(n) { return (n < 0 ? '-' : '+') + (Math.abs(n) * 2.5).toFixed(Math.abs(n) % 2 ? 1 : 0) + '%'; }
+function nudPos(n) { return (n + NUD_MAX) / (2 * NUD_MAX); }
 
 /* default sounds for the 16 tracks: type, tune, decay, arp, rate, dly, rvb (mirrors the DSP) */
 const LAYOUT = [
@@ -191,7 +192,7 @@ const VIEW_ITEMS = {
 const HUBS = {
     16: ['HOME', [['SOUND', 1], ['TRACK', 21], ['MIX', 20], ['BUS', 4], ['EDIT', -1], ['MORE', 18]]],
     17: ['FX', [['DELAY', 5], ['REVERB', 6], ['CHORUS', 14], ['PHASER', 19], ['DUCK', 30]]],
-    18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['SCOPE', 42]]],
+    18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['SCOPE', 42], ['LIVE', -2]]],
 };
 let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
 
@@ -258,14 +259,14 @@ function defaultPads() {
 function hex2(n) { return (n < 16 ? '0' : '') + n.toString(16); }
 function encStep(st) {                                    /* 10 hex chars: on+vel, prob, semi+64, ratchet|gate<<2|cond<<5, nudge */
     const x = ((st[4] | 0) & 3) | (((st[5] | 0) & 7) << 2) | (((st[7] | 0) & 7) << 5);
-    return hex2((st[0] ? 0x80 : 0) | (st[1] & 0x7F)) + hex2(0x80 | (clamp(st[3] | 0, 0, 31) & 0x1F)) + hex2(clamp(st[2], -64, 63) + 64) + hex2(x) + hex2(0x40 | (clamp(st[6] | 0, 0, NUD_MAX) & 0x3F)) + hex2((st[8] | 0) & 0x7F);
+    return hex2((st[0] ? 0x80 : 0) | (st[1] & 0x7F)) + hex2(0x80 | (clamp(st[3] | 0, 0, 31) & 0x1F)) + hex2(clamp(st[2], -64, 63) + 64) + hex2(x) + hex2(0x40 | (clamp(st[6] | 0, -NUD_MAX, NUD_MAX) & 0x3F)) + hex2((st[8] | 0) & 0x7F);
 }
 function decProb(b) { return (b & 0x80) ? (b & 0x1F) : ((((b & 7) << 1) | ((b >> 3) & 1)) << 1); }
 function decStep(h) {
     const a = parseInt(h.substr(0, 2), 16), b = parseInt(h.substr(2, 2), 16), c = parseInt(h.substr(4, 2), 16);
     if (h.length >= 10) {
         const x = parseInt(h.substr(6, 2), 16) || 0, n = parseInt(h.substr(8, 2), 16) || 0;
-        const r = [(a & 0x80) ? 1 : 0, (a & 0x7F) || 100, (c || 0) - 64, decProb(b), x & 3, (x >> 2) & 7, (n & 0x40) ? (n & 0x3F) : (n & 7) * 4, (x >> 5) & 7];
+        const r = [(a & 0x80) ? 1 : 0, (a & 0x7F) || 100, (c || 0) - 64, decProb(b), x & 3, (x >> 2) & 7, (n & 0x40) ? ((n & 0x3F) >= 32 ? (n & 0x3F) - 64 : (n & 0x3F)) : (n & 7) * 4, (x >> 5) & 7];
         if (h.length >= 12) { const lk = (parseInt(h.substr(10, 2), 16) || 0) & 0x7F; if (lk) r.push(lk); }
         return r;
     }
@@ -382,7 +383,7 @@ function loadState() {
         favs = Array.isArray(o.fv) ? o.fv.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length) : []; favOnly = !!o.fo; if (Array.isArray(o.ui)) { splashOn = o.ui[0] !== 0; idleOn = o.ui[1] === 1; dispInv = o.ui[2] === 1; repAllowed = o.ui[3] !== 0; if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0; } recent = Array.isArray(o.rc) ? o.rc.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length).slice(0, 12) : [];
         if (Array.isArray(o.rn) && o.rn.length === 4) { rndDens = clamp(Number(o.rn[0]) || 0.28, 0.02, 0.9); rndVar = clamp(Number(o.rn[1]) || 0.5, 0, 1); rndKey = o.rn[2] ? 1 : 0; rndRat = clamp(Number(o.rn[3]) || 0, 0, 1); }
         if (typeof o.bp === 'string' && o.bp.charAt(0) === '/' && o.bp.length < 200) broPath = o.bp;
-        if (Array.isArray(o.ep)) for (let i = 0; i < NLANE && i < o.ep.length; i++) { const q = o.ep[i] || {}, d = euDef(); euP[i] = { keep: q.keep ? 1 : 0, rev: q.rev ? 1 : 0, inv: q.inv ? 1 : 0, acc: clamp(q.acc | 0, 0, 60), hum: clamp(q.hum | 0, 0, 40), mut: clamp(q.mut | 0, 0, 100), nud: clamp((q.nud | 0) * (o.pf === 2 ? 1 : 4), 0, NUD_MAX), prb: clamp((q.prb | 0) * (o.pf === 2 ? 1 : (o.pf === 1 ? 2 : 4)), 0, 31), gat: clamp(q.gat | 0, 0, 6), rat: clamp(q.rat | 0, 0, 3), cond: clamp(q.cond | 0, 0, 7), seed: clamp(q.seed | 0, 1, 9972) || d.seed }; }
+        if (Array.isArray(o.ep)) for (let i = 0; i < NLANE && i < o.ep.length; i++) { const q = o.ep[i] || {}, d = euDef(); euP[i] = { keep: q.keep ? 1 : 0, rev: q.rev ? 1 : 0, inv: q.inv ? 1 : 0, acc: clamp(q.acc | 0, 0, 60), hum: clamp(q.hum | 0, 0, 40), mut: clamp(q.mut | 0, 0, 100), nud: clamp((q.nud | 0) * (o.pf === 2 ? 1 : 4), -NUD_MAX, NUD_MAX), prb: clamp((q.prb | 0) * (o.pf === 2 ? 1 : (o.pf === 1 ? 2 : 4)), 0, 31), gat: clamp(q.gat | 0, 0, 6), rat: clamp(q.rat | 0, 0, 3), cond: clamp(q.cond | 0, 0, 7), seed: clamp(q.seed | 0, 1, 9972) || d.seed }; }
         if (o.au && typeof o.au === 'object') { AUTO = {}; for (const id in o.au) if (/^\d+\|\d+\|[a-z]+$/.test(id) && o.au[id] && typeof o.au[id] === 'object') { const m = {}; for (const k in o.au[id]) { const v = Number(o.au[id][k]); if (isFinite(v)) m[k] = clamp(v, 0, 12); } AUTO[id] = m; } }
         if (o.sg && Array.isArray(o.sg.l) && o.sg.l.length >= 1 && o.sg.l.length <= 32) { songList = o.sg.l.map(songNorm); songOn = !!o.sg.on; songLoop = o.sg.lp === undefined ? true : !!o.sg.lp; songSlot = 0; }
         if (Array.isArray(o.sm) && o.sm.length >= 1 && o.sm.length <= 16) { slm = o.sm.map(x => clamp(Number(x) || 0, 0, 0.998)).sort((a, b) => a - b); slN = slm.length; slSel = 0; }
@@ -412,7 +413,7 @@ function loadState() {
         }
         if (typeof o.rr === 'number') repRate = clamp(o.rr | 0, 0, 15);
         browseAll = !!o.ba; if (typeof o.rq === 'number') rqOff = clamp(o.rq, 0, 1);
-        if (Array.isArray(o.pm) && o.pm.length === NTRK) topModes = o.pm.map(x => clamp(Number(x) || 0, 0, 3));
+        if (Array.isArray(o.pm) && o.pm.length === NTRK) topModes = o.pm.map(x => clamp(Number(x) || 0, 0, 2));
         if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0;
         if (Array.isArray(o.lens)) lens = o.lens.map(Number);
         if (Array.isArray(o.mutes)) mutes = o.mutes.map(Number);
@@ -427,7 +428,7 @@ function scopeOf(key) { return PI[key] !== undefined ? 'pad' : (MI[key] !== unde
 function getVal(scope, key) {
     if (key === 'eng') return engLane(ln()) / 5;
     if (EKEY.test(key)) return eNorm(keyLane(key), +key.slice(1));
-    if (scope === 'sys') { if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return topModes[sel] / 3; if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
+    if (scope === 'sys') { if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return topModes[sel] / 2; if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
         if (key === 'kslot') return kitSlot / (15 + FACTORY.length); if (key === 'ksave' || key === 'kload' || key === 'psave' || key === 'pload') return 0; if (key === 'kinf') return kitInfo() === 'EMPTY' ? 0 : 1;
         if (key === 'rdens') return rndDens; if (key === 'rvar') return rndVar; if (key === 'favo') return favOnly ? 1 : 0; if (key === 'kprev') return 0; if (key === 'rkey') return rndKey; if (key === 'rrat') return rndRat; if (key === 'tcol') return (tcolO[sel] || 0) / 26; if (key === 'pnew' || key === 'prst') return 0; if (key === 'pslot') return projSlot / 31; if (key === 'pinf') return projUsed[projSlot] ? 1 : 0;
         if (EU_KEYS[key]) return euGet(key)[0];
@@ -447,7 +448,7 @@ function fmtVal(key, v) {
     if (key === 'm_qnt') return ['1/16', '1/8', '1/4', '1/2', 'BAR', '2 BAR', '4 BAR'][Math.min(6, Math.floor(v * 7))];
     if (key === 'kind') return v > 0.5 ? 'DRUM' : 'SYN';
     if (key === 'mprm') { const t = Math.round(pads[ln()][PI.mfx]); if (t === 1) return OCT_NAME[Math.min(3, Math.floor(v * 4))]; if (t === 2) return CHORD_NAME[Math.min(7, Math.floor(v * 8))]; if (t === 3) return ARP_RATE[v < 0.33 ? 0 : (v < 0.66 ? 1 : 2)]; if (t === 10) { const st = Math.round((v - 0.5) * 48); return (st > 0 ? '+' : '') + st; } }
-    if (key === 'pmode') return PM_SHORT[Math.round(v * 3)];
+    if (key === 'pmode') return PM_SHORT[Math.round(v * 2)];
     if (key === 'sgn') return (((v - 0.5) * 6) * 6.02).toFixed(0) + 'dB';
     if (key === 'satk' || key === 'srel') return String(Math.round(v * 100));
     if (key === 'snorm') return 'TURN >';
@@ -498,7 +499,7 @@ function fmtVal(key, v) {
     return String(Math.round(v * 100));
 }
 function fracVal(key, v) { return ENUMS[key] ? Math.round(v) / Math.max(1, ENUMS[key].length - 1) : clamp(v, 0, 1); }
-const PM_SHORT = ['KEYS', 'REPT', 'STEP', 'FX'];
+const PM_SHORT = ['KEYS', 'REPT', 'STEP'];
 let toastSeq = 0;
 
 /* ---- curve preview: while a knob is turned, a small box shows the envelope / filter / duck / drive shape the value makes ---- */
@@ -540,7 +541,7 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'qscale') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opScaleQ(); }
         else if (key === 'kind') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : 0; acc[idx] = 0; setKind(sel, d); }
         else if (key === 'tvol') { setTV(sel, clamp(getTV(sel) + delta * (shiftHeld ? 0.02 : 0.004), 0, 1)); }
-        else if (key === 'pmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; { const dr = acc[idx] > 0 ? 1 : -1; let m = clamp(topModes[sel] + dr, 0, 3); if (m === 1 && !repAllowed) m = clamp(topModes[sel] + 2 * dr, 0, 3); topModes[sel] = m; } acc[idx] = 0; heldStep = -1; heldPad = -1; }
+        else if (key === 'pmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; { const dr = acc[idx] > 0 ? 1 : -1; let m = clamp(topModes[sel] + dr, 0, 2); if (m === 1 && !repAllowed) m = clamp(topModes[sel] + 2 * dr, 0, 2); topModes[sel] = m; } acc[idx] = 0; heldStep = -1; heldPad = -1; }
         else if (key === 'rsrc') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; rsSrc = clamp(rsSrc + (acc[idx] > 0 ? 1 : -1), 0, 16); acc[idx] = 0; }
         else if (key === 'rbar') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; rsBarI = clamp(rsBarI + (acc[idx] > 0 ? 1 : -1), 0, 4); acc[idx] = 0; }
         else if (key === 'rgo') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0; acc[idx] = 0; if (d) rsArm(); else rsCancel(); }
@@ -677,12 +678,13 @@ function clipAction(t, c) {
     if (shiftHeld) { dspSet('clip', t + ',-1'); clipsQ[t] = playing ? -1 : -2; if (!playing) clipsCur[t] = -1; showToast('TRACK ' + p2(t + 1), 'STOP', 0); needsRedraw = true; return; }
     launchClip(t, c);
 }
-const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS', 'FX PADS'];
+const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS'];
 let repAllowed = true;                                     /* off: Note Repeat is skipped when switching the pad mode */
-function nextTopMode(cur, d) { let m = cur; for (let i = 0; i < 4; i++) { m = (m + d + 4) % 4; if (m !== 1 || repAllowed) return m; } return cur === 1 ? 0 : cur; }
+function nextTopMode(cur, d) { let m = cur; for (let i = 0; i < 3; i++) { m = (m + d + 3) % 3; if (m !== 1 || repAllowed) return m; } return cur === 1 ? 0 : cur; }
 function cycleTop(d) {
     topModes[sel] = nextTopMode(topModes[sel], d);
-    showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[topModes[sel]], topModes[sel] / 3); markEdited(); needsRedraw = true;
+    if (topModes[sel] === 2 && fxLive) fxSetLive(false);          /* the step pads need the whole grid */
+    showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[topModes[sel]], topModes[sel] / 2); markEdited(); needsRedraw = true;
 }
 let layS = 0, layD = 0;                                    /* pad layouts: synth 0 MOVE (in key, rows 3 degrees apart) 1 SEQ 2 OCT 3 CHR (chromatic, rows a fourth apart); drum 0 sounds left 1 sounds right */
 const LAYS_NAME = ['MOVE', 'SEQ', 'OCT', 'CHR'], LAYD_NAME = ['SND L', 'SND R'];
@@ -772,7 +774,7 @@ function padLed(i) {
         if (k === dsel[sel]) return seqUse.lplay[k] ? trackColor(pads[laneOf(sel, k)][0]) : c;      /* selected = white, pulses in its colour on a hit */
         return seqUse.lplay[k] ? 126 : c;                        /* steady family colour, pulse (white) only while a note triggers */                            /* every sound pad has the track colour; sequenced ones pulse */
     }
-    if (m === 2 || (dr && m === 1) || (dr && m === 3)) return c;
+    if (m === 2 || (dr && m === 1)) return c;
     const j = dr ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8), sm = notePadSemi(j) + oct();
     if (seqUse.play === sm) return 126;
     return c;
@@ -1091,10 +1093,11 @@ function closeSym() {
     acc.fill(0); needsRedraw = true;
 }
 function anySymLit() { return symOpen >= 0 && symLit(symOpen); }
-const SHIFT_OK = { 0: 1, 1: 1, 2: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 14: 1, 15: 1 };      /* same symbols as the Move itself; steps 4, 12, 13, 14 have no function and stay dark */
+const SHIFT_OK = { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 14: 1, 15: 1 };      /* same symbols as the Move itself; steps 4, 12, 13, 14 have no function and stay dark */
 function shiftStep(i) {
     if (!SHIFT_OK[i]) return;                                       /* only symbols with a real function light up */
-    if (i === 7) { const m = topModes[sel]; cycleTop(m === 0 ? 1 : (m === 1 ? -1 : -m)); return; }   /* step 8: note repeat on/off (PITCH <> REPEAT; from STEPS back to PITCH); STEPS via the track button or the menu */
+    if (i === 3) { fxSetLive(!fxLive); return; }                    /* step 4: LIVE FX pads on / off (own symbol, lit while on) */
+    if (i === 7) { const m = topModes[sel]; cycleTop(m === 0 ? 1 : (m === 1 ? -1 : -2)); return; }   /* step 8: note repeat on/off (PITCH <> REPEAT; from STEPS back to PITCH); STEPS via the track button or the menu */
     if (i === 5) { const v = cycleMaster('m_met', [0, 0.6]); showToast('METRONOME', v > 0 ? 'ON' : 'OFF', v); return; }
     if (i === 9) { fullVel = !fullVel; showToast('FULL VELOCITY', fullVel ? 'ON' : 'OFF', fullVel ? 1 : 0); markEdited(); return; }
     if (i === 14) { opDouble(); return; }
@@ -1271,7 +1274,7 @@ function stepKnob(i, delta) {
         if (i === 2) { st[3] = clamp(st[3] - d, 0, 31); showToast('PROBABILITY', PROB_PCT[st[3]] + '%', PROB_PCT[st[3]] / 100); }
         else if (i === 3) { st[5] = clamp(st[5] + d, 0, 6); showToast('GATE', GATE_NAME[st[5]], st[5] / 6); }
         else if (i === 4) { st[4] = clamp(st[4] + d, 0, 3); showToast('RATCHET', (st[4] + 1) + 'x', st[4] / 3); }
-        else if (i === 5) { st[6] = clamp(st[6] + d, 0, NUD_MAX); showToast('NUDGE', nudTxt(st[6]), st[6] / NUD_MAX); }
+        else if (i === 5) { st[6] = clamp(st[6] + d, -NUD_MAX, NUD_MAX); showToast('NUDGE', nudTxt(st[6]), nudPos(st[6])); }
         else { st[7] = clamp(st[7] + d, 0, 7); showToast('CONDITION', COND_NAME[st[7]], st[7] / 7); }
     }
     heldEdited = true; qStep(ed[sel], ln(), heldStep); markEdited();
@@ -1280,7 +1283,7 @@ function drawStepEdit() {
     const st = stepAt(heldStep);
     titleBar('STEP ' + (heldStep + 1) + '  ' + (kind[sel] ? 'D' + (dsel[sel] + 1) : p2(sel + 1)), 'CLIP ' + (ed[sel] + 1));
     const L = [['Vel', String(st[1]), st[1] / 127], ['Pitch', (st[2] > 0 ? '+' : '') + st[2], (st[2] + 64) / 127], ['Prob', PROB_PCT[st[3]] + '%', PROB_PCT[st[3]] / 100],
-               ['Gate', GATE_NAME[st[5]], st[5] / 6], ['Ratch', (st[4] + 1) + 'x', st[4] / 3], ['Nudge', nudTxt(st[6]), st[6] / NUD_MAX], ['Cond', COND_NAME[st[7]], st[7] / 7], [LOCK_NAME[lockT[ln()]], st[8] ? String(Math.round((st[8] - 1) / 126 * 100)) : 'OFF', st[8] / 127]];
+               ['Gate', GATE_NAME[st[5]], st[5] / 6], ['Ratch', (st[4] + 1) + 'x', st[4] / 3], ['Nudge', nudTxt(st[6]), nudPos(st[6])], ['Cond', COND_NAME[st[7]], st[7] / 7], [LOCK_NAME[lockT[ln()]], st[8] ? String(Math.round((st[8] - 1) / 126 * 100)) : 'OFF', st[8] / 127]];
     for (let i = 0; i < L.length; i++) cell((i % 4) * 32, 13 + ((i / 4) | 0) * 26, L[i][0], L[i][1], L[i][2], 32);
 }
 
@@ -1414,10 +1417,15 @@ const FX_PADS = [
     ['SQUASH', 3, [[12, 1]]], ['BOOM', 3, [[16, 1], [10, 0.3]]], ['AIR', 3, [[18, 1]]], ['TAPE', 3, [[10, 0.4], [9, 0.38]]]];
 const FX_KEYS = [9, 10, 11, 12, 16, 17, 18];
 const FX_COL = [12, 60, 100, 85];                           /* the groups 2 / 4 / 2 and the second row: none of them is a track colour */
-let fxHeld = {}, fxPadOf = {};
+let fxHeld = {}, fxPadOf = {}, fxLive = false;      /* fxLive: Shift + step 4 (or MORE > LIVE) puts the FX pads on the grid, any pad mode */
+function fxSetLive(on) {
+    fxLive = !!on;
+    if (fxLive && topModes[sel] === 2) topModes[sel] = 0;     /* STEPS uses the whole grid: back to PITCH */
+    showToast('LIVE FX PADS', fxLive ? 'ON' : 'OFF', fxLive ? 1 : 0); needsRedraw = true;
+}
 function fxColor(k) { const tc = trkCol(sel); let c = FX_COL[FX_PADS[k][1]]; if (c === tc || c === dimCol(tc)) c = 40; return c; }
 function fxIdxOf(i) {                                       /* pad i -> FX number 0..15, -1 = not an FX pad */
-    if (topModes[sel] !== 3) return -1;
+    if (!fxLive) return -1;
     const cc = i & 7, rr = i >> 3;
     if (kind[sel]) return soundArea(cc) ? -1 : (3 - rr) * 4 + (cc & 3);
     return rr >= 2 ? (3 - rr) * 8 + cc : -1;
@@ -1455,8 +1463,8 @@ function drumPad(idx, on, vel) {                          /* drum track: left 4x
         } else dspSet('dhit', l + ',0,0');
         return;
     }
+    if (fxIdxOf(idx) >= 0) { if (on) fxPad(idx, true); return; }
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
-    if (m === 3) { if (on) fxPad(idx, true); return; }
     if (m === 1) { if (on) setRepRate(rr * 4 + (cc & 3)); return; }      /* Note Repeat: the 16 pads on the right are the speeds */
     if (shiftHeld) return;
     const j = degOf(cc & 3, rr, 4), L = ln();
@@ -1490,9 +1498,8 @@ function onPad(idx, on, vel) {
     if (view === 7) { if (on) clipsPad(idx); return; }       /* session: pick track + launch clip */
     if (kind[sel]) { drumPad(idx, on, vel); return; }
     const m = topModes[sel];
+    if (fxIdxOf(idx) >= 0) { if (on) fxPad(idx, true); return; }
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
-    if (m === 3 && on && fxIdxOf(idx) >= 0) { fxPad(idx, true); return; }
-    if (m === 3 && fxIdxOf(idx) >= 0) return;
     const dg = degOf(idx & 7, idx >> 3, 8);
     if (on && deleteHeld) { delNote(sel, notePadSemi(dg) + oct()); return; }
     if (on && heldStep < 0) { recordHit(sel, notePadSemi(dg) + oct(), vel); logHit(sel, notePadSemi(dg) + oct(), vel); }
@@ -2255,7 +2262,7 @@ function euGet(key) {                                     /* [fraction 0..1, tex
         case 'evel': return [euV / 127, String(euV)];
         case 'eacc': return [P.acc / 60, '+' + P.acc];
         case 'ehum': return [P.hum / 40, P.hum + '%'];
-        case 'enud': return [P.nud / NUD_MAX, nudTxt(P.nud)];
+        case 'enud': return [nudPos(P.nud), nudTxt(P.nud)];
         case 'eprb': return [PROB_PCT[P.prb] / 100, PROB_PCT[P.prb] + '%'];
         case 'egat': return [P.gat / 6, GATE_NAME[P.gat]];
         case 'erat': return [P.rat / 3, (P.rat + 1) + 'x'];
@@ -2279,7 +2286,7 @@ function euEdit(key, delta, idx) {
         else if (key === 'erev') P.rev = d > 0 ? 1 : 0;
         else if (key === 'einv') P.inv = d > 0 ? 1 : 0;
         else if (key === 'eclr') { if (d < 0) return true; const c = ed[sel]; snap(c, L); for (let s = 0; s < MAXSTEP; s++) steps[c][L][s] = [0, 100, 0, 0, 0, 0, 0, 0]; qSeq(c, L); markEdited(); showToast('EUCLID', 'PATTERN CLEARED', 0); return true; }
-        else if (key === 'enud') P.nud = clamp(P.nud + d, 0, NUD_MAX);
+        else if (key === 'enud') P.nud = clamp(P.nud + d, -NUD_MAX, NUD_MAX);
         else if (key === 'eprb') P.prb = clamp(P.prb - d, 0, 31);
         else if (key === 'egat') P.gat = clamp(P.gat + d, 0, 6);
         else if (key === 'erat') P.rat = clamp(P.rat + d, 0, 3);
@@ -2492,7 +2499,7 @@ function drawSample() {
 }
 function drawSeq() {
     if (heldStep >= 0 && !recDown) { drawStepEdit(); return; }
-    titleBar('C' + (ed[sel] + 1) + '  ' + bpm + ' BPM', recArmed ? (playing ? 'REC' : 'REC ARM') : (topModes[sel] === 1 ? 'RPT ' + REP_NAME[repRate] : (playing ? 'PLAY' : 'STOP')));
+    titleBar('C' + (ed[sel] + 1) + '  ' + bpm + ' BPM', recArmed ? (playing ? 'REC' : 'REC ARM') : (fxLive ? 'FX LIVE' : (topModes[sel] === 1 ? 'RPT ' + REP_NAME[repRate] : (playing ? 'PLAY' : 'STOP'))));
     const star = llen[ln()] ? '*' : '', pgTxt = LL() > 16 ? (stepPage + 1) + '/' + pageCount() + ' L' + LL() + star : 'L' + LL() + star;
     txt(0, 11, fit(p2(sel + 1) + ' ' + laneName() + (mutes[sel] ? ' M' : ''), 120 - tw(pgTxt)), 1);
     txt(126 - tw(pgTxt), 11, pgTxt, 1);
@@ -2580,6 +2587,7 @@ function openHub(v) { navStack = []; hubReturn = isHub(view) ? hubReturn : (view
 function hubMove(dl) { const n = HUBS[view][1].length; hubSel[view] = clamp(hubSel[view] + (dl > 0 ? 1 : -1), 0, n - 1); needsRedraw = true; }
 function hubEnter() {
     const t = HUBS[view][1][hubSel[view]];
+    if (t[1] === -2) { fxSetLive(!fxLive); return; }                  /* LIVE: the FX pads on / off (same as Shift + step 4) */
     if (t[1] === -1) { menuOpen = true; menuIdx = 0; menuGrp = -1; menuSub = 0; needsRedraw = true; return; }
     navStack.push(view); view = t[1]; acc.fill(0); needsRedraw = true;
     if (view === 1 && lastTab[sel] && lastTab[sel] !== 1) { const w = lastTab[sel] === 9 ? lastTabId() : lastTab[sel]; tabEnter(w); }
@@ -2643,6 +2651,7 @@ function drawGlyph(n, x, y, c) {
     else if (n === 'TEMPO') { for (let j = 0; j < 7; j++) set_pixel(x + 8 - Math.floor(j / 2), y + 7 - j, c); fill_rect(x + 8, y + 7, 7, 1, c); }
     else if (n === 'QUANT') { for (let j = 0; j < 4; j++) fill_rect(x + 2 + j * 4, y + 3 + (j % 2) * 3, 3, 3, c); }
     else if (n === 'OPTION') { for (let j = 0; j < 3; j++) fill_rect(x + 2, y + 2 + j * 3, 17, 1, c); }
+    else if (n === 'LIVE') { for (let a = 0; a < 2; a++) for (let b = 0; b < 3; b++) { if (a === 0 && b !== 1) draw_rect(x + 1 + b * 6, y + a * 5, 5, 4, c); else fill_rect(x + 1 + b * 6, y + a * 5, 5, 4, c); } }
     else if (n === 'MORE') { for (let j = 0; j < 3; j++) fill_rect(x + 4 + j * 5, y + 5, 2, 2, c); }
 }
 function drawHub() {
@@ -2881,7 +2890,7 @@ function updateLeds() {
     for (let b = 0; b < 4; b++) { const t = bank * 4 + b; btn(43 - b, t === sel ? 120 : trkCol(t)); }
     btn(CC.MENU, view === 7 ? 126 : 16);
     btn(CC.CAPTURE, 16);
-    for (let i = 0; i < 16; i++) btn(16 + i, ((shiftHeld && SHIFT_OK[i]) || symLit(i)) ? 126 : 0);
+    for (let i = 0; i < 16; i++) btn(16 + i, ((shiftHeld && SHIFT_OK[i]) || symLit(i) || (i === 3 && fxLive)) ? 126 : 0);
     btn(CC.PLAY, playing ? 126 : 16);
     btn(CC.REC, recArmed ? 127 : 16);
 }
@@ -2957,7 +2966,7 @@ globalThis.init = function () {
 };
 
 function syncPadsOff() {
-    const want = (menuOpen || askKind >= 0 || shiftHeld || muteHeld || view === 7 || view === 20 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : (topModes[sel] === 3 ? 4 : 0));
+    const want = (menuOpen || askKind >= 0 || shiftHeld || muteHeld || view === 7 || view === 20 || kind[sel] || topModes[sel] === 2) ? 1 : (fxLive ? (topModes[sel] === 1 ? 5 : 4) : (topModes[sel] === 1 ? 3 : 0));
     if (want !== padsOffSent) { padsOffSent = want; dspSet('padsoff', String(want)); }
 }
 function hostSuspend() {                                   /* keep Taktile running in the background (the sequencer keeps playing while you browse Move) */

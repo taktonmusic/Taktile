@@ -150,6 +150,25 @@ int main(void) {
       setf(in, 0, "aoct", 7.0); get_param(in, "p01_aoct", b, sizeof b); CHECK(strcmp(b, "1.000") == 0, "aoct clamps to 1, got %s", b);
       seti(in, 0, "type", init0 + 1); get_param(in, "p01_aoct", b, sizeof b); CHECK(strcmp(b, "1.000") == 0, "a new sound keeps ARP OCT, got %s", b); }
 
+    /* 11. NUDGE left and right: a step with a negative nudge plays before its own step, a positive one after it */
+    {
+        const double sr = (double)((inst_t *)in)->sr; double on[3]; const int nud[3] = { 0, 10, -10 };
+        for (int k = 0; k < 3; k++) {
+            set_param(in, "panic", "1"); set_param(in, "play", "0"); set_param(in, "bpm", "120"); set_param(in, "len", "0,16"); seti(in, 0, "type", 0);
+            for (int i = 0; i < 16; i++) set_param(in, "st", "0,0,0,000000000000");
+            char hx[64]; snprintf(hx, sizeof hx, "0,0,4,E4804000%02X00", 0x40 | (nud[k] & 0x3F)); set_param(in, "st", hx);
+            set_param(in, "play", "1");
+            int16_t o[256]; long n = 0; on[k] = -1;
+            for (int b = 0; b < 400 && on[k] < 0; b++) { render_block(in, o, 128); for (int i = 0; i < 128; i++) { if (abs(o[2 * i]) > 600 && on[k] < 0) on[k] = (double)(n + i); } n += 128; }
+            set_param(in, "play", "0");
+        }
+        const double L = sr * 60.0 / 120.0 / 4.0;
+        printf("nudge onsets: 0 -> %.0f, +25%% -> %.0f, -25%% -> %.0f (L = %.0f)\n", on[0], on[1], on[2], L);
+        CHECK(on[0] > 0 && on[1] > 0 && on[2] > 0, "nudge: a note was heard");
+        CHECK(fabs((on[1] - on[0]) - 0.25 * L) < 8.0, "positive nudge: %.0f samples later (want %.0f)", on[1] - on[0], 0.25 * L);
+        CHECK(fabs((on[0] - on[2]) - 0.25 * L) < 8.0, "negative nudge: %.0f samples earlier (want %.0f)", on[0] - on[2], 0.25 * L);
+    }
+
     destroy_instance(in);
     printf(fails ? "FAILED %d\n" : "ALL PASSED\n", fails);
     return fails != 0;

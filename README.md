@@ -125,6 +125,7 @@ State is stored under `/data/UserData/schwung/taktile-*`.
 |---|---|
 | **Jog turn** | walks through the track pages / the list on the current page |
 | **Jog click** | open or confirm (SEQ/SOUND: preset browser; menus and lists: the selected entry). On a track tab: back to the last tab. Elsewhere: HOME |
+| **Shift + step 4** | live FX pads on / off (hold a pad = effect, release = back) |
 | **Shift + Jog click** | HOME from anywhere (on the TEMPO page: tap tempo) |
 | **Shift + Left / Right** | previous / next sub-page on MIX, EUCLID, SAMPLE and SCOPE. On the sequencer: previous / next step page |
 

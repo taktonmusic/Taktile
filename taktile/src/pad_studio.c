@@ -726,6 +726,7 @@ typedef struct {
     double tsamp, next_time, last_time;
     int   gate_left[NLANE];
     int   rt_n[NLANE], rt_semi[NLANE], rt_gate[NLANE]; float rt_cnt[NLANE], rt_int[NLANE], rt_vel[NLANE];   /* ratchet / nudge scheduler */
+    int   er_n[NLANE], er_semi[NLANE], er_gate[NLANE], er_gs[NLANE]; float er_cnt[NLANE], er_int[NLANE], er_vel[NLANE];   /* early notes (negative nudge): scheduled one step ahead; er_gs = the step that was already played early */
     float cpp[NPAT][NLANE][PP_N]; uint8_t cpp_set[NPAT][NLANE];   /* sound of every clip */
     int   np_trk[32];                      /* track sounding on each note pad */
     int   rep_idx, rep_on, rep_t, rep_k; float rep_semi, rep_vel, rep_cnt;   /* note repeat */
@@ -1739,6 +1740,62 @@ static void rt_fire(inst_t *s, int t) {
     if (--s->rt_n[t] > 0) s->rt_cnt[t] += s->rt_int[t];
 }
 
+/* nudge of a step as a fraction of a step: + = later, - = earlier (6 bit two's complement, 2.5 % per unit; older saves: 10 % steps, later only) */
+static float nud_frac(const uint8_t *st) {
+    if (!(st[4] & 0x40)) return (float)((st[4] & 7) * 4) * 0.025f;
+    int v = st[4] & 0x3F; if (v >= 32) v -= 64;
+    return (float)v * 0.025f;
+}
+
+/* one lane at one step. early = 0: the step is due now (nudge >= 0 is a delay; a step that already played early is skipped).
+   early = 1: look ahead at the next step; only a step with a negative nudge is played, `dur` samples before the next step plus the nudge. */
+static void seq_lane(inst_t *s, int t, int stepNo, int early, float dur) {
+    const float L = s->sr * 60.0f / s->bpm / 4.0f;
+    if (!lane_on(s, t)) return;
+    const int tk = lane_trk(s, t);
+    int len = s->llen[t] > 0 ? s->llen[t] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
+    if (s->clip[tk] < 0) return;
+    if (!early && s->er_gs[t] == stepNo) { s->er_gs[t] = -1; return; }          /* this step was played early already */
+    if (early && s->qclip[tk] != -2) return;                                        /* a clip change is queued: no look-ahead over the boundary */
+    const uint8_t *st = s->stp[s->clip[tk]][t][stepNo % len];
+    if (!(st[0] & 0x80) || s->mute[tk] || s->lmute[t]) return;
+    const float nf = nud_frac(st);
+    if (early && nf >= 0.0f) return;
+    if (prob_idx(st[1]) > 0) {
+        s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
+        if ((float)(s->rng & 0xFFFF) / 65536.0f > 1.0f - 0.03125f * (float)prob_idx(st[1])) return;
+    }
+    {   /* condition: play only on certain passes of the loop (1:2, 2:2, 1:3 ... 4:4) */
+        static const int CN[8] = { 1, 2, 2, 3, 3, 3, 4, 4 }, CK[8] = { 0, 0, 1, 0, 1, 2, 0, 3 };
+        int cd = (st[3] >> 5) & 7;
+        if (cd && ((stepNo / len) % CN[cd]) != CK[cd]) return;
+    }
+    if (s->plk_t[t]) { const int lv = st[5]; s->pp[t][s->plk_t[t]] = lv ? (float)(lv - 1) / 126.0f : s->plk_b[t]; }       /* parameter lock: this step's value, or back to the base */
+    int semi = (int)st[2] - 64;
+    float hv = (float)(st[0] & 0x7F) / 127.0f;
+    if (s->g[G_HUM] > 0.01f) {
+        s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
+        hv *= 1.0f + s->g[G_HUM] * 0.6f * ((float)(s->rng & 0xFFFF) / 65536.0f - 0.5f);
+        if (hv > 1.0f) hv = 1.0f; if (hv < 0.05f) hv = 0.05f;
+    }
+    static const float GT[8] = { 0.0f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 8.0f };
+    int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7;
+    float iv = L / (float)n;
+    float gs_ = gi == 0 ? 0.8f * iv : GT[gi] * L;
+    if (n > 1 && gs_ > 0.9f * iv) gs_ = 0.9f * iv;
+    float delay = nf > 0.0f ? nf * L : 0.0f;
+    if ((stepNo & 1) && s->pp[tk][PP_TSW] > 0.52f) delay += (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * L;   /* per-track extra swing on the off-beat steps */
+    if (early) {
+        float d = dur + nf * L + ((stepNo & 1) && s->pp[tk][PP_TSW] > 0.52f ? (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * L : 0.0f);
+        if (d < 1.0f) d = 1.0f;
+        s->er_n[t] = n; s->er_int[t] = iv; s->er_semi[t] = semi; s->er_vel[t] = hv; s->er_gate[t] = (int)gs_; s->er_cnt[t] = d; s->er_gs[t] = stepNo;
+        return;
+    }
+    s->rt_n[t] = n; s->rt_int[t] = iv; s->rt_semi[t] = semi; s->rt_vel[t] = hv; s->rt_gate[t] = (int)gs_;
+    s->rt_cnt[t] = delay;
+    if (s->rt_cnt[t] <= 0.0f) rt_fire(s, t);
+}
+
 static void seq_step(inst_t *s) {
     const float L = s->sr * 60.0f / s->bpm / 4.0f;
     {
@@ -1750,53 +1807,22 @@ static void seq_step(inst_t *s) {
     }
     if (s->rec_state == 1 && (s->gs & 15) == 0) { s->rec_state = 2; s->rec_n = 0; s->rec_len = (long)((float)(s->rec_bars * 16) * L); if (s->rec_len > s->rec_max) s->rec_len = s->rec_max; }
     if (s->g[G_MET] > 0.01f && (s->gs & 3) == 0) { s->met_env = 1.0f; s->met_ph = 0.0f; s->met_f = ((s->gs & 15) == 0) ? 1700.0f : 1100.0f; }
-    for (int t = 0; t < NLANE; t++) {                              /* t = lane */
-        if (!lane_on(s, t)) continue;
-        const int tk = lane_trk(s, t);
-        int len = s->llen[t] > 0 ? s->llen[t] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
-        if (s->clip[tk] < 0) continue;
-        const uint8_t *st = s->stp[s->clip[tk]][t][s->gs % len];
-        if (!(st[0] & 0x80) || s->mute[tk] || s->lmute[t]) continue;
-        if (prob_idx(st[1]) > 0) {
-            s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
-            if ((float)(s->rng & 0xFFFF) / 65536.0f > 1.0f - 0.03125f * (float)prob_idx(st[1])) continue;
-        }
-        {   /* condition: play only on certain passes of the loop (1:2, 2:2, 1:3 ... 4:4) */
-            static const int CN[8] = { 1, 2, 2, 3, 3, 3, 4, 4 }, CK[8] = { 0, 0, 1, 0, 1, 2, 0, 3 };
-            int cd = (st[3] >> 5) & 7;
-            if (cd && ((s->gs / len) % CN[cd]) != CK[cd]) continue;
-        }
-        if (s->plk_t[t]) { const int lv = st[5]; s->pp[t][s->plk_t[t]] = lv ? (float)(lv - 1) / 126.0f : s->plk_b[t]; }       /* parameter lock: this step's value, or back to the base */
-        int semi = (int)st[2] - 64;
-        float hv = (float)(st[0] & 0x7F) / 127.0f;
-        if (s->g[G_HUM] > 0.01f) {
-            s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
-            hv *= 1.0f + s->g[G_HUM] * 0.6f * ((float)(s->rng & 0xFFFF) / 65536.0f - 0.5f);
-            if (hv > 1.0f) hv = 1.0f; if (hv < 0.05f) hv = 0.05f;
-        }
-        {
-            static const float GT[8] = { 0.0f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 8.0f };
-            int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7;
-            float iv = L / (float)n;
-            float gs_ = gi == 0 ? 0.8f * iv : GT[gi] * L;
-            if (n > 1 && gs_ > 0.9f * iv) gs_ = 0.9f * iv;
-            s->rt_n[t] = n; s->rt_int[t] = iv; s->rt_semi[t] = semi; s->rt_vel[t] = hv; s->rt_gate[t] = (int)gs_;
-            s->rt_cnt[t] = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * L;      /* nudge: delay up to 70 % of a step in 2.5 % steps (older saves: 10 % steps) */
-            if ((s->gs & 1) && s->pp[tk][PP_TSW] > 0.52f) s->rt_cnt[t] += (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * L;   /* per-track extra swing on the off-beat steps */
-            if (s->rt_cnt[t] <= 0.0f) rt_fire(s, t);
-        }
-    }
     float off = (2.0f * s->swing - 1.0f) * L;
+    const float dur = L + (((s->gs & 1) == 0) ? off : -off);          /* length of this step (swing) = the time until the next one */
+    for (int t = 0; t < NLANE; t++) {                              /* t = lane */
+        seq_lane(s, t, s->gs, 0, dur);
+        seq_lane(s, t, s->gs + 1, 1, dur);                          /* look ahead: a step with a negative nudge plays a bit before its own step */
+    }
     s->last_time = s->next_time;
-    s->next_time += (double)(L + (((s->gs & 1) == 0) ? off : -off));
+    s->next_time += (double)dur;
     s->gs++;
 }
 
-static void seq_start(inst_t *s) { if (s->mo_clk) { mo_send(0xF, 0xFA, 0, 0); s->mclk = 0.0f; } s->playing = 1; s->tsamp = 0.0; s->next_time = 0.0; s->last_time = 0.0; s->gs = 0; s->pump_ph = 0.0f; s->wob_ph = 0.0f; }
+static void seq_start(inst_t *s) { if (s->mo_clk) { mo_send(0xF, 0xFA, 0, 0); s->mclk = 0.0f; } s->playing = 1; s->tsamp = 0.0; s->next_time = 0.0; s->last_time = 0.0; s->gs = 0; for (int i = 0; i < NLANE; i++) { s->er_n[i] = 0; s->er_gs[i] = -1; } s->pump_ph = 0.0f; s->wob_ph = 0.0f; }
 static void seq_stop(inst_t *s) {
     if (s->playing && s->mo_clk) mo_send(0xF, 0xFC, 0, 0);
     for (int i = 0; i < 64; i++) if (s->mo_q[i].cnt > 0) { mo_send(0x8, s->mo_q[i].st, s->mo_q[i].d1, 0); s->mo_q[i].cnt = 0; }
-    s->playing = 0; s->gs = 0;
+    s->playing = 0; s->gs = 0; for (int i = 0; i < NLANE; i++) { s->er_n[i] = 0; s->er_gs[i] = -1; }
     for (int t = 0; t < NTRK; t++) if (s->qclip[t] != -2) { clip_activate(s, t, s->qclip[t]); s->qclip[t] = -2; }
     for (int t = 0; t < NLANE; t++) { s->gate_left[t] = 0; s->rt_n[t] = 0; s->vc[t].gate = 0; if (s->ar[t].key == -2) { s->ar[t].on = 0; s->ar[t].key = -1; } }
     for (int i = 0; i < 32; i++) s->eq[i].cnt = 0;
@@ -1899,6 +1925,7 @@ static void *create_instance(const char *module_dir, const char *json_defaults) 
             memset(s, 0, sizeof(*s));
             s->in_use = 1;
             for (int t = 0; t < NTRK; t++) { s->clip[t] = 0; s->qclip[t] = -2; }
+            for (int t = 0; t < NLANE; t++) s->er_gs[t] = -1;
             s->sr = (float)g_sr;
             s->inv_sr = 1.0f / s->sr;
             s->rng = 0x2545F491u + (uint32_t)i * 7919u;
@@ -1946,8 +1973,8 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
         p = s->lay_s == 3 ? 32 + col + 5 * row : (s->lay_s == 0 ? col + 3 * row : (s->lay_s == 1 ? row * 8 + col : col + 7 * row));
     }
     if (s->pads_off == 1) { if (!vel) sel_pad(s, p, 0, 0); return; }     /* UI owns the pads (session, steps, menus) */
-    if (s->pads_off == 4 && fx_row >= 2) { if (!vel) sel_pad(s, p, 0, 0); return; }   /* FX PADS mode: the two top rows belong to the UI (performance effects), the lower rows play notes */
-    sel_pad(s, p, vel, s->pads_off == 3);
+    if ((s->pads_off == 4 || s->pads_off == 5) && fx_row >= 2) { if (!vel) sel_pad(s, p, 0, 0); return; }   /* FX PADS mode: the two top rows belong to the UI (performance effects), the lower rows play notes */
+    sel_pad(s, p, vel, s->pads_off == 3 || s->pads_off == 5);
 }
 
 static int parse_pad_key(const char *key, int *pad, const char **name) {
@@ -2497,6 +2524,10 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             if (s->tsamp >= s->next_time) seq_step(s);
             s->tsamp += 1.0;
             for (int t = 0; t < NLANE; t++) {
+                if (s->er_n[t] > 0 && (s->er_cnt[t] -= 1.0f) <= 0.0f) {          /* an early note (negative nudge) is due */
+                    s->rt_n[t] = s->er_n[t]; s->rt_int[t] = s->er_int[t]; s->rt_semi[t] = s->er_semi[t]; s->rt_vel[t] = s->er_vel[t]; s->rt_gate[t] = s->er_gate[t]; s->rt_cnt[t] = 0.0f;
+                    s->er_n[t] = 0; rt_fire(s, t);
+                }
                 if (s->rt_n[t] > 0 && (s->rt_cnt[t] -= 1.0f) <= 0.0f) rt_fire(s, t);
                 if (s->gate_left[t] > 0 && --s->gate_left[t] == 0) s->vc[t].gate = 0;
             }

@@ -4,8 +4,8 @@ ctx.init(); for (let i = 0; i < 400; i++) ctx.tick();
 let fail = 0; const ok = (c, m) => { if (!c) { fail++; console.log('FAIL', m); } else console.log('ok  ', m); };
 const pad = (i, v) => ctx.onMidiMessageInternal([v ? 0x90 : 0x80, 68 + i, v]);
 const last = (k) => { for (let i = setCalls.length - 1; i >= 0; i--) if (setCalls[i][0] === k) return setCalls[i][1]; return null; };
-run('splashT0 = 0; idleBlank = false; askKind = -1; helpOpen = false; menuOpen = false; padMenu = false; shiftHeld = false; deleteHeld = false; view = 0; setKind(0, 0); sel = 0; topModes[0] = 3; needsRedraw = true');
-ok(run('PM_SHORT.length') === 4 && run('fmtVal("pmode", 1)') === 'FX', 'pad mode knob has FX as the 4th value');
+run('splashT0 = 0; idleBlank = false; askKind = -1; helpOpen = false; menuOpen = false; padMenu = false; shiftHeld = false; deleteHeld = false; view = 0; setKind(0, 0); sel = 0; topModes[0] = 0; fxLive = true; needsRedraw = true');
+ok(run('PM_SHORT.length') === 3, 'still exactly three pad modes (PITCH / REPEAT / STEPS)');
 // colours: top row 2/4/2, second row one colour, never the track colour
 const tc = run('trkCol(sel)');
 const col = (i) => run('padLedBase(' + i + ')');
@@ -30,15 +30,15 @@ pad(27, 0); ok(last('m_eqm') === run('master[17].toFixed(3)'), 'all released');
 setCalls.length = 0; pad(3, 100); pad(3, 0); ok(setCalls.some((c) => c[0] === 'npad'), 'lower pads play notes');
 setCalls.length = 0; pad(30, 100); pad(30, 0); ok(!setCalls.some((c) => c[0] === 'npad'), 'FX pads never send notes');
 // release after a mode change is not lost
-pad(25, 100); run('topModes[0] = 0'); pad(25, 0); ok(last('m_filt') === run('master[9].toFixed(3)'), 'release after leaving FX mode still restores');
+pad(25, 100); run('fxLive = false'); pad(25, 0); ok(last('m_filt') === run('master[9].toFixed(3)'), 'release after leaving FX mode still restores');
 // DSP gets padsoff 4 in FX mode on a synth track, 1 on a drum track
-run('topModes[0] = 3; syncPadsOff()'); ok(last('padsoff') === '4', 'padsoff 4 on a synth track in FX mode: ' + last('padsoff'));
+run('fxLive = true; topModes[0] = 0; padsOffSent = -1; syncPadsOff()'); ok(last('padsoff') === '4', 'padsoff 4 on a synth track in FX mode: ' + last('padsoff'));
 // drum track: right block
-run('setKind(0, 1); sel = 0; topModes[0] = 3'); const base = run('soundArea(4)') ? 0 : 4;
+run('setKind(0, 1); sel = 0; topModes[0] = 0; fxLive = true'); const base = run('soundArea(4)') ? 0 : 4;
 setCalls.length = 0; pad(3 * 8 + base, 100); ok(last('m_filt') === '0.180', 'drum track: top-left pad of the free 4x4 block is LP SWEEP'); pad(3 * 8 + base, 0);
 // fuzz: random pads / modes never throw
 let seed = 7; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-let err = 0; for (let n = 0; n < 4000; n++) { try { const r = rnd(); if (r < 0.1) run('topModes[sel] = ' + Math.floor(rnd() * 4)); else if (r < 0.15) run('setKind(sel, ' + (rnd() < 0.5 ? 1 : 0) + ')'); else pad(Math.floor(rnd() * 32), rnd() < 0.5 ? 100 : 0); ctx.tick(); } catch (e) { err++; if (err < 3) console.log(e.stack); } }
+let err = 0; for (let n = 0; n < 4000; n++) { try { const r = rnd(); if (r < 0.1) run('topModes[sel] = ' + Math.floor(rnd() * 3) + '; fxLive = ' + (rnd() < 0.5)); else if (r < 0.15) run('setKind(sel, ' + (rnd() < 0.5 ? 1 : 0) + ')'); else pad(Math.floor(rnd() * 32), rnd() < 0.5 ? 100 : 0); ctx.tick(); } catch (e) { err++; if (err < 3) console.log(e.stack); } }
 ok(err === 0, 'fuzz 4000 events: no errors');
 for (let i = 0; i < 32; i++) pad(i, 0); ok(run('Object.keys(fxHeld).length') === 0, 'after releasing everything no FX stays on');
 // FX tab: the jog click opens the FX tiles, a tile opens its page, Back goes up step by step
@@ -51,4 +51,16 @@ for (let i = 0; i < 32; i++) pad(i, 0); ok(run('Object.keys(fxHeld).length') ===
   setCalls.length = 0; run('padsOffSent = -1; syncPadsOff()'); ok(last('padsoff') === '1', 'MIX view: padsoff 1 (pads are not played as notes), got ' + last('padsoff'));
   run('view = 0'); run('syncPadsOff()'); ok(last('padsoff') === '0', 'back on SEQ: padsoff 0 again, got ' + last('padsoff'));
   run('muteHeld = true'); run('syncPadsOff()'); ok(last('padsoff') === '1', 'Mute held: padsoff 1'); run('muteHeld = false'); }
+// Shift + step 4 toggles the live FX pads (own LED), STEPS ends them, REPEAT keeps the rows below repeating (padsoff 5)
+{ const { cc } = require('./harness.js'); const stepKey = (i) => { ctx.onMidiMessageInternal([0x90, 16 + i, 100]); ctx.onMidiMessageInternal([0x80, 16 + i, 0]); };
+  run('chosen.fill(true); askKind = -1; menuOpen = false; padMenu = false; heldStep = -1; sel = 0; setKind(0, 0); topModes[0] = 0; fxLive = false; view = 0; shiftHeld = false');
+  cc(49, 127); stepKey(3); cc(49, 0); ok(run('fxLive') === true, 'Shift + step 4: live FX pads on');
+  run('topModes[0] = 1; padsOffSent = -1; syncPadsOff()'); ok(last('padsoff') === '5', 'REPEAT + live FX: padsoff 5, got ' + last('padsoff'));
+  run('cycleTop(1)'); ok(run('topModes[0]') === 2 && run('fxLive') === false, 'switching to STEPS ends the live FX pads');
+  run('topModes[0] = 0'); cc(49, 127); stepKey(3); cc(49, 0); cc(49, 127); stepKey(3); cc(49, 0); ok(run('fxLive') === false, 'Shift + step 4 again: off');
+  ok(run('SHIFT_OK[3]') === 1, 'step 4 lights up while Shift is held'); }
+// nudge: left and right survive save / load; old saves (positive only) still read the same
+{ const rt = (n) => run('decStep(encStep([1, 100, 0, 0, 0, 0, ' + n + ', 0]))[6]');
+  ok(rt(-28) === -28 && rt(-1) === -1 && rt(0) === 0 && rt(10) === 10 && rt(28) === 28, 'nudge -28..+28 round trip through the save format');
+  ok(run('decStep("E4804000" + "4A" + "00")[6]') === 10 && run('nudTxt(-10)') === '-25%' && run('nudTxt(7)') === '+17.5%', 'old positive nudge unchanged, text shows the sign'); }
 console.log(fail ? 'FAILED ' + fail : 'ALL PASSED'); process.exit(fail ? 1 : 0);
