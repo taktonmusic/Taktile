@@ -190,7 +190,7 @@ const VIEW_ITEMS = {
 /* home / fx / master hubs: tiles you pick with the jogwheel (turn = choose, click = open, Back = up one level) */
 const HUBS = {
     16: ['HOME', [['SOUND', 1], ['TRACK', 21], ['MIX', 20], ['BUS', 4], ['EDIT', -1], ['MORE', 18]]],
-    17: ['FX', [['DELAY', 5], ['REVERB', 6], ['CHORUS', 14], ['PHASER', 19], ['MIDI', 27], ['DUCK', 30]]],
+    17: ['FX', [['DELAY', 5], ['REVERB', 6], ['CHORUS', 14], ['PHASER', 19], ['DUCK', 30]]],
     18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['SCOPE', 42]]],
 };
 let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
@@ -790,7 +790,7 @@ const HELP = {
     28: ['Sample: Datei=Knopf 1. Shift+Jog klick: Browser. Dort Shift+Klick auf Ordner = Kit aus 16 WAVs. Shift+Pfeil: Sample/Slice/ENV. Jog klick: letzter Reiter. Slice teilt auf 16 Pads.'],
     27: ['MIDI-Effekt waehlen', 'Amount + Param', 'Jog: Reiter wechseln'],
     36: ['Euklid: 2 Seiten', 'Shift+Pfeil: Seite', 'Jog klick: letzter Reiter', 'Aendert das Pattern'],
-    38: ['Sends: Delay, Reverb', 'Chorus, Phaser', 'Zeiten: DTim, RSiz, DFb'],
+    38: ['Sends: Delay, Reverb', 'Chorus, Phaser', 'Jog klick = FX-Kacheln'],
     39: ['Zeiten der Effekte', 'Delay, Reverb, Chorus', 'Phaser'],
     16: ['SOUND = Track-Seiten', 'EDIT = Aktionen', 'MORE = Projekt, Song'],
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
@@ -3205,6 +3205,7 @@ globalThis.onMidiMessageInternal = function (data) {
     case CC.JOGCLICK:
         if (d2 > 0 && view === 40 && !menuOpen && !shiftHeld) { if (undoStack.length) histApply(); return; }
         if (d2 > 0 && (view === 0 || view === 1) && !menuOpen && !padMenu && !shiftHeld && askKind < 0 && !fb) { fbOpen(); acc.fill(0); needsRedraw = true; return; }   /* jog click on SEQ/SOUND = preset browser (HOME: Shift + step 3) */
+        if (d2 > 0 && view === 38 && !menuOpen && !padMenu && !shiftHeld) { openHub(17); return; }      /* FX tab: jog click opens the FX tiles (Delay, Reverb, Chorus, Phaser, Duck) */
         if (d2 > 0 && isTab(view) && !(view === 28 && broOpen) && !menuOpen && !shiftHeld) { const pv = prevTabView; if (pv !== view && isTab(pv)) { tabEnter(pv); showToast(TAB_NAME[view], 'BACK TO LAST', 0.5); } return; }
         if (d2 > 0 && view === 28 && broOpen && !menuOpen) { broClick(); return; }
         if (d2 > 0 && view === 28 && !menuOpen && !padMenu && shiftHeld) { if (smpPage === 1) sliceApply(); else if (smpPage === 0) broOpenNow(); else sampleRescan(); return; }

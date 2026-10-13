@@ -41,4 +41,9 @@ let seed = 7; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff
 let err = 0; for (let n = 0; n < 4000; n++) { try { const r = rnd(); if (r < 0.1) run('topModes[sel] = ' + Math.floor(rnd() * 4)); else if (r < 0.15) run('setKind(sel, ' + (rnd() < 0.5 ? 1 : 0) + ')'); else pad(Math.floor(rnd() * 32), rnd() < 0.5 ? 100 : 0); ctx.tick(); } catch (e) { err++; if (err < 3) console.log(e.stack); } }
 ok(err === 0, 'fuzz 4000 events: no errors');
 for (let i = 0; i < 32; i++) pad(i, 0); ok(run('Object.keys(fxHeld).length') === 0, 'after releasing everything no FX stays on');
+// FX tab: the jog click opens the FX tiles, a tile opens its page, Back goes up step by step
+{ const { cc } = require('./harness.js'); run('chosen.fill(true); askKind = -1; menuOpen = false; shiftHeld = false; sel = 0; view = 38; viewItemsFix()');
+  cc(3, 127); cc(3, 0); ok(run('view') === 17 && run('HUBS[17][1].length') === 5, 'jog click on the FX tab opens the FX tiles');
+  cc(3, 127); cc(3, 0); ok(run('view') === 5, 'a tile opens its page (DELAY)');
+  cc(51, 127); cc(51, 0); cc(51, 127); cc(51, 0); ok(run('view') === 38, 'Back, Back: up to the FX tab again'); }
 console.log(fail ? 'FAILED ' + fail : 'ALL PASSED'); process.exit(fail ? 1 : 0);
