@@ -768,11 +768,14 @@ function padLed(i) {
     if (askKind >= 0 || view === 7 || view === 20) return c;
     if (fxIdxOf(i) >= 0) return c;
     const dr = kind[sel], m = topModes[sel], cc = i & 7, rr = i >> 3;
-    if (dr && soundArea(cc)) {                                       /* drum sounds: used = bright, empty = dim, hit right now = flash */
-        const k = rr * 4 + (cc & 3);
-        if (lmutes[laneOf(sel, k)]) return c;
-        if (k === dsel[sel]) return seqUse.lplay[k] ? trackColor(pads[laneOf(sel, k)][0]) : c;      /* selected = white, pulses in its colour on a hit */
-        return seqUse.lplay[k] ? 126 : c;                        /* steady family colour, pulse (white) only while a note triggers */                            /* every sound pad has the track colour; sequenced ones pulse */
+    if (dr && soundArea(cc)) {                                       /* drum sounds: used = bright, empty = dim, hit = white flash that stays for a moment (easy to see) */
+        const k = rr * 4 + (cc & 3), l = laneOf(sel, k);
+        if (lmutes[l]) return c;
+        const now = Date.now(), hit = seqUse.lplay[k] ? (hitUntil[l] = now + HIT_MS, true) : (hitUntil[l] || 0) > now;
+        const fam = trackColor(pads[l][0]);
+        if (k === dsel[sel]) return hit ? fam : c;                  /* selected = white, flashes in its colour on a hit */
+        if (hit) return 126;
+        return seqUse.lanes[k] ? c : dimCol(fam);                  /* sounds with steps: full colour, empty ones: dark */
     }
     if (m === 2 || (dr && m === 1)) return c;
     const j = dr ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8), sm = notePadSemi(j) + oct();
@@ -1451,6 +1454,7 @@ function fxPad(i, on) {
     else { const k = fxPadOf[i]; if (k === undefined) return false; delete fxPadOf[i]; let still = false; for (const j in fxPadOf) if (fxPadOf[j] === k) still = true; if (!still) delete fxHeld[k]; }
     fxApply(); needsRedraw = true; return true;
 }
+const HIT_MS = 160; let hitUntil = {};                  /* drum pad LEDs: a hit keeps its flash for 160 ms, so it is visible between two refreshes */
 let lastPadSemi = {};                                    /* the note pad you played last, per sound: a step you enter afterwards gets the same pitch */
 function drumPad(idx, on, vel) {                          /* drum track: left 4x4 = the 16 sounds, right 4x4 = PITCH / REPEAT / STEPS of the selected sound */
     const cc = idx & 7, rr = idx >> 3, m = topModes[sel];
@@ -1468,6 +1472,7 @@ function drumPad(idx, on, vel) {                          /* drum track: left 4x
             }
             const v = fullVel ? 127 : Math.max(1, vel);
             recordHit(l, 0, v); logHit(l, 0, v);
+            hitUntil[l] = Date.now() + HIT_MS;
             flushPad(l); dspSet('dhit', l + ',' + v + ',' + (m === 1 ? 1 : 0));        /* Note Repeat: the sound pads repeat at the speed chosen on the right block */
         } else dspSet('dhit', l + ',0,0');
         return;

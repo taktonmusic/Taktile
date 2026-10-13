@@ -75,4 +75,10 @@ for (let i = 0; i < 32; i++) pad(i, 0); ok(run('Object.keys(fxHeld).length') ===
   ok(run('hubSel[16]') === 3, 'HOME hub: six jog ticks = three tiles (' + run('hubSel[16]') + ')');
   run('hubSel[16] = 0; jogAccN = 0; jogAccT = 0'); cc(14, 1); ok(run('hubSel[16]') === 0, 'one tick alone does not move yet');
   ctx.__NOJOGDIV = true; }
+// drum pads: a hit stays visible (white flash held 160 ms), empty sounds are dim, used ones full colour
+{ run('chosen.fill(true); askKind = -1; menuOpen = false; padMenu = false; heldStep = -1; sel = 0; setKind(0, 1); topModes[0] = 0; fxLive = false; view = 0; shiftHeld = false; dsel[0] = 15; hitUntil = {}');
+  const base = run('soundArea(0)') ? 0 : 4; const ledOf = (k) => run('padLed(' + (Math.floor(k / 4) * 8 + base + (k % 4)) + ')');
+  run('seqUse.lanes = []; seqUse.lplay = []'); const idle = ledOf(2), fam = run('trackColor(pads[laneOf(0, 2)][0])'); ok(idle === run('dimCol(' + fam + ')'), 'empty drum sound: dim family colour (' + idle + ')');
+  run('hitUntil[laneOf(0, 2)] = Date.now() + 100'); ok(ledOf(2) === 126, 'a hit flashes white and stays for a moment');
+  run('hitUntil[laneOf(0, 2)] = Date.now() - 1'); ok(ledOf(2) === idle, 'flash is over again'); run('seqUse.lanes[2] = true'); ok(ledOf(2) === fam, 'a sound with steps shows its full colour'); }
 console.log(fail ? 'FAILED ' + fail : 'ALL PASSED'); process.exit(fail ? 1 : 0);
