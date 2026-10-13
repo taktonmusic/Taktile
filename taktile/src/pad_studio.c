@@ -55,7 +55,9 @@ __asm__(".symver powf,powf@GLIBC_2.17");
 #include "variants_n.h"
 #include "variants3_n.h"
 #include "variants4_n.h"
-enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_N };
+enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH,
+       PP_E0, PP_E1, PP_E2, PP_E3, PP_E4, PP_E5, PP_E6, PP_E7, PP_E8, PP_E9,      /* NEW ENGINES: the 10 values p[0..9] of the sound, 0..1 (-1 = the preset's own value), see src/engines.inc */
+       PP_N };
 #define NGH 24                       /* ghost voices: released tails of retriggered notes in POLY mode */
 
 enum {
@@ -137,6 +139,8 @@ static const pd_t PD[PP_N] = {
     { "eql",   "EQ Low", 0, 0.50f },
     { "eqm",   "EQ Mid", 0, 0.50f },
     { "eqh",   "EQ High",0, 0.50f },
+    { "e0",    "Eng P1", 0, -1.0f }, { "e1",    "Eng P2", 0, -1.0f }, { "e2",    "Eng P3", 0, -1.0f }, { "e3",    "Eng P4", 0, -1.0f }, { "e4",    "Eng P5", 0, -1.0f },
+    { "e5",    "Eng P6", 0, -1.0f }, { "e6",    "Eng P7", 0, -1.0f }, { "e7",    "Eng P8", 0, -1.0f }, { "e8",    "Eng P9", 0, -1.0f }, { "e9",    "Eng P10",0, -1.0f },
 };
 
 static const char *TYPE_NAME[T_COUNT] = {
@@ -311,6 +315,19 @@ typedef struct { int eng; float f0, oct, tau1, tau2, att, trim; int sus; float p
 static const nx_t VAR4[N_V4] = {
 #include "variants4.inc"
 };
+#include "engines.inc"
+/* The 10 values of a NEW ENGINE sound for pad p: the pad parameters e0..e9 (0..1, mapped to the range of that engine's knob),
+   or the preset's own value while the parameter is -1 (never touched). Called per note and a few times per block, not per sample. */
+static void nx_params(const float *pp, const nx_t *n, float *q) {
+    for (int i = 0; i < 10; i++) {
+        const float x = pp[PP_E0 + i];
+        if (!(x >= 0.0f)) { q[i] = n->p[i]; continue; }
+        const float lo = ENG_LO[n->eng][i], hi = ENG_HI[n->eng][i];
+        float v = lo + (x > 1.0f ? 1.0f : x) * (hi - lo);
+        if (ENG_INT[n->eng][i]) v = floorf(v + 0.5f);
+        q[i] = v;
+    }
+}
 /* modal sets: 8 mode ratios + 8 amplitudes each (0 ratio = unused) */
 #define N_MSET 19
 static const float MD_R[N_MSET][8] = {
@@ -633,6 +650,7 @@ typedef struct {
     float cr_hold, cr_cnt, hp_z, ring_ph, svf_lp, svf_bp, fenv, fkoff, pk_lp, pk_bp;   /* crush + low-cut state */
     int   fol, fgen;               /* ghost layer of a MIDI effect: follows the owner's note (fgen = trigger generation) */
     float nx[48]; int ni[2];                                           /* NEW ENGINES: modal / FM / vocal / chip / morph state */
+    float ep[10], nat; int epc;                                        /* NEW ENGINES: the 10 sound values (refreshed every few samples), attack time, refresh counter */
     int   sw, gk; float sdet, ssub, satt;                              /* synth family options */
     double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode; float srate, sgain, satk_inc, srel_c, sgate_env;                   /* sample playback */
 } vc_t;
@@ -856,7 +874,9 @@ static int track_slot(const inst_t *s, int t) { for (int d = 0; d < 4; d++) if (
 /* ---------------- voices ---------------- */
 /* ---------------- NEW ENGINES: voice start ---------------- */
 static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
-    const nx_t *n = &VAR4[ty - T_V4]; const float *q = n->p; const float sr = s->sr;
+    const nx_t *n = &VAR4[ty - T_V4]; float q[10]; const float sr = s->sr;
+    nx_params(s->pp[p], n, q); memcpy(v->ep, q, sizeof q); v->epc = 32;
+    { const float pa = s->pp[p][PP_ATT], ta = TY[ty].att; v->nat = fmaxf(0.0005f, ta + pa * pa * 1.5f); }      /* Attack knob adds to the preset's own attack (0 = as the preset) */
     const float dm = s->dm[p], f0 = v->f0;
     switch (n->eng) {
     case 0: {                                                       /* MODAL: a bank of decaying resonators, struck by a short burst */
@@ -1097,8 +1117,10 @@ static inline float bsin(const vc_t *v) { return v->sw >= 100 ? wt_at(v->ph, v->
 
 
 /* ---------------- NEW ENGINES: one sample ---------------- */
-static float nx_render(inst_t *s, vc_t *v) {
-    const nx_t *n = &VAR4[v->type - T_V4]; const float *q = n->p; const ty_t *T = &TY[v->type]; const float dt = s->inv_sr;
+static float nx_render(inst_t *s, vc_t *v, int p) {
+    const nx_t *n = &VAR4[v->type - T_V4]; const ty_t *T = &TY[v->type]; const float dt = s->inv_sr;
+    if (--v->epc <= 0) { nx_params(s->pp[p], n, v->ep); v->epc = 32; }                 /* knobs move a held note too */
+    const float *q = v->ep;
     float x = 0.0f;
     switch (n->eng) {
     case 0: {                                                       /* MODAL */
@@ -1133,7 +1155,7 @@ static float nx_render(inst_t *s, vc_t *v) {
         }
         if (q[6] > 0.0f) { v->nx[3] += f * 0.5f * dt; if (v->nx[3] >= 1.0f) v->nx[3] -= 1.0f; out += q[6] * sinf(TWO_PI * v->nx[3]); }
         if (T->sus) {
-            const float at = T->att > 0.0005f ? T->att : 0.0005f;
+            const float at = v->nat;
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         v->env2 *= v->c2;
@@ -1160,7 +1182,7 @@ static float nx_render(inst_t *s, vc_t *v) {
             x += *bp * W[k];
         }
         x *= 0.9f;
-        { const float at = T->att > 0.0005f ? T->att : 0.0005f;
+        { const float at = v->nat;
           if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
         x *= v->env;
@@ -1192,7 +1214,7 @@ static float nx_render(inst_t *s, vc_t *v) {
             v->nx[7] = o; v->nx[6] = hold > 1 ? (float)(hold - 1) : 0.0f;
         }
         if (T->sus) {
-            const float at = T->att > 0.0005f ? T->att : 0.0005f;
+            const float at = v->nat;
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = o * v->env * 0.6f;
@@ -1215,7 +1237,7 @@ static float nx_render(inst_t *s, vc_t *v) {
         const float xx = TWO_PI * fc * dt, a = xx / (1.0f + xx);
         v->z1 += a * (osc - v->z1); v->z2 += a * (v->z1 - v->z2);
         if (T->sus) {
-            const float at = T->att > 0.0005f ? T->att : 0.0005f;
+            const float at = v->nat;
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         v->env2 *= v->c2;
@@ -1594,7 +1616,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         else { pos += step; if (pos >= (double)v->s1) { if (loop && v->gate) pos -= (double)(v->s1 - v->s0); else v->active = 0; } }
         v->sp = pos;
         break; }
-    case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: x = nx_render(s, v); break;
+    case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: x = nx_render(s, v, p); break;
     default: v->active = 0; break;
     }
     v->t += dt;
@@ -1950,7 +1972,10 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
         else if (k == PP_POLY) { int e = enum_index(val, POLY_NAME, 2);       if (e < 0) return; v = (float)e; }
         else if (k == PP_DTIME) { int e = enum_index(val, DT_NAME, 5);        if (e < 0) return; v = (float)e; }
         else if (k == PP_XFX || k == PP_MFX)  { v = clampf((float)atof(val), 0.0f, 10.0f); }
+        else if (k >= PP_E0)  { v = clampf((float)atof(val), -1.0f, 1.0f); }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
+        if (k == PP_TYPE && (int)(s->pp[p][PP_TYPE] + 0.5f) != (int)(v + 0.5f))         /* another sound: its own values, not the old sound's edits */
+            for (int i = 0; i < 10; i++) s->pp[p][PP_E0 + i] = -1.0f;
         s->pp[p][k] = v;
         if (s->plk_t[p] == k) s->plk_b[p] = v;
         update_pad(s, p);
@@ -2112,7 +2137,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         int l = atoi(val); const char *c = strchr(val, ','); if (!c || l < 0 || l >= NLANE) return;
         int k = atoi(c + 1);
         if (s->plk_t[l] > 0) { s->pp[l][s->plk_t[l]] = s->plk_b[l]; update_pad(s, l); }       /* put the old target back to its base value */
-        if (k < 1 || k >= PP_N || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX) k = 0;
+        if (k < 1 || k >= PP_N || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX || k >= PP_E0) k = 0;
         s->plk_t[l] = (uint8_t)k; if (k) s->plk_b[l] = s->pp[l][k];
         return;
     }
@@ -2135,6 +2160,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
             else if (k == PP_XFX || k == PP_MFX) v = clampf(v, 0.0f, 10.0f);
+            else if (k >= PP_E0) v = clampf(v, -1.0f, 1.0f);             /* engine values: 0..1, or -1 = the preset's own */
             else v = clampf(v, 0.0f, 1.0f);
             s->cpp[c][t][k] = v;
             q = (*end == ',') ? end + 1 : end;
@@ -2156,6 +2182,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
             else if (k == PP_XFX || k == PP_MFX) v = clampf(v, 0.0f, 10.0f);
+            else if (k >= PP_E0) v = clampf(v, -1.0f, 1.0f);             /* engine values: 0..1, or -1 = the preset's own */
             else v = clampf(v, 0.0f, 1.0f);
             s->pp[n - 1][k] = v;
             q = (*end == ',') ? end + 1 : end;

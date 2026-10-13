@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """Generates the 'NEW ENGINES' presets (src/variants4*.{h,inc}) that follow the 1064 older sounds, and patches ui.js
 (TYPE_NAME, BASE_T, NX_GROUPS). Five engines: 0 MODAL, 1 FM, 2 VOX, 3 CHIP, 4 MORPH.
-Row: eng, f0, oct, tau1, tau2, att, trim, sus, p[10]"""
+Row: eng, f0, oct, tau1, tau2, att, trim, sus, p[10]
+
+Also writes src/engines.inc (value ranges of the 10 engine parameters, used by the DSP to map the knob values 0..1 of
+the pad parameters e0..e9) and the /*ENGBEGIN*/../*ENGEND*/ block of ui.js (engine names, parameter pages, preset lists).
+The five INIT presets (one per engine) are appended LAST, so all older sound numbers stay valid.
+Run: python3 tools/gen_variants4.py   (TAKTILE_ROOT=<dir with ui.js and src/> to run on another copy)"""
 import re, json, os
-root = '/home/claude/groove/'
+root = os.environ.get('TAKTILE_ROOT') or os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+root = root.rstrip('/') + '/'
 P = []   # (name, group, uibase, eng, f0, oct, tau1, tau2, att, sus, p[10])
 def add(name, group, ub, eng, p, f0=0.0, oct=0.0, tau1=0.5, tau2=0.1, att=0.005, sus=0):
     p = list(p) + [0.0] * (10 - len(p)); assert len(p) == 10 and len(name) <= 9, name
@@ -171,6 +177,46 @@ mo('MKeyTr', MK, 24, 29, .5, .0, 0, 0, .02, 8, 1.5, 0, oct=4, tau1=.45, tau2=.3,
 mo('MKeyGlw', MK, 27, 30, .0, 1.0, 0, 0, .012, 11, 0, 0, oct=16, tau1=1.0, tau2=.5, att=.001)
 mo('MKeyOrg', MK, 77, 31, .4, .6, 3, .2, .005, 9, 0, .5, oct=4, tau1=.6, tau2=1.0, att=.003)
 # ---------------------------------------------------------------------------------------------------------
+# ============ INIT: one plain starting sound per engine (appended last: older sound numbers never move)
+IN = 'INIT'
+add('ModINIT', IN, 23, 0, [0, .6, 3, .9, 0, .3], oct=8, tau1=.45)
+add('FMINIT', IN, 73, 1, [1, 1.0, 1, 0, 0, 1, 0, .3, 0, 1.0], oct=8, tau1=.3, tau2=1.0, att=.005, sus=1)
+add('VoxINIT', IN, 78, 2, [0, 0, 0, .1, .006, 5.2, .06, 1, .5, 1.0], oct=4, tau1=.5, tau2=9, att=.05, sus=1)
+add('ChpINIT', IN, 26, 3, [.5, 0, 0, 0, 0, 0, 0, 0, 0, 1], oct=8, tau1=.08, att=.002, sus=1)
+add('MrpINIT', IN, 26, 4, [3, 305, 0, 0, 0, 0, 0, 8, 0, 0], oct=8, tau1=.3, tau2=1.0, att=.005, sus=1)
+
+# ============ ENGINE PARAMETER SPEC: which of the 10 values p[0..9] a knob edits, its range and how it is shown.
+# The pad parameters e0..e9 hold 0..1 (or -1 = "use the preset's own value"); the DSP maps them with lo/hi and rounds the int / enum ones.
+def F(s, n, a, lo, hi, d=2, u=''): return dict(s=s, n=n, a=a, lo=lo, hi=hi, k='f', d=d, u=u)
+def I(s, n, a, lo, hi, u=''): return dict(s=s, n=n, a=a, lo=lo, hi=hi, k='i', d=0, u=u)
+def E(s, n, a, names, lo=0): return dict(s=s, n=n, a=a, lo=lo, hi=lo + len(names) - 1, k='e', d=0, u='', e=names)
+SETS = ['MARIMB', 'VIBES', 'XYLO', 'KALIMB', 'GLOCK', 'TUBULR', 'CHURCH', 'STEELD', 'HARP', 'NYLON', 'KOTO', 'TIMP', 'MEMBRN', 'WOOD', 'BOWL', 'GAMLAN', 'CRYSTL', 'PLATE', 'HOLLOW']     # at most 6 letters: the value cell is 30 px wide
+ENG = [
+    dict(n='MODAL', att=False, p=[E(0, 'Set', 'Set', SETS), F(1, 'Bright', 'Brt', 0, 1), F(2, 'BurstMs', 'Burst', 0.5, 20, 1), F(3, 'Tilt', 'Tilt', 0, 2),
+                                  F(4, 'Stretch', 'Strc', 0, 0.1, 3), F(5, 'Click', 'Click', 0, 1), F(6, 'TremDepth', 'TrmD', 0, 1), F(7, 'TremHz', 'TrmR', 0, 12, 1)]),
+    dict(n='FM', att=True, p=[F(0, 'RatioB', 'RatB', 0.25, 16), F(1, 'IndexB', 'IdxB', 0, 8), F(2, 'RatioC', 'RatC', 0.25, 16), F(3, 'IndexC', 'IdxC', 0, 8),
+                              F(4, 'Feedback', 'Fdbk', 0, 1), E(8, 'Algo', 'Algo', ['C>B>A', 'B+C>A', 'PAIRS']), F(6, 'Sub', 'Sub', 0, 1), F(7, 'VelSens', 'Vel', 0, 1),
+                              F(5, 'RatioA', 'RatA', 0.25, 8), F(9, 'IdxEnv', 'IEnv', 0, 1)]),
+    dict(n='VOX', att=True, p=[E(0, 'VowelA', 'VowA', ['AH', 'EH', 'EE', 'OH', 'OO', 'AE', 'UH']), E(1, 'VowelB', 'VowB', ['AH', 'EH', 'EE', 'OH', 'OO', 'AE', 'UH']),
+                               F(3, 'Voice', 'Voice', 0, 1), F(6, 'Breath', 'Brth', 0, 1), F(4, 'VibDepth', 'VibD', 0, 0.02, 3), F(5, 'VibHz', 'VibR', 3, 8, 1),
+                               F(7, 'Damp', 'Damp', 0.4, 1.6), F(8, 'Tilt', 'Tilt', 0, 1), F(9, 'Gender', 'Gndr', 0.6, 1.5)]),
+    dict(n='CHIP', att=True, p=[F(0, 'Duty', 'Duty', 0, 0.5), E(6, 'Noise', 'Noise', ['OFF', 'LONG', 'SHORT']), E(1, 'Arp', 'Arp', ['OFF', 'MAJ', 'MIN', 'OCT', '5TH', 'MAJ B', 'PWR']),
+                                F(2, 'ArpRate', 'ArpR', 0, 32, 0), F(3, 'VibDepth', 'VibD', 0, 0.15, 3), F(4, 'VibDelay', 'VibT', 0, 0.5, 2),
+                                E(5, 'Bits', 'Bits', ['OFF', '1', '2', '3', '4', '5', '6', '7', '8']), F(7, 'Slide', 'Slide', -96, 12, 0),
+                                F(8, 'DutySweep', 'Swp', -0.5, 0.5), I(9, 'Hold', 'Hold', 1, 8)]),
+    dict(n='MORPH', att=True, p=[I(0, 'WaveA', 'WavA', 0, 639), I(1, 'WaveB', 'WavB', 0, 639), F(2, 'MorphStart', 'Mrp0', 0, 1), F(3, 'MorphEnd', 'Mrp1', 0, 1),
+                                 F(4, 'LfoHz', 'LfoR', 0, 8, 2), F(5, 'LfoDepth', 'LfoD', 0, 0.5), F(6, 'Unison', 'Uni', 0, 0.03, 3), F(7, 'FiltRatio', 'Filt', 1, 16, 1),
+                                 F(8, 'FiltEnv', 'FEnv', 0, 4), F(9, 'Sub', 'Sub', 0, 1)]),
+]
+for e, g in enumerate(ENG):                                        # every preset value must lie inside the range of its knob (otherwise editing would jump)
+    used = {q['s']: q for q in g['p']}
+    for x in P:
+        if x[3] != e: continue
+        for i in range(10):
+            if i in used: assert used[i]['lo'] - 1e-6 <= x[10][i] <= used[i]['hi'] + 1e-6, (g['n'], x[0], i, x[10][i], used[i]['lo'], used[i]['hi'])
+            else: assert x[10][i] == 0.0, (g['n'], x[0], i, x[10][i])
+    assert len(used) == len(g['p']) and max(len(g['p']), 1) <= 10
+    assert all(q['hi'] - q['lo'] < 1000 for q in g['p'])             # 3 decimals in the 0..1 values must still resolve every whole number
 names = [x[0] for x in P]; assert len(set(names)) == len(names), [n for n in names if names.count(n) > 1]
 trimf = root + 'tools/nx_trim.json'
 trim = json.load(open(trimf)) if os.path.exists(trimf) else {}
@@ -189,9 +235,33 @@ u = u.replace(m.group(0), "const TYPE_NAME = [" + ",".join("'%s'" % x for x in o
 m = re.search(r"const BASE_T = \[(.*?)\];", u); ob = m.group(1).split(',')[:1064]; assert len(ob) == 1064, len(ob)
 u = u.replace(m.group(0), "const BASE_T = [" + ",".join(ob + [str(x[2]) for x in P]) + "];", 1)
 groups = {}
-for i, x in enumerate(P): groups.setdefault(x[1], []).append(1064 + i)
+for i, x in enumerate(P):
+    if x[1] != IN: groups.setdefault(x[1], []).append(1064 + i)      # INIT sounds are not part of the folders of the drum browser
 blk = "/*NXBEGIN*/const NX_GROUPS = " + json.dumps([[g, l] for g, l in groups.items()], separators=(',', ':')) + ";/*NXEND*/"
 if '/*NXBEGIN*/' in u: u = re.sub(r"/\*NXBEGIN\*/.*?/\*NXEND\*/", lambda _: blk, u, flags=re.S)
 else: u = u.replace("const SYN_ORDER =", blk + "\nconst SYN_ORDER =", 1)
+# ---- engines: spec for the UI (ui.js) and value ranges for the DSP (src/engines.inc)
+lists = []                                                           # per engine: [[folder, [sound numbers]], ...], INIT first
+for e, g in enumerate(ENG):
+    fo = {}
+    for i, x in enumerate(P):
+        if x[3] == e: fo.setdefault(x[1], []).append(1064 + i)
+    lists.append([[IN, fo.pop(IN)]] + [[k, v] for k, v in fo.items()])
+def num(x): return int(x) if float(x).is_integer() else round(float(x), 5)
+spec = [dict(n=g['n'], att=g['att'], p=[dict(s=q['s'], n=q['n'], a=q['a'], lo=num(q['lo']), hi=num(q['hi']), k=q['k'], d=q['d'], u=q['u'], **({'e': q['e']} if 'e' in q else {})) for q in g['p']], l=lists[e]) for e, g in enumerate(ENG)]
+eblk = ("/*ENGBEGIN*/const ENG = " + json.dumps(spec, separators=(',', ':')) + ";const NX_EID = " + json.dumps([x[3] for x in P], separators=(',', ':')) +
+        ";const NXP = " + json.dumps([[num(v) for v in x[10]] for x in P], separators=(',', ':')) + ";/*ENGEND*/")
+if '/*ENGBEGIN*/' in u: u = re.sub(r"/\*ENGBEGIN\*/.*?/\*ENGEND\*/", lambda _: eblk, u, flags=re.S)
+else: u = u.replace("const SYN_ORDER =", eblk + "\nconst SYN_ORDER =", 1)
 open(root + 'ui.js', 'w').write(u)
+lo = [[0.0] * 10 for _ in ENG]; hi = [[0.0] * 10 for _ in ENG]; it = [[0] * 10 for _ in ENG]
+for e, g in enumerate(ENG):
+    for q in g['p']: lo[e][q['s']] = q['lo']; hi[e][q['s']] = q['hi']; it[e][q['s']] = 0 if q['k'] == 'f' else 1
+def tbl(t, fm): return '{\n' + ',\n'.join('    { ' + ', '.join(fm(v) for v in r) + ' }' for r in t) + '\n}'
+open(root + 'src/engines.inc', 'w').write(
+    '/* generated by tools/gen_variants4.py - do not edit. Range of the 10 parameters of every NEW ENGINE (0 MODAL, 1 FM, 2 VOX, 3 CHIP, 4 MORPH):\n'
+    '   the pad parameters e0..e9 hold 0..1 and map to lo..hi (rounded when int = 1). Unused slots: 0..0. */\n'
+    'static const float ENG_LO[5][10] = ' + tbl(lo, f) + ';\n'
+    'static const float ENG_HI[5][10] = ' + tbl(hi, f) + ';\n'
+    'static const unsigned char ENG_INT[5][10] = ' + tbl(it, str) + ';\n')
 print(len(P), 'new presets, total', 1064 + len(P))

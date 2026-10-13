@@ -22,4 +22,5 @@
     "MLeadSt","MLeadAr","MLeadHm","MLeadDk","MLeadAc","MPadDrk",
     "MPadAir","MPadGls","MPadSwl","MPadWrm","MPadEvo","MPadOrg",
     "MPadDst","MKeyPlk","MKeyStb","MKeyBel","MKeyWrm","MKeyArp",
-    "MKeyTr","MKeyGlw","MKeyOrg"
+    "MKeyTr","MKeyGlw","MKeyOrg","ModINIT","FMINIT","VoxINIT",
+    "ChpINIT","MrpINIT"
