@@ -1302,7 +1302,7 @@ function drawStepEdit() {
 const TRK_COL = [1, 3, 8, 9, 11, 13, 14, 16, 17, 21, 22, 23, 25, 26, 24, 4];      /* one colour per track, all have dim variants */
 function accent(tc, pref) { for (const c of pref) if (c !== tc && c !== dimCol(tc)) return c; return 19; }      /* a clearly different hue than the track colour */
 function yellowish(c) { return c === 8 || c === 19 || Math.abs(c - 8) === 1 || Math.abs(c - 19) === 1; }      /* 8 and 19 both look yellow: a yellow track needs a different accent */
-function rootCol(tc) { return yellowish(tc) ? 120 : accent(tc, [19, 8, 11]); }
+function rootCol(tc) { return 120; }                 /* root notes: white on every track, clearly different from the track colour */
 function usedCol(tc) { return yellowish(tc) ? 120 : accent(tc, [11, 3, 8]); }
 function dimCol(c) { return c >= 1 && c <= 26 ? 65 + 2 * (c - 1) : 124; }
 let tcolO = new Array(NTRK).fill(0);

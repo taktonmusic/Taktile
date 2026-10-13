@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Root notes are white.** On the note pads the root note is white on every track (before: a second shade of the track colour that was hard to tell apart on some tracks), so the pad grid is no longer one single colour
 - **Drum pads show hits better.** A hit flashes white and stays lit for 160 ms (it used to be as short as one step tick), and sounds without steps are dim, so the playing pads stand out
 - **Calmer menus.** The jogwheel sends many ticks per click: menus, tiles, tabs, lists and the preset browser now move one step per 2 ticks (the Preset knob: 3 ticks per sound), so they are easy to hit. Parameters turned by the jogwheel keep their speed
 - **Steps take the pad's pitch.** A step you enter after playing a note pad gets that pad's pitch (per sound, octave included) instead of the root. Hold a step + pad still sets the pitch of that step
