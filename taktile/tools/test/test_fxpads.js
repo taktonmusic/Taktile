@@ -46,4 +46,9 @@ for (let i = 0; i < 32; i++) pad(i, 0); ok(run('Object.keys(fxHeld).length') ===
   cc(3, 127); cc(3, 0); ok(run('view') === 17 && run('HUBS[17][1].length') === 5, 'jog click on the FX tab opens the FX tiles');
   cc(3, 127); cc(3, 0); ok(run('view') === 5, 'a tile opens its page (DELAY)');
   cc(51, 127); cc(51, 0); cc(51, 127); cc(51, 0); ok(run('view') === 38, 'Back, Back: up to the FX tab again'); }
+// MIX view: the DSP must not play the pads as notes (padsoff 1), mute pads only mute
+{ run('chosen.fill(true); askKind = -1; menuOpen = false; shiftHeld = false; muteHeld = false; topModes[0] = 0; setKind(0, 0); sel = 0; view = 20; mixMode = 0');
+  setCalls.length = 0; run('padsOffSent = -1; syncPadsOff()'); ok(last('padsoff') === '1', 'MIX view: padsoff 1 (pads are not played as notes), got ' + last('padsoff'));
+  run('view = 0'); run('syncPadsOff()'); ok(last('padsoff') === '0', 'back on SEQ: padsoff 0 again, got ' + last('padsoff'));
+  run('muteHeld = true'); run('syncPadsOff()'); ok(last('padsoff') === '1', 'Mute held: padsoff 1'); run('muteHeld = false'); }
 console.log(fail ? 'FAILED ' + fail : 'ALL PASSED'); process.exit(fail ? 1 : 0);

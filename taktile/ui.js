@@ -59,7 +59,7 @@ const ENUMS = {
     scale: ['Minor','Phryg','Major'],
     dly_time: ['1/8','3/16','1/4','1/16'],
 };
-const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','e0','e1','e2','e3','e4','e5','e6','e7','e8','e9'];
+const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','e0','e1','e2','e3','e4','e5','e6','e7','e8','e9','aoct'];
 const EK0 = 61, EKEY = /^e\d$/;                        /* e0..e9: the 10 values of a NEW ENGINE sound, 0..1, -1 = the preset's own value (mirrors the DSP) */
 const PDEF = { 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 61: -1, 62: -1, 63: -1, 64: -1, 65: -1, 66: -1, 67: -1, 68: -1, 69: -1, 70: -1 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
@@ -166,9 +166,9 @@ const VIEW_ITEMS = {
     19: [['phas','Mix'],['phrt','Rate'],['phfb','Fdbk'],['chor','Chorus','Cho'],['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['vol','Vol'],['pan','Pan']],
     8: [['browse','Jog'],['fullvel','FullVel'],['rqoff','RecSnap'],['rdens','RndDens','Dens'],['rvar','RndVel','RVel'],['rkey','RndKey','RKey'],['rrat','RndRatch','RRat'],['m_met','Metro','Met']],
     10: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
-    15: [['m_qnt','Launch'],['rqoff','RecSnap'],['qscale','ScaleQ'],['key','Key'],['scale','Scale'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum']],
+    15: [['m_qnt','ClipStart','Start'],['rqoff','RecTiming','RecT'],['qscale','ToScale','2Scl'],['key','Key'],['scale','Scale']],       /* QUANT: only what quantizes, nothing else */
     24: [['xfx','Effect'],['xmix','Amount'],['xrt','Rate'],['xdp','Depth'],['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['chor','Chorus','Cho'],['phas','Phaser','Pha']],
-    27: [['mfx','MIDI FX','Effect'],['mamt','Amount'],['mprm','Param'],['arp','Arp'],['rate','ArpRate','Rate']],
+    27: [['mfx','MIDI FX','Effect'],['mamt','Amount'],['mprm','Param'],['arp','Arp'],['aoct','ArpOct','Oct'],['rate','ArpRate','Rate']],
     25: [['key','Key'],['scale','Scale'],['qscale','ScaleQ'],['m_qnt','Launch','Lnch'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met']],
     26: [['rrate','Rate'],['fullvel','FullVel'],['rqoff','RecSnap'],['qscale','ScaleQ'],['arp','Arp'],['rate','ArpRate','ARate'],['bpm','BPM'],['swing','Swing','Swg']],
     22: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ']],
@@ -485,6 +485,7 @@ function fmtVal(key, v) {
     if (key === 'smp') { const i = Math.round(v * 63); return smpInfo[i] && smpInfo[i][0] ? String(i + 1) : '--'; }
     if (key === 'sst' || key === 'sen') return String(Math.round(v * 100));
     if (key === 'smd') return ['ONE', 'REV', 'LOOP'][Math.min(2, Math.round(v * 2))];
+    if (key === 'aoct') return String(1 + Math.min(3, Math.round(v * 3)));
     if (key === 'fmode') return ['LP', 'BP', 'HP'][Math.min(2, Math.round(v * 2))];
     if (key === 'lay') return kind[sel] ? LAYD_NAME[layD] : LAYS_NAME[layS];
     if (key === 'dsel') return kind[sel] ? String(Math.round(v * 15) + 1) : '-';
@@ -591,6 +592,7 @@ function editParam(scope, key, delta, idx) {
         return { v: getVal('sys', key) };
     }
     if (key === 'smp') { selectSample(delta > 0 ? 1 : -1, true); return { v: getVal(scope, key) }; }
+    if (key === 'aoct') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'aoct', clamp(Math.round(pads[ln()][PI.aoct] * 3) + d, 0, 3) / 3); return { v: pads[ln()][PI.aoct] }; }
     if (key === 'smd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'smd', clamp(Math.round(pads[ln()][PI.smd] * 2) + d, 0, 2) / 2); return { v: pads[ln()][PI.smd] }; }
     if (key === 'fmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'fmode', clamp(Math.round(pads[ln()][PI.fmode] * 2) + d, 0, 2) / 2); return { v: pads[ln()][PI.fmode] }; }
     if (scope === 'pad' && EKEY.test(key)) return editE(keyLane(key), +key.slice(1), delta, idx);
@@ -785,7 +787,7 @@ const HELP = {
     0: ['Shift+Jog = Sound-Ordner. Step halten + Knoepfe 1-8 = Lock. Shift+Menu = Hilfe'],
     1: ['Knoepfe 1-8 = Klang', 'Jog: Reiter wechseln', 'Shift+Jog: Presets'],
     2: ['Filter: LP, HP, Crush', 'Jog: Reiter wechseln', 'Jog klick: letzter Reiter'],
-    3: ['Mod: Ring, Pump, Arp', 'Duck = Sidechain Tiefe', 'Jog: Reiter wechseln'],
+    3: ['Mod: Ring, Pump, Wobble', 'Duck = Sidechain Tiefe', 'Jog: Reiter wechseln'],
     9: ['Synth: Wave, Sub, Hue', 'Knoepfe 1-7', 'Jog: Reiter wechseln'],
     28: ['Sample: Datei=Knopf 1. Shift+Jog klick: Browser. Dort Shift+Klick auf Ordner = Kit aus 16 WAVs. Shift+Pfeil: Sample/Slice/ENV. Jog klick: letzter Reiter. Slice teilt auf 16 Pads.'],
     27: ['MIDI-Effekt waehlen', 'Amount + Param', 'Jog: Reiter wechseln'],
@@ -1191,11 +1193,11 @@ function knobTouch(i) {
 }
 const LONG_NAME = { dtime: 'Delay Time', dfb: 'Delay Feedback', rsize: 'Reverb Size', rdark: 'Reverb Damping', chrt: 'Chorus Rate', chdp: 'Chorus Depth', phrt: 'Phaser Rate', phfb: 'Phaser Feedback',
     dly: 'Delay Send', rvb: 'Reverb Send', cut: 'Lowpass Cutoff', locut: 'Highpass Cutoff', res: 'Resonance', fenv: 'Filter Envelope', crush: 'Bit Crusher', ring: 'Ring Modulator', pump: 'Pump', wob: 'Wobble',
-    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_wid: 'Stereo Width',
+    arp: 'Arpeggiator', aoct: 'Arp Octaves', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_wid: 'Stereo Width',
     m_comp: 'Compressor', dly_ret: 'Delay Return', rvb_ret: 'Reverb Return', eql: 'Sound EQ Low', eqm: 'Sound EQ Mid', eqh: 'Sound EQ High', m_eql: 'EQ Low', m_eqm: 'EQ Mid', m_eqh: 'EQ High', m_lim: 'Limiter', poly: 'Voices', wave: 'Waveform', det: 'Detune',
     sub: 'Sub Oscillator', att: 'Attack', vol: 'Volume', tvol: 'Track Volume', pmode: 'Pad Mode', dsel: 'Drum Sound', lay: 'Pad Layout', tcol: 'Track Color', tsw: 'Track Swing', rdens: 'Random Density',
     rvar: 'Random Velocity', rkey: 'Random In Key', rrat: 'Random Ratchet', rqoff: 'Record Snap', fullvel: 'Full Velocity', m_hum: 'Humanize', m_met: 'Metronome', m_qnt: 'Launch Quantize',
-    qscale: 'Quantize To Scale', sst: 'Sample Start', sen: 'Sample End', smd: 'Sample Mode', smp: 'Sample File', sgn: 'Sample Gain', satk: 'Sample Attack', srel: 'Sample Release', sstr: 'Time Stretch',
+    qscale: 'Quantize Notes To Scale', m_qnt: 'Clip Start Quantize', sst: 'Sample Start', sen: 'Sample End', smd: 'Sample Mode', smp: 'Sample File', sgn: 'Sample Gain', satk: 'Sample Attack', srel: 'Sample Release', sstr: 'Time Stretch',
     rmb: 'Kick Rumble', rmt: 'Rumble Tail', ehit: 'Euclid Hits', erot: 'Euclid Rotate', elen: 'Euclid Length', emut: 'Euclid Mutate', mamt: 'MIDI FX Amount', mprm: 'MIDI FX Param', mfx: 'MIDI Effect', xfx: 'Insert Effect', xmix: 'Insert Amount',
     xrt: 'Insert Rate', xdp: 'Insert Depth', fdec: 'Filter Env Decay', fkey: 'Filter Key Track', fmode: 'Filter Mode', slg: 'Slices To Pads' };
 function fullLabel(v, i, items) {                          /* the whole parameter name (the grid uses short names) */
@@ -1850,7 +1852,7 @@ function kitLoad() {
     for (let j = 0; j < ls.length && j < k.r.length; j++) {
         const row = k.r[j]; if (!Array.isArray(row)) continue;
         for (let i = 0; i < PK.length; i++) if (soundIdx(i)) {
-            if (i >= EK0) { const x = i < row.length ? Number(row[i]) : -1; pads[ls[j]][i] = clamp(Number.isFinite(x) ? x : -1, -1, 1); }      /* a kit saved before the engine values: the sound's own */
+            if (i >= EK0 && i < EK0 + 10) { const x = i < row.length ? Number(row[i]) : -1; pads[ls[j]][i] = clamp(Number.isFinite(x) ? x : -1, -1, 1); }      /* a kit saved before the engine values: the sound's own */
             else if (i < row.length) pads[ls[j]][i] = clamp(Number(row[i]) || 0, 0, i === 0 ? TYPE_NAME.length : 12);
         }
         qPad(ls[j]); flushPad(ls[j]);                                 /* the whole kit reaches the engine at once, not 3 pads per tick */
@@ -2740,7 +2742,7 @@ function drawParams() {
     if (view === 33 && rsState === 2) { draw_rect(1, 44, 126, 6, 1); const w = Math.round(122 * rsPct / 100); if (w > 0) fill_rect(3, 46, w, 2, 1); }
     if (view === 8 && lastErr) { fill_rect(0, 38, 128, 26, 0); txt(1, 41, 'ERR ' + errCount, 1); txt(1, 50, lastErr.substring(0, 21), 1); txt(1, 58, lastErr.substring(21, 42), 1); }
 }
-const MOD_SYN = [['ring','Ring'],['pump','Pump'],['wob','Wobble','Wob'],['arp','Arp'],['rate','Rate'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc']];
+const MOD_SYN = [['ring','Ring'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc']];
 const MOD_DRM = [['ring','Ring'],['pump','Pump'],['wob','Wobble','Wob'],['rmb','Rumble','Rmbl'],['rmt','RumbleTail','RTail'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc']];
 function viewItemsFix() {
     VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
@@ -2955,7 +2957,7 @@ globalThis.init = function () {
 };
 
 function syncPadsOff() {
-    const want = (menuOpen || askKind >= 0 || shiftHeld || view === 7 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : (topModes[sel] === 3 ? 4 : 0));
+    const want = (menuOpen || askKind >= 0 || shiftHeld || muteHeld || view === 7 || view === 20 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : (topModes[sel] === 3 ? 4 : 0));
     if (want !== padsOffSent) { padsOffSent = want; dspSet('padsoff', String(want)); }
 }
 function hostSuspend() {                                   /* keep Taktile running in the background (the sequencer keeps playing while you browse Move) */
@@ -3203,6 +3205,7 @@ globalThis.onMidiMessageInternal = function (data) {
         else if (dl && !menuOpen) jogFirst(dl);                              /* every other page: the jogwheel turns the first parameter (like knob 1) */
         return; }
     case CC.JOGCLICK:
+        if (d2 > 0 && view === 20 && !menuOpen && !padMenu && !shiftHeld && !muteHeld) { subPageNav(1); return; }      /* MIX: jog click = next page (Volume > Delay > Reverb) */
         if (d2 > 0 && view === 40 && !menuOpen && !shiftHeld) { if (undoStack.length) histApply(); return; }
         if (d2 > 0 && (view === 0 || view === 1) && !menuOpen && !padMenu && !shiftHeld && askKind < 0 && !fb) { fbOpen(); acc.fill(0); needsRedraw = true; return; }   /* jog click on SEQ/SOUND = preset browser (HOME: Shift + step 3) */
         if (d2 > 0 && view === 38 && !menuOpen && !padMenu && !shiftHeld) { openHub(17); return; }      /* FX tab: jog click opens the FX tiles (Delay, Reverb, Chorus, Phaser, Duck) */

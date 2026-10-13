@@ -56,7 +56,7 @@ __asm__(".symver powf,powf@GLIBC_2.17");
 #include "variants3_n.h"
 #include "variants4_n.h"
 enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH,
-       PP_E0, PP_E1, PP_E2, PP_E3, PP_E4, PP_E5, PP_E6, PP_E7, PP_E8, PP_E9,      /* NEW ENGINES: the 10 values p[0..9] of the sound, 0..1 (-1 = the preset's own value), see src/engines.inc */
+       PP_E0, PP_E1, PP_E2, PP_E3, PP_E4, PP_E5, PP_E6, PP_E7, PP_E8, PP_E9, PP_AOCT,      /* NEW ENGINES: the 10 values p[0..9] of the sound, 0..1 (-1 = the preset's own value), see src/engines.inc */
        PP_N };
 #define NGH 24                       /* ghost voices: released tails of retriggered notes in POLY mode */
 
@@ -141,6 +141,7 @@ static const pd_t PD[PP_N] = {
     { "eqh",   "EQ High",0, 0.50f },
     { "e0",    "Eng P1", 0, -1.0f }, { "e1",    "Eng P2", 0, -1.0f }, { "e2",    "Eng P3", 0, -1.0f }, { "e3",    "Eng P4", 0, -1.0f }, { "e4",    "Eng P5", 0, -1.0f },
     { "e5",    "Eng P6", 0, -1.0f }, { "e6",    "Eng P7", 0, -1.0f }, { "e7",    "Eng P8", 0, -1.0f }, { "e8",    "Eng P9", 0, -1.0f }, { "e9",    "Eng P10",0, -1.0f },
+    { "aoct",  "Arp Oct",0, 0.0f },
 };
 
 static const char *TYPE_NAME[T_COUNT] = {
@@ -1627,13 +1628,17 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
 static int arp_offset(inst_t *s, int p, int n) {
     int arp = (int)(s->pp[p][PP_ARP] + 0.5f);
     const int *tb = SCALE_TBL[(int)(s->g[G_SCALE] + 0.5f) % 3];
+    int oc = 1 + (int)(s->pp[p][PP_AOCT] * 3.999f); if (oc < 1) oc = 1; if (oc > 4) oc = 4;     /* ARP OCT: 1..4 octaves */
+    const int len = 6 * oc;
+    int i;
     switch (arp) {
-    case 1: return tb[n % 6];
-    case 2: return tb[5 - (n % 6)];
-    case 3: { int k = n % 10; return tb[k < 6 ? k : 10 - k]; }
-    case 4: { s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5; return tb[(s->rng >> 8) % 6]; }
+    case 1: i = n % len; break;
+    case 2: i = len - 1 - (n % len); break;
+    case 3: { const int m = 2 * len - 2, k = n % m; i = k < len ? k : m - k; break; }
+    case 4: { s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5; i = (int)((s->rng >> 8) % (unsigned)len); break; }
     default: return 0;      /* Roll */
     }
+    return tb[i % 6] + 12 * (i / 6);
 }
 
 static float arp_step_samples(inst_t *s, int p) {
@@ -1974,6 +1979,7 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
         else if (k == PP_POLY) { int e = enum_index(val, POLY_NAME, 2);       if (e < 0) return; v = (float)e; }
         else if (k == PP_DTIME) { int e = enum_index(val, DT_NAME, 5);        if (e < 0) return; v = (float)e; }
         else if (k == PP_XFX || k == PP_MFX)  { v = clampf((float)atof(val), 0.0f, 10.0f); }
+        else if (k == PP_AOCT) { v = clampf((float)atof(val), 0.0f, 1.0f); }
         else if (k >= PP_E0)  { v = clampf((float)atof(val), -1.0f, 1.0f); }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         if (k == PP_TYPE && (int)(s->pp[p][PP_TYPE] + 0.5f) != (int)(v + 0.5f))         /* another sound: its own values, not the old sound's edits */
@@ -2162,6 +2168,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
             else if (k == PP_XFX || k == PP_MFX) v = clampf(v, 0.0f, 10.0f);
+            else if (k == PP_AOCT) v = clampf(v, 0.0f, 1.0f);
             else if (k >= PP_E0) v = clampf(v, -1.0f, 1.0f);             /* engine values: 0..1, or -1 = the preset's own */
             else v = clampf(v, 0.0f, 1.0f);
             s->cpp[c][t][k] = v;
@@ -2184,6 +2191,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
             else if (k == PP_XFX || k == PP_MFX) v = clampf(v, 0.0f, 10.0f);
+            else if (k == PP_AOCT) v = clampf(v, 0.0f, 1.0f);
             else if (k >= PP_E0) v = clampf(v, -1.0f, 1.0f);             /* engine values: 0..1, or -1 = the preset's own */
             else v = clampf(v, 0.0f, 1.0f);
             s->pp[n - 1][k] = v;

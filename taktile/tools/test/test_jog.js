@@ -9,7 +9,7 @@ const key = (n) => { cc(n, 127); cc(n, 0); };
 const chk = (v, setupJs, act, cond, msg) => { setup(v); if (setupJs) run(setupJs); act(); ok(cond(), msg); };
 const R = () => key(RIGHT), L = () => key(LEFT);
 // MIX
-chk(20, 'mixMode = 0', click, () => run('mixMode') === 0 && run('isHub(view)'), 'MIX: click does not cycle (opens HOME)');
+chk(20, 'mixMode = 0', click, () => run('mixMode') === 1 && run('view') === 20, 'MIX: click = next page (Volume > Delay)');
 chk(20, 'mixMode = 0', () => shift(R), () => run('mixMode') === 1 && run('view') === 20, 'MIX: Shift+Right -> VOLUME->DELAY');
 chk(20, 'mixMode = 0', () => shift(L), () => run('mixMode') === 2, 'MIX: Shift+Left wraps to 2');
 // EUCLID

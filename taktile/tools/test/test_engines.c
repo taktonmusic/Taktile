@@ -31,7 +31,7 @@ static char rowbuf[4096];
 static void row(char *buf, int len, int lane, int type, const double *e, int count) {
     int n = snprintf(buf, (size_t)len, "%d:", lane);
     for (int k = 0; k < count; k++) {
-        double v = k == PP_TYPE ? type : (k >= PP_E0 ? (e ? e[k - PP_E0] : -1.0) : PD[k].def);
+        double v = k == PP_TYPE ? type : (k >= PP_E0 && k <= PP_E9 ? (e ? e[k - PP_E0] : -1.0) : PD[k].def);
         n += snprintf(buf + n, (size_t)(len - n), "%s%.5f", k ? "," : "", v);
     }
 }
@@ -134,6 +134,21 @@ int main(void) {
     { double e[10] = { 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5 };
       row(rowbuf, sizeof rowbuf, 1, init0 + 3, e, PP_N); char cs[4096]; snprintf(cs, sizeof cs, "3,0%s", strchr(rowbuf, ':')); set_param(in, "csnd", cs); }
     CHECK(in != NULL, "csnd");
+
+    /* 10. ARP OCT: the arpeggio reaches 1..4 octaves (Up, Down, UpDn, Rand) */
+    { inst_t *st = (inst_t *)in;
+      for (int oc = 0; oc < 4; oc++) {
+          st->pp[0][PP_AOCT] = oc / 3.0f;
+          for (int mode = 1; mode <= 4; mode++) {
+              st->pp[0][PP_ARP] = (float)mode; int mx = -999, mn = 999;
+              for (int n = 0; n < 400; n++) { const int o = arp_offset(st, 0, n); if (o > mx) mx = o; if (o < mn) mn = o; }
+              CHECK(mn >= 0 && mx >= 12 * oc && mx < 12 * (oc + 1) + 12, "arp mode %d oct %d: range %d..%d", mode, oc + 1, mn, mx);
+          }
+      }
+      st->pp[0][PP_ARP] = 1.0f; st->pp[0][PP_AOCT] = 0.0f; setf(in, 0, "aoct", 1.0);
+      get_param(in, "p01_aoct", b, sizeof b); CHECK(strcmp(b, "1.000") == 0, "aoct = %s", b);
+      setf(in, 0, "aoct", 7.0); get_param(in, "p01_aoct", b, sizeof b); CHECK(strcmp(b, "1.000") == 0, "aoct clamps to 1, got %s", b);
+      seti(in, 0, "type", init0 + 1); get_param(in, "p01_aoct", b, sizeof b); CHECK(strcmp(b, "1.000") == 0, "a new sound keeps ARP OCT, got %s", b); }
 
     destroy_instance(in);
     printf(fails ? "FAILED %d\n" : "ALL PASSED\n", fails);
