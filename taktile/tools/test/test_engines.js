@@ -48,8 +48,8 @@ ok(run('engLane(0)') === 0, 'knob 1 turned left twice: back to ANALOG');
 // Preset knob (knob 2) stays inside the engine
 run('setEngine(0, 2)'); run('acc.fill(0)'); const fmN = run('engList(2).length');
 for (let i = 0; i < 2; i++) cc(72, 1);
-ok(run('Math.round(pads[0][0])') === run('engList(2)[2]') && run('engLane(0)') === 2, 'Preset knob: two ticks = two sounds further in the FM list');
-run('acc.fill(0)'); shift(() => { cc(72, 1); cc(72, 1); });
+ok(run('Math.round(pads[0][0])') === run('engList(2)[2]') && run('engLane(0)') === 2, 'Preset knob: two ticks = two sounds further in the FM list (the slow-down is off in tests)');
+run('acc.fill(0)'); shift(() => { cc(72, 1); cc(72, 1); cc(72, 1); });
 ok(run('Math.round(pads[0][0])') === run('engList(2)[7]'), 'Shift + Preset knob: 5 sounds at once');
 for (let i = 0; i < 400; i++) cc(72, 3);
 ok(run('Math.round(pads[0][0])') === run('engList(2)[' + (fmN - 1) + ']') && run('engLane(0)') === 2, 'Preset knob: stops at the end of the FM list (' + fmN + ' sounds), never leaves the engine');

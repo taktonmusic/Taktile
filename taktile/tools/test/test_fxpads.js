@@ -68,4 +68,11 @@ for (let i = 0; i < 32; i++) pad(i, 0); ok(run('Object.keys(fxHeld).length') ===
   run('chosen.fill(true); askKind = -1; menuOpen = false; padMenu = false; heldStep = -1; sel = 0; setKind(0, 0); topModes[0] = 0; fxLive = false; view = 0; shiftHeld = false; deleteHeld = false; steps[ed[0]][0][7] = [0, 100, 0, 0]; lastPadSemi = {}');
   pad(11, 100); pad(11, 0); const want = run('lastPadSemi[0]'); stepKey(7);
   ok(want !== 0 && run('steps[ed[0]][0][7][2]') === want, 'new step takes the pitch of the last pad (' + want + ')'); }
+// jog speed: with the real division a menu / hub moves one step per two ticks
+{ ctx.__NOJOGDIV = false; const { cc } = require('./harness.js');
+  run('chosen.fill(true); askKind = -1; menuOpen = false; padMenu = false; heldStep = -1; sel = 0; view = 16; hubSel[16] = 0; jogAccN = 0; jogAccT = 0');
+  for (let i = 0; i < 6; i++) cc(14, 1);
+  ok(run('hubSel[16]') === 3, 'HOME hub: six jog ticks = three tiles (' + run('hubSel[16]') + ')');
+  run('hubSel[16] = 0; jogAccN = 0; jogAccT = 0'); cc(14, 1); ok(run('hubSel[16]') === 0, 'one tick alone does not move yet');
+  ctx.__NOJOGDIV = true; }
 console.log(fail ? 'FAILED ' + fail : 'ALL PASSED'); process.exit(fail ? 1 : 0);

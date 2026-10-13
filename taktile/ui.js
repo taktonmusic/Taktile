@@ -1223,6 +1223,14 @@ const MENU_GROUPS = [
     ['SYSTEM', ['MIDI monitor', 'Scope', 'Start animation on/off', 'Idle screen on/off', 'Invert display', 'Note repeat on/off', 'Save now', 'Exit Taktile']],
 ].map(g => [g[0], g[1].map(n => MENU_ITEMS.find(m => m[0] === n)).filter(Boolean)]);
 function menuLen() { return menuGrp < 0 ? MENU_GROUPS.length : MENU_GROUPS[menuGrp][1].length; }
+/* the jogwheel sends many ticks per click: menus, lists and pages move one step per `div` ticks, so they are easy to hit */
+let jogAccN = 0, jogAccT = 0;
+function jogStep(dl, div) {
+    if (!dl || globalThis.__NOJOGDIV) return dl;
+    const now = Date.now(); if (now - jogAccT > 350 || (jogAccN !== 0 && (jogAccN > 0) !== (dl > 0))) jogAccN = 0;
+    jogAccT = now; jogAccN += dl; if (Math.abs(jogAccN) < div) return 0;
+    jogAccN = 0; return dl > 0 ? 1 : -1;
+}
 function menuMove(d) { if (menuGrp < 0) menuIdx = clamp(menuIdx + (d > 0 ? 1 : -1), 0, MENU_GROUPS.length - 1); else menuSub = clamp(menuSub + (d > 0 ? 1 : -1), 0, menuLen() - 1); needsRedraw = true; }
 function menuSelect() { if (menuGrp < 0) { menuGrp = menuIdx; menuSub = 0; needsRedraw = true; return; } const it = MENU_GROUPS[menuGrp][1][menuSub]; menuOpen = false; it[1](); needsRedraw = true; }
 function menuBack() { if (menuGrp >= 0) { menuGrp = -1; needsRedraw = true; } else { menuOpen = false; needsRedraw = true; } }
@@ -2019,7 +2027,7 @@ function engEdit(delta, idx) {
 }
 function engPresetKnob(delta, idx) {                       /* SOUND page, Preset knob: next / previous sound of the same engine */
     const L = ln(), cur = Math.round(pads[L][0]), l = engList(engOfType(cur));
-    acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false;
+    acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false;
     const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0;
     let i = l.indexOf(cur); if (i < 0) i = d > 0 ? -1 : l.length;
     const ni = clamp(i + d * (shiftHeld ? 5 : 1), 0, l.length - 1);
@@ -3089,7 +3097,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (type === 0xB0 && (d1 === CC.SHIFT || d1 === CC.PLAY)) { /* fall through */ } else return;
     }
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
-        if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) fbMove(dl); return; }
+        if (type === 0xB0 && d1 === CC.JOG) { const dl = jogStep(decodeDelta(d2), 2); if (dl) fbMove(dl); return; }
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) fbClick(); return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
         if (type === 0xB0 && d1 === CC.MENU) { if (d2 > 0) { while (fb) fbBack(); } return; }
@@ -3111,7 +3119,7 @@ globalThis.onMidiMessageInternal = function (data) {
     if (type !== 0xB0) return;
     if (d1 !== CC.DELETE) delAge = 0;
     if (menuOpen && d1 !== CC.SHIFT) {
-        if (d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) menuMove(dl); }
+        if (d1 === CC.JOG) { const dl = jogStep(decodeDelta(d2), 2); if (dl) menuMove(dl); }
         else if (d1 === CC.JOGCLICK) { if (d2 > 0) menuSelect(); }
         else if (d1 === CC.BACK) { if (d2 > 0) menuBack(); }
         else if (d1 === CC.MENU) { if (d2 > 0) { menuOpen = false; menuGrp = -1; needsRedraw = true; } }
@@ -3197,19 +3205,20 @@ globalThis.onMidiMessageInternal = function (data) {
         const dl = decodeDelta(d2);
         if (loopHeld && !menuOpen && !fb && view !== 31 && !(view === 28 && broOpen)) { if (dl) setLen(LL() + (dl > 0 ? 1 : -1) * (shiftHeld ? 16 : 1), shiftHeld); return; }   /* Loop + jogwheel = loop length (Shift = whole track), on every page, before anything else */
         if (trkHeld >= 0) { trackVol(trkHeld, dl); return; }                  /* track button held + jogwheel works as well */
-        if (isHub(view)) { if (dl) hubMove(dl); return; }
-        if (view === 40) { if (dl) { histSel = clamp(histSel + (dl > 0 ? 1 : -1), 0, Math.max(0, undoStack.length - 1)); needsRedraw = true; } return; }
-        if (isTab(view) && !menuOpen && !(view === 28 && broOpen) && (view === 28 ? (smpPage === 1 ? shiftHeld : true) : (!shiftHeld || view !== 1))) { if (dl) tabMove(dl); return; }
-        if (view === 28 && broOpen && !menuOpen) { if (dl) { broSel = clamp(broSel + (dl > 0 ? 1 : -1), 0, broList.length - 1); needsRedraw = true; } return; }
-        if (view === 28 && smpPage === 1 && !padMenu && !menuOpen) { if (dl) { slSel = clamp(slSel + (dl > 0 ? 1 : -1), 0, slN - 1); needsRedraw = true; } return; }
+        const dls = dl ? jogStep(dl, 2) : 0;                                   /* slow steps for menus, hubs, tabs and lists */
+        if (isHub(view)) { if (dls) hubMove(dls); return; }
+        if (view === 40) { if (dls) { histSel = clamp(histSel + (dl > 0 ? 1 : -1), 0, Math.max(0, undoStack.length - 1)); needsRedraw = true; } return; }
+        if (isTab(view) && !menuOpen && !(view === 28 && broOpen) && (view === 28 ? (smpPage === 1 ? shiftHeld : true) : (!shiftHeld || view !== 1))) { if (dls) tabMove(dls); return; }
+        if (view === 28 && broOpen && !menuOpen) { if (dls) { broSel = clamp(broSel + (dls > 0 ? 1 : -1), 0, broList.length - 1); needsRedraw = true; } return; }
+        if (view === 28 && smpPage === 1 && !padMenu && !menuOpen) { if (dls) { slSel = clamp(slSel + (dls > 0 ? 1 : -1), 0, slN - 1); needsRedraw = true; } return; }
         if (view === 28 && smpPage === 2 && !padMenu && !menuOpen) return;
-        if (view === 28 && !padMenu && !menuOpen) { if (dl) { selectSample(dl > 0 ? 1 : -1); needsRedraw = true; } return; }
-        if (view === 20) { if (dl) { mixPage ^= 1; needsRedraw = true; } return; }
+        if (view === 28 && !padMenu && !menuOpen) { if (dls) { selectSample(dls > 0 ? 1 : -1); needsRedraw = true; } return; }
+        if (view === 20) { if (dls) { mixPage ^= 1; needsRedraw = true; } return; }
         if (padMenu) {
-            if (dl) { if (isTab(view)) tabMove(dl); else { tabEnter(1); } }
+            if (dls) { if (isTab(view)) tabMove(dls); else { tabEnter(1); } }
             return; }
-        if (dl && view === 7 && !menuOpen) { stepTrack(dl > 0 ? 1 : -1); }   /* clip view: jog = scroll through the tracks (right = down) */
-        else if (dl && !menuOpen && view === 0) {                          /* SEQ: turning walks through the track pages (SOUND, FILTER, MOD ...), a click opens the preset folders */
+        if (dls && view === 7 && !menuOpen) { stepTrack(dls > 0 ? 1 : -1); }   /* clip view: jog = scroll through the tracks (right = down) */
+        else if (dls && !menuOpen && view === 0) {                          /* SEQ: turning walks through the track pages (SOUND, FILTER, MOD ...), a click opens the preset folders */
             if (shiftHeld) fbOpen();
             else { navStack = [0]; hubReturn = 0; symOpen = -1; tabEnter(1); showToast(TAB_NAME[1], 'TURN = NEXT PAGE', 0); }
         }
@@ -3243,7 +3252,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (view === 20) { mixKnob(i, delta); return; }
         const items = VIEW_ITEMS[view === 28 && smpPage ? (smpPage === 1 ? 29 : 32) : view];
         if (!items || i >= items.length) return;
-        if (!shiftHeld && view === 1 && items[i][0] === 'type') { browseSound(delta > 0 ? 1 : -1); return; }       /* sound knob = list that opens and scrolls */
+        if (!shiftHeld && view === 1 && items[i][0] === 'type') { const pd = jogStep(delta > 0 ? 1 : -1, 3); if (pd) browseSound(pd); return; }       /* sound knob = list that opens and scrolls */
         if (!shiftHeld && view === 28 && !smpPage && items[i][0] === 'smp') { acc[i] += delta; if (Math.abs(acc[i]) < 2) return; sampleList(acc[i] > 0 ? 1 : -1); acc[i] = 0; return; }
         const ts0 = toastSeq;
         if (editParam(scopeOf(items[i][0]), items[i][0], delta, i)) { markEdited(); if (toastSeq !== ts0) return; const v2 = getVal(scopeOf(items[i][0]), items[i][0]); curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v2), fracVal(items[i][0], v2)); }

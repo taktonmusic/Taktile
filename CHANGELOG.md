@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Calmer menus.** The jogwheel sends many ticks per click: menus, tiles, tabs, lists and the preset browser now move one step per 2 ticks (the Preset knob: 3 ticks per sound), so they are easy to hit. Parameters turned by the jogwheel keep their speed
 - **Steps take the pad's pitch.** A step you enter after playing a note pad gets that pad's pitch (per sound, octave included) instead of the root. Hold a step + pad still sets the pitch of that step
 - **Nudge goes left and right.** A step can now play up to 70 % of a step earlier (-) or later (+), in 2.5 % steps (also in the Euclid page). Early notes are scheduled one step ahead; the first step after a clip change and the very first step of a run play on time. Old saves load unchanged
 - **Sound engines.** The SOUND page has an engine selector (ANALOG, MODAL, FM, VOX, CHIP, MORPH). The Preset knob only walks through the presets of the chosen engine instead of one giant list. Each engine has an INIT preset (ModINIT, FMINIT, VoxINIT, ChpINIT, MrpINIT) as a starting point, so there are 1215 sounds now (INIT is appended last, old projects load unchanged)
