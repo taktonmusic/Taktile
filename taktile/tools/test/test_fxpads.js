@@ -42,7 +42,7 @@ let err = 0; for (let n = 0; n < 4000; n++) { try { const r = rnd(); if (r < 0.1
 ok(err === 0, 'fuzz 4000 events: no errors');
 for (let i = 0; i < 32; i++) pad(i, 0); ok(run('Object.keys(fxHeld).length') === 0, 'after releasing everything no FX stays on');
 // FX tab: the jog click opens the FX tiles, a tile opens its page, Back goes up step by step
-{ const { cc } = require('./harness.js'); run('chosen.fill(true); askKind = -1; menuOpen = false; shiftHeld = false; sel = 0; view = 38; viewItemsFix()');
+{ const { cc } = require('./harness.js'); run('chosen.fill(true); askKind = -1; menuOpen = false; padMenu = false; helpOpen = false; splashT0 = 0; idleBlank = false; exitDlg = -1; heldStep = -1; heldPad = -1; deleteHeld = false; muteHeld = false; fb = null; shiftHeld = false; sel = 0; view = 38; viewItemsFix()');
   cc(3, 127); cc(3, 0); ok(run('view') === 17 && run('HUBS[17][1].length') === 5, 'jog click on the FX tab opens the FX tiles');
   cc(3, 127); cc(3, 0); ok(run('view') === 5, 'a tile opens its page (DELAY)');
   cc(51, 127); cc(51, 0); cc(51, 127); cc(51, 0); ok(run('view') === 38, 'Back, Back: up to the FX tab again'); }
