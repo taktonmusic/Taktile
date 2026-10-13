@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Steps take the pad's pitch.** A step you enter after playing a note pad gets that pad's pitch (per sound, octave included) instead of the root. Hold a step + pad still sets the pitch of that step
 - **Nudge goes left and right.** A step can now play up to 70 % of a step earlier (-) or later (+), in 2.5 % steps (also in the Euclid page). Early notes are scheduled one step ahead; the first step after a clip change and the very first step of a run play on time. Old saves load unchanged
 - **Sound engines.** The SOUND page has an engine selector (ANALOG, MODAL, FM, VOX, CHIP, MORPH). The Preset knob only walks through the presets of the chosen engine instead of one giant list. Each engine has an INIT preset (ModINIT, FMINIT, VoxINIT, ChpINIT, MrpINIT) as a starting point, so there are 1215 sounds now (INIT is appended last, old projects load unchanged)
 - **Engine parameters.** Each engine has its own named SYNTH page (e.g. FM: ratios, indices, feedback, algorithm; VOX: vowels, voice, breath, vibrato; CHIP: duty, arp, bits, slide; MORPH: two wavetables, morph, unison). Values are per pad, saved with projects and clips, and held notes follow the knobs. Without edits a preset sounds exactly as before

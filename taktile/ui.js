@@ -1443,6 +1443,7 @@ function fxPad(i, on) {
     else { const k = fxPadOf[i]; if (k === undefined) return false; delete fxPadOf[i]; let still = false; for (const j in fxPadOf) if (fxPadOf[j] === k) still = true; if (!still) delete fxHeld[k]; }
     fxApply(); needsRedraw = true; return true;
 }
+let lastPadSemi = {};                                    /* the note pad you played last, per sound: a step you enter afterwards gets the same pitch */
 function drumPad(idx, on, vel) {                          /* drum track: left 4x4 = the 16 sounds, right 4x4 = PITCH / REPEAT / STEPS of the selected sound */
     const cc = idx & 7, rr = idx >> 3, m = topModes[sel];
     if (soundArea(cc)) {
@@ -1469,6 +1470,7 @@ function drumPad(idx, on, vel) {                          /* drum track: left 4x
     if (shiftHeld) return;
     const j = degOf(cc & 3, rr, 4), L = ln();
     if (on && deleteHeld) { delNote(L, notePadSemi(j) + oct()); return; }
+    if (on && heldStep < 0) lastPadSemi[L] = clamp(notePadSemi(j) + oct(), -64, 63);
     if (on && heldStep < 0) { recordHit(L, notePadSemi(j) + oct(), vel); logHit(L, notePadSemi(j) + oct(), vel); }
     if (on && heldStep >= 0) {
         const st = stepAt(heldStep); st[2] = clamp(notePadSemi(j) + oct(), -64, 63);
@@ -1502,6 +1504,7 @@ function onPad(idx, on, vel) {
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
     const dg = degOf(idx & 7, idx >> 3, 8);
     if (on && deleteHeld) { delNote(sel, notePadSemi(dg) + oct()); return; }
+    if (on && heldStep < 0) lastPadSemi[sel] = clamp(notePadSemi(dg) + oct(), -64, 63);
     if (on && heldStep < 0) { recordHit(sel, notePadSemi(dg) + oct(), vel); logHit(sel, notePadSemi(dg) + oct(), vel); }
     if (on && heldStep >= 0) {                                       /* hold step + pad = set pitch */
         const st = stepAt(heldStep); st[2] = clamp(notePadSemi(dg) + oct(), -64, 63);
@@ -1525,7 +1528,7 @@ function onStep(i, on) {
         if (deleteHeld) { snap(ed[sel], L); steps[ed[sel]][L][s] = [0, 100, 0, 0]; qStep(ed[sel], L, s); markEdited(); return; }
         snap(ed[sel], L); heldStep = s; heldEdited = false;
         const st = stepAt(s); heldWasOn = !!st[0];
-        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; qStep(ed[sel], L, s); markEdited(); }
+        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; if (lastPadSemi[L] !== undefined) st[2] = lastPadSemi[L]; qStep(ed[sel], L, s); markEdited(); }
     } else if (heldStep === s) {
         const L = ln();
         if (heldWasOn && !heldEdited) { steps[ed[sel]][L][s] = [0, 100, 0, 0]; qStep(ed[sel], L, s); markEdited(); }

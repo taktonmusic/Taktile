@@ -63,4 +63,9 @@ for (let i = 0; i < 32; i++) pad(i, 0); ok(run('Object.keys(fxHeld).length') ===
 { const rt = (n) => run('decStep(encStep([1, 100, 0, 0, 0, 0, ' + n + ', 0]))[6]');
   ok(rt(-28) === -28 && rt(-1) === -1 && rt(0) === 0 && rt(10) === 10 && rt(28) === 28, 'nudge -28..+28 round trip through the save format');
   ok(run('decStep("E4804000" + "4A" + "00")[6]') === 10 && run('nudTxt(-10)') === '-25%' && run('nudTxt(7)') === '+17.5%', 'old positive nudge unchanged, text shows the sign'); }
+// a step entered after playing a pad gets that pad's pitch
+{ const stepKey = (i) => { ctx.onMidiMessageInternal([0x90, 16 + i, 100]); ctx.onMidiMessageInternal([0x80, 16 + i, 0]); };
+  run('chosen.fill(true); askKind = -1; menuOpen = false; padMenu = false; heldStep = -1; sel = 0; setKind(0, 0); topModes[0] = 0; fxLive = false; view = 0; shiftHeld = false; deleteHeld = false; steps[ed[0]][0][7] = [0, 100, 0, 0]; lastPadSemi = {}');
+  pad(11, 100); pad(11, 0); const want = run('lastPadSemi[0]'); stepKey(7);
+  ok(want !== 0 && run('steps[ed[0]][0][7][2]') === want, 'new step takes the pitch of the last pad (' + want + ')'); }
 console.log(fail ? 'FAILED ' + fail : 'ALL PASSED'); process.exit(fail ? 1 : 0);
