@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="840" viewBox="0 0 1200 840">
+  <rect width="1200" height="840" fill="#0e0e11"/>
+  <text x="80" y="100" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="700">Taktile Manuals</text>
+  <text x="80" y="150" fill="#8aa8b8" font-family="Arial, Helvetica, sans-serif" font-size="26">Song Mode • Reverb / Delay • Mockups</text>
+  <rect x="80" y="210" width="1040" height="470" rx="24" fill="#1a1d25" stroke="#2d3a4d"/>
+  <text x="120" y="280" fill="#cfe6ff" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="600">Included</text>
+  <text x="120" y="335" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="24">- docs/SongMode-EN.html</text>
+  <text x="120" y="380" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="24">- docs/SongMode-DE.html</text>
+  <text x="120" y="425" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="24">- docs/reverb_delay_proposal.md</text>
+  <text x="120" y="470" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="24">- assets/mockup-songmode.svg</text>
+  <text x="120" y="515" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="24">- assets/mockup-reverb-delay.svg</text>
+  <text x="120" y="590" fill="#90d7ff" font-family="Arial, Helvetica, sans-serif" font-size="22">Documentation only • Review bundle • No runtime change</text>
+</svg>
