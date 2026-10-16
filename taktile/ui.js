@@ -388,7 +388,7 @@ function saveState() {
         for (let p = 0; p < NPAT; p++) { const row = []; for (let l = 0; l < NLANE; l++) row.push(laneHas(p, l) ? encTrack(p, l) : ''); seqHex.push(row); }
         const keep = {}; for (let t = 0; t < NTRK; t++) { keep[t] = 1; if (slot[t] >= 0) for (let k = 0; k < 16; k++) keep[NTRK + slot[t] * 16 + k] = 1; }
         const cs = csnd.map(row => row.map((r, l) => keep[l] ? r : null));
-        host_write_file(STATE_FILE, JSON.stringify({ v: 2, mg: 1, qg: [qGrid, qStr], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, mutes, bpm, swing, ed, pm: topModes, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
+        host_write_file(STATE_FILE, JSON.stringify({ v: 2, mg: 1, qg: [qGrid, qStr], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
         dirty = false; saveFlash = 30; needsRedraw = true;
     } catch (e) { /* ignore */ }
 }
@@ -454,8 +454,9 @@ function loadState() {
         if (Array.isArray(o.sq)) sceneQ = new Array(NPAT).fill(0).map((_, i) => clamp(Number(o.sq[i]) | 0, 0, 4));
         if (typeof o.se === 'number') sel = clamp(o.se | 0, 0, NTRK - 1);
         if (Array.isArray(o.qg)) { qGrid = clamp(o.qg[0] | 0, 0, 5); qStr = clamp(o.qg[1] | 0, 0, 3); } browseAll = !!o.ba; if (typeof o.rq === 'number') rqOff = clamp(o.rq, 0, 1);
-        if (Array.isArray(o.pm) && o.pm.length === NTRK) topModes = o.pm.map(x => clamp(Number(x) || 0, 0, 3));
+        if (Array.isArray(o.pm) && o.pm.length === NTRK) topModes = o.pm.map(x => clamp(Number(x) || 0, 0, 4));
         if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0;
+        chBak = (Array.isArray(o.cb) && o.cb.length === NTRK) ? o.cb.map(x => (Array.isArray(x) && x.length === 3) ? x.map(Number) : null) : new Array(NTRK).fill(null); for (let t = 0; t < NTRK; t++) { if (kind[t] || topModes[t] !== 4) { topModes[t] = (topModes[t] === 4 ? 0 : topModes[t]); chBak[t] = null; } chOn[t] = topModes[t] === 4 ? 1 : 0; }
         if (Array.isArray(o.lens)) lens = o.lens.map(Number);
         if (Array.isArray(o.mutes)) mutes = o.mutes.map(Number);
         lmutes = new Array(NLANE).fill(0); if (Array.isArray(o.lm)) for (let l = 0; l < NLANE && l < o.lm.length; l++) lmutes[l] = o.lm[l] ? 1 : 0;
@@ -467,7 +468,7 @@ function markEdited() { needsRedraw = true; dirty = true; ticksSinceEdit = 0; he
 /* ---- value helpers ---- */
 function scopeOf(key) { return PI[key] !== undefined ? 'pad' : (MI[key] !== undefined ? 'master' : 'sys'); }
 function getVal(scope, key) {
-    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'qstr') return qStr / 3; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'repmode') return topModes[sel] === 1 ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return topModes[sel] / 3; if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
+    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'qstr') return qStr / 3; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'repmode') return topModes[sel] === 1 ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return Math.min(1, topModes[sel] / 3); if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
         if (key === 'kslot') return kitSlot / (15 + FACTORY.length); if (key === 'ksave' || key === 'kload' || key === 'psave' || key === 'pload') return 0; if (key === 'kinf') return kitInfo() === 'EMPTY' ? 0 : 1;
         if (key === 'rdens') return rndDens; if (key === 'rvar') return rndVar; if (key === 'favo') return favOnly ? 1 : 0; if (key === 'kprev') return 0; if (key === 'rkey') return rndKey; if (key === 'rrat') return rndRat; if (key === 'tcol') return (tcolO[sel] || 0) / 26; if (key === 'pnew' || key === 'prst') return 0; if (key === 'pslot') return projSlot / 31; if (key === 'pinf') return projUsed[projSlot] ? 1 : 0;
         if (EU_KEYS[key]) return euGet(key)[0];
@@ -744,14 +745,19 @@ function clipAction(t, c) {
     if (shiftHeld) { dspSet('clip', t + ',-1'); clipsQ[t] = playing ? -1 : -2; if (!playing) clipsCur[t] = -1; showToast('TRACK ' + p2(t + 1), 'STOP', 0); needsRedraw = true; return; }
     launchClip(t, c);
 }
-const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS', 'LIVE FX'];
+const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS', 'LIVE FX', 'CHORD'];
 let repAllowed = true;                                     /* off: Note Repeat is skipped when switching the pad mode */
-function nextTopMode(cur, d) { let m = cur === 3 ? (d > 0 ? 2 : 1) : cur; for (let i = 0; i < 3; i++) { m = (m + d + 3) % 3; if (m !== 1 || repAllowed) return m; } return 0; }      /* the Track button only walks PITCH > REPEAT > STEPS; LIVE FX has its own switch (menu) */
+function nextTopMode(cur, d) {                              /* the Track button walks PITCH > REPEAT > STEPS (> CHORD on synth tracks); LIVE FX has its own switch */
+    const ring = [0, 1, 2]; if (!kind[sel]) ring.push(4);
+    let i = ring.indexOf(cur); if (i < 0) return 0;
+    for (let n = 0; n < ring.length; n++) { i = (i + d + ring.length) % ring.length; if (ring[i] !== 1 || repAllowed) return ring[i]; }
+    return 0;
+}      /* the Track button only walks PITCH > REPEAT > STEPS; LIVE FX has its own switch (menu) */
 function canTop() { return !(menuOpen || fb || askKind >= 0 || exitDlg >= 0 || view === 7 || view === 31 || view === 20 || isHub(view) || SYM_VIEW_SET[view]); }      /* pad modes only change on the track's own screens, never in clips / song / menus */
 function cycleTop(d) {
     if (!canTop()) { showToast('PAD MODE', 'OPEN THE TRACK FIRST', 0); return; }
     liveFxAllOff(); topModes[sel] = nextTopMode(topModes[sel], d);
-    showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[topModes[sel]], topModes[sel] / 3); markEdited(); needsRedraw = true;
+    showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[topModes[sel]], topModes[sel] / 4); if (topModes[sel] === 4) chordReconcile(); markEdited(); needsRedraw = true;
 }
 let layS = 0, layD = 0;                                    /* pad layouts: synth 0 MOVE (in key, rows 3 degrees apart) 1 SEQ 2 OCT 3 CHR (chromatic, rows a fourth apart); drum 0 sounds left 1 sounds right */
 const LAYS_NAME = ['KEY', 'SEQ', 'OCT', '4THS', '3RDS', 'ROW8'], LAYD_NAME = ['SND L', 'SND R'];
@@ -1372,10 +1378,11 @@ function liveFxAllOff() { for (const k of Object.keys(fillHeld)) fillHit(+k, fal
 function toggleTop(m, force) {
     if (!force && !canTop()) { showToast('PAD MODE', 'OPEN THE TRACK FIRST', 0); return; }                                    /* Shift + step 11 = note repeat on/off, Shift + step 12 = step grid on/off; off goes back to where you were (PITCH or the other mode) */
     if (m === 1 && !repAllowed) { showToast('NOTE REPEAT', 'OFF IN MENU', 0); return; }
-    liveFxAllOff(); const cur = topModes[sel], name = m === 1 ? 'NOTE REPEAT' : (m === 3 ? 'LIVE FX' : 'STEP GRID');
+    if (m === 4 && kind[sel]) { showToast('CHORD PADS', 'SYNTH TRACKS ONLY', 0); return; }
+    liveFxAllOff(); const cur = topModes[sel], name = m === 1 ? 'NOTE REPEAT' : (m === 3 ? 'LIVE FX' : (m === 4 ? 'CHORD PADS' : 'STEP GRID'));
     if (cur === m) { const back = topPrev[sel] !== m ? topPrev[sel] : 0; topModes[sel] = back; heldStep = -1; heldPad = -1; showToast(name, 'OFF  > ' + TOP_NAMES[back], 0); }
     else { topPrev[sel] = cur; topModes[sel] = m; heldStep = -1; heldPad = -1; showToast(name, 'ON', 1); }
-    markEdited(); needsRedraw = true;
+    chordReconcile(); markEdited(); needsRedraw = true;
 }
 function openPresets() {
     if (askKind >= 0 || exitDlg >= 0 || fb) return;
@@ -1483,7 +1490,26 @@ function keyName(k) {
     if (!KEYNAME) { KEYNAME = {}; for (const v in VIEW_ITEMS) for (const it of VIEW_ITEMS[v]) if (it && it[0] && !KEYNAME[it[0]]) KEYNAME[it[0]] = [it[1] || it[0], it[2] || it[1] || it[0]]; }
     return KEYNAME[k] || [k, k];
 }
-function favBuild() { VIEW_ITEMS[44] = favK.map(k => { const n = keyName(k); return [k, LONG_NAME[k] || n[0], n[1]]; }); }
+/* CHORD pads (synth tracks): the pads play chords through the track's MIDI effect, and while this mode is on the favorite knobs become the chord options */
+const CH_PG = [['mfx', 'Chord Mode', 'Mode'], ['mprm', 'Chord'], ['mamt', 'Level'], ['m2fx', 'Layer FX', 'Layer'], ['m2amt', 'Layer Amt', 'LAmt'], ['m2prm', 'Layer Prm', 'LPrm'], ['mch', 'Prob'], ['mvb', 'VelBias', 'VelB']];
+let chBak = new Array(16).fill(null), chOn = new Array(16).fill(0), favSig = 0;
+function chordOn() { return !kind[sel] && topModes[sel] === 4; }
+function chordReconcile() {                                   /* switching the mode on sets the track's MIDI effect to CHORD (the old one is remembered), switching it off brings the old one back */
+    for (let t = 0; t < NTRK; t++) {
+        const want = !kind[t] && topModes[t] === 4 ? 1 : 0;
+        if (kind[t] && topModes[t] === 4) topModes[t] = 0;
+        if (want === chOn[t]) continue;
+        chOn[t] = want; const a = pads[t]; if (!a) continue;
+        pSnap('pad', t, 'chordmode');
+        if (want) {
+            const m = Math.round(a[PI.mfx]);
+            if (m !== 2 && m !== 11) { chBak[t] = [a[PI.mfx], a[PI.mamt], a[PI.mprm]]; a[PI.mfx] = 2; a[PI.mamt] = 0.7; a[PI.mprm] = 0; } else chBak[t] = null;
+        } else if (chBak[t]) { a[PI.mfx] = chBak[t][0]; a[PI.mamt] = chBak[t][1]; a[PI.mprm] = chBak[t][2]; chBak[t] = null; }
+        qPad(t); markEdited(); needsRedraw = true;
+    }
+    if (favSig !== (chordOn() ? 1 : 0)) favBuild();
+}
+function favBuild() { favSig = chordOn() ? 1 : 0; VIEW_ITEMS[44] = favSig ? CH_PG : favK.map(k => { const n = keyName(k); return [k, LONG_NAME[k] || n[0], n[1]]; }); }
 function favPin() {
     if (!lastKnob || scopeOf(lastKnob) === 'sys') { showToast('PIN KNOB', 'TURN A KNOB FIRST', 0); return; }
     let at = favK.indexOf(lastKnob); if (at < 0) { at = favNext; favNext = (favNext + 1) & 7; favK[at] = lastKnob; }
@@ -1787,6 +1813,7 @@ const MENU_ITEMS = [
     ['Tap tempo', () => tapTempo()],
     ['Pad mode (pitch/repeat/steps)', () => cycleTop(1)],
     ['Live FX pads on/off', () => { menuOpen = false; toggleTop(3); }],
+    ['Chord pads on/off', () => { menuOpen = false; toggleTop(4); }],
     ['Device chain', () => { menuOpen = false; openDevices(); }],
     ['Stop all clips', () => stopAll()],
     ['Sound / kit browser', () => { menuOpen = false; fbOpen(); }],
@@ -1889,6 +1916,7 @@ function menuVal(n) {                                      /* the current state 
         case 'Follow after': return FOL_LOOPS[Math.min(5, (fol[sel][ed[sel]] >> 3) & 7)] + 'x';
         case 'Pad mode (pitch/repeat/steps)': return TOP_NAMES[topModes[sel]];
         case 'Live FX pads on/off': return topModes[sel] === 3 ? 'ON' : 'OFF';
+        case 'Chord pads on/off': return topModes[sel] === 4 ? 'ON' : 'OFF';
     }
     return '';
 }
@@ -3530,7 +3558,7 @@ function firstSynth() {                                    /* a new project: tra
 function newProject() {                                    /* empty project: one drum track, every other track asks Synth/Drum when first selected (the old state is kept in the undo slot) */
     saveState(); backupState(); try { const cur = host_read_file(STATE_FILE); if (cur) host_write_file('/data/UserData/schwung/taktile-proj-undo.json', cur); } catch (e) { /* ignore */ }
     if (playing) { dspSet('play', '0'); playing = false; gs = 0; }
-    if (DEF) { lens = DEF.lens.slice(); mutes = DEF.mutes.slice(); kind = DEF.kind.slice(); slot = DEF.slot.slice(); dsel = DEF.dsel.slice(); tv = DEF.tv.slice(); llen = DEF.llen.slice(); ed = DEF.ed.slice(); topModes = DEF.topModes.slice(); master = DEF.master.slice(); bpm = DEF.bpm; swing = DEF.swing; }
+    if (DEF) { chOn.fill(0); chBak.fill(null); lens = DEF.lens.slice(); mutes = DEF.mutes.slice(); kind = DEF.kind.slice(); slot = DEF.slot.slice(); dsel = DEF.dsel.slice(); tv = DEF.tv.slice(); llen = DEF.llen.slice(); ed = DEF.ed.slice(); topModes = DEF.topModes.slice(); master = DEF.master.slice(); bpm = DEF.bpm; swing = DEF.swing; }
     lmutes = new Array(NLANE).fill(0); chosen = new Array(NTRK).fill(0); AUTO = {}; autoLast = {}; songOn = false; songLoop = true; songList = [[0, 4, 1, 0, 0, 0]]; songOff = 0; songNext = -1; songMuted = false; songTempoOn = false; songSlot = 0; layS = 0; layD = 0; moClk = 0; moMask = 0; moChn = 0; moXp = 0; moVp = 0; moDn = 0;
     euKL.fill(4); euRL.fill(0); euV = 100; for (let i = 0; i < NLANE; i++) euP[i] = euDef();
     pads = defaultPads(); steps = newSteps(); csnd = null; undoStack = []; redoStack = []; miscLast = null; fillChg = []; tcolO.fill(0); lockT.fill(0); for (const r of fol) r.fill(0);
@@ -4316,6 +4344,7 @@ const PG47_ENG = VIEW_ITEMS[47], PG47_SYN = PG47_ENG.map(it => it[0] === 'schp' 
 const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['dly', 'Delay', 'Dly'] : it);
 const SND_SYN = [['type', 'Engine'], ['att', 'Attack', 'Atk'], ['decay', 'Decay', 'Dcy'], ['tone', 'Tone'], ['tune', 'Tune'], ['pan', 'Pan'], ['poly', 'Voices', 'Poly'], ['vol', 'Vol']];      /* synth: engine + the shaping knobs first */       /* synth: Drive lives on the 2nd SYNTH page; the wave (Saw, Square ...) sits here as a small preset-style box */
 function viewItemsFix() {
+    if (favSig !== (chordOn() ? 1 : 0)) favBuild();
     VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
     const t = kind[sel] ? 0 : Math.round(pads[sel][0]), e = nxEng(t);
     VIEW_ITEMS[1] = kind[sel] ? SND_DRM : SND_SYN;      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
@@ -4691,7 +4720,7 @@ try { favBuild(); } catch (e) { /* later */ }
 globalThis.tick = function () {
     if (!bootTick) { bootTick = true; crumb('tick1'); }
     ticksSinceEdit++;
-    if ((ticksSinceEdit & 7) === 0) miscCheck();
+    if ((ticksSinceEdit & 7) === 0) { miscCheck(); chordReconcile(); }
     if (view === 50 && !menuOpen && pads[ln()][PI.grn] >= 0.01 && (ticksSinceEdit % 5) === 0) { grainPoll(); needsRedraw = true; }
     if (backTicks > 0) backTicks--;
     if (hot.t > 0 && --hot.t === 0) needsRedraw = true;

@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.91.0 (17 October 2026)
+- New pad mode CHORD on synth tracks: Shift + Step 8 (or the Track button) now walks PITCH > REPEAT > STEPS > CHORD (also in the menu: Chord pads on/off). The pads play chords through the track's MIDI effect
+- While CHORD is on, the 8 favorite knobs become the chord options (Mode, Chord type, Level, Layer FX + Amount + Param, Prob, VelBias); outside the mode they are your favorites again
+- Leaving CHORD brings your previous MIDI effect back; the mode survives a restart
+
 ## 5.90.0 (17 October 2026)
 - Undo/Redo: a clip copy now also restores the sound the clip carried (before, only the steps came back)
 - Saving: while playing, the project is written after a short pause (about a third of the former wait), so a Move restart or power-off loses much less. MIDI effects such as Chord mode are part of the saved project and stay after a restart
