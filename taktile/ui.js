@@ -2344,7 +2344,7 @@ function onStep(i, on) {
         }
         snap(ed[sel], L); heldStep = s; heldEdited = false; heldGrp = [];
         const st = stepAt(s); heldWasOn = !!st[0];
-        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; qStep(ed[sel], L, s); markEdited(); }
+        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; qStep(ed[sel], L, s); markEdited(); if (!playing && view === 0) launchClip(sel, ed[sel]); }      /* first step set while stopped: playback starts */
     } else if (heldGrp.includes(s)) { heldGrp.splice(heldGrp.indexOf(s), 1); needsRedraw = true;
     } else if (heldStep === s) {
         const L = ln(); heldGrp = [];

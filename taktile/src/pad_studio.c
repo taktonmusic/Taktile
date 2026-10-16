@@ -673,6 +673,7 @@ typedef struct {
     int   sw, gk; float sdet, ssub, satt;                              /* synth family options */
     double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode; float srate, sgain, satk_inc, srel_c, sgate_env;                   /* sample playback */
     float nze, trp;                  /* noise follower, tremolo / auto-pan phase */
+    float xfd;       /* >0: fast fade-out of a cut-off note (1 -> 0), no click */
 } vc_t;
 
 typedef struct {
@@ -1365,6 +1366,13 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         const int scs = (int)(s->pp[kt][PP_SCS] * 2.0f + 0.5f);      /* 0 Auto (kick family), 1 On (all hits), 2 Off */
         if (scs == 1 || (scs == 0 && BASE_T[ty] <= T_SUB808))
         for (int t = 0; t < NTRK; t++) if (t != kt && s->pp[t][PP_DUCK] > 0.01f) s->dk_env[t] = 1.0f;
+    }
+    if (s->pp[p][PP_POLY] <= 0.5f && v->active && TY[v->type].sus && v->env > 0.003f) {   /* mono re-trigger of a held synth note: the old note fades out in a ghost instead of being cut (click) */
+        int gi = -1;
+        for (int i = 0; i < NGH; i++) if (!s->vc[NLANE + i].active) { gi = i; break; }
+        if (gi < 0) { gi = s->gnext; s->gnext = (s->gnext + 1) % NGH; }
+        s->vc[NLANE + gi] = *v; s->vown[NLANE + gi] = p;
+        s->vc[NLANE + gi].gate = 0; s->vc[NLANE + gi].fol = 0; s->vc[NLANE + gi].xfd = 1.0f;
     }
     memset(v, 0, sizeof(*v)); v->fenv = 1.0f;
     v->fkoff = s->pp[p][PP_FKEY] * 0.16f * log2f(fm > 0.05f ? fm : 0.05f);
@@ -3470,6 +3478,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 const float tt = sus ? (v->gate ? 0.0f : v->trel) : v->t, cap = (sus ? 1.2f : 2.0f) * s->dm[p];
                 if (tt > cap) { const float lim = 1.0f - (tt - cap) * (1.0f / 0.35f); if (lim <= 0.0f) { v->active = 0; continue; } x *= lim; }
             }
+            if (v->xfd > 0.0f) { x *= v->xfd; v->xfd -= s->inv_sr * (1.0f / 0.010f); if (v->xfd <= 0.0f) { v->active = 0; continue; } }
             const ch_t *ch = &CHR[v->type];
             {
                 const float at = s->a_tone[p] * ch->tm < 1.0f ? s->a_tone[p] * ch->tm : 1.0f;
