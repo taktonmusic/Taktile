@@ -173,7 +173,7 @@ const VIEW_ITEMS = {
     49: [['m2fx','MIDI FX 2','Effect'],['m2amt','Amount'],['m2prm','Param'],['trn','Transp'],['orn','OctRnd'],['vhm','VelHum'],['vmn','VelMin'],['vmx','VelMax']],
     27: [['mfx','MIDI FX','Effect'],['mamt','Amount'],['mprm','Param'],['tsw','Swing+','Swg+'],['arp','Arp'],['rate','ArpRate','Rate'],['mch','Prob'],['mvb','VelBias']],
     25: [['key','Key'],['scale','Scale'],['qscale','ScaleQ'],['m_qnt','Launch','Lnch'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met']],
-    26: [['rrate','Rate'],['fullvel','FullVel'],['rqoff','RecSnap'],['qscale','ScaleQ'],['bpm','BPM'],['swing','Swing','Swg']],
+    26: [['rrate','Rate'],['repmode','Repeat','Rep'],['fullvel','FullVel'],['rqoff','RecSnap'],['qscale','ScaleQ'],['bpm','BPM'],['swing','Swing','Swg']],
     22: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ']],
     23: [['swing','Swing','Swg'],['bpm','BPM'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['tsw','Swing+','Swg+'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl']],
     30: [['duck','Amount'],['duckr','Release'],['scs','Source'],['pump','Pump'],['wob','Wobble','Wob'],['ring','Ring'],['crush','Crush','Crsh'],['locut','HPCut','HPF']],
@@ -467,7 +467,7 @@ function markEdited() { needsRedraw = true; dirty = true; ticksSinceEdit = 0; he
 /* ---- value helpers ---- */
 function scopeOf(key) { return PI[key] !== undefined ? 'pad' : (MI[key] !== undefined ? 'master' : 'sys'); }
 function getVal(scope, key) {
-    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'qstr') return qStr / 3; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return topModes[sel] / 3; if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
+    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'qstr') return qStr / 3; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'repmode') return topModes[sel] === 1 ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return topModes[sel] / 3; if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
         if (key === 'kslot') return kitSlot / (15 + FACTORY.length); if (key === 'ksave' || key === 'kload' || key === 'psave' || key === 'pload') return 0; if (key === 'kinf') return kitInfo() === 'EMPTY' ? 0 : 1;
         if (key === 'rdens') return rndDens; if (key === 'rvar') return rndVar; if (key === 'favo') return favOnly ? 1 : 0; if (key === 'kprev') return 0; if (key === 'rkey') return rndKey; if (key === 'rrat') return rndRat; if (key === 'tcol') return (tcolO[sel] || 0) / 26; if (key === 'pnew' || key === 'prst') return 0; if (key === 'pslot') return projSlot / 31; if (key === 'pinf') return projUsed[projSlot] ? 1 : 0;
         if (EU_KEYS[key]) return euGet(key)[0];
@@ -478,7 +478,7 @@ function getVal(scope, key) {
 function fmtVal(key, v) {
     if (key === 'bpm') return String(Math.round(40 + v * 200));
     if (key === 'swing') return String(50 + Math.round(v * 25));
-    if (key === 'fullvel') return v > 0.5 ? 'ON' : 'OFF';
+    if (key === 'fullvel' || key === 'repmode') return v > 0.5 ? 'ON' : 'OFF';
     if (key === 'browse') return favOnly ? 'FAV' : (v > 0.5 ? 'ALL' : 'CATEG');
     if (key === 'm_met') return v > 0.05 ? String(Math.round(v * 100)) : 'OFF';
     if (key === 'm_qnt') return ['1/16', '1/8', '1/4', '1/2', 'BAR', '2 BAR', '4 BAR'][Math.min(6, Math.floor(v * 7))];
@@ -593,6 +593,7 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'swing') { swing = clamp(swing + delta, 0, 25); enqueue('swing', 'swing', (0.5 + swing / 100).toFixed(3)); }
         else if (key === 'fullvel') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; fullVel = !fullVel; }
         else if (key === 'rqoff') { rqOff = clamp(rqOff + delta * 0.02, 0, 1); }
+        else if (key === 'repmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; if (!repAllowed) { showToast('NOTE REPEAT', 'OFF IN OPTIONS', 0); return false; } toggleTop(1, true); }
         else if (key === 'rrate') { acc[idx] += delta; if (Math.abs(acc[idx]) < 5) return false; setRepRate(repRate + (acc[idx] > 0 ? 1 : -1), false); acc[idx] = 0; }
         else if (key === 'qscale') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opScaleQ(); }
         else if (key === 'qtime') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opTimeQ(); }
@@ -1307,7 +1308,7 @@ function folPreCur() { const v = fol[sel][ed[sel]]; const i = FOL_PRE.findIndex(
 function folPreset() { const t = sel, c = ed[t], i = (folPreCur() + 1) % FOL_PRE.length, p = FOL_PRE[i]; fol[t][c] = p[1] | (p[2] << 3); qFol(t, c); markEdited(); needsRedraw = true; showToast('FOLLOW CLIP ' + (c + 1), p[0], i / 5); }
 function opHuman() { const c = ed[sel], L = ln(); snap(c, L); for (let s = 0; s < lens[sel]; s++) { const st = steps[c][L][s]; if (st[0]) st[1] = clamp(st[1] + Math.round((Math.random() - 0.5) * 40), 20, 127); } clipOpDone('VEL RANDOM'); }
 const SHIFT_OPS = ['CLIP1','CLIP2','CLIP3','CLIP4','CLIP5','CLIP6','CLIP7','CLIP8','RND','CLEAR','REV','ROT<','ROT>','x2','/2','VEL~'];
-const SYM_VIEW = { 1: 16, 2: 15, 4: 22, 6: 23, 8: 25, 12: 26 };       /* shift + step i+1 opens this view: one symbol, one function */
+const SYM_VIEW = { 1: 16, 2: 15, 4: 22, 6: 23, 8: 25, 10: 26, 12: 26 };       /* shift + step i+1 opens this view: one symbol, one function */
 let symOpen = -1, symPrev = 0;
 function symLit(i) {
     if (symOpen !== i) return false;
@@ -1366,8 +1367,8 @@ function liveFxOff(idx) {
     needsRedraw = true;
 }
 function liveFxAllOff() { for (const k of Object.keys(fillHeld)) fillHit(+k, false, 0); for (const k of Object.keys(lfxHeld)) liveFxOff(+k); lfxStack = []; lfxSend(); }
-function toggleTop(m) {
-    if (!canTop()) { showToast('PAD MODE', 'OPEN THE TRACK FIRST', 0); return; }                                    /* Shift + step 11 = note repeat on/off, Shift + step 12 = step grid on/off; off goes back to where you were (PITCH or the other mode) */
+function toggleTop(m, force) {
+    if (!force && !canTop()) { showToast('PAD MODE', 'OPEN THE TRACK FIRST', 0); return; }                                    /* Shift + step 11 = note repeat on/off, Shift + step 12 = step grid on/off; off goes back to where you were (PITCH or the other mode) */
     if (m === 1 && !repAllowed) { showToast('NOTE REPEAT', 'OFF IN MENU', 0); return; }
     liveFxAllOff(); const cur = topModes[sel], name = m === 1 ? 'NOTE REPEAT' : (m === 3 ? 'LIVE FX' : 'STEP GRID');
     if (cur === m) { const back = topPrev[sel] !== m ? topPrev[sel] : 0; topModes[sel] = back; heldStep = -1; heldPad = -1; showToast(name, 'OFF  > ' + TOP_NAMES[back], 0); }
@@ -1452,12 +1453,11 @@ function shiftStep(i) {
     if (i === 0 && view === 31 && songFromClips) { view = 7; songFromClips = false; acc.fill(0); needsRedraw = true; return; }
     if (i === 13) { openFav(); return; }                              /* step 14: your favorite knobs */
     if (i === 0) { projOpen(); return; }                              /* step 1: PROJECT (slots, new, revert) */
-    if ((i === 3 || i === 7 || i === 10 || i === 11) && view === 7 && !menuOpen) { view = prevView; if (SYM_VIEW_SET[view] || view === 7) view = 0; symOpen = -1; acc.fill(0); needsRedraw = true; }      /* from the clip view: leave it for the track's own pads, then switch their mode (Live FX, pad mode, Repeat, Steps) */
+    if ((i === 3 || i === 7 || i === 11) && view === 7 && !menuOpen) { view = prevView; if (SYM_VIEW_SET[view] || view === 7) view = 0; symOpen = -1; acc.fill(0); needsRedraw = true; }      /* from the clip view: leave it for the track's own pads, then switch their mode (Live FX, pad mode, Repeat, Steps) */
     if (i === 3) { if (!canTop()) { showToast('LIVE FX', 'OPEN THE TRACK FIRST', 0); return; } toggleTop(3); return; }      /* step 4: LIVE FX pads on / off */
     if (i === 7) { cycleTop(1); return; }                             /* step 8: LAYOUT = the three pad modes PITCH > REPEAT > STEPS */
     if (i === 11) { toggleTop(2); return; }                          /* step 12: step grid on / off (the 16 pads become steps) */
     if (i === 5) { const v = cycleMaster('m_met', [0, 0.6]); showToast('METRONOME', v > 0 ? 'ON' : 'OFF', v); return; }
-    if (i === 10) { toggleTop(1); return; }                          /* the note repeat symbol: repeat on / off */
     if (i === 9) { fullVel = !fullVel; showToast('FULL VELOCITY', fullVel ? 'ON' : 'OFF', fullVel ? 1 : 0); markEdited(); return; }
     if (i === 14) { opDouble(); return; }
     if (i === 15) { opTimeQ(); return; }                            /* step 16: QUANT = quantize the timing right now with the grid + strength of the QUANT tile (Shift + step 3) */
@@ -2723,7 +2723,7 @@ function selInfo(key, v) {                                  /* [number of choice
     const E = ENUMS[key] || (key === 'x2fx' ? ENUMS.xfx : (key === 'm2fx' ? ENUMS.mfx : null));
     if (E) return [E.length, clamp(Math.round(v), 0, E.length - 1)];
     switch (key) {
-        case 'kind': case 'fullvel': case 'favo': return [2, v > 0.5 ? 1 : 0];
+        case 'kind': case 'fullvel': case 'repmode': case 'favo': return [2, v > 0.5 ? 1 : 0];
         case 'pmode': return [4, clamp(Math.round(v * 3), 0, 3)];
         case 'scs': return [3, clamp(Math.round(v * 2), 0, 2)];
         case 'm_qnt': return [7, Math.min(6, Math.floor(v * 7))];

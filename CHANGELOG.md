@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.84.0 (16 October 2026)
+- Shift + Step 11 opens the Note Repeat options (Rate, Repeat on/off, Full Velocity, RecSnap, ScaleQ, BPM, Swing), also when the Repeat mode is not open. Repeat on/off is an item of that page
+
 ## 5.83.0 (16 October 2026)
 - Note Repeat on drum tracks: pick the sound on the left, every pad on the right repeats it right away at its speed while held (you hear it)
 - Live FX, pad mode, Note Repeat and Step grid (Shift + Step 4 / 8 / 11 / 12) can be started from the clip view; it switches to the track's pads
