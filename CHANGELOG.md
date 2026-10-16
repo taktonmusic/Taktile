@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.77.1 (16 October 2026)
+- New synth track: the browser opens on the SYNTHS family list (Analog, Wavetable, FM 4-OP, FM 2-OP, Fold ...) instead of inside the first family
+
 ## 5.77.0 (16 October 2026)
 - SYNTH tile, page 2: Drive replaces Chop (Chop removed). On synth tracks the SOUND tile shows the delay send where Drive was (drums keep Drive)
 

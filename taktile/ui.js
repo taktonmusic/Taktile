@@ -3220,9 +3220,9 @@ function fbOpen() {
     const L = ln();
     if (padMenu) { padMenu = false; }
     fb = { st: [{ node: fbTree(), i: 0 }], orig: { t: Math.round(pads[L][0]), smp: pads[L][PI.smp], sst: pads[L][PI.sst], sen: pads[L][PI.sen], flt: FLT_KEYS.map(k => pads[L][PI[k]]) }, origAll: pads[L].slice() };
-    if (!fbWantFx && !kind[sel] && synFresh[sel]) {            /* new synth track: land in SYNTHS, the first family, on its INIT sound */
+    if (!fbWantFx && !kind[sel] && synFresh[sel]) {            /* new synth track: land in the SYNTHS family list (Analog, Wavetable, FM, Fold ...) */
         const root = fb.st[0].node, ii = root.kids ? root.kids.findIndex(k => k.n === 'SYNTHS') : -1;
-        if (ii >= 0 && root.kids[ii].kids && root.kids[ii].kids.length) { const sy = root.kids[ii]; fb.st = [{ node: root, i: ii }, { node: sy, i: 0 }, { node: sy.kids[0], i: 0 }]; needsRedraw = true; return; }
+        if (ii >= 0 && root.kids[ii].kids && root.kids[ii].kids.length) { const sy = root.kids[ii]; fb.st = [{ node: root, i: ii }, { node: sy, i: 0 }]; needsRedraw = true; return; }
     }
     if (!fbWantFx && !kind[sel] && fbGoMem()) { needsRedraw = true; return; }
     if (kind[sel] && !padMenu) fbDive(fb.orig.t); else if (!kind[sel] && !fbWantFx) fbDiveAny(fb.orig.t);
