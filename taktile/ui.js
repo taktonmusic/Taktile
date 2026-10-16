@@ -203,7 +203,7 @@ let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
 /* ---- state ---- */
 let pads = [], master = MASTER_DEF.slice();
 let steps = [];                 /* [pat][trk][step] = [on, vel, semi, prob] */
-const growTrk = new Array(NTRK).fill(false);            /* auto length: a clip recorded from empty grows by 16 steps whenever you play into its last beat */
+const growTrk = new Array(NTRK).fill(false), growG0 = new Array(NTRK).fill(0);            /* auto length: a clip recorded from empty grows by 16 steps whenever you play into its last beat */
 let lens = new Array(NTRK).fill(16), mutes = new Array(NTRK).fill(0), lmutes = new Array(NLANE).fill(0), lmSent = new Array(NLANE).fill(0);   /* lmutes = per-sound mute of the drum pads */
 let bpm = 120, swing = 0;
 let ed = new Array(16).fill(0);           /* edited/launched clip per track */
@@ -723,7 +723,7 @@ function clipsPad(idx) {
 }
 function clipAction(t, c) {
     if (muteHeld) { muteUsed = true; toggleMute(t); return; }
-    if (deleteHeld) { snapAll(c, t); autoClearClip(t, c); for (const l of lanesOf(t)) { for (let s = 0; s < MAXSTEP; s++) steps[c][l][s] = [0, 100, 0, 0]; qSeq(c, l); } showToast('CLIP', 'CLEARED', 0); markEdited(); return; }
+    if (deleteHeld) { snapAll(c, t); autoClearClip(t, c); for (const l of lanesOf(t)) { for (let s = 0; s < MAXSTEP; s++) steps[c][l][s] = [0, 100, 0, 0]; qSeq(c, l); } resetLen(t); showToast('CLIP', 'CLEARED', 0); markEdited(); return; }
     if (copyHeld) {
         if (!copySrc) { copySrc = [t, c]; showToast('COPY', 'PICK TARGET', 0.5); return; }
         const st0 = copySrc[0], sc = copySrc[1];
@@ -1194,9 +1194,9 @@ function clearTrack(t) {                                   /* Delete + track but
     undoGroup++; let n = 0; const ls = lanesOf(t);
     for (let c = 0; c < NPAT; c++) for (const l of ls) if (laneHas(c, l)) { snap(c, l, undoGroup); for (let s = 0; s < MAXSTEP; s++) steps[c][l][s] = [0, 100, 0, 0]; qSeq(c, l); n++; }
     for (const id in AUTO) { const L = parseInt(id.split('|')[1]); if (ls.indexOf(L) >= 0) { delete AUTO[id]; delete autoLast[id]; } }
-    showToast('TRACK ' + p2(t + 1) + ' CLEARED', n ? n + ' CLIPS/SOUNDS' : 'WAS EMPTY', n ? 1 : 0); chosen[t] = 0; markEdited(); needsRedraw = true;      /* a cleared track asks Synth or Drum again */
+    showToast('TRACK ' + p2(t + 1) + ' CLEARED', n ? n + ' CLIPS/SOUNDS' : 'WAS EMPTY', n ? 1 : 0); resetLen(t); chosen[t] = 0; markEdited(); needsRedraw = true;      /* a cleared track asks Synth or Drum again */
 }
-function opClear() { const c = ed[sel], L = ln(); snap(c, L); for (let s = 0; s < MAXSTEP; s++) steps[c][L][s] = [0, 100, 0, 0]; clipOpDone('CLEARED'); }
+function opClear() { const c = ed[sel], L = ln(); snap(c, L); for (let s = 0; s < MAXSTEP; s++) steps[c][L][s] = [0, 100, 0, 0]; if (kind[sel] && llen[L]) { llen[L] = 0; enqueue('llen' + L, 'llen', L + ',0'); } else if (!trackHasSteps(c, sel)) resetLen(sel); clipOpDone('CLEARED'); }
 function opReverse() { const c = ed[sel], L = ln(), n = LL(); snap(c, L); const a = steps[c][L].slice(0, n).reverse(); for (let s = 0; s < n; s++) steps[c][L][s] = a[s]; clipOpDone('REVERSE'); }
 function opRotate(d) { const c = ed[sel], L = ln(), n = LL(); snap(c, L); const a = steps[c][L].slice(0, n); for (let s = 0; s < n; s++) steps[c][L][s] = a[((s - d) % n + n) % n]; clipOpDone(d > 0 ? 'ROTATE >' : 'ROTATE <'); }
 function opDouble() { const c = ed[sel], n = lens[sel]; if (n * 2 > MAXSTEP) { showToast('DOUBLE', 'MAX ' + MAXSTEP, 1); return; } snapAll(c, sel); for (const l of lanesOf(sel)) { const m = effLen(l); if (m * 2 > MAXSTEP) continue; for (let s = 0; s < m; s++) steps[c][l][s + m] = steps[c][l][s].slice(); if (llen[l]) { llen[l] = m * 2; enqueue('llen' + l, 'llen', l + ',' + llen[l]); } } lens[sel] = n * 2; clipOpDone('DOUBLE x2', 1, true); }
@@ -1733,7 +1733,7 @@ function themeNm(i) { const t = trk('Theme ' + THEME_NAME[i]); return t !== null
 const MENU_ITEMS = [
     ['Play / Stop', () => { playing = !playing; gs = 0; dspSet('play', playing ? '1' : '0'); }],
     ['Stop + Reset', () => { playing = false; gs = 0; dspSet('play', '0'); }],
-    ['Record on/off', () => { recArmed = !recArmed; growTrk.fill(false); showToast('REC', recArmed ? 'ARMED' : 'OFF', recArmed ? 1 : 0); }],
+    ['Record on/off', () => { if (recArmed) recStopLen(); recArmed = !recArmed; growTrk.fill(false); showToast('REC', recArmed ? 'ARMED' : 'OFF', recArmed ? 1 : 0); }],
     ['Undo', () => doUndo()],
     ['Undo history', () => { menuOpen = false; navStack.push(16); histSel = 0; view = 40; }],
     ['Favorite sound', () => { menuOpen = false; const t = Math.round(pads[ln()][0]), i = favs.indexOf(t); if (i >= 0) favs.splice(i, 1); else favs.push(t); markEdited(); showToast(TYPE_NAME[t], i >= 0 ? 'FAV OFF' : 'FAVORITE *', i >= 0 ? 0 : 1); }],
@@ -2165,6 +2165,19 @@ function stepRecord(lane, semi, vel) {                 /* Rec held + stopped: pa
     showToast('STEP REC', 'T' + p2(track + 1) + ' S' + (recHead % n + 1), (recHead % n) / MAXSTEP);
     recHead = (recHead + 1) % n; markEdited();
 }
+function resetLen(t) {                                    /* an emptied clip goes back to the standard length (16 steps), drum sounds follow the track again */
+    if (lens[t] !== 16) { lens[t] = 16; enqueue('len' + t, 'len', t + ',16'); }
+    for (const l of lanesOf(t)) if (llen[l]) { llen[l] = 0; enqueue('llen' + l, 'llen', l + ',0'); }
+    growTrk[t] = false;
+}
+function recStopLen() {                                   /* Rec pressed the second time: the clip is as long as you played (16, 32, 48 ... steps, rounded up) */
+    for (let t = 0; t < NTRK; t++) {
+        if (!growTrk[t]) continue;
+        const el = Math.max(1, gs - growG0[t]), n = clamp(Math.ceil(el / 16) * 16, 16, MAXSTEP);
+        if (lens[t] !== n) { lens[t] = n; enqueue('len' + t, 'len', t + ',' + n); }
+        showToast('REC LENGTH', n + ' STEPS', n / MAXSTEP);
+    }
+}
 function growTick() {                                     /* recording into an empty clip: the loop follows how long you play (16 steps, 32, 48 ...); stopping before the end of the bar keeps 16 */
     if (!recArmed || !playing) return;
     for (let t = 0; t < NTRK; t++) {
@@ -2209,7 +2222,7 @@ function recordHit(lane, semi, vel) {
     if (!recArmed) return;
     if (!playing) {                                   /* arm + first hit starts the clip recorder */
         recUndo(track, lane);
-        playing = true; gs = 0; dspSet('play', '1'); growTrk[track] = !trackHasSteps(ed[track], track);
+        playing = true; gs = 0; dspSet('play', '1'); growTrk[track] = !trackHasSteps(ed[track], track); growG0[track] = 0;
         const st0 = steps[ed[track]][lane][0]; st0[0] = 1; st0[1] = clamp(vel, 1, 127); st0[2] = clamp(semi, -64, 63);
         qStep(ed[track], lane, 0); lastRec = { c: ed[track], l: lane, i: 0, g: 1, f: 0 }; showToast('REC', 'T' + p2(track + 1) + ' C' + (ed[track] + 1), 1); markEdited(); return;
     }
@@ -2218,7 +2231,7 @@ function recordHit(lane, semi, vel) {
     if (typeof r !== 'string') return;
     const a = r.split(','), g = parseInt(a[1]) || 0, fr = parseInt(a[3]) || 0;
     let len = effLen(lane);
-    if (!growTrk[track] && !trackHasSteps(ed[track], track)) growTrk[track] = true;
+    if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; { const g1 = g - 1, l1 = Math.max(1, len); growG0[track] = g1 - (((g1 % l1) + l1) % l1); } }
     if (growTrk[track] && len < MAXSTEP && gs - 1 >= len && ((g % len) + len) % len >= len - 2) {      /* from the second pass on, a hit in the last two steps means: keep going */ growLoop(lane, len < 16 ? 16 : len * 2); len = effLen(lane); }
     const pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw);      /* the hit's exact position, snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
     let tS = Math.floor(pSn + 1e-6), tN = Math.round((pSn - tS) / 0.025); if (tN > NUD_MAX) { tS++; tN = 0; }
@@ -4826,7 +4839,7 @@ globalThis.onMidiMessageInternal = function (data) {
         else {
             recDown = false;
             if (recStepUsed) showToast('REC', 'STEP REC END', 0);
-            else { recArmed = !recArmed; growTrk.fill(false); showToast('REC', recArmed ? 'ARMED' : 'OFF', recArmed ? 1 : 0); }
+            else { if (recArmed) recStopLen(); recArmed = !recArmed; growTrk.fill(false); if (recArmed === false) {} showToast('REC', recArmed ? 'ARMED' : 'OFF', recArmed ? 1 : 0); }
             needsRedraw = true;
         }
         return;

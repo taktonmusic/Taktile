@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.79.0 (16 October 2026)
+- Recording: the clip length is set when Rec is pressed the second time (rounded up to 16, 32, 48 ... steps), on synth and drum tracks
+- Clearing a clip sets its length back to 16 steps
+
 ## 5.78.0 (16 October 2026)
 - PRESET tile on synth tracks: a small preset-style window to pick the waveform (Auto, Saw, Square, Tri, Sine ...) where Drive was. Drive is on SYNTH page 2
 - Manuals, README and guides corrected accordingly
