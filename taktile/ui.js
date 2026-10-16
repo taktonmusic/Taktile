@@ -797,14 +797,14 @@ function clipTrig(t, c) {                                  /* does the playing c
 function pulseLow() { const p = playing ? (((gs - 1) % 4) + 4) % 4 : Math.floor(Date.now() / 250) & 3; return p >= 2; }      /* beat-locked blink phase of the pulsing pads */
 function padLedBase(i) {                                 /* LED colour of pad i (0..31) of the selected track */
     const dr = kind[sel], m = topModes[sel], tc = trkCol(sel), cc = i & 7, rr = i >> 3;
+    if (m === 3 && fillPad(i)) { const fl = fillLanes(); return fl && fl[i & 7] ? ((i >> 3) ? rootCol(tc) : trackColor(pads[fl[i & 7]][0])) : 0; }
+    if (m === 3 && lfxPad(i) >= 0) { const n = lfxPad(i); return n < 7 ? tc : (n < 10 ? rootCol(tc) : 120); }
     if (dr && soundArea(cc)) {                                   /* drum track, left block: the 16 sounds (white = selected, colour = sound family) */
         const k = rr * 4 + (cc & 3);
         if (lmutes[laneOf(sel, k)]) return k === dsel[sel] ? 124 : dimCol(trackColor(pads[laneOf(sel, k)][0]));                   /* muted sound: dark (faint if selected) */
         const fc = trackColor(pads[laneOf(sel, k)][0]);                          /* family colour: kick red, snare, hats yellow ... */
         return k === dsel[sel] ? 120 : fc;
     }
-    if (m === 3 && fillPad(i)) { const fl = fillLanes(); return fl && fl[i & 7] ? ((i >> 3) ? rootCol(tc) : trackColor(pads[fl[i & 7]][0])) : 0; }
-    if (m === 3 && lfxPad(i) >= 0) { const n = lfxPad(i); return n < 7 ? tc : (n < 10 ? rootCol(tc) : 120); }
     if (dr && m === 1) { const ri = rr * 4 + (cc & 3); return ri === repRate ? 120 : (ri >= 8 ? tc : dimCol(tc)); }      /* speed pads: chosen = white, fast half bright, slow half dim */
     if (m === 2) {
         const si = padStepIdx(i);
@@ -812,6 +812,11 @@ function padLedBase(i) {                                 /* LED colour of pad i 
         const cur = playing ? ((gs - 1 + 1024 * LL()) % LL()) : -1;
         if (si === cur) return 120;
         return steps[ed[sel]][ln()][si][0] ? tc : 96;
+    }
+    if (m === 4 && !dr) {                                  /* CHORD pads: left 4 x 4 = single notes, right 4 x 4 = the chords of the same notes (other colour, tonic white) */
+        const j4 = degOf(cc & 3, rr, 4), chd = cc >= 4, root = j4 >= 32 ? (j4 - 32) % 12 === 0 : j4 % 7 === 0;
+        if (j4 >= 32 && !root && SCALE7[Math.round(master[2]) % 3].indexOf((j4 - 32) % 12) < 0) return 124;
+        return chd ? (root ? 120 : usedCol(tc)) : (root ? rootCol(tc) : tc);
     }
     const j = dr ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8);
     if (j >= 32) {                                         /* chromatic: root bright, scale notes normal, others dim */
@@ -841,6 +846,8 @@ function padLed(i) {
     const c = padLedBase(i);
     if (askKind >= 0 || view === 7 || view === 20) return c;
     const dr = kind[sel], m = topModes[sel], cc = i & 7, rr = i >> 3;
+    if (m === 3 && fillPad(i)) return fillHeld[i] ? 126 : c;
+    if (m === 3 && lfxPad(i) >= 0) return lfxHeld[i] ? 126 : c;
     if (dr && soundArea(cc)) {                                       /* drum sounds: used = bright, empty = dim, hit right now = flash */
         const k = rr * 4 + (cc & 3);
         if (lmutes[laneOf(sel, k)]) return c;
@@ -850,7 +857,7 @@ function padLed(i) {
     if (m === 3 && fillPad(i)) return fillHeld[i] ? 126 : c;
     if (m === 3 && lfxPad(i) >= 0) return lfxHeld[i] ? 126 : c;
     if (m === 2 || (dr && m === 1)) return c;
-    const j = dr ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8), sm = notePadSemi(j) + oct();
+    const j = (dr || m === 4) ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8), sm = notePadSemi(j) + oct();
     if (seqUse.play === sm) return 126;
     if (heldStep >= 0 && !recDown) { const hs = stepAt(heldStep); if (hs && hs[0] && hs[2] === sm) return 126; }      /* step held: the pad of its note lights up white */
     return c;
@@ -1335,20 +1342,22 @@ const topPrev = new Array(NTRK).fill(0);                     /* the pad mode bef
 const LFX = [['REPEAT 1/4', 1], ['REPEAT 1/8', 2], ['REPEAT 1/16', 3], ['REPEAT 1/32', 4], ['ROLL', 5], ['TRIPLET', 6], ['REVERSE', 7], ['TAPE STOP', 8],
     ['GATE 1/8', 9], ['GATE 1/16', 10], ['LOW SWEEP', 11], ['HIGH SWEEP', 12], ['CRUSH', 13], ['FREEZE', 14], ['ECHO THROW', 15], ['REVERB WASH', 'rvb', 0.9]];     /* 0-14: master bus effects in the engine (hold = on), 15: reverb send of the track */
 const lfxHeld = {}, lfxBase = {}; let lfxStack = [];
-function lfxPad(idx) { const cc = idx & 7, rr = idx >> 3; if (kind[sel]) return soundArea(cc) ? -1 : rr * 4 + (cc & 3); return rr >= 2 ? (rr - 2) * 8 + cc : -1; }
+function lfxPad(idx) { const rr = idx >> 3; return rr >= 2 ? (rr - 2) * 8 + (idx & 7) : -1; }      /* full screen on every track: the top two rows are the 16 effects, the bottom two rows the fills / rolls */
 function lfxSet(L, k, v) { const b = L + k; if (!lfxBase[b]) lfxBase[b] = { old: pads[L][PI[k]], n: 0 }; lfxBase[b].n++; lfxBusy++; setLaneP(L, k, v); lfxBusy--; }
 /* FILL pads (Live FX mode on a synth track): the two bottom rows play drum sounds of the first drum track, sorted hats > snare/clap > perc > kick.
  * bottom row = single hits, row above = ROLL (held = repeats at the note repeat speed). On a drum track the 16 sound pads roll while held. */
 const fillHeld = {};
-function fillPad(idx) { return !kind[sel] && (idx >> 3) < 2; }
+function fillPad(idx) { return (idx >> 3) < 2; }
 function fillLanes() {
-    let t = -1; for (let q = 0; q < NTRK; q++) if (kind[q] && chosen[q]) { t = q; break; }      /* the fills always play the sounds of the first loaded drum track, whichever track is selected */
+    let t = kind[sel] ? sel : -1; if (t < 0) for (let q = 0; q < NTRK; q++) if (kind[q] && chosen[q]) { t = q; break; }      /* the fills always play the sounds of the first loaded drum track, whichever track is selected */
     if (t < 0) for (let q = 0; q < NTRK; q++) if (kind[q]) { t = q; break; }
     if (t < 0) return null;
     const out = [], quota = [[2, 3], [1, 2], [0, 1], [3, 2], [2, 8], [1, 8], [3, 8], [4, 8], [5, 8], [6, 8], [7, 8], [0, 8]];      /* hats (3), snares (2), kick, perc (2), then whatever is left */
     for (const [c, q] of quota) { let n = 0; for (let k = 0; k < 16 && out.length < 8 && n < q; k++) { const l = laneOf(t, k); if (out.indexOf(l) < 0 && catOf(Math.round(pads[l][0])) === c) { out.push(l); n++; } } }
     return out;
 }
+const ROLL_BY_CAT = { 0: [5, 0], 1: [8, 2], 2: [11, 1], 3: [10, 1] };      /* family -> [speed index (REP_NAME), shape]: kick 1/8 steady, snare / clap 1/16 building up, hats 1/32 gently building, perc 1/16 triplets */
+function rollCode(l) { const r = ROLL_BY_CAT[catOf(Math.round(pads[l][0]))]; return r ? 2 + r[0] + 16 * r[1] : 1; }
 function fillHit(idx, on, vel) {
     if (!on) { const h = fillHeld[idx]; if (h) { delete fillHeld[idx]; dspSet('dhit', h.l + ',0,0'); needsRedraw = true; } return; }
     const fl = fillLanes(); if (!fl) { showToast('FILL PADS', 'NO DRUM TRACK', 0); return; }
@@ -1356,7 +1365,7 @@ function fillHit(idx, on, vel) {
     const roll = (idx >> 3) === 1, v = fullVel ? 127 : Math.max(1, vel);
     if (fillHeld[idx]) dspSet('dhit', fillHeld[idx].l + ',0,0');
     fillHeld[idx] = { l: l }; recordHit(l, 0, v); logHit(l, 0, v); flushPad(l);
-    dspSet('dhit', l + ',' + v + ',' + (roll ? 1 : 0));
+    dspSet('dhit', l + ',' + v + ',' + (roll ? rollCode(l) : 0));
     showToast(roll ? 'ROLL' : 'FILL', TYPE_NAME[Math.round(pads[l][0])] || '', (idx & 7) / 7); needsRedraw = true;
 }
 function lfxSend() { let m = 0; for (let k = lfxStack.length - 1; k >= 0; k--) { const h = lfxHeld[lfxStack[k]]; if (h && h.m) { m = h.m; break; } } if (m !== lfxMode) { lfxMode = m; dspSet('lfx', String(m)); } }
@@ -2375,7 +2384,7 @@ function onPad(idx, on, vel) {
     if (kind[sel]) { drumPad(idx, on, vel); return; }
     const m = topModes[sel];
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
-    const dg = degOf(idx & 7, idx >> 3, 8);
+    const dg = m === 4 ? degOf(idx & 3, idx >> 3, 4) : degOf(idx & 7, idx >> 3, 8);
     if (on && deleteHeld) { delNote(sel, notePadSemi(dg) + oct()); return; }
     if (on) padHold[idx] = { lane: sel, semi: clamp(notePadSemi(dg) + oct(), -64, 63), vel: fullVel ? 127 : Math.max(1, vel) }; else delete padHold[idx];
     if (on && heldStep < 0) { recHit(sel, notePadSemi(dg) + oct(), vel, idx); logHit(sel, notePadSemi(dg) + oct(), vel); }
@@ -2384,7 +2393,7 @@ function onPad(idx, on, vel) {
         const st = stepAt(heldStep); st[2] = clamp(notePadSemi(dg) + oct(), -64, 63);
         heldEdited = true; qStep(ed[sel], sel, heldStep); showToast('PITCH', (st[2] > 0 ? '+' : '') + st[2] + 'st', (st[2] + 64) / 127); markEdited();
     }
-    if (!inboundActive()) dspSet('npad', dg + ',' + (on ? Math.max(1, vel) : 0) + ',' + (m === 1 ? 1 : 0));
+    if (!inboundActive()) dspSet('npad', dg + ',' + (on ? Math.max(1, vel) : 0) + ',' + (m === 1 ? 1 : (m === 4 && (idx & 7) < 4 ? 2 : 0)));
 }
 function onStep(i, on) {
     const s = stepPage * 16 + i;

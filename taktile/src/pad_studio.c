@@ -758,7 +758,7 @@ typedef struct {
     int   rt_n[NLANE], rt_semi[NLANE], rt_gate[NLANE]; float rt_cnt[NLANE], rt_int[NLANE], rt_vel[NLANE];   /* ratchet / nudge scheduler */
     float cpp[NPAT][NLANE][PP_N]; uint8_t cpp_set[NPAT][NLANE];   /* sound of every clip */
     int   np_trk[32];                      /* track sounding on each note pad */
-    int   rep_idx, rp_on[REP_N], rp_t[REP_N], rp_k[REP_N]; float rp_semi[REP_N], rp_vel[REP_N], rp_cnt[REP_N];   /* note repeat */
+    int   rep_idx, rp_on[REP_N], rp_t[REP_N], rp_k[REP_N], rp_rate[REP_N], rp_ramp[REP_N]; float rp_semi[REP_N], rp_vel[REP_N], rp_cnt[REP_N], rp_cap[REP_N];   /* note repeat */
 
     float lf_buf[2][131072]; float lf_dl[2][65536]; float lf_z[2][4], lf_eng, lf_rpos, lf_rate, lf_gate, lf_hold[2], lf_lvl;       /* LIVE FX on the master bus: one pad = one performance effect */
     struct { float buf[2][GRN_SZ], pos[8], inc[8], pl[8], pr[8]; int w, tim, age[8], len[8], back[8], lane; unsigned rng; float lpl, lpr; } gr[GRN_SLOTS]; int gr_slot[NLANE];     /* granulator: a few shared slots, a sound that uses it takes one */
@@ -2417,7 +2417,8 @@ static float arp_step_samples(inst_t *s, int p) {
     return s->sr * 60.0f / s->bpm / RATE_SPB[r];
 }
 
-static float rep_step_samples(inst_t *s) { int r = s->rep_idx; if (r < 0 || r > 15) r = 8; return s->sr * 60.0f / s->bpm / RPT_SPB[r]; }
+static float rep_step_samples_r(inst_t *s, int r) { if (r < 0) r = s->rep_idx; if (r < 0 || r > 15) r = 8; return s->sr * 60.0f / s->bpm / RPT_SPB[r]; }
+static float rep_step_samples(inst_t *s) { return rep_step_samples_r(s, -1); }
 
 static void pad_on(inst_t *s, int p, int vel) {
     float v = (float)vel / 127.0f;
@@ -2643,14 +2644,16 @@ static void pad_event(inst_t *s, int idx, int vel) {
 
 static void rep_clear(inst_t *s) { for (int i = 0; i < REP_N; i++) s->rp_on[i] = 0; }
 static void rep_stop(inst_t *s, int k) { for (int i = 0; i < REP_N; i++) if (s->rp_on[i] && s->rp_k[i] == k) s->rp_on[i] = 0; }
-static void rep_start(inst_t *s, int t, int k, float semi, float vel) {
+static int rep_start(inst_t *s, int t, int k, float semi, float vel) {
     int f = -1; for (int i = 0; i < REP_N; i++) { if (s->rp_on[i] && s->rp_k[i] == k) { f = i; break; } if (f < 0 && !s->rp_on[i]) f = i; }
     if (f < 0) f = 0;
-    s->rp_on[f] = 1; s->rp_t[f] = t; s->rp_k[f] = k; s->rp_semi[f] = semi; s->rp_vel[f] = vel; s->rp_cnt[f] = rep_step_samples(s);
+    s->rp_on[f] = 1; s->rp_t[f] = t; s->rp_k[f] = k; s->rp_semi[f] = semi; s->rp_vel[f] = vel; s->rp_cnt[f] = rep_step_samples(s); s->rp_rate[f] = -1; s->rp_ramp[f] = 0; s->rp_cap[f] = vel;
+    return f;
 }
 /* pad k (0..31) plays the selected track chromatically in the scale; repeat = retrigger while held at the track's rate */
 static void sel_pad(inst_t *s, int k, int vel, int repeat) {
     if (k < 0 || k >= 96) return;
+    const int dry = repeat == 2; if (dry) repeat = 0;                       /* 2 = a single note without the MIDI effects (the note half of the CHORD pads) */
     int kk = k & 31;
     if (vel > 0) {
         int t = s->sel_track; if (t < 0 || t >= NLANE) t = 0;
@@ -2662,7 +2665,7 @@ static void sel_pad(inst_t *s, int k, int vel, int repeat) {
             trig(s, t, (float)vel / 127.0f, sm + arp_offset(s, t, 0), 1);
         } else {
             if (ap->key >= 0) { ap->on = 0; ap->key = -1; }
-            trig(s, t, (float)vel / 127.0f, sm, 1);
+            if (dry) trig_raw(s, t, (float)vel / 127.0f, sm, 1); else trig(s, t, (float)vel / 127.0f, sm, 1);
         }
         s->vc[t].gk = k + 1;
         s->ar[t].held = 1;
@@ -2682,9 +2685,12 @@ static void sel_pad(inst_t *s, int k, int vel, int repeat) {
 static void lane_hit(inst_t *s, int l, int vel, int repeat) {
     if (l < 0 || l >= NLANE) return;
     if (vel > 0) {
-        trig(s, l, (float)vel / 127.0f, 0, 1);
+        /* repeat: 0 off, 1 = the Note Repeat speed, 2.. = a roll that fits the sound: (repeat - 2) & 15 = speed index, (repeat - 2) >> 4 = shape (1 build up gently, 2 build up strongly, 3 fade out) */
+        const int ramp = repeat >= 2 ? ((repeat - 2) >> 4) & 3 : 0;
+        const float v0 = (float)vel / 127.0f, vs = ramp == 1 ? v0 * 0.7f : (ramp == 2 ? v0 * 0.45f : v0);
+        trig(s, l, vs, 0, 1);
         s->vc[l].gk = 99;
-        if (repeat) rep_start(s, l, 100 + l, 0.0f, (float)vel / 127.0f);
+        if (repeat) { int f = rep_start(s, l, 100 + l, 0.0f, vs); if (repeat >= 2) { s->rp_rate[f] = (repeat - 2) & 15; s->rp_ramp[f] = ramp; s->rp_cap[f] = v0; s->rp_cnt[f] = rep_step_samples_r(s, s->rp_rate[f]); } }
     } else {
         rep_stop(s, 100 + l);
         s->vc[l].gate = 0;
@@ -3470,7 +3476,11 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         }
         for (int ri = 0; ri < REP_N; ri++) if (s->rp_on[ri]) {
             s->rp_cnt[ri] -= 1.0f;
-            if (s->rp_cnt[ri] <= 0.0f) { trig(s, s->rp_t[ri], s->rp_vel[ri], (int)s->rp_semi[ri], 1); s->rp_cnt[ri] += rep_step_samples(s); }
+            if (s->rp_cnt[ri] <= 0.0f) {
+                trig(s, s->rp_t[ri], s->rp_vel[ri], (int)s->rp_semi[ri], 1); s->rp_cnt[ri] += rep_step_samples_r(s, s->rp_rate[ri]);
+                if (s->rp_ramp[ri] == 1 || s->rp_ramp[ri] == 2) { s->rp_vel[ri] *= s->rp_ramp[ri] == 1 ? 1.05f : 1.12f; if (s->rp_vel[ri] > s->rp_cap[ri]) s->rp_vel[ri] = s->rp_cap[ri]; }
+                else if (s->rp_ramp[ri] == 3) { s->rp_vel[ri] *= 0.93f; if (s->rp_vel[ri] < 0.3f * s->rp_cap[ri]) s->rp_vel[ri] = 0.3f * s->rp_cap[ri]; }
+            }
         }
 
         {
