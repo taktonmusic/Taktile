@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.90.0 (17 October 2026)
+- Undo/Redo: a clip copy now also restores the sound the clip carried (before, only the steps came back)
+- Saving: while playing, the project is written after a short pause (about a third of the former wait), so a Move restart or power-off loses much less. MIDI effects such as Chord mode are part of the saved project and stay after a restart
+
 ## 5.89.0 (17 October 2026)
 - PRESET tile on synth tracks now reads Engine, Attack, Decay, Tone / Tune, Pan, Voices, Volume
 - Streamlined synth tiles: no knob appears on two tiles any more. SYNTH keeps only its own controls (Wave/Detune/Sub/Drive, FM Init: Ratio/Index/Feedback/Drive, engines: their specific knobs + Drive); Voices lives on PRESET, cutoff/resonance/filter envelope on FILTER. Where an engine uses Filter Key/Decay as its own knobs, FILTER shows FltAtk/VelFilt instead

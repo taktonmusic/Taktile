@@ -1013,7 +1013,7 @@ let redoStack = [];
 let undoGroup = 0;
 function snap(p, l, g) {                                 /* l = lane; g = group id: a whole drum clip is one undo step */
     redoStack = [];
-    undoStack.push({ p: p, t: l, st: steps[p][l].map(x => x.slice()), len: lens[laneTrk(l)], ll: llen[l] || 0, g: g || 0 });
+    undoStack.push({ p: p, t: l, st: steps[p][l].map(x => x.slice()), len: lens[laneTrk(l)], ll: llen[l] || 0, g: g || 0, cs: (csnd && csnd[p] && csnd[p][l]) ? csnd[p][l].slice() : null });
     if (undoStack.length > 240) undoStack.shift();
 }
 function snapAll(p, t) { undoGroup++; for (const l of lanesOf(t)) snap(p, l, undoGroup); }
@@ -1065,8 +1065,9 @@ function swapParam(e, to) {
 function swapEntry(e, to) {
     if (e.k) { swapParam(e, to); return; }
     const tk = laneTrk(e.t);
-    to.push({ p: e.p, t: e.t, st: steps[e.p][e.t].map(x => x.slice()), len: lens[tk], ll: llen[e.t] || 0, g: e.g });
+    to.push({ p: e.p, t: e.t, st: steps[e.p][e.t].map(x => x.slice()), len: lens[tk], ll: llen[e.t] || 0, g: e.g, cs: (csnd && csnd[e.p] && csnd[e.p][e.t]) ? csnd[e.p][e.t].slice() : null });
     steps[e.p][e.t] = e.st; lens[tk] = e.len;
+    if (e.cs && csnd && csnd[e.p]) { csnd[e.p][e.t] = e.cs.slice(); sendCs(e.p, e.t); if (ed[tk] === e.p) { const v = pads[e.t][1], pn = pads[e.t][2]; pads[e.t] = e.cs.slice(); pads[e.t][1] = v; pads[e.t][2] = pn; qPadLive(e.t); } }       /* the sound a clip carries (copy / paste) comes back with its steps */
     enqueue('len' + tk, 'len', tk + ',' + e.len);
     if (e.ll !== undefined && (llen[e.t] || 0) !== e.ll) { llen[e.t] = e.ll; enqueue('llen' + e.t, 'llen', e.t + ',' + e.ll); }
     qSeq(e.p, e.t);
@@ -4712,7 +4713,7 @@ globalThis.tick = function () {
         }
     }
     if (saveFlash > 0 && --saveFlash === 0) needsRedraw = true;
-    if (dirty && ticksSinceEdit > (playing ? 2400 : 120)) { const el = Date.now() - bakT; if (el > 600000 && (!playing || el > 1800000)) { backupState(); bakT = Date.now(); } saveState(); }      /* while playing the file write waits (a big write could make the audio crackle) */
+    if (dirty && ticksSinceEdit > (playing ? 900 : 120)) { const el = Date.now() - bakT; if (el > 600000 && (!playing || el > 1800000)) { backupState(); bakT = Date.now(); } saveState(); }      /* while playing the file write waits (a big write could make the audio crackle) */
 
     const posNow = posFail < 20 && (playing || recDown || heldStep >= 0 || (ledAge & 3) === 0), r = posNow ? dspGet('pos') : null;
     if (typeof r === 'string' && r.indexOf(',') > 0) {
