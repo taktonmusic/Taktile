@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.93.0 (17 October 2026)
+- Pad modes by track type: drum tracks walk PITCH > REPEAT > STEPS, synth tracks walk CHORD > STEPS. Note Repeat is for drum tracks only; with no mode on, the synth pads play normally
+
 ## 5.92.0 (17 October 2026)
 - Live FX is a full-screen mode on drum tracks now too: top two rows = the 16 effects, bottom two rows = fills (single hits) and rolls with the sounds of the drum track
 - Rolls fit the sound: hats 1/32 (gently building), snare / clap 1/16 (building up strongly), kick 1/8 (steady), perc 1/16 triplets

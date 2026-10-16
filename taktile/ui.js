@@ -602,7 +602,7 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'qstr') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; qStr = clamp(qStr + (acc[idx] > 0 ? 1 : -1), 0, 3); acc[idx] = 0; markEdited(); }
         else if (key === 'kind') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : 0; acc[idx] = 0; setKind(sel, d); }
         else if (key === 'tvol') { setTV(sel, clamp(getTV(sel) + delta * (shiftHeld ? 0.016 : 0.0032), 0, 1)); }
-        else if (key === 'pmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; { const dr = acc[idx] > 0 ? 1 : -1; let m = clamp(topModes[sel] + dr, 0, 3); if (m === 1 && !repAllowed) m = clamp(topModes[sel] + 2 * dr, 0, 3); topModes[sel] = m; } acc[idx] = 0; heldStep = -1; heldPad = -1; }
+        else if (key === 'pmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; { const dr = acc[idx] > 0 ? 1 : -1; let m = clamp(topModes[sel] + dr, 0, 3); if (m === 1 && (!repAllowed || !kind[sel])) m = clamp(topModes[sel] + 2 * dr, 0, 3); topModes[sel] = m; } acc[idx] = 0; heldStep = -1; heldPad = -1; }
         else if (key === 'morph') { morphTurn(delta * (shiftHeld ? 4 : 1)); }
         else if (key === 'rsrc') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; rsSrc = clamp(rsSrc + (acc[idx] > 0 ? 1 : -1), 0, 16); acc[idx] = 0; }
         else if (key === 'rbar') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; rsBarI = clamp(rsBarI + (acc[idx] > 0 ? 1 : -1), 0, 4); acc[idx] = 0; }
@@ -748,8 +748,8 @@ function clipAction(t, c) {
 const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS', 'LIVE FX', 'CHORD'];
 let repAllowed = true;                                     /* off: Note Repeat is skipped when switching the pad mode */
 function nextTopMode(cur, d) {                              /* the Track button walks PITCH > REPEAT > STEPS (> CHORD on synth tracks); LIVE FX has its own switch */
-    const ring = [0, 1, 2]; if (!kind[sel]) ring.push(4);
-    let i = ring.indexOf(cur); if (i < 0) return 0;
+    const ring = kind[sel] ? [0, 1, 2] : [4, 2];            /* drum tracks: PITCH > REPEAT > STEPS; synth tracks: CHORD > STEPS (plain playing is what you get when both are off) */
+    let i = ring.indexOf(cur); if (i < 0) return d > 0 ? ring[0] : ring[ring.length - 1];
     for (let n = 0; n < ring.length; n++) { i = (i + d + ring.length) % ring.length; if (ring[i] !== 1 || repAllowed) return ring[i]; }
     return 0;
 }      /* the Track button only walks PITCH > REPEAT > STEPS; LIVE FX has its own switch (menu) */
@@ -1388,6 +1388,7 @@ function toggleTop(m, force) {
     if (!force && !canTop()) { showToast('PAD MODE', 'OPEN THE TRACK FIRST', 0); return; }                                    /* Shift + step 11 = note repeat on/off, Shift + step 12 = step grid on/off; off goes back to where you were (PITCH or the other mode) */
     if (m === 1 && !repAllowed) { showToast('NOTE REPEAT', 'OFF IN MENU', 0); return; }
     if (m === 4 && kind[sel]) { showToast('CHORD PADS', 'SYNTH TRACKS ONLY', 0); return; }
+    if (m === 1 && !kind[sel]) { showToast('NOTE REPEAT', 'DRUM TRACKS ONLY', 0); return; }
     liveFxAllOff(); const cur = topModes[sel], name = m === 1 ? 'NOTE REPEAT' : (m === 3 ? 'LIVE FX' : (m === 4 ? 'CHORD PADS' : 'STEP GRID'));
     if (cur === m) { const back = topPrev[sel] !== m ? topPrev[sel] : 0; topModes[sel] = back; heldStep = -1; heldPad = -1; showToast(name, 'OFF  > ' + TOP_NAMES[back], 0); }
     else { topPrev[sel] = cur; topModes[sel] = m; heldStep = -1; heldPad = -1; showToast(name, 'ON', 1); }
@@ -1507,6 +1508,7 @@ function chordReconcile() {                                   /* switching the m
     for (let t = 0; t < NTRK; t++) {
         const want = !kind[t] && topModes[t] === 4 ? 1 : 0;
         if (kind[t] && topModes[t] === 4) topModes[t] = 0;
+        if (!kind[t] && topModes[t] === 1) topModes[t] = 0;
         if (want === chOn[t]) continue;
         chOn[t] = want; const a = pads[t]; if (!a) continue;
         pSnap('pad', t, 'chordmode');
