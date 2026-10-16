@@ -356,6 +356,7 @@ function qSeq(p, t) {                                      /* long patterns go o
 function setLen(n, wholeTrack) {                           /* loop length: a drum sound has its own, otherwise (or with wholeTrack) the track's */
     growTrk[sel] = false;
     n = clamp(n, 1, MAXSTEP); const L = ln();
+    { const top = undoStack.length ? undoStack[undoStack.length - 1] : null, now = Date.now(); if (!(top && !top.k && top.lt && top.t === L && top.p === ed[sel] && now - top.lt < 1500)) { snap(ed[sel], L); undoStack[undoStack.length - 1].lt = now; } else top.lt = now; }      /* a loop length change is an undo step (turning the wheel merges) */
     if (kind[sel] && !wholeTrack) { llen[L] = n; enqueue('llen' + L, 'llen', L + ',' + n); }
     else { lens[sel] = n; enqueue('len' + sel, 'len', sel + ',' + n); }
     stepPage = Math.min(stepPage, pageCount() - 1);
@@ -686,9 +687,9 @@ function seqKnob(i, delta) {
     const big = shiftHeld ? 5 : 1;
     if (!shiftHeld || i > 3) { const k = SEQ_SND[i], r = editParam('pad', k, delta, i); if (r) showToast(k.toUpperCase(), fmtVal(k, r.v), fracVal(k, r.v)); markEdited(); return; }
     switch (i) {
-    case 0: bpm = clamp(bpm + delta * big, 40, 240); enqueue('bpm', 'bpm', String(bpm)); break;
-    case 1: swing = clamp(swing + delta, 0, 25); enqueue('swing', 'swing', (0.5 + swing / 100).toFixed(3)); break;
-    case 2: lens[sel] = clamp(lens[sel] + delta * (shiftHeld ? 16 : 1), 1, MAXSTEP); enqueue('len' + sel, 'len', sel + ',' + lens[sel]); stepPage = Math.min(stepPage, pageCount() - 1); break;
+    case 0: pSnap('sys', 0, 'bpm'); bpm = clamp(bpm + delta * big, 40, 240); enqueue('bpm', 'bpm', String(bpm)); break;
+    case 1: pSnap('sys', 0, 'swing'); swing = clamp(swing + delta, 0, 25); enqueue('swing', 'swing', (0.5 + swing / 100).toFixed(3)); break;
+    case 2: setLen(lens[sel] + delta * (shiftHeld ? 16 : 1), true); stepPage = Math.min(stepPage, pageCount() - 1); break;
     case 3: acc[3] += delta; if (Math.abs(acc[3]) >= 2) { setClip(sel, clamp(ed[sel] + (acc[3] > 0 ? 1 : -1), 0, NPAT - 1)); acc[3] = 0; } break;
     default: {
         const k = ['tune', 'decay', 'tone', 'vol'][i - 4];
@@ -1010,7 +1011,7 @@ let redoStack = [];
 let undoGroup = 0;
 function snap(p, l, g) {                                 /* l = lane; g = group id: a whole drum clip is one undo step */
     redoStack = [];
-    undoStack.push({ p: p, t: l, st: steps[p][l].map(x => x.slice()), len: lens[laneTrk(l)], g: g || 0 });
+    undoStack.push({ p: p, t: l, st: steps[p][l].map(x => x.slice()), len: lens[laneTrk(l)], ll: llen[l] || 0, g: g || 0 });
     if (undoStack.length > 240) undoStack.shift();
 }
 function snapAll(p, t) { undoGroup++; for (const l of lanesOf(t)) snap(p, l, undoGroup); }
@@ -1019,7 +1020,7 @@ function pSnap(kind, L, key) {                              /* undo for sounds, 
     if (top && top.k && top.id === id && now - top.ts < 1500) { top.ts = now; return; }
     const e = { k: kind, id: id, ts: now, L: L, t: kind === 'pad' ? L : 0, p: ed[sel], g: 0 };
     if (kind === 'pad' && top && top.k === 'pad' && top.L !== L && now - top.ts < 300) { if (!top.g) top.g = ++undoGroup; e.g = top.g; top.ts = now; }       /* one gesture on several sounds (slice, chop, kit) = one step */
-    if (kind === 'pad') e.v = pads[L].slice(); else if (kind === 'master') e.v = master.slice(); else if (kind === 'sys') e.v = [bpm, swing]; else if (kind === 'mute') e.v = [mutes.slice(), lmutes.slice()];
+    if (kind === 'pad') e.v = pads[L].slice(); else if (kind === 'master') e.v = master.slice(); else if (kind === 'sys') e.v = [bpm, swing]; else if (kind === 'mute') e.v = [mutes.slice(), lmutes.slice()]; else if (kind === 'auto') e.v = JSON.stringify(AUTO);
     redoStack = []; undoStack.push(e); if (undoStack.length > 240) undoStack.shift();
 }
 /* undo for everything else (song, scenes, follow actions, pad modes): changes are noticed on their own and the old state is kept */
@@ -1053,6 +1054,7 @@ function swapParam(e, to) {
     const n = { k: e.k, id: e.id, ts: 0, L: e.L, t: e.t, p: e.p, g: e.g || 0, lbl: e.lbl };
     if (e.k === 'pad') { n.v = pads[e.L].slice(); pads[e.L] = e.v.slice(); qPad(e.L); enqueue('p' + e.L + 'vol', 'p' + p2(e.L + 1) + '_vol', (+pads[e.L][PI.vol]).toFixed(3)); enqueue('p' + e.L + 'pan', 'p' + p2(e.L + 1) + '_pan', (+pads[e.L][PI.pan]).toFixed(3)); }
     else if (e.k === 'master') { n.v = master.slice(); master = e.v.slice(); qMaster(); }
+    else if (e.k === 'auto') { n.v = JSON.stringify(AUTO); AUTO = JSON.parse(e.v); autoLast = {}; dirty = true; }
     else if (e.k === 'misc') { n.v = miscGet(); miscSet(e.v); miscLast = miscGet(); miscLastO = JSON.parse(miscLast); }
     else if (e.k === 'sys') { n.v = [bpm, swing]; bpm = e.v[0]; swing = e.v[1]; enqueue('bpm', 'bpm', String(bpm)); enqueue('swing', 'swing', (0.5 + swing / 100).toFixed(3)); }
     else if (e.k === 'mute') { n.v = [mutes.slice(), lmutes.slice()]; mutes = e.v[0].slice(); lmutes = e.v[1].slice(); for (let t = 0; t < NTRK; t++) enqueue('mute' + t, 'mute', t + ',' + mutes[t]); for (let l = 0; l < NLANE; l++) { enqueue('lmute' + l, 'lmute', l + ',' + lmutes[l]); lmSent[l] = lmutes[l]; } }
@@ -1061,9 +1063,11 @@ function swapParam(e, to) {
 function swapEntry(e, to) {
     if (e.k) { swapParam(e, to); return; }
     const tk = laneTrk(e.t);
-    to.push({ p: e.p, t: e.t, st: steps[e.p][e.t].map(x => x.slice()), len: lens[tk], g: e.g });
+    to.push({ p: e.p, t: e.t, st: steps[e.p][e.t].map(x => x.slice()), len: lens[tk], ll: llen[e.t] || 0, g: e.g });
     steps[e.p][e.t] = e.st; lens[tk] = e.len;
-    enqueue('len' + tk, 'len', tk + ',' + e.len); qSeq(e.p, e.t);
+    enqueue('len' + tk, 'len', tk + ',' + e.len);
+    if (e.ll !== undefined && (llen[e.t] || 0) !== e.ll) { llen[e.t] = e.ll; enqueue('llen' + e.t, 'llen', e.t + ',' + e.ll); }
+    qSeq(e.p, e.t);
 }
 function doRedo() {
     const e = redoStack.pop();
@@ -1162,7 +1166,7 @@ function clipOpDone(label, f, all) { if (all) qSeqT(ed[sel], sel); else qSeq(ed[
 function copySound(a, b) {
     const Ls = kind[a] ? laneOf(a, dsel[a]) : a, Ld = kind[b] ? laneOf(b, dsel[b]) : b;
     if (Ls === Ld) return;
-    pads[Ld] = pads[Ls].slice(); qPad(Ld); markEdited();
+    pSnap('pad', Ld, 'copy'); pads[Ld] = pads[Ls].slice(); qPad(Ld); markEdited();
     showToast('SOUND COPIED', 'T' + p2(a + 1) + ' > T' + p2(b + 1), 1);
 }
 function copyTrackFull(a, b) {                              /* Shift + Copy + track button: the whole track (sounds, every clip, length) goes to the other track */
@@ -1171,7 +1175,7 @@ function copyTrackFull(a, b) {                              /* Shift + Copy + tr
     const la = lanesOf(a), lb = lanesOf(b);
     undoGroup++;
     for (let j = 0; j < la.length && j < lb.length; j++) {
-        pads[lb[j]] = pads[la[j]].slice(); qPad(lb[j]);
+        pSnap('pad', lb[j], 'copy'); pads[lb[j]] = pads[la[j]].slice(); qPad(lb[j]);
         for (let c = 0; c < NPAT; c++) { snap(c, lb[j], undoGroup); steps[c][lb[j]] = steps[c][la[j]].map(x => x.slice()); qSeq(c, lb[j]); }
         llen[lb[j]] = llen[la[j]]; enqueue('llen' + lb[j], 'llen', lb[j] + ',' + llen[lb[j]]);
     }
@@ -3810,11 +3814,12 @@ let posFr = 0;
 function autoRec(L, key, v) {
     const c = ed[laneTrk(L)], id = c + '|' + L + '|' + key, len = effLen(L);
     const p = ((gs - 1 + 1024 * len) % len) * 4 + autoSub();
+    pSnap('auto', 0, 'rec');
     if (!AUTO[id]) AUTO[id] = {};
     AUTO[id][p] = Math.round(v * 1000) / 1000; autoHold[id] = 25; dirty = true;
 }
-function autoClear(L, key) { const c = ed[laneTrk(L)], id = c + '|' + L + '|' + key; if (AUTO[id]) { delete AUTO[id]; dirty = true; showToast('AUTOMATION', 'CLEARED', 0); } else showToast('AUTOMATION', 'NONE HERE', 0); }
-function autoClearClip(t, c) { for (const id in AUTO) { const a = id.split('|'); if (+a[0] === c && laneTrk(+a[1]) === t) delete AUTO[id]; } }
+function autoClear(L, key) { const c = ed[laneTrk(L)], id = c + '|' + L + '|' + key; if (AUTO[id]) { pSnap('auto', 0, 'clr'); delete AUTO[id]; dirty = true; showToast('AUTOMATION', 'CLEARED', 0); } else showToast('AUTOMATION', 'NONE HERE', 0); }
+function autoClearClip(t, c) { pSnap('auto', 0, 'clr'); for (const id in AUTO) { const a = id.split('|'); if (+a[0] === c && laneTrk(+a[1]) === t) delete AUTO[id]; } }
 function autoPlay() {
     if (!playing) { autoLast = {}; return; }
     for (const id in AUTO) {

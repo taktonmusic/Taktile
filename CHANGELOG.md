@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.81.0 (16 October 2026)
+- Undo / Redo now also covers: loop length changes (incl. drum sound lengths), recorded and cleared automation (knob motion), copied sounds / tracks, BPM and swing set with Shift + knob
+
 ## 5.80.1 (16 October 2026)
 - Delete mode can no longer get stuck: releasing Delete always ends it (also with a menu open), and Back / Play / Rec / Menu / Undo clear it
 
