@@ -1452,6 +1452,7 @@ function shiftStep(i) {
     if (i === 0 && view === 31 && songFromClips) { view = 7; songFromClips = false; acc.fill(0); needsRedraw = true; return; }
     if (i === 13) { openFav(); return; }                              /* step 14: your favorite knobs */
     if (i === 0) { projOpen(); return; }                              /* step 1: PROJECT (slots, new, revert) */
+    if ((i === 3 || i === 7 || i === 10 || i === 11) && view === 7 && !menuOpen) { view = prevView; if (SYM_VIEW_SET[view] || view === 7) view = 0; symOpen = -1; acc.fill(0); needsRedraw = true; }      /* from the clip view: leave it for the track's own pads, then switch their mode (Live FX, pad mode, Repeat, Steps) */
     if (i === 3) { if (!canTop()) { showToast('LIVE FX', 'OPEN THE TRACK FIRST', 0); return; } toggleTop(3); return; }      /* step 4: LIVE FX pads on / off */
     if (i === 7) { cycleTop(1); return; }                             /* step 8: LAYOUT = the three pad modes PITCH > REPEAT > STEPS */
     if (i === 11) { toggleTop(2); return; }                          /* step 12: step grid on / off (the 16 pads become steps) */
@@ -2296,7 +2297,15 @@ function drumPad(idx, on, vel) {                          /* drum track: left 4x
         return;
     }
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
-    if (m === 1) { if (on) setRepRate(rr * 4 + (cc & 3)); return; }      /* Note Repeat: the 16 pads on the right are the speeds */
+    if (m === 1) {                                         /* Note Repeat: the 16 pads on the right are the speeds - pressing one repeats the selected sound at that speed right away (and you hear it) */
+        const L = ln(), key = 'r' + idx;
+        if (on) {
+            const ri = rr * 4 + (cc & 3), v = fullVel ? 127 : Math.max(1, vel);
+            setRepRate(ri); dspSet('reprate', String(repRate));
+            if (!deleteHeld && !shiftHeld) { recHit(L, 0, v, key); logHit(L, 0, v); padHold[key] = { lane: L, semi: 0, vel: v }; flushPad(L); dspSet('dhit', L + ',' + v + ',1'); }
+        } else if (padHold[key]) { dspSet('dhit', L + ',0,0'); recRelease(key, L); delete padHold[key]; }
+        return;
+    }
     if (shiftHeld) return;
     const j = degOf(cc & 3, rr, 4), L = ln();
     if (on && deleteHeld) { delNote(L, notePadSemi(j) + oct()); return; }

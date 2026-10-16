@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.83.0 (16 October 2026)
+- Note Repeat on drum tracks: pick the sound on the left, every pad on the right repeats it right away at its speed while held (you hear it)
+- Live FX, pad mode, Note Repeat and Step grid (Shift + Step 4 / 8 / 11 / 12) can be started from the clip view; it switches to the track's pads
+
 ## 5.82.0 (16 October 2026)
 - Granulator: Tone is replaced by WINDOW (RECT, TRI, SINE, GAUSS, HANN, blended); the grain picture is redrawn with the real window shape of every grain
 - Recording: when a clip grows or shrinks to the length of the take, the notes keep their place on the shared beat grid, so the clip stays in sync with the other clips
