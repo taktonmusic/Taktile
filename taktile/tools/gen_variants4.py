@@ -170,6 +170,176 @@ mo('MKeyArp', MK, 23, 28, .0, .6, 0, 0, .006, 10, 2.5, 0, oct=8, tau1=.18, tau2=
 mo('MKeyTr', MK, 24, 29, .5, .0, 0, 0, .02, 8, 1.5, 0, oct=4, tau1=.45, tau2=.3, att=.001)
 mo('MKeyGlw', MK, 27, 30, .0, 1.0, 0, 0, .012, 11, 0, 0, oct=16, tau1=1.0, tau2=.5, att=.001)
 mo('MKeyOrg', MK, 77, 31, .4, .6, 3, .2, .005, 9, 0, .5, oct=4, tau1=.6, tau2=1.0, att=.003)
+# ============ INIT: simple 2-operator FM (algo 3): ratio/index/feedback come from the pad knobs Detune/Sub/KeyTrack
+add('FmInit', 'FM INIT', 76, 1, [1, 1, 1, 0, 0, 1, 0, .5, 3, 0.15], oct=8, tau1=.8, tau2=.35)
+
+# ============ DRUM SYNTH (eng 5): p = kind(0 kick,1 snare,2 hat,3 clap,4 tom,5 rim,6 metal), sweep, sweep ms, noise mix, click, drive, noise HP Hz, band Hz
+DS = 'DRUM SYNTH'
+def dr(name, ub, kind, f0, tau1, tau2=0.01, sweep=0, swms=30, mix=0, click=0, drive=0, hp=3000, band=1200):
+    add(name, DS, ub, 5, [kind, sweep, swms, mix, click, drive, hp, band], f0=f0, tau1=tau1, tau2=tau2, att=0.001)
+# kicks
+dr('DKick808', 0, 0, 48, .95, sweep=2.0, swms=45, click=.1, drive=.1)
+dr('DKickTch', 0, 0, 52, .34, sweep=5.0, swms=28, click=.3, drive=.5)
+dr('DKickHse', 0, 0, 55, .4, sweep=3.0, swms=35, click=.2, drive=.2)
+dr('DKickDub', 0, 0, 42, .85, sweep=1.6, swms=60, click=.05, drive=.05)
+dr('DKickHrd', 0, 0, 50, .46, sweep=6.0, swms=22, click=.5, drive=.85)
+dr('DKickPsy', 0, 0, 46, .3, sweep=5.5, swms=30, click=.35, drive=.55)
+dr('DKickSub', 0, 0, 38, 1.2, sweep=1.2, swms=80)
+dr('DKickPnc', 0, 0, 60, .22, sweep=4.0, swms=18, click=.4, drive=.3)
+dr('DKickTrp', 0, 0, 44, 1.4, sweep=2.4, swms=55, click=.15, drive=.25)
+dr('DKickLof', 0, 0, 50, .5, sweep=2.5, swms=40, click=.2, drive=.4, mix=.05, hp=1500)
+# snares
+dr('DSnr909', 5, 1, 190, .12, .24, sweep=.6, swms=25, mix=.65, click=.3, hp=1800)
+dr('DSnrTght', 5, 1, 210, .08, .14, sweep=.5, swms=18, mix=.6, click=.4, hp=2400)
+dr('DSnrFat', 5, 1, 160, .16, .32, sweep=.6, swms=30, mix=.6, drive=.3, hp=1500)
+dr('DSnrDeep', 5, 1, 140, .2, .42, sweep=.5, swms=35, mix=.55, drive=.15, hp=1200)
+dr('DSnrCrck', 5, 1, 240, .07, .12, sweep=.4, swms=12, mix=.7, click=.6, drive=.2, hp=3200)
+dr('DSnrBig', 5, 1, 150, .22, .5, sweep=.7, swms=40, mix=.65, click=.2, drive=.45, hp=1400)
+dr('DSnrLoFi', 5, 1, 175, .14, .22, sweep=.5, swms=28, mix=.7, drive=.5, hp=900)
+dr('DSnrElec', 5, 1, 260, .1, .18, sweep=1.0, swms=22, mix=.45, click=.3, drive=.35, hp=2600)
+# hats
+dr('DHatCl', 8, 2, 205, .05, mix=.3, hp=6000)
+dr('DHatTght', 8, 2, 215, .03, mix=.25, hp=7000)
+dr('DHatSoft', 8, 2, 190, .07, mix=.2, hp=4500)
+dr('DHatSizz', 8, 2, 230, .12, mix=.6, hp=8000)
+dr('DHatOp', 9, 2, 205, .35, mix=.3, hp=6000)
+dr('DHatOp2', 9, 2, 220, .6, mix=.35, hp=6500)
+dr('DHatPed', 8, 2, 200, .1, mix=.25, hp=5000)
+dr('DHatLoFi', 8, 2, 195, .08, mix=.5, drive=.5, hp=3500)
+# claps
+dr('DClap', 6, 3, 1, .1, .2, band=1100, hp=700)
+dr('DClapTgt', 6, 3, 1, .08, .12, band=1400, hp=900)
+dr('DClapLng', 6, 3, 1, .15, .4, band=1000, hp=600)
+dr('DClapTrp', 6, 3, 1, .1, .22, band=1700, hp=1200, drive=.2)
+# toms
+dr('DTomLo', 13, 4, 80, .55, sweep=1.5, swms=60, click=.1)
+dr('DTomMid', 13, 4, 115, .45, sweep=1.5, swms=50, click=.1)
+dr('DTomHi', 13, 4, 160, .35, sweep=1.4, swms=40, click=.12)
+dr('DTomElec', 13, 4, 130, .4, sweep=3.0, swms=45, click=.1, drive=.35)
+# rims, metal
+dr('DRim', 6, 5, 820, .035, click=.6)
+dr('DRimHi', 6, 5, 1250, .025, click=.7)
+dr('DClave', 14, 5, 2200, .09, click=.2)
+dr('DCowbell', 14, 6, 560, .28, band=3200)
+dr('DCowHi', 14, 6, 800, .18, band=4500)
+dr('DMetal', 14, 6, 410, .5, band=2600)
+
+# ============ ANALOG 2-OSC (eng 6): p = waveA, waveB (0 saw 1 square 2 tri 3 sine), detuneB cents, sub, sync, pulse width, mixB, drive
+AN = 'ANALOG'
+def an(name, ub, wa, wb, det, sub, sync, pw, mix, drv, oct=8, tau1=.3, att=.003, sus=1):
+    add(name, AN, ub, 6, [wa, wb, det, sub, sync, pw, mix, drv], oct=oct, tau1=tau1, tau2=.01, att=att, sus=sus)
+an('AnaInit', 26, 0, 0, 7, 0, 0, .5, .8, 0, oct=8, tau1=.25, att=.003)
+an('AnaSawLd', 26, 0, 0, 12, .3, 0, .5, .9, .1, oct=8)
+an('AnaPulse', 26, 1, 1, 9, .2, 0, .3, .8, 0, oct=8)
+an('AnaSync', 26, 0, 0, 0, 0, 1.5, .5, 1.0, .15, oct=8)
+an('AnaSyncHi', 26, 0, 0, 0, .1, 2.6, .5, 1.0, .25, oct=8)
+an('AnaBass', 74, 0, 1, 6, .8, 0, .5, .6, .2, oct=1, tau1=.2, att=.002)
+an('AnaSubBs', 19, 3, 3, 3, 1.0, 0, .5, .3, 0, oct=1, tau1=.3, att=.004)
+an('AnaAcid', 21, 0, 0, 0, .2, 0, .5, 0, .6, oct=1, tau1=.15, att=.001, sus=1)
+an('AnaPwm', 26, 1, 1, 4, .3, 0, .4, .7, 0, oct=4)
+an('AnaPluck', 23, 0, 1, 8, .1, 0, .4, .6, .1, oct=8, tau1=.35, sus=0)
+an('AnaStab', 24, 0, 1, 11, .2, 0, .35, .8, .2, oct=8, tau1=.22, sus=0)
+an('AnaBrass', 73, 0, 0, 5, .2, 0, .5, 1.0, .3, oct=4, tau1=.2, att=.06)
+an('AnaPad', 25, 0, 0, 14, .1, 0, .5, 1.0, 0, oct=4, tau1=.9, att=.4)
+an('AnaTri', 26, 2, 3, 6, .2, 0, .5, .5, 0, oct=8)
+an('AnaHoov', 80, 0, 0, 15, .4, .8, .5, 1.0, .5, oct=4)
+# ============ WAVETABLE (eng 7): p = firstTable, span, position, sweep, warp, unison cents, sub, -   (640 tables, dark to bright)
+WT = 'WAVETABLE'
+def wt(name, ub, t0, span, pos, sw, warp, uni, sub, oct=8, tau1=.3, tau2=.5, att=.004, sus=1):
+    add(name, WT, ub, 7, [t0, span, pos, sw, warp, uni, sub], oct=oct, tau1=tau1, tau2=tau2, att=att, sus=sus)
+wt('WtInit', 26, 120, 200, .3, 0, 0, 6, 0, oct=8, tau1=.25, att=.003)
+wt('WtSweep', 26, 100, 260, .15, .7, 0, 8, 0, oct=8, tau2=1.5)
+wt('WtDark', 74, 0, 140, .4, .2, 0, 5, .3, oct=2, tau2=.8)
+wt('WtBright', 26, 380, 200, .5, .3, 0, 8, 0, oct=8, tau2=.8)
+wt('WtGlass', 27, 330, 160, .5, .2, 0, 12, 0, oct=16, tau1=.6, tau2=1.2)
+wt('WtBass', 74, 40, 100, .4, .5, 0, 4, .4, oct=1, tau1=.2, tau2=.35)
+wt('WtPad', 25, 150, 300, .3, .4, 0, 14, 0, oct=4, tau1=1.0, tau2=4.0, att=.7)
+wt('WtPluck', 23, 180, 220, .2, .7, 0, 6, 0, oct=8, tau1=.4, tau2=.15, sus=0)
+wt('WtVox', 25, 220, 150, .6, .1, .1, 10, 0, oct=4, tau2=1.0, att=.08)
+wt('WtMetal', 24, 450, 180, .6, .3, .6, 6, 0, oct=8, tau1=.3, tau2=.4)
+wt('WtWarp', 26, 200, 200, .5, .3, .7, 8, 0, oct=8, tau2=.7)
+wt('WtEvolve', 25, 60, 500, .1, .9, 0, 10, 0, oct=4, tau1=1.2, tau2=7.0, att=1.0)
+# ============ FM 4-OP (eng 8): p = ratio2, ratio3, ratio4, index, feedback, algo, -, velocity
+FM4 = 'FM 4-OP'
+def f4(name, ub, r2, r3, r4, ix, fb, al, vel=.5, oct=8, tau1=.8, tau2=.4, att=.003, sus=0):
+    add(name, FM4, ub, 8, [r2, r3, r4, ix, fb, al, 0, vel], oct=oct, tau1=tau1, tau2=tau2, att=att, sus=sus)
+f4('Fm4Init', 76, 1, 2, 1, 1.5, 0, 0, tau1=.8, tau2=.4)
+f4('Fm4Bell', 27, 3.5, 1.41, 7, 1.8, 0, 2, oct=16, tau1=2.5, tau2=1.2)
+f4('Fm4EP', 76, 1, 14, 1, 1.1, 0, 1, vel=.8, oct=8, tau1=1.8, tau2=.3)
+f4('Fm4Bass', 79, 1, 1, .5, 2.2, .3, 0, oct=1, tau1=.4, tau2=.12)
+f4('Fm4Brass', 73, 1, 1, 1, 1.6, .2, 0, oct=4, tau1=.25, tau2=.3, att=.06, sus=1)
+f4('Fm4Pluck', 23, 2, 3, 1, 2.0, 0, 1, oct=8, tau1=.5, tau2=.1)
+f4('Fm4Organ', 77, 2, 3, 4, .5, .1, 3, oct=8, tau1=.2, tau2=2.0, att=.004, sus=1)
+f4('Fm4Pad', 25, 1, 2.01, 3, .8, 0, 3, oct=4, tau1=1.2, tau2=4.0, att=.5, sus=1)
+f4('Fm4Metal', 27, 1.41, 2.76, 5.4, 2.5, .2, 1, oct=8, tau1=.9, tau2=.5)
+f4('Fm4Lead', 26, 1, 2, 1, 1.4, .5, 0, oct=8, tau1=.3, tau2=.6, att=.008, sus=1)
+f4('Fm4Chime', 27, 4, 5.1, 9, 1.2, 0, 2, oct=16, tau1=2.0, tau2=.8)
+f4('Fm4Slap', 79, 1, 3, 1, 2.8, .4, 2, oct=2, tau1=.3, tau2=.06)
+# ============ ADDITIVE (eng 9): p = tilt, odd/even, stretch, shimmer, tremolo depth, tremolo rate
+AD = 'ADDITIVE'
+def ad(name, ub, tilt, oe, st, sh, td=0, tr=5, oct=8, tau1=.5, tau2=1.0, att=.004, sus=1):
+    add(name, AD, ub, 9, [tilt, oe, st, sh, td, tr], oct=oct, tau1=tau1, tau2=tau2, att=att, sus=sus)
+ad('AddInit', 26, 1.0, 0, 0, .2, oct=8, tau1=.25)
+ad('AddOrgan', 77, .7, .3, 0, 0, oct=8, tau1=.15)
+ad('AddClar', 24, 1.5, 1.0, 0, .1, oct=8, tau1=.2)
+ad('AddBell', 27, .9, 0, .5, .8, oct=16, tau1=2.5, tau2=1.5, sus=0)
+ad('AddGlass', 27, .6, .2, .3, .9, oct=16, tau1=1.5, tau2=1.0, sus=0)
+ad('AddPad', 25, 1.4, 0, 0, .3, oct=4, tau1=1.0, tau2=4.0, att=.6)
+ad('AddVox', 25, 1.1, .5, 0, .2, .3, 5.5, oct=4, tau1=.4, att=.1)
+ad('AddSoft', 26, 2.0, 0, 0, .1, oct=8, tau1=.5, att=.02)
+ad('AddBright', 26, .4, 0, 0, .2, oct=8, tau1=.3)
+ad('AddBow', 78, 1.0, 0, .05, .1, .15, 5, oct=4, tau1=.4, att=.15)
+ad('AddHarp', 23, 1.0, 0, 0, 1.0, oct=8, tau1=1.4, tau2=.5, sus=0)
+ad('AddTrem', 25, 1.2, .2, 0, .2, .7, 4.5, oct=4, tau1=.6, att=.1)
+# ============ PAD + STRINGS (eng 10): p = spread cents, motion rate, motion depth, pulse mix, body (low-pass = note x), -, spread scale
+PD = 'PAD + STRINGS'
+def pd(name, ub, sp, mr, md, pm, body, oct=4, tau1=1.0, att=.5, tau2=.01, sc=.6):
+    add(name, PD, ub, 10, [sp, mr, md, pm, body, 0, sc], oct=oct, tau1=tau1, tau2=tau2, att=att, sus=1)
+pd('PadInit', 25, 14, .25, .3, 0, 6, oct=4, tau1=.8, att=.3)
+pd('PadWarmth', 25, 12, .2, .25, 0, 4, att=.5)
+pd('PadSwarm', 25, 28, .3, .6, 0, 8, att=.6)
+pd('PadStr', 78, 10, .35, .2, 0, 10, oct=4, tau1=.5, att=.25)
+pd('PadSoft', 25, 8, .15, .2, 0, 3, att=.9)
+pd('PadPwm', 25, 12, .25, .3, .6, 7, att=.5)
+pd('PadSweep', 25, 16, .1, .8, 0, 5, att=1.2)
+pd('PadDusk', 25, 14, .2, .3, 0, 2.5, oct=2, att=.8)
+pd('PadBright', 25, 18, .3, .3, .2, 14, oct=8, att=.4)
+pd('PadCrawl', 25, 12, .08, .5, 0, 5, att=2.0, tau1=2.0)
+pd('PadEns', 78, 22, .4, .4, 0, 9, oct=4, att=.3)
+pd('PadDrone', 25, 20, .05, .7, .1, 3, oct=1, att=3.0, tau1=3.0)
+
+# ============ STRING (eng 11, Karplus-Strong): p = brightness (.5 dark .. 1 bright), pick position, loop gain, excitation (0 noise .. 1 saw)
+ST = 'STRING + PLUCK'
+def sr_(name, ub, br, pk, lg, ex, oct=8, tau1=3.0):
+    add(name, ST, ub, 11, [br, pk, lg, ex], oct=oct, tau1=tau1, tau2=.01, att=.001, sus=0)
+sr_('StrInit', 23, .85, .15, .998, .2, oct=8)
+sr_('StrNylon', 23, .7, .2, .997, .1, oct=8)
+sr_('StrSteel', 23, .95, .12, .9985, .3, oct=8)
+sr_('StrHarp', 23, .8, .3, .9985, .1, oct=16, tau1=4.0)
+sr_('StrMuted', 23, .55, .15, .99, .2, oct=8, tau1=1.2)
+sr_('StrBass', 74, .75, .1, .9985, .2, oct=2, tau1=3.0)
+sr_('StrKoto', 23, .9, .08, .997, .5, oct=16)
+sr_('StrBanjo', 23, 1.0, .1, .996, .6, oct=8, tau1=1.5)
+sr_('StrPiano', 76, .88, .14, .9975, .35, oct=8, tau1=2.5)
+sr_('StrHarsh', 26, 1.0, .06, .9992, 1.0, oct=8)
+sr_('StrGlass', 27, .98, .25, .9993, .0, oct=16, tau1=4.0)
+sr_('StrDrone', 25, .9, .2, .9998, .4, oct=4, tau1=8.0)
+# ============ FOLD (eng 12): p = wave (0 sine, 1 tri), fold, sweep, bias, sub, FM amount, FM ratio
+FD = 'FOLD'
+def fo(name, ub, wv, fold, sw, bias, sub, fm, fr, oct=8, tau1=.3, tau2=.3, att=.003, sus=1):
+    add(name, FD, ub, 12, [wv, fold, sw, bias, sub, fm, fr], oct=oct, tau1=tau1, tau2=tau2, att=att, sus=sus)
+fo('FoldInit', 26, 0, .6, 0, 0, 0, 0, 2, oct=8, tau1=.25)
+fo('FoldBass', 74, 0, .8, 1.2, .1, .4, 0, 2, oct=1, tau1=.25, tau2=.3)
+fo('FoldLead', 26, 1, 1.2, .8, .15, 0, .2, 3, oct=8, tau2=.6)
+fo('FoldPluck', 23, 0, .4, 3.0, 0, 0, 0, 2, oct=8, tau1=.4, tau2=.12, sus=0)
+fo('FoldPad', 25, 1, .8, 1.5, .1, 0, .3, 2, oct=4, tau1=1.0, tau2=3.0, att=.5)
+fo('FoldBell', 27, 0, .3, 1.5, 0, 0, .8, 3.5, oct=16, tau1=1.8, tau2=.8, sus=0)
+fo('FoldSub', 19, 0, .2, .4, 0, .8, 0, 2, oct=1, tau1=.4)
+fo('FoldGlass', 27, 1, .7, 2.0, .2, 0, .5, 5, oct=16, tau1=1.2, tau2=1.0, sus=0)
+fo('FoldDrone', 25, 1, 1.0, 1.0, .25, .4, .4, 1.5, oct=2, tau1=2.0, tau2=6.0, att=1.5)
+fo('FoldSeq', 23, 0, .5, 2.5, .05, 0, 0, 2, oct=8, tau1=.2, tau2=.1, sus=0)
+fo('FoldAcid', 21, 1, 1.4, 1.8, .2, .2, 0, 2, oct=1, tau1=.15, tau2=.2)
+fo('FoldBuzz', 26, 1, 2.2, .5, .3, 0, .4, 1.01, oct=4, tau2=.5)
 # ---------------------------------------------------------------------------------------------------------
 names = [x[0] for x in P]; assert len(set(names)) == len(names), [n for n in names if names.count(n) > 1]
 trimf = root + 'tools/nx_trim.json'
@@ -193,5 +363,13 @@ for i, x in enumerate(P): groups.setdefault(x[1], []).append(1064 + i)
 blk = "/*NXBEGIN*/const NX_GROUPS = " + json.dumps([[g, l] for g, l in groups.items()], separators=(',', ':')) + ";/*NXEND*/"
 if '/*NXBEGIN*/' in u: u = re.sub(r"/\*NXBEGIN\*/.*?/\*NXEND\*/", lambda _: blk, u, flags=re.S)
 else: u = u.replace("const SYN_ORDER =", blk + "\nconst SYN_ORDER =", 1)
+ne = []
+for i, x in enumerate(P):
+    if x[3] >= 6:
+        if ne and ne[-1][2] == x[3] and ne[-1][1] == 1064 + i - 1: ne[-1][1] = 1064 + i
+        else: ne.append([1064 + i, 1064 + i, x[3]])
+blk2 = "/*NXEBEGIN*/const NX_ENG = " + json.dumps(ne, separators=(',', ':')) + ";/*NXEEND*/"
+if '/*NXEBEGIN*/' in u: u = re.sub(r"/\*NXEBEGIN\*/.*?/\*NXEEND\*/", lambda _: blk2, u, flags=re.S)
+else: u = u.replace("/*NXBEGIN*/", blk2 + "\n/*NXBEGIN*/", 1)
 open(root + 'ui.js', 'w').write(u)
 print(len(P), 'new presets, total', 1064 + len(P))

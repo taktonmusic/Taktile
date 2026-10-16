@@ -1,0 +1,371 @@
+<title>Taktile Simulator</title>
+<meta charset="utf-8">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one console card. Wide screens: display + knobs + pads on the left, key panel on the right. Phones: display sticks to the top, everything else scrolls under it. */
+:root {
+  --bg: #e4e8ee; --panel: #f2f4f7; --ink: #12161d; --ink2: #475264; --line: #c3cad6;
+  --key: #fbfcfd; --keyline: #aeb7c6; --keyon: #12161d; --keyon-ink: #f2f4f7;
+  --accent: #2b4fe8; --accent-ink: #ffffff; --well: #0f1218; --lamp-off: #2b3242;
+  --screen-bg: #12141a; --screen-fg: #e8eefa;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1117; --panel: #161a22; --ink: #e6eaf2; --ink2: #9aa6ba; --line: #2a3140;
+    --key: #222836; --keyline: #3a4358; --keyon: #e6eaf2; --keyon-ink: #0e1117;
+    --accent: #8aa2ff; --accent-ink: #0d1020; --well: #07090d; --lamp-off: #2b3242;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1117; --panel: #161a22; --ink: #e6eaf2; --ink2: #9aa6ba; --line: #2a3140;
+  --key: #222836; --keyline: #3a4358; --keyon: #e6eaf2; --keyon-ink: #0e1117;
+  --accent: #8aa2ff; --accent-ink: #0d1020; --well: #07090d; --lamp-off: #2b3242;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+h1 { font-family: var(--mono); font-weight: 600; font-size: 1.35rem; letter-spacing: -0.01em; margin: 0; }
+.ver { font-family: var(--mono); font-size: 0.8rem; color: var(--ink2); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: inherit; color: inherit; }
+.btn { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; padding: 8px 12px; border: 1px solid var(--keyline); background: var(--key); border-radius: 6px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible, .key:focus-visible, .pad:focus-visible, .stp:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.console { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+@media (min-width: 880px) { .console { grid-template-columns: minmax(0, 1fr) 300px; padding: 22px; gap: 24px; } }
+.left { display: grid; gap: 16px; min-width: 0; align-content: start; }
+.screenbox { background: var(--panel); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; padding-block: 6px; }
+@media (min-width: 880px) { .screenbox { position: static; padding-block: 0; } }
+.screen { background: var(--screen-bg); border: 1px solid #000; border-radius: 6px; padding: 8px; max-width: 664px; margin: 0 auto; }
+canvas { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; image-rendering: pixelated; image-rendering: crisp-edges; }
+.knobs { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; max-width: 664px; width: 100%; margin: 0 auto; }
+.knob { display: grid; justify-items: center; gap: 4px; touch-action: none; user-select: none; cursor: ns-resize; }
+.dial { width: min(100%, 52px); aspect-ratio: 1; border-radius: 50%; border: 2px solid var(--keyline); background: var(--key); position: relative; }
+.dial i { position: absolute; left: 50%; top: 8%; width: 3px; height: 34%; margin-left: -1.5px; border-radius: 2px; background: var(--ink); transform-origin: 50% 147%; }
+.knob.touch .dial { border-color: var(--accent); }
+.lamp { width: 70%; max-width: 40px; height: 5px; border-radius: 3px; background: var(--lamp-off); }
+.cap { font-family: var(--mono); font-size: 0.66rem; color: var(--ink2); letter-spacing: 0.04em; text-transform: uppercase; }
+.pads-zone { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; max-width: 664px; width: 100%; margin: 0 auto; }
+.trks { display: grid; grid-template-rows: repeat(4, 1fr); gap: 6px; }
+.pads { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; background: var(--well); padding: 8px; border-radius: 8px; }
+.pad { aspect-ratio: 1; border: 0; border-radius: 6px; background: #1a1f29; cursor: pointer; padding: 0; touch-action: none; }
+.pad.held, .stp.held { outline: 2px solid var(--accent); outline-offset: 1px; }
+.steps { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 4px; max-width: 664px; width: 100%; margin: 0 auto; }
+@media (max-width: 560px) { .steps { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; } }
+.stp { display: grid; gap: 4px; justify-items: center; border: 1px solid var(--keyline); background: var(--key); border-radius: 5px; padding: 5px 0 6px; cursor: pointer; touch-action: none; font-family: var(--mono); font-size: 0.62rem; color: var(--ink2); }
+.stp b { width: 62%; height: 5px; border-radius: 3px; background: var(--lamp-off); display: block; }
+.right { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.group { display: grid; gap: 8px; }
+.group h2 { margin: 0; font-family: var(--mono); font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink2); }
+.keys { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.key { position: relative; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.02em; min-height: 40px; padding: 14px 4px 6px; border: 1px solid var(--keyline); background: var(--key); border-radius: 6px; cursor: pointer; touch-action: none; user-select: none; text-align: center; }
+.key::before { content: ""; position: absolute; left: 50%; top: 6px; width: 16px; height: 4px; margin-left: -8px; border-radius: 2px; background: var(--lamp-off); }
+.key[data-led]::before { background: var(--led, var(--lamp-off)); }
+.key.on { background: var(--keyon); color: var(--keyon-ink); border-color: var(--keyon); }
+.jog { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 6px; align-items: stretch; }
+.jog .key { min-height: 46px; padding-top: 6px; }
+.jog .key::before { display: none; }
+.jogc { font-weight: 600; }
+.nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.nav .key::before { display: none; }
+.nav .key { padding-top: 6px; }
+.master { display: flex; align-items: center; gap: 12px; }
+.master .knob { grid-auto-flow: column; align-items: center; justify-items: start; gap: 10px; }
+.master .dial { width: 46px; }
+.note { font-size: 0.9rem; color: var(--ink2); max-width: 74ch; }
+.note p { margin: 0 0 8px; }
+.note kbd { font-family: var(--mono); font-size: 0.78rem; border: 1px solid var(--keyline); border-radius: 4px; padding: 0 5px; background: var(--key); color: var(--ink); }
+.note h2 { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); margin: 14px 0 6px; font-weight: 600; }
+.note ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.banner { display: none; position: fixed; inset: 0; z-index: 50; background: color-mix(in srgb, var(--bg) 88%, transparent); align-items: center; justify-content: center; padding: 24px; }
+.banner.show { display: flex; }
+.banner div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 22px; display: grid; gap: 14px; justify-items: start; max-width: 360px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div><h1>Taktile Simulator</h1><div class="ver" id="ver">Version %%VERSION%%</div></div>
+    <div class="tools">
+      <button class="btn" id="bDemo" type="button">Demo-Beat laden</button>
+      <button class="btn" id="bHold" type="button" aria-pressed="false">Halten: aus</button>
+      <button class="btn" id="bReset" type="button">Zurücksetzen</button>
+    </div>
+  </header>
+
+  <section class="console" aria-label="Taktile Bedienfeld">
+    <div class="left">
+      <div class="screenbox"><div class="screen"><canvas id="lcd" width="128" height="64" aria-label="Display"></canvas></div></div>
+      <div class="knobs" id="knobs"></div>
+      <div class="pads-zone">
+        <div class="trks" id="trks"></div>
+        <div class="pads" id="pads"></div>
+      </div>
+      <div class="steps" id="steps"></div>
+    </div>
+    <div class="right">
+      <div class="group"><h2>Drehgeber</h2>
+        <div class="jog">
+          <button class="key" id="jogM" type="button">Jog −</button>
+          <button class="key jogc" id="jogC" type="button">Klick</button>
+          <button class="key" id="jogP" type="button">Jog +</button>
+        </div>
+        <div class="master" id="master"></div>
+      </div>
+      <div class="group"><h2>Halten (bleibt gedrückt)</h2><div class="keys" id="mods"></div></div>
+      <div class="group"><h2>Tasten</h2><div class="keys" id="keys"></div></div>
+      <div class="group"><h2>Navigation</h2><div class="nav" id="nav"></div></div>
+    </div>
+  </section>
+
+  <section class="note">
+    <h2>So testest du</h2>
+    <ul>
+      <li>Pads und Steps anklicken. Rechtsklick oder Alt+Klick auf einen Step hält ihn gedrückt (nochmal klicken löst ihn). Damit gehen Gesten wie „Step halten und zweiten Step drücken“. Mit „Halten: an“ bleibt jeder Klick gedrückt.</li>
+      <li>Regler: nach oben oder unten ziehen oder mit dem Mausrad drehen. Berühren zeigt wie am Gerät den Wert an.</li>
+      <li>Shift, Copy, Delete, Mute und Loop bleiben nach einem Klick gedrückt, bis du sie nochmal klickst.</li>
+      <li>Das Mausrad über dem Display dreht das Jog-Rad.</li>
+    </ul>
+    <h2>Tastatur</h2>
+    <p><kbd>Shift</kbd> Shift halten · <kbd>Leertaste</kbd> Play · <kbd>Enter</kbd> Jog-Klick · <kbd>[</kbd> <kbd>]</kbd> Jog − / + · <kbd>Esc</kbd> Back · <kbd>M</kbd> Menü · Pfeiltasten Navigation · <kbd>C</kbd> Copy · <kbd>X</kbd> Delete</p>
+    <h2>Was hier anders ist</h2>
+    <p>Die Oberfläche ist der echte Code der genannten Version. Es gibt keinen Ton. Der Takt läuft nur als Zähler. Pad-Farben sind angenähert, Samples und Dateibrowser sind leer. Dein Stand liegt in diesem Browser. Wie sich Timing, LEDs und Knopf-Gefühl am echten Gerät anfühlen, zeigt nur der Move.</p>
+  </section>
+</div>
+
+<div class="banner" id="banner"><div><strong>Taktile wurde beendet.</strong><span>Im Simulator startet es mit einem Klick wieder.</span><button class="btn" id="bRestart" type="button">Neu starten</button></div></div>
+
+<script>
+/* ---- display, files, transport and LED stubs that the module expects from the host ---- */
+(function () {
+  var W = 128, H = 64, fb = new Uint8Array(W * H);
+  var G = %%GLYPHS%%;
+  window.clear_screen = function () { fb.fill(0); };
+  window.set_pixel = function (x, y, c) { x = Math.round(x); y = Math.round(y); if (x >= 0 && x < W && y >= 0 && y < H) fb[y * W + x] = c ? 1 : 0; };
+  window.fill_rect = function (x, y, w, h, c) { for (var j = 0; j < h; j++) for (var i = 0; i < w; i++) set_pixel(x + i, y + j, c); };
+  window.draw_rect = function (x, y, w, h, c) { for (var i = 0; i < w; i++) { set_pixel(x + i, y, c); set_pixel(x + i, y + h - 1, c); } for (var j = 0; j < h; j++) { set_pixel(x, y + j, c); set_pixel(x + w - 1, y + j, c); } };
+  window.print = function (x, y, t, c) {
+    t = String(t); x = Math.round(x); y = Math.round(y);
+    for (var n = 0; n < t.length; n++) { var g = G[t[n]] || G['?'] || G[' '] || []; for (var r = 0; r < g.length; r++) for (var q = 0; q < 6; q++) if (g[r][q] === '#') set_pixel(x + q, y + r, c === undefined ? 1 : c); x += 6; }
+  };
+  window.text_width = function (s) { return String(s).length * 6; };
+
+  var mem = {}, KP = 'taktile-sim:';
+  window.host_read_file = function (p) { if (Object.prototype.hasOwnProperty.call(mem, p)) return mem[p]; try { var v = localStorage.getItem(KP + p); return v === null ? null : v; } catch (e) { return null; } };
+  window.host_write_file = function (p, t) { mem[p] = t; try { localStorage.setItem(KP + p, t); } catch (e) { /* storage unavailable */ } };
+  window.__simWipe = function () { mem = {}; try { Object.keys(localStorage).filter(function (k) { return k.indexOf(KP) === 0; }).forEach(function (k) { localStorage.removeItem(k); }); } catch (e) { /* ignore */ } };
+
+  /* minimal transport: a step counter that runs at the project tempo, and the clip switching the UI polls for */
+  var T = { playing: false, gs: 0, acc: 0, bpm: 120, cur: [], q: [] };
+  for (var i = 0; i < 16; i++) { T.cur.push(0); T.q.push(-2); }
+  function launch(t, c) { if (T.playing) T.q[t] = c; else { T.cur[t] = c; T.q[t] = -2; } }
+  var GR = { grn: 0, gsz: 0.4, gsp: 0.5, gpi: 0 };
+  window.host_module_set_param = function (k, v) {
+    if (k === 'play') { var on = v === '1'; if (on && !T.playing) { T.gs = 0; T.acc = 0; } T.playing = on; }
+    else if (k === 'bpm') T.bpm = parseFloat(v) || 120;
+    else if (k === 'clip') { var a = v.split(','); launch(parseInt(a[0]), parseInt(a[1])); }
+    else if (/^p\d+_(grn|gsz|gsp|gpi)$/.test(k)) GR[k.replace(/^p\d+_/, '')] = parseFloat(v) || 0;
+    else if (k === 'scene') { var c = parseInt(v); for (var t = 0; t < 16; t++) launch(t, (typeof trackHasSteps === 'function' && trackHasSteps(c, t)) ? c : -1); }
+  };
+  window.host_module_get_param = function (k) {
+    if (k === 'pos') return (T.playing ? '1' : '0') + ',' + T.gs + ',0,0,0';
+    if (k === 'clips') return T.cur.concat(T.q).join(',');
+    if (k.indexOf('grnv_') === 0) {                              /* the simulator has no audio: pretend history and grains so the display can be tried */
+      if (GR.grn < 0.01) return '';
+      var tt = Date.now() / 1000, len = Math.round(5 + GR.gsz * GR.gsz * 95), env = '', out = '';
+      for (var e = 0; e < 32; e++) env += Math.floor(8 + 7 * Math.sin(e * 0.7 + tt * 3) * Math.sin(e * 0.21 - tt)).toString(16);
+      for (var g = 0; g < 6; g++) { var ph = ((tt * (1.5 + g * 0.37) + g * 0.31) % 1), sd = Math.sin(g * 12.9898 + Math.floor(tt * (1.5 + g * 0.37) + g * 0.31) * 78.233) * 43758.5453; sd = sd - Math.floor(sd);
+        out += Math.round(5 + sd * GR.gsp * 90 - ph * 8) + ',' + len + ',' + (sd < GR.gpi ? (sd < GR.gpi / 2 ? 8 : 2) : 4) + ',' + Math.round(ph * 99) + ',5;'; }
+      return env + '|' + out;
+    }
+    return null;
+  };
+  window.__simAdvance = function (dt) {
+    if (!T.playing) return;
+    T.acc += dt; var dur = 60 / T.bpm / 4;
+    while (T.acc >= dur) { T.acc -= dur; T.gs++; if ((T.gs - 1) % 16 === 0) for (var t = 0; t < 16; t++) if (T.q[t] !== -2) { T.cur[t] = T.q[t]; T.q[t] = -2; } }
+  };
+
+  var padLed = {}, btnLed = {};
+  window.__leds = { pad: padLed, btn: btnLed };
+  window.move_midi_internal_send = function (a) { if (a[1] === 0x90) padLed[a[2]] = a[3]; else if (a[1] === 0xB0) btnLed[a[2]] = a[3]; };
+  window.shadow_inbound_pad_midi_active = function () { return false; };
+  window.shadow_set_overtake_suppress_master_volume = function () {};
+  var quit = function () { var b = document.getElementById('banner'); if (b) b.classList.add('show'); };
+  window.host_exit_module = quit; window.host_return_to_menu = quit; window.host_suspend_overtake = quit;
+  window.__fb = fb;
+})();
+</script>
+
+<script>
+%%UIJS%%
+</script>
+
+<script>
+/* ---- the control surface ---- */
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var send = function (a, b, c) { if (typeof onMidiMessageInternal === 'function') onMidiMessageInternal([a, b, c]); };
+  var holdAll = false, held = {};
+  var cc = function (n, v) { send(0xB0, n, v); };
+  var turn = function (n, d) { cc(n, d > 0 ? Math.min(d, 63) : 128 + Math.max(d, -63)); };
+
+  /* LED colour: 1-26 bright hues, 65-116 their dim versions, 117-127 whites and greys (approximation of the device palette) */
+  function ledCss(v) {
+    v = v | 0; if (v <= 0) return '';
+    var h, s = 80, l = 55;
+    if (v >= 117) { var g = { 120: 92, 126: 100, 127: 100, 124: 28, 123: 40, 122: 55, 121: 70 }[v]; l = g === undefined ? 60 : g; return 'hsl(220 8% ' + l + '%)'; }
+    if (v >= 65) { h = ((((v - 65) >> 1) % 26) * 360 / 26 + 8) % 360; l = 22; }
+    else if (v <= 26) { h = (((v - 1) % 26) * 360 / 26 + 8) % 360; }
+    else { h = ((v * 47) % 360); l = 45; }
+    return 'hsl(' + Math.round(h) + ' ' + s + '% ' + l + '%)';
+  }
+
+  /* knobs */
+  var knobsEl = $('knobs'), knobEls = [];
+  function makeKnob(parent, i, label, ccn, touch) {
+    var k = document.createElement('div'); k.className = 'knob'; k.dataset.cc = ccn;
+    k.innerHTML = '<div class="dial"><i></i></div>' + (touch ? '<div class="lamp"></div>' : '') + '<span class="cap">' + label + '</span>';
+    parent.appendChild(k);
+    var ang = -135 + (i * 7 % 10) * 27, acc = 0, y0 = 0, down = false, wt = null;
+    var needle = k.querySelector('i');
+    var paint = function () { needle.style.transform = 'rotate(' + ang + 'deg)'; }; paint();
+    var on = function () { k.classList.add('touch'); if (touch) send(0x90, i, 127); };
+    var off = function () { k.classList.remove('touch'); if (touch) send(0x80, i, 0); };
+    var step = function (d) { ang = Math.max(-135, Math.min(135, ang + d * 6)); paint(); turn(ccn, d); };
+    k.addEventListener('pointerdown', function (e) { down = true; y0 = e.clientY; acc = 0; k.setPointerCapture(e.pointerId); on(); e.preventDefault(); });
+    k.addEventListener('pointermove', function (e) { if (!down) return; acc += y0 - e.clientY; y0 = e.clientY; while (Math.abs(acc) >= 4) { var d = acc > 0 ? 1 : -1; acc -= d * 4; step(d * (e.shiftKey ? 3 : 1)); } });
+    var up = function () { if (!down) return; down = false; off(); };
+    k.addEventListener('pointerup', up); k.addEventListener('pointercancel', up);
+    k.addEventListener('wheel', function (e) { e.preventDefault(); if (!wt) on(); else clearTimeout(wt); step(e.deltaY < 0 ? 1 : -1); wt = setTimeout(function () { wt = null; off(); }, 700); }, { passive: false });
+    return k;
+  }
+  for (var i = 0; i < 8; i++) knobEls.push(makeKnob(knobsEl, i, 'K' + (i + 1), 71 + i, true));
+  makeKnob($('master'), 9, 'Master-Regler', 79, false);
+
+  /* pads and steps: press while the pointer is down; right click / Alt+click / Halten = stays down until clicked again */
+  function bindHold(el, note) {
+    var latched = false, pressed = false;
+    var press = function () { send(0x90, note, 100); pressed = true; };
+    var release = function () { send(0x80, note, 0); pressed = false; };
+    el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    el.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      if (latched) { latched = false; el.classList.remove('held'); release(); return; }
+      if (holdAll || e.button === 2 || e.altKey) { latched = true; el.classList.add('held'); press(); return; }
+      press(); try { el.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
+    });
+    var up = function () { if (pressed && !latched) release(); };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  }
+  var padsEl = $('pads'), padEls = {};
+  for (var r = 3; r >= 0; r--) for (var c = 0; c < 8; c++) {
+    var n = 68 + r * 8 + c, b = document.createElement('button'); b.className = 'pad'; b.type = 'button'; b.setAttribute('aria-label', 'Pad ' + (r * 8 + c + 1));
+    padsEl.appendChild(b); padEls[n] = b; bindHold(b, n);
+  }
+  var stepsEl = $('steps'), stepEls = {};
+  for (var s = 0; s < 16; s++) {
+    var sb = document.createElement('button'); sb.className = 'stp'; sb.type = 'button'; sb.innerHTML = '<b></b>' + (s + 1); sb.setAttribute('aria-label', 'Step ' + (s + 1));
+    stepsEl.appendChild(sb); stepEls[16 + s] = sb; bindHold(sb, 16 + s);
+  }
+
+  /* buttons */
+  var keyEls = {};
+  function setHeld(n, v) { if (!!held[n] === v) return; held[n] = v; cc(n, v ? 127 : 0); if (keyEls[n]) keyEls[n].classList.toggle('on', v); }
+  function makeKey(parent, label, n, mode, led) {
+    var b = document.createElement('button'); b.className = 'key'; b.type = 'button'; b.textContent = label; if (led) b.dataset.led = '1';
+    parent.appendChild(b); keyEls[n] = b;
+    if (mode === 'latch') b.addEventListener('click', function () { setHeld(n, !held[n]); });
+    else {
+      b.addEventListener('pointerdown', function (e) { e.preventDefault(); cc(n, 127); b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } });
+      var up = function () { if (b.classList.contains('on')) { b.classList.remove('on'); cc(n, 0); } };
+      b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+    }
+    return b;
+  }
+  [['Shift', 49], ['Copy', 60], ['Delete', 119], ['Mute', 88], ['Loop', 58]].forEach(function (k) { makeKey($('mods'), k[0], k[1], 'latch', false); });
+  [['Play', 85, 1], ['Rec', 86, 1], ['Undo', 56, 0], ['Sample', 118, 0], ['Capture', 52, 1], ['Menü', 50, 1], ['Back', 51, 0],
+   ['Spur 1', 43, 1], ['Spur 2', 42, 1], ['Spur 3', 41, 1], ['Spur 4', 40, 1]].forEach(function (k) { makeKey($('keys'), k[0], k[1], 'mom', k[2]); });
+  [['↑', 55], ['↓', 54], ['←', 62], ['→', 63]].forEach(function (k) { makeKey($('nav'), k[0], k[1], 'mom', false); });
+  $('jogM').addEventListener('click', function () { turn(14, -1); });
+  $('jogP').addEventListener('click', function () { turn(14, 1); });
+  $('jogC').addEventListener('pointerdown', function (e) { e.preventDefault(); cc(3, 127); });
+  $('jogC').addEventListener('pointerup', function () { cc(3, 0); });
+  $('jogC').addEventListener('pointercancel', function () { cc(3, 0); });
+  /* the track buttons in the first column of the pad area mirror Spur 1-4 */
+  [43, 42, 41, 40].forEach(function (n, k) { var t = document.createElement('button'); t.className = 'key'; t.type = 'button'; t.textContent = 'S' + (k + 1); t.style.paddingTop = '6px'; t.dataset.mirror = n; $('trks').appendChild(t);
+    t.addEventListener('pointerdown', function (e) { e.preventDefault(); cc(n, 127); t.classList.add('on'); }); var u = function () { if (t.classList.contains('on')) { t.classList.remove('on'); cc(n, 0); } };
+    t.addEventListener('pointerup', u); t.addEventListener('pointercancel', u); });
+
+  /* wheel on the display = jog */
+  var lcd = $('lcd'); lcd.addEventListener('wheel', function (e) { e.preventDefault(); turn(14, e.deltaY < 0 ? -1 : 1); }, { passive: false });
+
+  /* keyboard */
+  var keyMap = { ' ': 85, 'Enter': 3, 'Escape': 51, 'Backspace': 51, 'ArrowUp': 55, 'ArrowDown': 54, 'ArrowLeft': 62, 'ArrowRight': 63, 'm': 50, 'M': 50 };
+  window.addEventListener('keydown', function (e) {
+    if (e.repeat || e.metaKey || e.ctrlKey) return;
+    if (e.key === 'Shift') { setHeld(49, true); return; }
+    if (e.key === 'c' || e.key === 'C') { setHeld(60, true); return; }
+    if (e.key === 'x' || e.key === 'X') { setHeld(119, true); return; }
+    if (e.key === '[') { turn(14, -1); return; }
+    if (e.key === ']') { turn(14, 1); return; }
+    var n = keyMap[e.key]; if (n !== undefined) { e.preventDefault(); cc(n, 127); if (keyEls[n]) keyEls[n].classList.add('on'); }
+  });
+  window.addEventListener('keyup', function (e) {
+    if (e.key === 'Shift') { setHeld(49, false); return; }
+    if (e.key === 'c' || e.key === 'C') { setHeld(60, false); return; }
+    if (e.key === 'x' || e.key === 'X') { setHeld(119, false); return; }
+    var n = keyMap[e.key]; if (n !== undefined) { cc(n, 0); if (keyEls[n]) keyEls[n].classList.remove('on'); }
+  });
+
+  /* tools */
+  $('bHold').addEventListener('click', function () { holdAll = !holdAll; this.textContent = 'Halten: ' + (holdAll ? 'an' : 'aus'); this.setAttribute('aria-pressed', String(holdAll)); });
+  $('bReset').addEventListener('click', function () { if (this.dataset.armed) { __simWipe(); location.reload(); } else { this.dataset.armed = '1'; this.textContent = 'Wirklich löschen?'; var b = this; setTimeout(function () { delete b.dataset.armed; b.textContent = 'Zurücksetzen'; }, 3000); } });
+  $('bRestart').addEventListener('click', function () { location.reload(); });
+  $('bDemo').addEventListener('click', function () {
+    try {
+      setKind(0, 1); chosen[0] = 1;
+      var put = function (k, list, v) { var l = laneOf(0, k); list.forEach(function (s) { steps[0][l][s] = [1, v || 100, 0, 0]; }); qSeq(0, l); };
+      put(0, [0, 4, 8, 12], 118); put(1, [4, 12], 104); put(2, [2, 6, 10, 14], 84); put(3, [7, 15], 90);
+      chosen[1] = 1; kind[1] = 0; var nn = [0, 0, 12, 0, 0, 3, 0, 7, 0, 0, 12, 0, 5, 0, 3, 0];
+      for (var q = 0; q < 16; q++) if (q % 2 === 0 || nn[q]) steps[0][1][q] = [1, 96, nn[q], 0];
+      qSeq(0, 1); sel = 0; view = 0; askKind = -1; markEdited(); needsRedraw = true;
+    } catch (e) { /* ignore */ }
+  });
+
+  /* render loop */
+  var ctx = lcd.getContext('2d'), img = ctx.createImageData(128, 64), fb = window.__fb, L = window.__leds, last = performance.now(), tacc = 0;
+  var cs = getComputedStyle(document.documentElement);
+  function rgb(hex) { hex = hex.trim().replace('#', ''); return [parseInt(hex.substr(0, 2), 16), parseInt(hex.substr(2, 2), 16), parseInt(hex.substr(4, 2), 16)]; }
+  var fg = rgb(cs.getPropertyValue('--screen-fg') || '#e8eefa'), bg = rgb(cs.getPropertyValue('--screen-bg') || '#12141a');
+  var cache = {};
+  function paintLeds() {
+    for (var n in padEls) { var v = L.pad[n] | 0, k = padEls[n]; if (k._v !== v) { k._v = v; k.style.background = v ? ledCss(v) : ''; } }
+    for (var n2 in stepEls) { var v2 = L.pad[n2] | 0, e = stepEls[n2], lamp = e.firstChild; if (e._v !== v2) { e._v = v2; lamp.style.background = v2 ? ledCss(v2) : ''; } }
+    for (var n3 in keyEls) { var v3 = L.btn[n3] | 0, k3 = keyEls[n3]; if (k3.dataset.led && k3._v !== v3) { k3._v = v3; k3.style.setProperty('--led', v3 ? ledCss(v3) : 'var(--lamp-off)'); } }
+    knobEls.forEach(function (k, i) { var v4 = L.btn[71 + i] | 0, lp = k.querySelector('.lamp'); if (lp && lp._v !== v4) { lp._v = v4; lp.style.background = v4 ? ledCss(v4) : ''; } });
+    var tb = document.querySelectorAll('[data-mirror]'); for (var m = 0; m < tb.length; m++) { var cn = tb[m].dataset.mirror, vv = L.btn[cn] | 0; if (tb[m]._v !== vv) { tb[m]._v = vv; tb[m].style.borderColor = vv ? ledCss(vv) : ''; tb[m].style.boxShadow = vv ? 'inset 0 -4px 0 ' + ledCss(vv) : ''; } }
+  }
+  function frame(now) {
+    var dt = Math.min(100, now - last); last = now; tacc += dt * 0.25;
+    var n = Math.min(40, Math.floor(tacc)); tacc -= Math.floor(tacc);
+    __simAdvance(dt / 1000);
+    for (var i = 0; i < n; i++) { try { tick(); } catch (e) { /* guarded in the module */ } }
+    var d = img.data;
+    for (var p = 0; p < 8192; p++) { var c = fb[p] ? fg : bg; d[p * 4] = c[0]; d[p * 4 + 1] = c[1]; d[p * 4 + 2] = c[2]; d[p * 4 + 3] = 255; }
+    ctx.putImageData(img, 0, 0); paintLeds();
+    requestAnimationFrame(frame);
+  }
+  try { selfTestT = 1; init(); } catch (e) { /* ignore */ }
+  requestAnimationFrame(frame);
+})();
+</script>

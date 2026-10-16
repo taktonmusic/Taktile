@@ -1,6 +1,42 @@
 # Changelog
 
-## Unreleased
+## 5.75.0 (16 October 2026)
+Desktop-tested (UI simulator, 60,000-event fuzzing, native builds, GLIBC 2.17 check); not yet confirmed on the device.
+
+**Tiles and navigation**
+- Track tiles reorganised: 1 PRESET · 2 SYNTH (synth tracks) · MOD · FILTER (+ EQ) · FX (+ GRAIN) · FX TYPE (+ FX TIME) · EUCLID · MIDI FX · SAMPLE (now also on synth tracks). Jog click switches the page of a tile
+- Header: tile number and name top left, page (e.g. 2/2, EUCLID 1/7) top right, always
+- Left / Right = previous / next track (Shift = step page); in lists and name entry they move the selection / cursor
+- Menu always opens at the top on QUICK. Knob turns show the name top left and only the value top right
+- MOD tile: Ring, RingFrq, Pump, Wobble / Duck, DuckRel, DuckSrc, PumpCrv (drums: Rumble / RumbleTail instead of Wobble / PumpCrv). Drum tracks show a delay send on the first page instead of voices
+- FX types turn more slowly; Euclid and MIDI FX are off by default (older saves are migrated once)
+
+**Sequencing and recording**
+- Quantize page (Shift + Step 3): grid 1/4, 1/8, 1/8T, 1/16, 1/16T, 1/32, strength 25–100 %, pad **Layout** (KEY, SEQ, OCT, 4THS, 3RDS, ROW8). "Quantize now" in the menu (EDIT CLIP) and Shift + Step 16. Live recording snaps to the grid and keeps the remainder as nudge
+- Live recording keeps the real hold length of pads; a held pad + a step button sets that step to the pad's pitch and velocity
+- Recording into an empty clip grows it with you: 16 → 32 → 48 … steps (also drum tracks)
+- Euclid: master switch OFF / ON / ADD on the first page, lane pages start with the lane number; Euclid no longer overwrites steps while it is off
+- Swing is correct for odd loop lengths (the groove restarts on every pass)
+- No stray notes while the Synth / Drum question of a new track is open; a fresh drum slot clears old patterns in the engine
+
+**Sounds and browser**
+- Preset categories are single names (no more "A + B"); new synth tracks start in SYNTHS → first family → INIT
+
+**Project and menu**
+- Project slots: LOAD, SAVE HERE, RENAME, NEW EMPTY, DELETE; Back deletes a character in name entry
+- EXPERT: CPU meter / Load info screen (load, peak, history, number of sounds and effects), Scope with new animations (DANCE, STARS, RINGS)
+- Exit dialog: BACKGROUND / CLOSE selectable again; the scene toast no longer pops up during song playback
+
+**Engine**
+- Denormal flush-to-zero around every audio block (less CPU spike and crackle on decaying tails); the UI polls the engine less often while stopped
+
+**Docs and CI**
+- Manuals (EN/DE), animated guide, README and display preview updated to 5.75.0
+- CI runs a syntax check, a UI smoke + fuzz test, a sanitizer compile check and the aarch64 build; the older 5.4-line tests live in `taktile/tools/test/legacy-5.4/`
+
+**Not carried over from the previous main branch** (still available on the branch `pre-5.74-upload`): queued live project switch, mono sample storage with resample buffer guard, `CORRUPT` project guard, Shift + arrow sub-pages. The 5.7x line uses jog click for second pages.
+
+## Previous main branch (not part of 5.75.0)
 - **Live project switch.** While the sequencer plays, PROJECT → Load no longer stops the music. The chosen project is queued and swaps in at the end of the current bar: all tracks are muted (delay and reverb tails keep ringing), the new project is sent to the DSP with a fast queue (48 messages per tick instead of 3; a full project of about 1000 messages takes roughly half a second), then the transport restarts at step 1 with the new project and the mutes of that project. Turn Load again for the same slot, or stop the transport, to cancel. A stopped sequencer loads immediately, as before. It is not gapless: expect a short silence at the switch
 - **Jog click is consistent now.** It never cycles pages any more: click = open / confirm, or back to the last tab on a track tab, or HOME. The sub-pages of MIX (Volume / Delay / Reverb), EUCLID (2 pages), SAMPLE (Sample / Slice / Envelope) and SCOPE (3 views) switch with **Shift + Left / Right** instead (both directions, wraps around). In-device help updated
 - **Samples use half the memory.** WAV files are stored as mono (L+R)/2, which is how the engine always played them. A stereo file now takes the same space as a mono one, and resample takes are stored as mono too. The 40 MB bank holds twice as much stereo material

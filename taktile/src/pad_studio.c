@@ -18,6 +18,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#if defined(__SSE__)
+#include <xmmintrin.h>
+#endif
 #include <errno.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -26,6 +29,25 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/syscall.h>
+/* the Move's C library is older than the one the build machine has: these four calls would pull in newer symbol versions (exp2f / log2f 2.27, stat 2.33, fmodf 2.38)
+   and the module could not be loaded at all, so they are replaced by calls that every libc has */
+static inline float tk_logf(float x) {
+    if (!(x > 0.0f)) return -87.0f;
+    int e; float m = frexpf(x, &e);
+    if (m < 0.70710678f) { m *= 2.0f; e--; }
+    const float z = (m - 1.0f) / (m + 1.0f), z2 = z * z;
+    return 0.693147181f * (float)e + 2.0f * z * (1.0f + z2 * (0.333333333f + z2 * (0.2f + z2 * (0.142857143f + z2 * (0.111111111f + z2 * 0.0909090909f)))));
+}
+#define logf(x) tk_logf(x)
+#define exp2f(x) expf((x) * 0.693147181f)
+#define log2f(x) (logf(x) * 1.44269504f)
+static inline float tk_fmodf(float a, float b) { return a - b * floorf(a / b); }
+#define fmodf(a, b) tk_fmodf((a), (b))
+static inline int tk_stat(const char *p, struct stat *st) { return (int)syscall(SYS_newfstatat, AT_FDCWD, p, st, 0); }
+#define stat(a, b) tk_stat((a), (b))
 #include "host/plugin_api_v1.h"
 
 /* Pin libm symbols to old glibc versions so the module loads on the Move. */
@@ -37,7 +59,9 @@ __asm__(".symver powf,powf@GLIBC_2.17");
 #define NPADS      32                 /* MIDI pads */
 #define NLANE      80                 /* sound lanes: 0-15 = tracks, 16-79 = four drum kits x 16 sounds */
 #define PAD_BASE   36
-#define MAX_INST   4
+#define MAX_INST   2
+#define GRN_SZ     32768          /* granulator history per sound (0.74 s) */
+#define GRN_SLOTS  4              /* sounds that can use the granulator at the same time */
 #define TWO_PI     6.28318530717958647692f
 #define DLY_SIZE   32768          /* per track */
 #define CH_SIZE    2048
@@ -55,7 +79,7 @@ __asm__(".symver powf,powf@GLIBC_2.17");
 #include "variants_n.h"
 #include "variants3_n.h"
 #include "variants4_n.h"
-enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_N };
+enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_N };
 #define NGH 24                       /* ghost voices: released tails of retriggered notes in POLY mode */
 
 enum {
@@ -137,6 +161,22 @@ static const pd_t PD[PP_N] = {
     { "eql",   "EQ Low", 0, 0.50f },
     { "eqm",   "EQ Mid", 0, 0.50f },
     { "eqh",   "EQ High",0, 0.50f },
+    { "x2fx",  "FX2",    11, 0.0f },
+    { "x2mix", "FX2 Amt",0, 0.50f },
+    { "x2rt",  "FX2 Rate",0, 0.50f },
+    { "x2dp",  "FX2 Dpth",0, 0.50f },
+    { "m2fx",  "MIDI FX2",11, 0.0f },
+    { "m2amt", "M2 Amt", 0, 0.50f },
+    { "m2prm", "M2 Prm", 0, 0.50f },
+    { "dmode", "D Type", 3, 0.0f },
+    { "rmode", "R Type", 3, 0.0f }, { "mono", "Mono", 3, 1.0f },
+    { "snz", "Noise", 0, 0.0f }, { "fatk", "FltAtk", 0, 0.0f }, { "sfld", "Fold", 0, 0.0f }, { "schp", "Chop", 0, 0.0f },
+    { "trem", "Tremolo", 0, 0.0f }, { "trat", "TremRate", 0, 0.4f }, { "apan", "AutoPan", 0, 0.0f }, { "vflt", "VelFilt", 0, 0.0f },
+    { "grn", "Grain", 0, 0.0f }, { "gsz", "GrSize", 0, 0.4f }, { "gsp", "GrSpread", 0, 0.5f }, { "gpi", "GrPitch", 0, 0.0f },
+    { "mch", "Chance", 0, 1.0f }, { "mvb", "VelBias", 0, 0.5f }, { "trn", "Transp", 0, 0.5f }, { "vhm", "VelHum", 0, 0.0f }, { "vmn", "VelMin", 0, 0.0f }, { "vmx", "VelMax", 0, 1.0f }, { "orn", "OctRnd", 0, 0.0f },
+    { "eqlf", "EQ LowF", 0, 0.5f }, { "eqmf", "EQ MidF", 0, 0.5f }, { "eqhf", "EQ HighF", 0, 0.5f }, { "eqq", "EQ Q", 0, 0.5f }, { "eqo", "EQ Out", 0, 0.5f }, { "pcv", "PumpCrv", 0, 0.0f }, { "rfq", "RingFrq", 0, 0.0f },
+    { "dtn", "D Tone", 0, 0.5f }, { "dwd", "D Width", 0, 0.5f }, { "rwd", "R Width", 0, 0.5f }, { "rlc", "R LowCut", 0, 0.0f },
+    { "gdn", "GrDens", 0, 0.4f }, { "grv", "GrRev", 0, 0.0f }, { "gfz", "GrFreeze", 0, 0.0f }, { "gtn", "GrTone", 0, 1.0f },
 };
 
 static const char *TYPE_NAME[T_COUNT] = {
@@ -306,7 +346,7 @@ static const v2_t VAR2[N_V2] = {
 static const v2_t VAR3[N_V3] = {
 #include "variants3.inc"
 };
-enum { T_E_MODAL = 4000, T_E_FM, T_E_VOX, T_E_CHIP, T_E_MORPH };
+enum { T_E_MODAL = 4000, T_E_FM, T_E_VOX, T_E_CHIP, T_E_MORPH, T_E_DRUM, T_E_ANA, T_E_WT, T_E_FM4, T_E_ADD, T_E_PAD, T_E_STR, T_E_FLD, T_E_AC, T_E_FXE };
 typedef struct { int eng; float f0, oct, tau1, tau2, att, trim; int sus; float p[10]; } nx_t;
 static const nx_t VAR4[N_V4] = {
 #include "variants4.inc"
@@ -444,13 +484,6 @@ static const smp_t *smp_get(int i) {
 }
 static int rd_u16(const uint8_t *p) { return p[0] | (p[1] << 8); }
 static uint32_t rd_u32(const uint8_t *p) { return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24); }
-static float smp_decode(const uint8_t *q, int fmt, int bits) {      /* one PCM / float sample -> 16-bit range */
-    if (fmt == 3) { float fv; memcpy(&fv, q, 4); return fv * 32767.0f; }
-    if (bits == 8) return ((float)q[0] - 128.0f) * 256.0f;
-    if (bits == 16) return (float)(int16_t)(q[0] | (q[1] << 8));
-    if (bits == 24) return (float)((int32_t)((uint32_t)q[0] << 8 | (uint32_t)q[1] << 16 | (uint32_t)q[2] << 24) >> 16);
-    return (float)((int32_t)rd_u32(q) >> 16);
-}
 static int smp_load(smp_t *m, const char *path) {
     FILE *f = fopen(path, "rb"); if (!f) return 0;
     fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
@@ -475,18 +508,21 @@ static int smp_load(smp_t *m, const char *path) {
         int bps = bits / 8;
         if (data && ch >= 1 && sr >= 8000 && sr <= 192000 && ((fmt == 1 && (bits == 8 || bits == 16 || bits == 24 || bits == 32)) || (fmt == 3 && bits == 32))) {
             long frames = dlen / (long)(bps * ch);
-            int oc = 1;                                   /* the engine plays every sample as mono (L+R)/2, so store it that way: half the memory for stereo files */
+            int oc = ch >= 2 ? 2 : 1;
             long room = (long)((SMP_MAX_BYTES - smp_bytes) / (unsigned)(2 * oc));
             if (frames > room) frames = room;
             if (frames > 8) {
                 int16_t *o = (int16_t *)malloc((size_t)frames * (size_t)oc * 2);
                 if (o) {
-                    for (long i = 0; i < frames; i++) {
-                        const uint8_t *q = data + (i * ch) * bps;
-                        float v = smp_decode(q, fmt, bits);
-                        if (ch >= 2) v = (v + smp_decode(q + bps, fmt, bits)) * 0.5f;
+                    for (long i = 0; i < frames; i++) for (int k = 0; k < oc; k++) {
+                        const uint8_t *q = data + (i * ch + k) * bps; float v;
+                        if (fmt == 3) { float fv; memcpy(&fv, q, 4); v = fv * 32767.0f; }
+                        else if (bits == 8) v = ((float)q[0] - 128.0f) * 256.0f;
+                        else if (bits == 16) v = (float)(int16_t)(q[0] | (q[1] << 8));
+                        else if (bits == 24) v = (float)((int32_t)((uint32_t)q[0] << 8 | (uint32_t)q[1] << 16 | (uint32_t)q[2] << 24) >> 16);
+                        else v = (float)((int32_t)rd_u32(q) >> 16);
                         if (v > 32767.0f) v = 32767.0f; if (v < -32768.0f) v = -32768.0f;
-                        o[i] = (int16_t)v;
+                        o[i * oc + k] = (int16_t)v;
                     }
                     m->n = (int)frames; m->ch = oc; m->sr = (float)sr;
                     smp_bytes += (unsigned)(frames * oc * 2);
@@ -632,9 +668,11 @@ typedef struct {
     float l1, l2;                  /* tone filter state */
     float cr_hold, cr_cnt, hp_z, ring_ph, svf_lp, svf_bp, fenv, fkoff, pk_lp, pk_bp;   /* crush + low-cut state */
     int   fol, fgen;               /* ghost layer of a MIDI effect: follows the owner's note (fgen = trigger generation) */
-    float nx[48]; int ni[2];                                           /* NEW ENGINES: modal / FM / vocal / chip / morph state */
+    float ks[1024]; int ksi, ksn; float ksz1, ksz2;                     /* string engine: delay line */
+    float nx[64]; int ni[2];                                           /* NEW ENGINES: modal / FM / vocal / chip / morph state */
     int   sw, gk; float sdet, ssub, satt;                              /* synth family options */
     double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode; float srate, sgain, satk_inc, srel_c, sgate_env;                   /* sample playback */
+    float nze, trp;                  /* noise follower, tremolo / auto-pan phase */
 } vc_t;
 
 typedef struct {
@@ -642,6 +680,11 @@ typedef struct {
     float cnt, vel, life;
 } ar_t;
 
+#define GB_SIZE 4096
+#define SH_SIZE 2048
+typedef struct { float xph, xz[2][4], xbuf[2][XB_SIZE], xhold[2]; int xw, xcnt, scnt, sn;
+    float gb[2][GB_SIZE]; int gw, gtim, gage[4], glen[4]; float gpos[4], ginc[4], gpl[4], gpr[4]; unsigned grng; } xs_t;
+#define REP_N 8                                       /* note repeat: up to 8 pads repeat at the same time */
 typedef struct {
     float pp[NLANE][PP_N];
     float fdk[NLANE];
@@ -673,7 +716,8 @@ typedef struct {
     /* per-track effects: delay + reverb (sends), chorus + phaser (inserts) */
     float dlL[NLANE][DLY_SIZE], dlR[NLANE][DLY_SIZE];
     int   dw[NLANE];
-    float dly_z[NLANE][2];
+    float dly_z[NLANE][2], dly_hp[NLANE][2], dly_ph[NLANE];
+    float shb[NLANE][SH_SIZE]; float sh_ph[NLANE]; int shw[NLANE];
     float rv[NLANE][NLINES][RV_SIZE];
     float rv_z[NLANE][NLINES];
     int   rw[NLANE];
@@ -685,34 +729,341 @@ typedef struct {
     int   tgen[NLANE];                         /* trigger counter per lane (MIDI effect layers follow it) */
     struct { int cnt, lane, semi, follow; float vel; } eq[32];   /* delayed notes: echo + strum */
     /* per-track insert effect (10 types): lfo phase, filter states, delay buffers, sample-hold */
-    float xph[NLANE], xz[NLANE][2][4], xbuf[NLANE][2][XB_SIZE], xhold[NLANE][2]; int xw[NLANE], xcnt[NLANE];
-    float sbuf[NLANE][2][SB_SIZE]; int scnt[NLANE], sn[NLANE];
+    xs_t xs[2][NLANE];
+    float sbuf[NLANE][2][SB_SIZE];
 
     /* sequencer */
-    uint8_t stp[NPAT][NLANE][MAXSTEP][6];   /* a = on<<7 | vel, b = probability 0..7, c = semi + 64, d = ratchet | gate<<2 | cond<<5, e = nudge 0..7, f = parameter lock value 0 (none) .. 127 */
+    uint8_t stp[NPAT][NLANE][MAXSTEP][7];   /* a = on<<7 | vel, b = probability 0..7, c = semi + 64, d = ratchet | gate<<2 | cond<<5, e = nudge 0..7, f = parameter lock value 0 (none) .. 127 */
     uint8_t plk_t[NLANE]; float plk_b[NLANE]; float cdet_z[2];   /* per-lane lock target (PP index, 0 = none), its base value, compressor detector HPF state */
     int   seqlen[NTRK], mute[NTRK];
     uint8_t lmute[NLANE];            /* per-sound mute (drum pads): the sequencer skips these lanes */
     int   llen[NLANE];                      /* own loop length of one lane (0 = follow the track) */
     int   playing, cur_pat, sel_track, gs;
     int   clip[NTRK], qclip[NTRK];   /* active clip per track (-1 = stopped), pending (-2 = none) */
+    int   scq[NPAT], pend_on, pend_qm;   /* launch quantisation of one scene (0 = global setting) and the one used by the pending scene launch */
     float bpm, swing;
     float pump_ph, wob_ph;
     float mf_z[2][2], mf_a, comp_env; int mf_mode;
-    float eq_c[NLANE][3][5], eq_z[NLANE][3][2][2], eq_g[NLANE][3]; int eq_on[NLANE];       /* per-sound 3-band EQ (low shelf, peak, high shelf) */
+    float rlc_z[NLANE][2]; float eq_c[NLANE][3][5], eq_z[NLANE][3][2][2], eq_g[NLANE][3], eq_p[NLANE][4], eq_og[NLANE], eq_ogp[NLANE]; int eq_on[NLANE];       /* per-sound 3-band EQ (low shelf, peak, high shelf) */
     float rm_buf[4][4096], rm_lp, rm_env, rm_hp; int rm_w, rm_act;       /* kick rumble bus: dark comb reverb, ducked by the kicks */
     float eq_lo[2], eq_hi[2], lim_g;                              /* master EQ band splitters + limiter gain */
-    float met_env, met_ph, met_f;
+    float met_env, met_ph, met_f, met_amp;
+    int   ci_left, ci_t, ci_b;                 /* count-in: samples left, samples elapsed, samples per beat */
+    uint8_t fol[NTRK][NPAT];                   /* follow action per clip: bits 0-2 action, bits 3-5 loops index */
+    uint8_t fol_cnt[NTRK];                     /* loops played of the running clip */
     int pads_off, pad_oct, lay_s; float cpu_avg, cpu_peak;
     double tsamp, next_time, last_time;
     int   gate_left[NLANE];
     int   rt_n[NLANE], rt_semi[NLANE], rt_gate[NLANE]; float rt_cnt[NLANE], rt_int[NLANE], rt_vel[NLANE];   /* ratchet / nudge scheduler */
     float cpp[NPAT][NLANE][PP_N]; uint8_t cpp_set[NPAT][NLANE];   /* sound of every clip */
     int   np_trk[32];                      /* track sounding on each note pad */
-    int   rep_idx, rep_on, rep_t, rep_k; float rep_semi, rep_vel, rep_cnt;   /* note repeat */
+    int   rep_idx, rp_on[REP_N], rp_t[REP_N], rp_k[REP_N]; float rp_semi[REP_N], rp_vel[REP_N], rp_cnt[REP_N];   /* note repeat */
 
+    float lf_buf[2][131072]; float lf_dl[2][65536]; float lf_z[2][4], lf_eng, lf_rpos, lf_rate, lf_gate, lf_hold[2], lf_lvl;       /* LIVE FX on the master bus: one pad = one performance effect */
+    struct { float buf[2][GRN_SZ], pos[8], inc[8], pl[8], pr[8]; int w, tim, age[8], len[8], back[8], lane; unsigned rng; float lpl, lpr; } gr[GRN_SLOTS]; int gr_slot[NLANE];     /* granulator: a few shared slots, a sound that uses it takes one */
+    int   lf_w, lf_req, lf_mode, lf_t, lf_cap, lf_len, lf_n, lf_dw, lf_dact, lf_hc;
     int   in_use;
 } inst_t;
+/* LIVE FX (master bus, held pad = effect on, release = fade back):
+ * 1-4 REPEAT 1/4 1/8 1/16 1/32   5 ROLL (repeats get shorter)   6 TRIPLET   7 REVERSE   8 TAPE STOP   9-10 GATE 1/8 1/16
+ * 11 LOW SWEEP   12 HIGH SWEEP   13 CRUSH   14 FREEZE   15 ECHO THROW (the tail rings on after release) */
+/* GRANULATOR per sound: windowed grains read from the last 0.7 s of the sound. Size = grain length, Spread = how far back in time, Pitch = random octave / fifth grains.
+ * Only GRN_SLOTS sounds can use it at once (a slot is taken while Grain > 0 and given back when it is turned down). */
+static int gran_slot(inst_t *s, int t, float mix) {
+    int sl = s->gr_slot[t] - 1;
+    if (mix < 0.01f) { if (sl >= 0) { s->gr_slot[t] = 0; for (int g = 0; g < 8; g++) s->gr[sl].age[g] = s->gr[sl].len[g]; } return -1; }
+    if (sl >= 0) return sl;
+    for (int k = 0; k < GRN_SLOTS; k++) {
+        int used = 0; for (int q = 0; q < NLANE; q++) if (s->gr_slot[q] == k + 1) used = 1;
+        if (used) continue;
+        memset(&s->gr[k], 0, sizeof s->gr[k]); s->gr[k].lane = t; s->gr_slot[t] = k + 1; return k;
+    }
+    return -1;
+}
+static void gran_proc(inst_t *s, int t, const float *q, float *Lp, float *Rp) {
+    const float mix = q[PP_GRN];
+    const int sl = gran_slot(s, t, mix);
+    if (sl < 0) return;
+    __typeof__(s->gr[0]) *G = &s->gr[sl];
+    const int w = G->w;
+    if (q[PP_GFZ] < 0.5f) { G->buf[0][w] = *Lp; G->buf[1][w] = *Rp; G->w = (w + 1) & (GRN_SZ - 1); }      /* Freeze: the buffer stops listening, the grains keep looping what it holds */
+    if (!G->rng) G->rng = 2463534242u + (unsigned)t * 977u;
+    const int glen = (int)((0.02f + q[PP_GSZ] * q[PP_GSZ] * 0.30f) * s->sr);
+    if (--G->tim <= 0) {
+        G->tim = (int)((float)glen / (1.0f + q[PP_GDN] * 5.0f)) + 1;
+        for (int g = 0; g < 8; g++) if (G->age[g] >= G->len[g]) {
+            G->rng ^= G->rng << 13; G->rng ^= G->rng >> 17; G->rng ^= G->rng << 5;
+            const float r1 = (float)(G->rng & 1023) / 1023.0f;
+            G->rng ^= G->rng << 13; G->rng ^= G->rng >> 17; G->rng ^= G->rng << 5;
+            const float r2 = (float)(G->rng & 1023) / 1023.0f;
+            const float pi = q[PP_GPI];
+            float ratio = 1.0f;
+            if (r2 < pi) ratio = r2 < pi * 0.3f ? 2.0f : (r2 < pi * 0.6f ? 0.5f : (r2 < pi * 0.8f ? 1.5f : 0.75f));
+            else if (pi > 0.05f) ratio = 1.0f + (r1 - 0.5f) * 0.04f * pi;
+            if ((float)((G->rng >> 10) & 1023) / 1023.0f < q[PP_GRV]) ratio = -ratio;                    /* some grains play backwards */
+            int back = glen + 64 + (int)(r1 * q[PP_GSP] * (float)(GRN_SZ - 2 * glen - 200));
+            if (back > GRN_SZ - 64) back = GRN_SZ - 64;
+            G->len[g] = glen; G->age[g] = 0; G->inc[g] = ratio; G->back[g] = back;
+            G->pos[g] = (float)((w - back + GRN_SZ) & (GRN_SZ - 1));
+            const float pn = (r2 * 2.0f - 1.0f) * (0.2f + 0.8f * q[PP_GSP]);
+            G->pl[g] = 0.7071f * (1.0f - pn * 0.7f); G->pr[g] = 0.7071f * (1.0f + pn * 0.7f);
+            break;
+        }
+    }
+    float gl = 0.0f, gr = 0.0f;
+    for (int g = 0; g < 8; g++) {
+        if (G->age[g] >= G->len[g]) continue;
+        const float ph = (float)G->age[g] / (float)G->len[g], win = sinf(3.14159265f * ph), w2 = win * win;
+        const int i0 = (int)G->pos[g] & (GRN_SZ - 1), i1 = (i0 + 1) & (GRN_SZ - 1); const float fr = G->pos[g] - floorf(G->pos[g]);
+        gl += (G->buf[0][i0] * (1.0f - fr) + G->buf[0][i1] * fr) * w2 * G->pl[g];
+        gr += (G->buf[1][i0] * (1.0f - fr) + G->buf[1][i1] * fr) * w2 * G->pr[g];
+        G->pos[g] += G->inc[g]; if (G->pos[g] >= (float)GRN_SZ) G->pos[g] -= (float)GRN_SZ; else if (G->pos[g] < 0.0f) G->pos[g] += (float)GRN_SZ;
+        G->age[g]++;
+    }
+    if (!(fabsf(gl) < 8.0f) || !(fabsf(gr) < 8.0f)) { gl = gr = 0.0f; memset(G->buf, 0, sizeof G->buf); }
+    if (q[PP_GTN] < 0.99f) { const float a = 0.02f + q[PP_GTN] * q[PP_GTN] * 0.9f; G->lpl += a * (gl - G->lpl); G->lpr += a * (gr - G->lpr); gl = G->lpl; gr = G->lpr; }      /* Tone: dark grains */
+    *Lp = *Lp * (1.0f - 0.55f * mix) + gl * 0.95f * mix; *Rp = *Rp * (1.0f - 0.55f * mix) + gr * 0.95f * mix;
+}
+#define LF_SIZE 131072
+#define LF_MASK (LF_SIZE - 1)
+static void lfx_proc(inst_t *s, float *Lp, float *Rp) {
+    const float in0 = *Lp, in1 = *Rp;
+    float o0 = in0, o1 = in1;
+    const int req = s->lf_req;
+    const float beat = 60.0f / s->bpm * s->sr;
+    if (req != s->lf_mode && req > 0) {                                      /* a pad went down: remember the moment, the effect works on what was just played */
+        s->lf_mode = req; s->lf_t = 0; s->lf_n = 0; s->lf_cap = s->lf_w; s->lf_rpos = 0.0f; s->lf_rate = 1.0f; s->lf_gate = 1.0f; s->lf_hc = 0;
+        s->lf_z[0][0] = s->lf_z[0][1] = s->lf_z[1][0] = s->lf_z[1][1] = 0.0f;
+        switch (req) {
+            case 1: s->lf_len = (int)(beat); break;
+            case 2: s->lf_len = (int)(beat * 0.5f); break;
+            case 3: s->lf_len = (int)(beat * 0.25f); break;
+            case 4: s->lf_len = (int)(beat * 0.125f); break;
+            case 5: s->lf_len = (int)(beat * 0.5f); break;
+            case 6: s->lf_len = (int)(beat / 3.0f); break;
+            case 7: s->lf_len = (int)(beat * 0.5f); break;
+            case 14: s->lf_len = (int)(0.07f * s->sr); break;
+            default: s->lf_len = (int)beat; break;
+        }
+        if (s->lf_len < 64) s->lf_len = 64; if (s->lf_len > 60000) s->lf_len = 60000;
+    }
+    const int mode = s->lf_mode;
+    const int on = req > 0 && mode > 0;
+    const float tg = on ? 1.0f : 0.0f;
+    s->lf_eng += (tg - s->lf_eng) * (on ? 0.012f : 0.006f);
+    const int capmode = (mode >= 1 && mode <= 7) || mode == 14;
+    if (!(capmode && on)) { s->lf_buf[0][s->lf_w] = in0; s->lf_buf[1][s->lf_w] = in1; s->lf_w = (s->lf_w + 1) & LF_MASK; }
+    if (mode == 15 || s->lf_dact > 0) {                                       /* ECHO THROW: dotted-eighth echo, input only while the pad is down */
+        const int d = (int)(beat * 0.75f) < 60000 ? (int)(beat * 0.75f) : 60000;
+        const int rp = (s->lf_dw - d + 65536) & 65535;
+        const int held = (mode == 15 && on);
+        if (held) s->lf_dact = (int)(4.0f * s->sr); else if (s->lf_dact > 0) s->lf_dact--;
+        float y0 = s->lf_dl[0][rp], y1 = s->lf_dl[1][rp];
+        s->lf_dl[0][s->lf_dw] = (held ? in0 : 0.0f) + y1 * 0.62f; s->lf_dl[1][s->lf_dw] = (held ? in1 : 0.0f) + y0 * 0.62f;      /* ping-pong */
+        s->lf_dw = (s->lf_dw + 1) & 65535;
+        o0 += y0 * 0.85f; o1 += y1 * 0.85f;
+        if (s->lf_dact == 0) memset(s->lf_dl, 0, sizeof s->lf_dl);
+        s->lf_t++;
+        if (!on && s->lf_dact == 0) s->lf_mode = 0;
+        *Lp = o0; *Rp = o1; return;
+    }
+    if (mode == 0) { *Lp = o0; *Rp = o1; return; }
+    const int t = s->lf_t++;
+    float w0 = in0, w1 = in1;
+    if (mode >= 1 && mode <= 7) {
+        int len = s->lf_len;
+        int ph;
+        if (mode == 5) {                                                          /* ROLL: every repeat is 15 % shorter, down to 1/64 */
+            const int pos = s->lf_hc; ph = pos;
+            if (ph >= len) { s->lf_hc = ph = 0; s->lf_n++; s->lf_len = len = (int)((float)len * 0.85f); const int mn = (int)(beat / 64.0f); if (len < mn) s->lf_len = len = mn; }
+            s->lf_hc++;
+        } else { ph = t % len; }
+        int idx;
+        if (mode == 7) idx = (s->lf_cap - 1 - ph) & LF_MASK; else idx = (s->lf_cap - len + ph) & LF_MASK;
+        float g = 1.0f; const int fd = len < 400 ? len / 4 : 96;
+        if (ph < fd) g = (float)ph / (float)fd; else if (len - ph < fd) g = (float)(len - ph) / (float)fd;
+        w0 = s->lf_buf[0][idx] * g; w1 = s->lf_buf[1][idx] * g;
+    } else if (mode == 8) {                                                       /* TAPE STOP: the playback slows down like a stopping reel */
+        float u = (float)t / (0.5f * s->sr); if (u > 1.0f) u = 1.0f;
+        const float r = (1.0f - u) * (1.0f - u);
+        s->lf_rpos += r;
+        const float fp = (float)(s->lf_cap + LF_SIZE - 1) + s->lf_rpos;                 /* starts at "now", falls behind as the speed drops */
+        const int i0 = (int)fp & LF_MASK, i1 = (i0 + 1) & LF_MASK; const float fr = fp - floorf(fp);
+        w0 = (s->lf_buf[0][i0] * (1.0f - fr) + s->lf_buf[0][i1] * fr) * (0.2f + 0.8f * r);
+        w1 = (s->lf_buf[1][i0] * (1.0f - fr) + s->lf_buf[1][i1] * fr) * (0.2f + 0.8f * r);
+        if (u >= 1.0f) { w0 = w1 = 0.0f; }
+    } else if (mode == 9 || mode == 10) {                                         /* GATE 1/8, 1/16 */
+        const float per = mode == 9 ? beat * 0.5f : beat * 0.25f;
+        const float ph2 = fmodf((float)t, per) / per;
+        const float tgt = ph2 < 0.5f ? 1.0f : 0.04f;
+        s->lf_gate += 0.02f * (tgt - s->lf_gate);
+        w0 = in0 * s->lf_gate; w1 = in1 * s->lf_gate;
+    } else if (mode == 11 || mode == 12) {                                        /* LOW SWEEP: closes a low-pass; HIGH SWEEP: opens a high-pass (both over two beats) */
+        float u = (float)t / (2.0f * beat); if (u > 1.0f) u = 1.0f;
+        const float fc = mode == 11 ? 14000.0f * powf(150.0f / 14000.0f, u) : 40.0f * powf(3500.0f / 40.0f, u);
+        const float a = 1.0f - expf(-6.2831853f * fc * s->inv_sr);
+        float in2[2] = { in0, in1 };
+        for (int c = 0; c < 2; c++) {
+            float *z = s->lf_z[c];
+            z[0] += a * (in2[c] - z[0]); z[1] += a * (z[0] - z[1]); z[2] += a * (z[1] - z[2]);
+            in2[c] = mode == 11 ? z[2] * 1.2f : (in2[c] - z[2]) * 1.1f;
+        }
+        w0 = in2[0]; w1 = in2[1];
+    } else if (mode == 13) {                                                      /* CRUSH: low sample rate, few bits */
+        if (--s->lf_hc <= 0) { s->lf_hc = 10; s->lf_hold[0] = floorf(in0 * 24.0f + 0.5f) / 24.0f; s->lf_hold[1] = floorf(in1 * 24.0f + 0.5f) / 24.0f; }
+        w0 = s->lf_hold[0] * 1.1f; w1 = s->lf_hold[1] * 1.1f;
+    } else if (mode == 14) {                                                      /* FREEZE: the last 70 ms as a sustained cloud (two overlapping windowed readers) */
+        const int len = s->lf_len;
+        float ac0 = 0.0f, ac1 = 0.0f;
+        for (int k = 0; k < 2; k++) {
+            const int ph = (t + k * (len / 2)) % len;
+            const float win = sinf(3.14159265f * (float)ph / (float)len);
+            const int idx = (s->lf_cap - len + ph) & LF_MASK;
+            ac0 += s->lf_buf[0][idx] * win * win; ac1 += s->lf_buf[1][idx] * win * win;
+        }
+        w0 = ac0; w1 = ac1;
+    }
+    if (!(fabsf(w0) < 8.0f) || !(fabsf(w1) < 8.0f)) { w0 = w1 = 0.0f; }
+    const float e = s->lf_eng;
+    o0 = in0 * (1.0f - e) + w0 * e; o1 = in1 * (1.0f - e) + w1 * e;
+    if (!on && s->lf_eng < 0.002f) { s->lf_mode = 0; s->lf_eng = 0.0f; }
+    *Lp = o0; *Rp = o1;
+}
+/* one audio insert slot (type 0 = off); two of them in a row per lane = the effect chain */
+static void xfx_proc(inst_t *s, xs_t *X, float (*sbuf)[SB_SIZE], int xt, float am, float pa, float pb, float *lp, float *rp) {
+    float l = *lp, r_ = *rp;
+    if ((xt == 1 || xt == 2) && !sbuf) xt = 0;                     /* stutter / reverse need the capture buffer: slot 1 only */
+                                if (xt > 0 && xt <= 11) {
+                    float in2[2] = { l, r_ }, out2[2] = { l, r_ };
+                    float *z = &X->xz[0][0];
+                    const float wet2 = pb * 2.0f > 1.0f ? 1.0f : pb * 2.0f;
+                    if (xt == 1 || xt == 2) {                                   /* 1 STUTTER / 2 REVERSE: capture a slice (1/8 .. 1/64 beat), then repeat it (or play it backwards) for some of every 4 slices */
+                        static const float SD[4] = { 2.0f, 4.0f, 8.0f, 16.0f };
+                        int di = (int)(pa * 3.99f); if (di < 0) di = 0; if (di > 3) di = 3;
+                        int ls = (int)(60.0f / s->bpm * s->sr / SD[di]); if (ls < 64) ls = 64; if (ls > SB_SIZE) ls = SB_SIZE;
+                        int cn = X->scnt; if (cn >= ls) { cn = 0; X->sn++; }
+                        const int hold = (X->sn & 3) < (int)(pb * 3.0f + 0.5f);
+                        if (hold) {
+                            const int ri = xt == 1 ? cn : ls - 1 - cn;
+                            float g = 1.0f; if (cn < 48) g = (float)cn / 48.0f; else if (ls - cn < 48) g = (float)(ls - cn) / 48.0f;
+                            for (int c = 0; c < 2; c++) out2[c] = in2[c] * (1.0f - am) + sbuf[c][ri] * g * am;
+                        } else {
+                            for (int c = 0; c < 2; c++) sbuf[c][cn] = in2[c];
+                        }
+                        X->scnt = cn + 1;
+                    } else if (xt == 3 || xt == 6) {                            /* FLANGER / COMB */
+                        const int w = X->xw;
+                        if (xt == 3) {
+                            X->xph += (0.05f + pa * pa * 5.0f) * s->inv_sr; if (X->xph >= 1.0f) X->xph -= 1.0f;
+                        }
+                        for (int c = 0; c < 2; c++) {
+                            float ph = X->xph + 0.25f * (float)c; if (ph >= 1.0f) ph -= 1.0f;
+                            float d = xt == 3 ? (0.0005f + (0.5f + 0.5f * sinf(TWO_PI * ph)) * 0.0035f) * s->sr : 22.0f + pa * 400.0f;
+                            if (d > (float)(XB_SIZE - 4)) d = (float)(XB_SIZE - 4);
+                            float pos = (float)w - d; if (pos < 0.0f) pos += (float)XB_SIZE;
+                            int i0 = (int)pos; float fr = pos - (float)i0; i0 &= (XB_SIZE - 1); int i1 = (i0 + 1) & (XB_SIZE - 1);
+                            float y = X->xbuf[c][i0] * (1.0f - fr) + X->xbuf[c][i1] * fr;
+                            float fb = xt == 3 ? pb * 0.85f : 0.2f + pb * 0.7f;
+                            X->xbuf[c][w] = in2[c] + y * fb;
+                            out2[c] = xt == 3 ? in2[c] + y * am : in2[c] * (1.0f - 0.4f * am) + y * am * 0.7f;
+                        }
+                        X->xw = (w + 1) & (XB_SIZE - 1);
+                    } else if (xt == 4 || xt == 5) {                            /* TREMOLO / AUTO-PAN */
+                        X->xph += (0.5f + pa * pa * 14.0f) * s->inv_sr; if (X->xph >= 1.0f) X->xph -= 1.0f;
+                        if (xt == 4) {
+                            for (int c = 0; c < 2; c++) {
+                                float ph = X->xph + 0.5f * pb * (float)c; if (ph >= 1.0f) ph -= 1.0f;
+                                out2[c] = in2[c] * (1.0f - am * (0.5f + 0.5f * sinf(TWO_PI * ph)));
+                            }
+                        } else {
+                            float lfo = tanhf(sinf(TWO_PI * X->xph) * (1.0f + pb * 8.0f)) * am;
+                            out2[0] = in2[0] * (1.0f - (lfo > 0.0f ? lfo : 0.0f));
+                            out2[1] = in2[1] * (1.0f + (lfo < 0.0f ? lfo : 0.0f));
+                        }
+                    } else if (xt == 7) {                                       /* AUTO-WAH (state variable band-pass) */
+                        X->xph += (0.2f + pa * pa * 6.0f) * s->inv_sr; if (X->xph >= 1.0f) X->xph -= 1.0f;
+                        const float fc = 300.0f + 2400.0f * (0.5f + 0.5f * sinf(TWO_PI * X->xph));
+                        const float f = 2.0f * sinf(3.14159f * fc * s->inv_sr), qd = 1.0f - pb * 0.9f;
+                        for (int c = 0; c < 2; c++) {
+                            float *st = &z[c * 4];
+                            float hp = in2[c] - st[0] - qd * st[1];
+                            st[1] += f * hp; st[0] += f * st[1];
+                            if (!(fabsf(st[0]) < 8.0f) || !(fabsf(st[1]) < 8.0f)) { st[0] = st[1] = 0.0f; }
+                            out2[c] = in2[c] * (1.0f - am) + st[1] * am * 2.5f;
+                        }
+                    } else if (xt == 8) {                                       /* GATE: tempo-synced chop (1/4 .. 1/32) */
+                        static const float DIV[4] = { 1.0f, 2.0f, 4.0f, 8.0f };
+                        int di = (int)(pa * 3.99f); if (di < 0) di = 0; if (di > 3) di = 3;
+                        X->xph += s->bpm / 60.0f * DIV[di] * s->inv_sr; if (X->xph >= 1.0f) X->xph -= 1.0f;
+                        const float tgt = X->xph < 0.5f ? 1.0f : 1.0f - am, k = 0.003f + (1.0f - pb) * 0.2f;
+                        X->xhold[0] += k * (tgt - X->xhold[0]);
+                        out2[0] = in2[0] * X->xhold[0]; out2[1] = in2[1] * X->xhold[0];
+                    } else if (xt == 9) {                                       /* LO-FI: sample-rate + bit reduction */
+                        const int n = 1 + (int)(am * 15.0f);
+                        const float lv = 8.0f + (1.0f - pa) * 2000.0f;
+                        if (++X->xcnt >= n) { X->xcnt = 0; for (int c = 0; c < 2; c++) X->xhold[c] = floorf(in2[c] * lv + 0.5f) / lv; }
+                        for (int c = 0; c < 2; c++) out2[c] = in2[c] * (1.0f - wet2) + X->xhold[c] * wet2;
+                    } else if (xt == 11) {                                      /* GRANULATOR: short windowed grains of the last ~90 ms, scattered in time, pitch and pan */
+                        const int w = X->gw;
+                        X->gb[0][w] = in2[0]; X->gb[1][w] = in2[1];
+                        X->gw = (w + 1) & (GB_SIZE - 1);
+                        if (!X->grng) X->grng = 2463534242u;
+                        const int glen = 441 + (int)(pa * pa * 1700.0f);                 /* 10 .. 49 ms */
+                        if (--X->gtim <= 0) {
+                            X->gtim = glen / 3 + 1;
+                            for (int g = 0; g < 4; g++) if (X->gage[g] >= X->glen[g]) {
+                                X->grng ^= X->grng << 13; X->grng ^= X->grng >> 17; X->grng ^= X->grng << 5;
+                                const float r1 = (float)(X->grng & 1023) / 1023.0f;
+                                X->grng ^= X->grng << 13; X->grng ^= X->grng >> 17; X->grng ^= X->grng << 5;
+                                const float r2 = (float)(X->grng & 1023) / 1023.0f;
+                                float ratio = 1.0f;
+                                if (r2 < pb * 0.9f) ratio = r2 < pb * 0.3f ? 2.0f : (r2 < pb * 0.6f ? 0.5f : 1.5f);
+                                int back = (int)((float)glen * ratio) + 8 + (int)(r1 * pb * 1500.0f);
+                                if (back > GB_SIZE - 8) back = GB_SIZE - 8;
+                                X->glen[g] = glen; X->gage[g] = 0; X->ginc[g] = ratio;
+                                X->gpos[g] = (float)((X->gw - back + GB_SIZE) & (GB_SIZE - 1));
+                                const float pn = (r1 * 2.0f - 1.0f) * pb;
+                                X->gpl[g] = 0.7071f * (1.0f - pn * 0.8f); X->gpr[g] = 0.7071f * (1.0f + pn * 0.8f);
+                                break;
+                            }
+                        }
+                        float gl = 0.0f, gr = 0.0f;
+                        for (int g = 0; g < 4; g++) {
+                            if (X->gage[g] >= X->glen[g]) continue;
+                            const float ph = (float)X->gage[g] / (float)X->glen[g], win = sinf(3.14159265f * ph);
+                            const float win2 = win * win;
+                            const int i0 = (int)X->gpos[g] & (GB_SIZE - 1), i1 = (i0 + 1) & (GB_SIZE - 1);
+                            const float fr = X->gpos[g] - floorf(X->gpos[g]);
+                            const float sm = (X->gb[0][i0] * (1.0f - fr) + X->gb[0][i1] * fr + X->gb[1][i0] * (1.0f - fr) + X->gb[1][i1] * fr) * 0.5f;
+                            gl += sm * win2 * X->gpl[g]; gr += sm * win2 * X->gpr[g];
+                            X->gpos[g] += X->ginc[g]; if (X->gpos[g] >= (float)GB_SIZE) X->gpos[g] -= (float)GB_SIZE;
+                            X->gage[g]++;
+                        }
+                        const float wl = gl * 0.75f, wr = gr * 0.75f;
+                        out2[0] = in2[0] * (1.0f - am * 0.8f) + wl * am * 1.6f;
+                        out2[1] = in2[1] * (1.0f - am * 0.8f) + wr * am * 1.6f;
+                    } else {                                                    /* DJ FILTER: left = low-pass, right = high-pass, middle = off */
+                        const float pos = pa - 0.5f, ap = fabsf(pos) * 2.0f;
+                        if (ap > 0.04f) {
+                            float fc = pos < 0.0f ? 18000.0f * powf(0.006f, ap) : 20.0f * powf(300.0f, ap);
+                            if (fc > 0.2f * s->sr) fc = 0.2f * s->sr;
+                            const float f = 2.0f * sinf(3.14159f * fc * s->inv_sr), qd = 1.0f - am * 0.85f;
+                            for (int c = 0; c < 2; c++) {
+                                float *st = &z[c * 4];
+                                float hp = in2[c] - st[0] - qd * st[1];
+                                st[1] += f * hp; st[0] += f * st[1];
+                                if (!(fabsf(st[0]) < 8.0f) || !(fabsf(st[1]) < 8.0f)) { st[0] = st[1] = 0.0f; }
+                                out2[c] = pos < 0.0f ? st[0] : hp;
+                            }
+                        }
+                    }
+                    l = out2[0]; r_ = out2[1];
+                    if (!(fabsf(l) < 16.0f)) l = 0.0f;
+                    if (!(fabsf(r_) < 16.0f)) r_ = 0.0f;
+                }
+    *lp = l; *rp = r_;
+}
+
 
 static inst_t g_pool[MAX_INST];
 static int    g_sr = 44100;
@@ -734,6 +1085,7 @@ static inline float softclip(float x) {
     float s = x < 0.0f ? -1.0f : 1.0f;
     return s * (0.7f + 0.3f * fast_tanh((a - 0.7f) / 0.3f * 1.0f));
 }
+static inline int clampi_(int x, int lo, int hi) { return x < lo ? lo : (x > hi ? hi : x); }
 static inline float onepole_a(float fc, float sr) { return 1.0f - expf(-TWO_PI * fc / sr); }
 static inline float noise(inst_t *s) {
     s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
@@ -756,13 +1108,17 @@ static void update_pad(inst_t *s, int p) {
     float semis = (q[PP_TUNE] - 0.5f) * 24.0f;
     if (is_melodic(ty)) semis = roundf(semis);
     s->semi[p] = semis;
-    s->dm[p] = powf(3.0f, (q[PP_DECAY] - 0.5f) * 2.0f);
+    {   /* decay 0 = a click, 0.5 = natural length, 1 = 3x: the lowest fifth of the knob ramps down into a click (the rest keeps the old curve, so existing sounds stay as they were) */
+        const float dv = q[PP_DECAY];
+        float f = 1.0f; if (dv < 0.2f) { const float u = dv / 0.2f; f = 0.15f + 0.85f * u * u; }
+        s->dm[p] = powf(3.0f, (dv - 0.5f) * 2.0f) * f;
+    }
     s->a_tone[p] = q[PP_TONE] < 0.99f ? onepole_a(150.0f * powf(110.0f, q[PP_TONE]), s->sr) : 1.0f;
     s->fdk[p] = 1.5e-4f * exp2f((0.5f - q[PP_FDEC]) * 6.0f);
     float dg = 1.0f + q[PP_DRIVE] * 10.0f;
     s->dg[p] = dg;
     s->dnorm[p] = q[PP_DRIVE] > 0.01f ? 0.5f / fast_tanh(0.5f * dg) : 1.0f;
-    s->gain[p] = q[PP_VOL] * q[PP_VOL] / 0.64f * TY[ty].trim;
+    s->gain[p] = q[PP_VOL] * q[PP_VOL] / 0.64f * TY[ty].trim * 0.85f;      /* sounds were a little too loud: -1.4 dB */
     float a = q[PP_PAN] * 1.57079633f;
     s->pl[p] = cosf(a) * 1.41421356f;
     s->pr[p] = sinf(a) * 1.41421356f;
@@ -772,7 +1128,8 @@ static void update_pad(inst_t *s, int p) {
     }
     {                                                          /* this sound's / track's own reverb */
         float rt60 = 0.5f * powf(12.0f, q[PP_RSIZE]);
-        static const int BASE[NLINES] = { 1033, 1327, 1759, 2143 };
+        static const int BASE_H[NLINES] = { 1033, 1327, 1759, 2143 }, BASE_E[NLINES] = { 1999, 2713, 3331, 3989 };
+        const int *BASE = ((int)(q[PP_RMODE] + 0.5f) == 1) ? BASE_E : BASE_H;
         for (int i = 0; i < NLINES; i++) {
             int d = (int)((float)BASE[i] * s->sr / 44100.0f + 0.5f);
             if (d > RV_SIZE - 2) d = RV_SIZE - 2;
@@ -854,6 +1211,48 @@ static inline int lane_on(const inst_t *s, int l) {
 static int track_slot(const inst_t *s, int t) { for (int d = 0; d < 4; d++) if (s->dtrk[d] == t) return d; return -1; }
 
 /* ---------------- voices ---------------- */
+
+/* ---------------- ACOUSTIC drums + EFFECT sweeps (engines 13 and 14) ---------------- */
+#define AC_SETS 9
+static const float AC_R[AC_SETS][8] = {
+    { 1.0f, 1.593f, 2.136f, 2.296f, 2.653f, 2.918f, 3.156f, 3.500f },     /* 0 drum head (circular membrane) */
+    { 1.0f, 1.483f, 1.932f, 2.546f, 2.917f, 3.520f, 4.160f, 5.430f },     /* 1 cymbal */
+    { 1.0f, 1.342f, 1.784f, 2.236f, 2.763f, 3.410f, 4.120f, 4.940f },     /* 2 hi-hat */
+    { 1.0f, 2.310f, 4.050f, 0, 0, 0, 0, 0 },                              /* 3 wood block */
+    { 1.0f, 1.504f, 2.956f, 4.120f, 0, 0, 0, 0 },                         /* 4 cowbell */
+    { 1.0f, 2.760f, 5.404f, 8.933f, 13.34f, 0, 0, 0 },                    /* 5 triangle */
+    { 1.0f, 2.150f, 3.870f, 0, 0, 0, 0, 0 },                              /* 6 rim / stick */
+    { 1.0f, 1.210f, 1.470f, 1.790f, 2.130f, 2.570f, 0, 0 },               /* 7 tambourine jingles */
+    { 1.0f, 1.590f, 2.140f, 0, 0, 0, 0, 0 },                              /* 8 bass drum shell */
+};
+static const float AC_A[AC_SETS][8] = {
+    { 1.0f, 0.62f, 0.45f, 0.38f, 0.30f, 0.22f, 0.16f, 0.12f },
+    { 0.8f, 0.7f, 0.8f, 0.65f, 0.6f, 0.5f, 0.45f, 0.4f },
+    { 1.0f, 0.8f, 0.9f, 0.7f, 0.6f, 0.55f, 0.45f, 0.4f },
+    { 1.0f, 0.5f, 0.25f, 0, 0, 0, 0, 0 },
+    { 1.0f, 0.8f, 0.5f, 0.3f, 0, 0, 0, 0 },
+    { 1.0f, 0.6f, 0.45f, 0.3f, 0.2f, 0, 0, 0 },
+    { 1.0f, 0.6f, 0.3f, 0, 0, 0, 0, 0 },
+    { 1.0f, 0.9f, 0.8f, 0.8f, 0.7f, 0.6f, 0, 0 },
+    { 0.0f, 0.35f, 0.2f, 0, 0, 0, 0, 0 },
+};
+/* ring modes: nx[k] / nx[8+k] = state, nx[16+k] = a1, nx[24+k] = a2, nx[32+k] = gain; ni[0] = number of modes (0 = none) */
+static void ac_modes(inst_t *s, vc_t *v, int set, float f0, float tau, float tilt, float stretch, int skip0, float ascale) {
+    int nm = 0;
+    for (int k = 0; k < 8; k++) {
+        v->nx[k] = v->nx[8 + k] = v->nx[16 + k] = v->nx[24 + k] = v->nx[32 + k] = 0.0f;
+        const float rt = AC_R[set][k], am = AC_A[set][k] * ascale;
+        if (rt <= 0.0f || am <= 0.0f || (skip0 && k == 0)) continue;
+        const float fk = f0 * rt * (1.0f + stretch * (rt - 1.0f));
+        if (fk > 0.45f * s->sr || fk < 20.0f) continue;
+        float tk = tau * (rt > 1.0f ? powf(rt, -tilt) : 1.0f); if (tk < 0.0015f) tk = 0.0015f;
+        const float r = expf(-1.0f / (tk * s->sr)), w = TWO_PI * fk / s->sr;
+        v->nx[16 + k] = 2.0f * r * cosf(w); v->nx[24 + k] = -r * r; v->nx[32 + k] = am * sinf(w); nm++;
+    }
+    v->ni[0] = nm;
+}
+static int ac_hat(int ty) { const nx_t *n = &VAR4[ty - T_V4]; return (n->eng == 13 && (int)(n->p[0] + 0.5f) == 3) ? (int)(n->p[9] + 0.5f) : 0; }
+
 /* ---------------- NEW ENGINES: voice start ---------------- */
 static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
     const nx_t *n = &VAR4[ty - T_V4]; const float *q = n->p; const float sr = s->sr;
@@ -889,6 +1288,54 @@ static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
         v->nx[0] = -1.0f; v->nx[1] = 1.0f; v->nx[3] = 1.0f;
         v->nx[4] = exp2f(q[7] / 12.0f * s->inv_sr);
         v->nx[5] = 0.0f; v->nx[6] = 0.0f; v->nx[7] = 0.0f; v->ni[0] = 0x4001; break; }
+    case 5:                                                         /* DRUM SYNTH */
+        for (int k = 0; k < 24; k++) v->nx[k] = 0.0f;
+        break;
+    case 11: {                                                      /* STRING (Karplus-Strong): fill the delay line with a plucked burst. p: brightness, pick position, loop gain, excitation (0 noise .. 1 saw) */
+        float N = s->sr / (f0 > 44.0f ? f0 : 44.0f) - 0.5f; if (N > 1020.0f) N = 1020.0f; if (N < 6.0f) N = 6.0f;
+        const int n = (int)N; const float fr = N - (float)n;
+        v->ksn = n; v->ksi = 0; v->ksz1 = 0.0f; v->ksz2 = 0.0f; v->nx[0] = (1.0f - fr) / (1.0f + fr);   /* all-pass tuning */
+        const float ex = clampf(q[3] + (s->pp[p][PP_FDEC] - 0.5f), 0.0f, 1.0f), pk = clampf(q[1] + s->pp[p][PP_SUB], 0.02f, 0.5f);
+        float lp = 0.0f; const float lpa = 0.25f + 0.75f * clampf(0.35f + v->vel * 0.65f, 0.0f, 1.0f);
+        for (int i = 0; i < n; i++) { const float nz = noise(s), sw = 2.0f * (float)i / (float)n - 1.0f; const float e = nz * (1.0f - ex) + sw * ex; lp += lpa * (e - lp); v->ks[i] = lp; }
+        const int k = (int)(pk * (float)n); if (k > 0) { float tmp[1024]; for (int i = 0; i < n; i++) tmp[i] = v->ks[i] - v->ks[(i + n - k) % n]; for (int i = 0; i < n; i++) v->ks[i] = tmp[i] * 0.7f; }
+        break; }
+    case 13: {                                                      /* ACOUSTIC: p = kind (0 kick, 1 snare, 2 tom, 3 hat, 4 cymbal, 5 rim, 6 clap, 7 shaker / tambourine, 8 block / bell),
+                                                                       tone, drop, noise, click, body, noise Hz, extra, set / jingles, hat flag */
+        const int kd = (int)(q[0] + 0.5f); const float tau = n->tau1 * dm;
+        for (int k = 0; k < 64; k++) v->nx[k] = 0.0f;
+        int set = -1, skip0 = 0; float tilt = 0.4f + q[5] * 1.2f, stretch = 0.0f, asc = 1.0f, burst = 2.5f;
+        switch (kd) {
+        case 0: set = 8; skip0 = 1; burst = 1.0f; break;
+        case 1: set = 0; burst = 2.5f; tilt = 0.5f + q[5]; break;
+        case 2: set = 0; skip0 = 1; burst = 3.0f; break;
+        case 3: set = 2; tilt = 0.2f + q[5] * 0.5f; burst = 1.0f; break;
+        case 4: set = 1; tilt = 0.15f + q[5] * 0.4f; burst = clampf(q[7], 1.0f, 400.0f); break;
+        case 5: set = 6; burst = 0.6f; tilt = 0.3f + q[5]; break;
+        case 7: set = q[8] > 0.5f ? 7 : -1; burst = 4.0f; tilt = 0.2f; break;
+        case 8: set = 3 + clampi_((int)(q[8] + 0.5f), 0, 2); burst = 0.5f; tilt = 0.2f + q[5] * 0.6f; break;
+        default: break;
+        }
+        if (set >= 0) ac_modes(s, v, set, f0, tau, tilt, 0.0f, skip0, asc); else v->ni[0] = 0;
+        const float b = clampf(q[1] * (0.45f + 0.9f * v->vel), 0.02f, 1.0f);
+        v->nx[43] = 0.03f + 0.97f * b * b * b;
+        v->nx[42] = expf(-1.0f / (burst * 0.001f * sr));
+        v->nx[41] = 1.0f; v->nx[44] = 1.0f; v->nx[46] = kd == 4 ? q[4] : (kd == 3 ? 0.35f * q[4] : 0.0f);
+        v->nx[48] = onepole_a(clampf(q[6], 80.0f, 16000.0f), sr);       /* noise: high-pass corner */
+        v->nx[49] = onepole_a(kd == 6 ? clampf(q[6] * 3.0f, 800.0f, 9000.0f) : (kd == 0 ? 320.0f : 11000.0f), sr);    /* noise: low-pass corner */
+        v->ph = 0.0f; break; }
+    case 14: {                                                      /* EFFECT: p = length s, tone Hz start, tone Hz end, filter Hz start, filter Hz end, resonance, noise, tone level, peak position, filter type (0 LP, 1 BP, 2 HP) */
+        for (int k = 0; k < 64; k++) v->nx[k] = 0.0f;
+        const float L = clampf(q[0] * dm, 0.03f, 20.0f);
+        v->nx[0] = L; v->nx[7] = clampf(q[1], 10.0f, 18000.0f); v->nx[8] = powf(clampf(q[2], 10.0f, 18000.0f) / v->nx[7], 1.0f / (L * sr));
+        v->nx[9] = clampf(q[3], 20.0f, 18000.0f); v->nx[10] = powf(clampf(q[4], 20.0f, 18000.0f) / v->nx[9], 1.0f / (L * sr));
+        v->ph = 0.0f; break; }
+    case 12:                                                        /* FOLD */
+        for (int k = 0; k < 24; k++) v->nx[k] = 0.0f; break;
+    case 6: case 7: case 8: case 9: case 10:                        /* ANALOG / WAVETABLE / FM4 / ADDITIVE / PAD: phases start spread out so unison layers do not add up to a click */
+        for (int k = 0; k < 24; k++) v->nx[k] = 0.0f;
+        v->nx[20] = 0.0f; for (int k = 0; k < 8; k++) v->nx[k] = (float)((k * 37) % 16) / 16.0f;
+        break;
     default:                                                        /* MORPH */
         v->nx[0] = 0.0f; v->nx[1] = 0.37f; v->nx[2] = 0.71f; v->nx[3] = 0.0f; v->nx[4] = 0.0f; break;
     }
@@ -963,9 +1410,9 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
     v->pek = T->pet > 0.0f ? expf(-1.0f / (T->pet * s->sr)) : 0.0f;
     v->third = powf(2.0f, (float)SCALE_TBL[(int)(s->g[G_SCALE] + 0.5f) % 3][1] / 12.0f);
     if (BASE_T[ty] >= T_E_MODAL) nx_init(s, v, p, ty);
-    if (BASE_T[ty] == T_HATCL) {                         /* choke every open hat */
+    if (BASE_T[ty] == T_HATCL || (BASE_T[ty] == T_E_AC && ac_hat(ty) == 1)) {                         /* choke every open hat */
         for (int i = 0; i < NLANE; i++)
-            if (s->vc[i].active && BASE_T[s->vc[i].type] == T_HATOP && lane_trk(s, i) == lane_trk(s, p)) s->vc[i].active = 0;
+            if (s->vc[i].active && lane_trk(s, i) == lane_trk(s, p) && (BASE_T[s->vc[i].type] == T_HATOP || (BASE_T[s->vc[i].type] == T_E_AC && ac_hat(s->vc[i].type) == 2))) s->vc[i].active = 0;
     }
 }
 
@@ -991,17 +1438,19 @@ static void trig_layer(inst_t *s, int p, float vel, int semi, int follow) {
 static void eq_push(inst_t *s, int lane, float vel, int semi, int cnt, int follow) {
     for (int i = 0; i < 32; i++) if (s->eq[i].cnt <= 0) { s->eq[i].cnt = cnt < 1 ? 1 : cnt; s->eq[i].lane = lane; s->eq[i].vel = vel; s->eq[i].semi = semi; s->eq[i].follow = follow; return; }
 }
-static void trig(inst_t *s, int p, float vel, int arp_semi, int fresh) {
-    const int mf = (int)(s->pp[p][PP_MFX] + 0.5f);
-    if (mf <= 0 || mf > 10 || !fresh) { trig_raw(s, p, vel, arp_semi, fresh); return; }
-    const float am = s->pp[p][PP_MAMT], pr = s->pp[p][PP_MPRM];
+#define EMIT(v, sm, fr) do { if (slot == 1) trig_fx(s, p, (v), (sm), 2); else trig_raw(s, p, (v), (sm), (fr)); } while (0)
+static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot);
+static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      /* one MIDI effect slot: slot 1 runs first and hands its notes on to slot 2 */
+    const int mf = (int)(s->pp[p][slot == 2 ? PP_M2FX : PP_MFX] + 0.5f);
+    if (mf <= 0 || mf > 11) { if (slot == 1) trig_fx(s, p, vel, arp_semi, 2); else trig_raw(s, p, vel, arp_semi, 1); return; }
+    const float am = s->pp[p][slot == 2 ? PP_M2AMT : PP_MAMT], pr = s->pp[p][slot == 2 ? PP_M2PRM : PP_MPRM];
     const int sc = (int)(s->g[G_SCALE] + 0.5f) % 3;
     const float lv = vel * (0.35f + 0.65f * am);
     const float L16 = s->sr * 60.0f / s->bpm / 4.0f;
     static const int CHD[8][4] = { {0,4,7,-99}, {0,3,7,-99}, {0,2,7,-99}, {0,5,7,-99}, {0,4,7,10}, {0,3,7,10}, {0,4,7,11}, {0,3,6,9} };
     switch (mf) {
     case 1: {                                                    /* OCTAVE: Param = which layers (-1 / +1 / both / +1 +2) */
-        trig_raw(s, p, vel, arp_semi, 1);
+        EMIT(vel, arp_semi, 1);
         if (pr < 0.25f) trig_layer(s, p, lv, arp_semi - 12, 1);
         else if (pr < 0.5f) trig_layer(s, p, lv, arp_semi + 12, 1);
         else if (pr < 0.75f) { trig_layer(s, p, lv, arp_semi + 12, 1); trig_layer(s, p, lv, arp_semi - 12, 1); }
@@ -1009,13 +1458,13 @@ static void trig(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         break; }
     case 2: {                                                    /* CHORD: Param = chord type (maj min sus2 sus4 7 m7 maj7 dim) */
         int ci = (int)(pr * 7.99f); if (ci < 0) ci = 0; if (ci > 7) ci = 7;
-        trig_raw(s, p, vel, arp_semi, 1);
+        EMIT(vel, arp_semi, 1);
         for (int k = 1; k < 4; k++) if (CHD[ci][k] > -90) trig_layer(s, p, lv, arp_semi + CHD[ci][k], 1);
         break; }
     case 3: {                                                    /* ARP: root, then the notes of the scale chord one by one (Param = rate 1/16, 1/8, 1/32) */
         const float st = pr < 0.33f ? 1.0f : (pr < 0.66f ? 2.0f : 0.5f);
         const int d = (int)(st * L16);
-        trig_raw(s, p, vel, arp_semi, 1);
+        EMIT(vel, arp_semi, 1);
         eq_push(s, p, lv, arp_semi + MS7[sc][2], d, 0);
         eq_push(s, p, lv, arp_semi + 7, 2 * d, 0);
         eq_push(s, p, lv, arp_semi + 12, 3 * d, 0);
@@ -1023,35 +1472,63 @@ static void trig(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         break; }
     case 4: {                                                    /* STRUM: root, third, fifth one after another (Param = speed) */
         const int d = (int)((0.006f + pr * 0.06f) * s->sr);
-        trig_raw(s, p, vel, arp_semi, 1);
+        EMIT(vel, arp_semi, 1);
         eq_push(s, p, lv, arp_semi + MS7[sc][2], d, 1);
         eq_push(s, p, lv, arp_semi + 7, 2 * d, 1);
         break; }
     case 5: {                                                    /* ECHO: Amount = feedback, Param = spacing */
         const int d = (int)((0.5f + pr * 3.5f) * L16); const float fb = 0.35f + 0.5f * am;
-        trig_raw(s, p, vel, arp_semi, 1);
+        EMIT(vel, arp_semi, 1);
         eq_push(s, p, vel * fb, arp_semi, d, 0);
         eq_push(s, p, vel * fb * fb, arp_semi, 2 * d, 0);
         if (am > 0.4f) eq_push(s, p, vel * fb * fb * fb, arp_semi, 3 * d, 0);
         break; }
     case 6: {                                                    /* RANDOM PITCH inside the scale, range grows with Amount */
         s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
+        if (pr < 0.5f && (float)((s->rng >> 8) & 0xFFFF) / 65536.0f >= pr * 2.0f) { EMIT(vel, arp_semi, 1); break; }          /* Param = chance that the pitch is changed */
         int r = (int)((s->rng >> 4) % (unsigned)(2 + (int)(am * 12.0f)));
         int deg = MS7[sc][r % 7] + 12 * (r / 7);
         if (s->rng & 0x8000u) deg = -deg;
-        trig_raw(s, p, vel, arp_semi + deg, 1); break; }
+        EMIT(vel, arp_semi + deg, 1); break; }
     case 7: {                                                    /* RANDOM VELOCITY */
         s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
         float rr = (float)(s->rng & 0xFFFF) / 65536.0f;
-        trig_raw(s, p, clampf(vel * (1.0f - am * 0.85f * rr), 0.05f, 1.0f), arp_semi, 1); break; }
-    case 8: trig_raw(s, p, clampf(vel + (0.85f - vel) * am, 0.05f, 1.0f), arp_semi, 1); break;   /* VELOCITY COMPRESSOR */
+        if (pr < 0.5f && (float)((s->rng >> 16) & 0xFFFF) / 65536.0f >= pr * 2.0f) rr = 0.0f;                                  /* Param = chance that the velocity is changed */
+        EMIT(clampf(vel * (1.0f - am * 0.85f * rr), 0.05f, 1.0f), arp_semi, 1); break; }
+    case 8: EMIT(clampf(vel + ((0.2f + 1.3f * pr > 1.0f ? 1.0f : 0.2f + 1.3f * pr) - vel) * am, 0.05f, 1.0f), arp_semi, 1); break;   /* Param = target velocity (default 0.85) */   /* VELOCITY COMPRESSOR */
     case 9: {                                                    /* SCALE: snap every note to the current key / scale */
         int o = arp_semi >= 0 ? arp_semi / 12 : -((-arp_semi + 11) / 12), r = arp_semi - o * 12, best = 0, bd = 99;
         for (int k = 0; k < 8; k++) { int dv = k < 7 ? MS7[sc][k] : 12, dd = dv > r ? dv - r : r - dv; if (dd < bd) { bd = dd; best = dv; } }
-        trig_raw(s, p, vel, o * 12 + best, 1); break; }
+        EMIT(vel * (0.35f + 0.65f * am) / 0.805f > 1.0f ? 1.0f : vel * (0.35f + 0.65f * am) / 0.805f, o * 12 + best + 12 * (int)((pr - 0.5f) * 4.0f + (pr >= 0.5f ? 0.5f : -0.5f)), 1); break; }      /* Amount = level, Param = octave shift */
+    case 11: {                                                   /* DIATONIC CHORD: the chord that belongs to this scale degree (Amount = level, Param = triad / 7th / 9th / open) */
+        int o = arp_semi >= 0 ? arp_semi / 12 : -((-arp_semi + 11) / 12), r = arp_semi - o * 12, deg = 0, bd = 99;
+        for (int k = 0; k < 7; k++) { int dd = MS7[sc][k] > r ? MS7[sc][k] - r : r - MS7[sc][k]; if (dd < bd) { bd = dd; deg = k; } }
+        const int base = o * 12, n = pr < 0.25f ? 3 : (pr < 0.5f ? 4 : (pr < 0.75f ? 5 : 3));
+        const int step[5] = { 0, 2, 4, 6, 8 };
+        EMIT(vel, base + MS7[sc][deg], 1);
+        for (int k = 1; k < n; k++) {
+            const int g = deg + step[k]; int semi = base + MS7[sc][g % 7] + 12 * (g / 7);
+            if (pr >= 0.75f && k == 1) semi += 12;                 /* open voicing: the third an octave up */
+            trig_layer(s, p, lv, semi, 1);
+        }
+        break; }
     default:                                                     /* TRANSPOSE: Param = -24 .. +24 semitones */
-        trig_raw(s, p, vel, arp_semi + (int)((pr - 0.5f) * 48.0f + (pr >= 0.5f ? 0.5f : -0.5f)), 1); break;
+        EMIT(vel, arp_semi + (int)((pr - 0.5f) * 48.0f + (pr >= 0.5f ? 0.5f : -0.5f)), 1); break;
     }
+}
+
+static void trig(inst_t *s, int p, float vel, int arp_semi, int fresh) {
+    {   /* note stage before the MIDI effects: chance, transpose, random octave, velocity bias / humanise / range */
+        const float *q = s->pp[p];
+        if (fresh && q[PP_MCH] < 0.995f) { s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5; if ((float)(s->rng & 0xFFFF) / 65536.0f >= q[PP_MCH]) return; }
+        arp_semi += (int)((q[PP_TRN] - 0.5f) * 48.0f + (q[PP_TRN] >= 0.5f ? 0.5f : -0.5f));
+        if (q[PP_ORN] > 0.01f) { s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5; if ((float)(s->rng & 0xFFFF) / 65536.0f < q[PP_ORN]) arp_semi += (s->rng & 0x10000u) ? 12 : -12; }
+        vel += (q[PP_MVB] - 0.5f) * 0.8f;
+        if (q[PP_VHM] > 0.01f) { s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5; vel *= 1.0f - q[PP_VHM] * 0.6f * ((float)(s->rng & 0xFFFF) / 65536.0f); }
+        { float lo = 0.05f + q[PP_VMN] * 0.95f, hi = q[PP_VMX] < lo ? lo : q[PP_VMX]; if (hi < 0.05f) hi = 0.05f; if (vel < lo) vel = lo; if (vel > hi) vel = hi; if (vel > 1.0f) vel = 1.0f; if (vel < 0.02f) vel = 0.02f; }
+    }
+    if (!fresh) { trig_raw(s, p, vel, arp_semi, fresh); return; }
+    trig_fx(s, p, vel, arp_semi, 1);
 }
 
 static inline float metal(vc_t *v, float scale, float dt) {
@@ -1096,8 +1573,14 @@ static inline float wf(float ph, int w) {
 static inline float bsin(const vc_t *v) { return v->sw >= 100 ? wt_at(v->ph, v->sw - 100) : sinf(TWO_PI * v->ph); }      /* body oscillator: sine, or the preset's own wavetable */
 
 
+/* polyBLEP: removes the aliasing step of saw / square edges */
+static inline float blep(float t, float d) {
+    if (t < d) { t /= d; return t + t - t * t - 1.0f; }
+    if (t > 1.0f - d) { t = (t - 1.0f) / d; return t * t + t + t + 1.0f; }
+    return 0.0f;
+}
 /* ---------------- NEW ENGINES: one sample ---------------- */
-static float nx_render(inst_t *s, vc_t *v) {
+static float nx_render(inst_t *s, vc_t *v, int p) {
     const nx_t *n = &VAR4[v->type - T_V4]; const float *q = n->p; const ty_t *T = &TY[v->type]; const float dt = s->inv_sr;
     float x = 0.0f;
     switch (n->eng) {
@@ -1119,7 +1602,13 @@ static float nx_render(inst_t *s, vc_t *v) {
         v->ph2 += f * q[0] * dt; WRAP(v->ph2);
         v->ph3 += f * q[2] * dt; WRAP(v->ph3);
         float out;
-        if (algo < 0.5f) {                                          /* C -> B -> A */
+        if (algo > 2.5f) {                                          /* INIT: plain 2-OP FM, ratio / index / feedback live on the pad knobs (Detune, Sub, KeyTrack) */
+            const float *pq = s->pp[p];
+            const float rat = 0.5f * powf(16.0f, pq[PP_DET]), idx = pq[PP_SUB] * 8.0f, fbk = pq[PP_FKEY] * 1.2f;
+            v->ph2 += f * (rat - q[0]) * dt; WRAP(v->ph2); if (v->ph2 < 0.0f) v->ph2 += 1.0f;
+            const float sb = sinf(TWO_PI * v->ph2 + fbk * v->nx[2]); v->nx[2] = sb;
+            out = sinf(TWO_PI * v->ph + sb * idx * ie * vs);
+        } else if (algo < 0.5f) {                                   /* C -> B -> A */
             const float mc = sinf(TWO_PI * v->ph3) * q[3] * ie * vs;
             const float sb = sinf(TWO_PI * v->ph2 + mc + q[4] * v->nx[2]); v->nx[2] = sb;
             out = sinf(TWO_PI * v->ph + sb * q[1] * ie * vs);
@@ -1197,6 +1686,291 @@ static float nx_render(inst_t *s, vc_t *v) {
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = o * v->env * 0.6f;
         if (q[5] > 0.5f) { const float L = (float)((1 << (int)(q[5] + 0.5f)) - 1) * 0.5f; x = floorf(x * L + 0.5f) / L; }
+        break; }
+    case 5: {                                                       /* DRUM SYNTH: kick, snare, hat, clap, tom, rim, metal -- p: kind, sweep, sweep ms, noise mix, click, drive, noise HP Hz, band Hz */
+        const int kd = (int)(q[0] + 0.5f); const float t = v->t, f = v->f0;
+        const float nz = noise(s);
+        { const float xa = TWO_PI * (q[6] > 20.0f ? q[6] : 20.0f) * dt; v->nx[4] += (xa / (1.0f + xa)) * (nz - v->nx[4]); }
+        const float hp = nz - v->nx[4];
+        float out = 0.0f;
+        const float sw = 1.0f + q[1] * expf(-t / (q[2] * 0.001f + 1e-5f));
+        switch (kd) {
+        case 0: case 4: {                                           /* KICK / TOM: sine with a falling pitch + a click */
+            v->ph += f * sw * dt; WRAP(v->ph);
+            out = sinf(TWO_PI * v->ph) * v->env + nz * expf(-t / 0.0015f) * q[4] * 0.6f + hp * v->env2 * q[3];
+            break; }
+        case 1: {                                                   /* SNARE: two tuned shells + filtered noise */
+            v->ph += f * sw * dt; WRAP(v->ph); v->ph2 += f * 1.68f * sw * dt; WRAP(v->ph2);
+            out = (0.62f * sinf(TWO_PI * v->ph) + 0.38f * sinf(TWO_PI * v->ph2)) * v->env * (1.0f - 0.5f * q[3]) + hp * v->env2 * q[3] * 1.6f + nz * expf(-t / 0.002f) * q[4] * 0.4f;
+            break; }
+        case 2: {                                                   /* HAT: six detuned squares (the 808 recipe) + noise, high-passed */
+            static const float R[6] = { 1.0f, 1.483f, 1.8f, 2.546f, 2.63f, 3.9f };
+            float sq = 0.0f;
+            for (int k = 0; k < 6; k++) { v->nx[10 + k] += f * R[k] * dt; if (v->nx[10 + k] >= 1.0f) v->nx[10 + k] -= 1.0f; sq += v->nx[10 + k] < 0.5f ? 1.0f : -1.0f; }
+            { const float xa = TWO_PI * 7000.0f * dt; v->nx[5] += (xa / (1.0f + xa)) * (sq - v->nx[5]); }
+            out = ((sq - v->nx[5]) * 0.16f * (1.0f - q[3]) + hp * q[3] * 1.2f) * v->env;
+            break; }
+        case 3: {                                                   /* CLAP: three quick bursts, then the tail, band-passed noise */
+            float be = t < 0.03f ? expf(-fmodf(t, 0.01f) / 0.0016f) : 0.0f;
+            { const float xa = TWO_PI * (q[7] > 100.0f ? q[7] : 100.0f) * dt; v->nx[5] += (xa / (1.0f + xa)) * (hp - v->nx[5]); }
+            out = v->nx[5] * 3.0f * (be * 0.8f + v->env2 * (t >= 0.03f ? 1.0f : 0.0f)) * (0.5f + v->env);
+            break; }
+        case 5: {                                                   /* RIM / CLAVE: two stiff sines + a click */
+            v->ph += f * dt; WRAP(v->ph); v->ph2 += f * 2.42f * dt; WRAP(v->ph2);
+            out = (0.7f * sinf(TWO_PI * v->ph) + 0.4f * sinf(TWO_PI * v->ph2)) * v->env + nz * expf(-t / 0.001f) * q[4] * 0.5f;
+            break; }
+        default: {                                                  /* METAL / COWBELL: two squares through a low-pass */
+            v->ph += f * dt; WRAP(v->ph); v->ph2 += f * 1.4983f * dt; WRAP(v->ph2);
+            const float sq = (v->ph < 0.5f ? 1.0f : -1.0f) + (v->ph2 < 0.5f ? 1.0f : -1.0f);
+            { const float xa = TWO_PI * (q[7] > 200.0f ? q[7] : 200.0f) * dt; v->nx[5] += (xa / (1.0f + xa)) * (sq - v->nx[5]); }
+            out = v->nx[5] * 0.5f * v->env;
+            break; }
+        }
+        if (q[5] > 0.0f) out = fast_tanh(out * (1.0f + q[5] * 5.0f)) * 0.85f;
+        v->env *= v->c1; v->env2 *= v->c2;
+        if (v->env < 1e-3f && v->env2 < 1e-3f) v->active = 0;
+        x = out * 0.9f;
+        break; }
+    case 6: {                                                       /* ANALOG: two band-limited oscillators (+ hard sync), sub, pulse width.
+                                                                       p: waveA, waveB(0 saw 1 square 2 tri 3 sine), detuneB (cents), subLevel, syncRatio, pulseWidth, mixB, driveInside
+                                                                       knobs on the pad: Detune (+cents), Sub, Sync, Width */
+        const float *pq = s->pp[p]; const float f = v->f0;
+        const float det = q[2] + pq[PP_DET] * 40.0f, sub = clampf(q[3] + pq[PP_SUB], 0.0f, 1.0f);
+        const float sy = q[4] + pq[PP_FKEY] * 3.0f, pw = clampf(q[5] + (pq[PP_FDEC] - 0.5f) * 0.8f, 0.05f, 0.95f);
+        const float fa = f, fb = f * exp2f(det / 1200.0f), da = fa * dt, db = fb * dt;
+        v->ph += da; int wrap = 0; if (v->ph >= 1.0f) { v->ph -= 1.0f; wrap = 1; }
+        v->ph2 += db * (1.0f + sy); if (v->ph2 >= 1.0f) v->ph2 -= 1.0f;
+        if (wrap && sy > 0.01f) v->ph2 = 0.0f;                       /* hard sync */
+        float a, b;
+        #define ANA_OSC(res, ph, d, w) do { switch ((int)(w)) { \
+            case 0: (res) = 2.0f * (ph) - 1.0f - blep((ph), (d)); break; \
+            case 1: (res) = ((ph) < pw ? 1.0f : -1.0f) + blep((ph), (d)) - blep(fmodf((ph) + 1.0f - pw, 1.0f), (d)); break; \
+            case 2: (res) = 4.0f * fabsf((ph) - 0.5f) - 1.0f; break; \
+            default: (res) = sinf(TWO_PI * (ph)); break; } } while (0)
+        ANA_OSC(a, v->ph, da, q[0]);
+        ANA_OSC(b, v->ph2, db * (1.0f + sy), q[1]);
+        v->nx[9] += 0.5f * da; if (v->nx[9] >= 1.0f) v->nx[9] -= 1.0f;
+        float o = a + q[6] * b + sub * (v->nx[9] < 0.5f ? 0.6f : -0.6f);
+        o *= 1.0f / (1.0f + q[6] + sub * 0.5f);
+        if (q[7] > 0.0f) o = fast_tanh(o * (1.0f + q[7] * 4.0f)) * 0.8f;
+        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+          if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+          else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+        v->env2 *= v->c2;
+        x = o * v->env * 0.85f;
+        #undef ANA_OSC
+        break; }
+    case 7: {                                                       /* WAVETABLE: a position knob scans a run of the 640 tables (dark to bright).
+                                                                       p: firstTable, span, position, sweepAmt, warp, unison cents, subLevel, - ; knobs: Position, Sweep, Warp, Detune */
+        const float *pq = s->pp[p]; const float f = v->f0;
+        const int t0 = (int)q[0]; const float span = q[1];
+        float pos = clampf(q[2] + pq[PP_DET] + (q[3] + pq[PP_SUB]) * v->env2, 0.0f, 1.0f) * span;
+        int ia = (int)pos; float fr = pos - (float)ia; int ta = t0 + ia, tb = ta + 1;
+        const float warp = clampf(q[4] + pq[PP_FKEY], 0.0f, 1.0f);
+        const float dn = q[5] + (pq[PP_FDEC] - 0.5f) * 30.0f;
+        v->ph += f * dt; WRAP(v->ph);
+        float pa = v->ph; if (warp > 0.0f) { pa = v->ph + warp * 0.5f * sinf(TWO_PI * v->ph) / TWO_PI * 2.0f; pa -= floorf(pa); }
+        float o = (1.0f - fr) * wt_at(pa, ta) + fr * wt_at(pa, tb);
+        if (fabsf(dn) > 0.5f) {
+            const float k = exp2f(dn / 1200.0f);
+            v->nx[0] += f * k * dt; WRAP(v->nx[0]); v->nx[1] += f / k * dt; WRAP(v->nx[1]);
+            o = o * 0.5f + 0.25f * ((1.0f - fr) * wt_at(v->nx[0], ta) + fr * wt_at(v->nx[0], tb) + (1.0f - fr) * wt_at(v->nx[1], ta) + fr * wt_at(v->nx[1], tb));
+        }
+        if (q[6] > 0.0f) { v->nx[2] += f * 0.5f * dt; WRAP(v->nx[2]); o += q[6] * sinf(TWO_PI * v->nx[2]); }
+        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+          if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+          else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+        v->env2 *= v->c2;
+        x = o * v->env * 0.8f;
+        break; }
+    case 8: {                                                       /* FM4: four operators, four algorithms.
+                                                                       p: ratio2, ratio3, ratio4, index base, feedback, algo, decay of indices, velocity; knobs: Index, Ratio, Feedback, Algo */
+        const float *pq = s->pp[p]; const float f = v->f0;
+        const float rs = exp2f(pq[PP_SUB] * 2.0f);                   /* ratio knob: all modulator ratios scale up to x4 */
+        const float ix = (q[3] + pq[PP_DET] * 6.0f), fbk = clampf(q[4] + pq[PP_FKEY], 0.0f, 1.2f);
+        int al = (int)(q[5] + (pq[PP_FDEC] - 0.5f) * 8.0f + 0.5f); if (al < 0) al = 0; if (al > 3) al = 3;
+        const float ie = 0.25f + 0.75f * v->env2, vs = 1.0f + q[7] * (2.0f * v->vel - 1.0f) * 0.6f;
+        v->ph += f * dt; WRAP(v->ph);
+        v->ph2 += f * q[0] * rs * dt; WRAP(v->ph2);
+        v->ph3 += f * q[1] * rs * dt; WRAP(v->ph3);
+        v->nx[0] += f * q[2] * rs * dt; WRAP(v->nx[0]);
+        const float s4 = sinf(TWO_PI * v->nx[0] + fbk * v->nx[3]); v->nx[3] = s4;
+        float out;
+        switch (al) {
+        case 0: { const float s3 = sinf(TWO_PI * v->ph3 + s4 * ix * ie * vs), s2 = sinf(TWO_PI * v->ph2 + s3 * ix * ie * vs);
+                  out = sinf(TWO_PI * v->ph + s2 * ix * ie * vs); break; }                       /* 4 > 3 > 2 > 1 */
+        case 1: { const float s3 = sinf(TWO_PI * v->ph3), s2 = sinf(TWO_PI * v->ph2 + (s3 + s4) * 0.7f * ix * ie * vs);
+                  out = sinf(TWO_PI * v->ph + s2 * ix * ie * vs); break; }                       /* (4 + 3) > 2 > 1 */
+        case 2: { const float s3 = sinf(TWO_PI * v->ph3 + s4 * ix * ie * vs), s2 = sinf(TWO_PI * v->ph2);
+                  out = sinf(TWO_PI * v->ph + (s2 + s3) * 0.7f * ix * ie * vs); break; }         /* 4 > 3, (3 + 2) > 1 */
+        default: { const float s3 = sinf(TWO_PI * v->ph3 + s4 * ix * ie * vs), s2 = sinf(TWO_PI * v->ph2 + s4 * ix * ie * vs * 0.6f);
+                   out = 0.5f * sinf(TWO_PI * v->ph + s2 * ix * ie * vs) + 0.35f * s3; break; }  /* two stacks side by side */
+        }
+        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+          if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+          else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+        v->env2 *= v->c2 > 0.0f ? v->c2 : 0.0f;
+        x = out * v->env * 0.8f;
+        break; }
+    case 9: {                                                       /* ADDITIVE: 10 partials. p: tilt, odd/even, stretch, shimmer(high partials fade faster), tremolo depth, tremolo rate, -, -;
+                                                                       knobs: Tilt, Odd/Even, Stretch, Shimmer */
+        const float *pq = s->pp[p]; const float f = v->f0;
+        const float tilt = clampf(q[0] + pq[PP_DET] * 2.0f, 0.0f, 3.0f), oe = clampf(q[1] + pq[PP_SUB], 0.0f, 1.0f);
+        const float str = q[2] + pq[PP_FKEY] * 0.02f, shim = clampf(q[3] + (pq[PP_FDEC] - 0.5f), 0.0f, 1.0f);
+        float o = 0.0f, norm = 0.0f;
+        for (int k = 1; k <= 10; k++) {
+            const float fk = f * (float)k * (1.0f + str * (float)(k * k - 1) * 0.05f);
+            if (fk > 0.45f * s->sr) break;
+            v->nx[11 + k] += fk * dt; if (v->nx[11 + k] >= 1.0f) v->nx[11 + k] -= 1.0f;
+            float a = 1.0f / powf((float)k, tilt);
+            if ((k & 1) == 0) a *= 1.0f - 0.9f * oe;                  /* odd / even: 1 = only odd partials (clarinet) */
+            a *= powf(v->env2 + 0.001f, shim * (float)(k - 1) * 0.35f);   /* high partials die first */
+            o += a * sinf(TWO_PI * v->nx[11 + k]); norm += 1.0f / powf((float)k, tilt);
+        }
+        o *= 1.0f / (0.4f + 0.6f * norm);
+        if (q[4] > 0.0f) { v->nx[1] += q[5] * dt; WRAP(v->nx[1]); o *= 1.0f - q[4] * 0.5f * (1.0f - sinf(TWO_PI * v->nx[1])); }
+        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+          if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+          else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+        v->env2 *= v->c2;
+        x = o * v->env * 0.75f;
+        break; }
+    case 10: {                                                      /* PAD / STRINGS: five detuned saws, slow motion in the detune, soft low-pass.
+                                                                       p: spread (cents), motion rate, motion depth, pulse mix, body (low-pass Hz mult), -, -, -; knobs: Detune, Spread, PWM, Motion */
+        const float *pq = s->pp[p]; const float f = v->f0;
+        const float sp = (q[0] + pq[PP_DET] * 30.0f) * (0.4f + 0.6f * clampf(q[6] + pq[PP_SUB], 0.0f, 1.0f) * 1.6f);
+        const float mo = clampf(q[2] + pq[PP_FDEC] - 0.5f, 0.0f, 1.0f);
+        v->nx[9] += q[1] * dt; WRAP(v->nx[9]);
+        const float md = 1.0f + mo * 0.5f * sinf(TWO_PI * v->nx[9]);
+        float o = 0.0f;
+        static const float OFS[5] = { 0.0f, -1.0f, 1.0f, -0.5f, 0.5f };
+        for (int k = 0; k < 5; k++) {
+            const float fk = f * exp2f(OFS[k] * sp * md / 1200.0f);
+            v->nx[k] += fk * dt; if (v->nx[k] >= 1.0f) v->nx[k] -= 1.0f;
+            const float saw = 2.0f * v->nx[k] - 1.0f;
+            const float pul = v->nx[k] < clampf(0.5f + q[3] * 0.3f * sinf(TWO_PI * v->nx[9] * 0.5f + (float)k), 0.1f, 0.9f) ? 0.7f : -0.7f;
+            const float pm = clampf(q[3] + pq[PP_FKEY], 0.0f, 1.0f);
+            o += saw * (1.0f - pm) + pul * pm;
+        }
+        o *= 0.2f;
+        { float fc = f * q[4]; if (fc > 14000.0f) fc = 14000.0f; if (fc < 80.0f) fc = 80.0f;
+          const float xa = TWO_PI * fc * dt, a = xa / (1.0f + xa); v->z1 += a * (o - v->z1); v->z2 += a * (v->z1 - v->z2); o = v->z2; }
+        { const float at = 0.004f + pq[PP_ATT] * pq[PP_ATT] * 3.0f + T->att;
+          if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+          else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+        v->env2 *= v->c2;
+        x = o * v->env * 1.5f;
+        break; }
+    case 11: {                                                      /* STRING: delay line + loop filter + all-pass tuning. knobs: Bright, Pick, Damp, Excite */
+        const float *pq = s->pp[p]; const int n = v->ksn; if (n < 4) { v->active = 0; break; }
+        const float b0 = clampf(q[0] + pq[PP_DET] * 0.5f, 0.5f, 1.0f), g = clampf(q[2] - pq[PP_FKEY] * 0.06f, 0.85f, 0.99995f);
+        const float cur = v->ks[v->ksi], nxt = v->ks[v->ksi + 1 >= n ? 0 : v->ksi + 1];
+        const float lpv = b0 * cur + (1.0f - b0) * nxt;
+        const float a = v->nx[0], y = a * lpv + v->ksz1 - a * v->ksz2; v->ksz1 = lpv; v->ksz2 = y;
+        v->ks[v->ksi] = y * g; if (++v->ksi >= n) v->ksi = 0;
+        v->env *= v->c1; if (v->env < 1e-3f) v->active = 0;
+        x = cur * v->env * 0.55f;
+        break; }
+    case 12: {                                                      /* FOLD (west coast): sine / triangle -> bias -> sine wave-folder, fold amount swept by an envelope.
+                                                                       p: wave(0 sine 1 tri), fold, sweep, bias, sub, FM amount, FM ratio; knobs: Fold, Sweep, Symmetry, Harmonics */
+        const float *pq = s->pp[p]; const float f = v->f0;
+        const float fold = q[1] + pq[PP_DET] * 5.0f, sw = q[2] + pq[PP_SUB] * 4.0f, bias = q[3] + pq[PP_FKEY] * 0.6f;
+        const float fmA = clampf(q[5] + (pq[PP_FDEC] - 0.5f), 0.0f, 2.0f);
+        v->ph += f * dt; WRAP(v->ph); v->ph2 += f * q[6] * dt; WRAP(v->ph2);
+        float o = q[0] > 0.5f ? 4.0f * fabsf(v->ph - 0.5f) - 1.0f : sinf(TWO_PI * v->ph);
+        o += fmA * 0.5f * sinf(TWO_PI * v->ph2);
+        const float u = (o + bias) * (1.0f + fold + sw * v->env2);
+        float y = sinf(u * 1.5707963f);
+        v->nx[9] += f * 0.5f * dt; WRAP(v->nx[9]);
+        y += q[4] * sinf(TWO_PI * v->nx[9]);
+        v->nx[10] += 0.002f * (y - v->nx[10]); y -= v->nx[10];            /* DC blocker (the bias leaves an offset) */
+        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+          if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+          else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
+        v->env2 *= v->c2;
+        x = y * v->env * 0.7f;
+        break; }
+    case 13: {                                                      /* ACOUSTIC drums: ring modes (drum head, shell, metal) + noise parts (snare wires, hat / cymbal sizzle, clap, shaker) */
+        const int kd = (int)(q[0] + 0.5f); const float t = v->t, f = v->f0;
+        const float nz = noise(s);
+        float e = v->nx[44]; v->nx[44] = 0.0f;
+        e += nz * v->nx[46] * v->nx[41]; v->nx[41] *= v->nx[42];
+        v->nx[40] += v->nx[43] * (e - v->nx[40]); e = v->nx[40];
+        float body = 0.0f;
+        for (int k = 0; k < 8; k++) if (v->nx[32 + k] != 0.0f) {
+            const float y = v->nx[16 + k] * v->nx[k] + v->nx[24 + k] * v->nx[8 + k] + e * v->nx[32 + k];
+            v->nx[8 + k] = v->nx[k]; v->nx[k] = y; body += y;
+        }
+        v->nx[47] += v->nx[48] * (nz - v->nx[47]);                    /* noise high-pass, then low-pass */
+        const float hpn = nz - v->nx[47];
+        v->nx[50] += v->nx[49] * (hpn - v->nx[50]);
+        const float bn = v->nx[50];
+        float out = 0.0f;
+        switch (kd) {
+        case 0: {                                                   /* BASS DRUM: head thump with a short pitch drop, beater click, shell knock */
+            const float sw = 1.0f + q[2] * expf(-t / 0.032f);
+            v->ph += f * sw * dt; WRAP(v->ph);
+            float th = sinf(TWO_PI * v->ph) * v->env;
+            if (q[6] > 0.0f) th = fast_tanh(th * (1.0f + q[6] * 0.01f)) / (0.5f + 0.5f * fast_tanh(1.0f + q[6] * 0.01f));
+            out = th * 0.85f + hpn * expf(-t / 0.0025f) * q[4] * 0.5f + v->nx[50] * expf(-t / 0.022f) * q[3] * 1.4f + body * q[5] * 0.5f;
+            break; }
+        case 1: {                                                   /* SNARE: two ringing heads + wires */
+            const float wr = bn * v->env2 * q[3] * (t < 0.0012f ? t / 0.0012f : 1.0f);
+            out = body * 0.9f + wr * 2.2f + hpn * expf(-t / 0.0018f) * q[4] * 0.45f;
+            break; }
+        case 2: {                                                   /* TOM: fundamental with a falling pitch + the head modes */
+            const float sw = 1.0f + q[2] * expf(-t / 0.04f);
+            v->ph += f * sw * dt; WRAP(v->ph);
+            out = sinf(TWO_PI * v->ph) * v->env * 0.8f + body * q[5] * 0.9f + hpn * expf(-t / 0.002f) * q[4] * 0.4f;
+            break; }
+        case 3: {                                                   /* HI-HAT: metal rings + sizzle */
+            out = body * 0.5f + bn * v->env2 * q[3] * 1.3f;
+            break; }
+        case 4: {                                                   /* CYMBAL: modes kept alive by a long noise burst + a washy noise bed, optional swell */
+            const float sw = q[8] > 0.001f ? clampf(t / q[8], 0.0f, 1.0f) : 1.0f;
+            out = body * 0.42f * (0.35f + 0.65f * sw) + bn * v->env2 * q[3] * (0.25f + 0.75f * sw) * 1.2f;
+            break; }
+        case 5: {                                                   /* RIM / SIDE STICK */
+            out = body * 0.9f + hpn * expf(-t / 0.0015f) * q[4] * 0.6f;
+            break; }
+        case 6: {                                                   /* CLAP: a few hands a hair apart, then the room */
+            static const float OFF[4] = { 0.0f, 0.0105f, 0.0215f, 0.0310f };
+            float be = 0.0f; if (t < 0.06f) for (int k = 0; k < 4; k++) if (t >= OFF[k]) be += expf(-(t - OFF[k]) / 0.0024f);
+            const float tail = t >= 0.031f ? v->env2 : 0.0f;
+            out = bn * (be * 0.7f + tail * q[3] * 0.9f) * 2.2f;
+            break; }
+        case 7: {                                                   /* SHAKER / TAMBOURINE: noise that swells in and falls away, + jingles */
+            const float at = q[7] > 0.0005f ? q[7] : 0.004f, ra = t < at ? t / at : 1.0f;
+            out = bn * v->env * ra * q[3] * 1.6f + body * q[4] * 0.35f;
+            break; }
+        default: {                                                  /* BLOCK / COWBELL / TRIANGLE */
+            out = body * 0.9f + hpn * expf(-t / 0.001f) * q[4] * 0.3f;
+            break; }
+        }
+        v->env *= v->c1; v->env2 *= v->c2;
+        if (t > 0.005f && v->env < 1e-3f && v->env2 < 1e-3f) v->active = 0;
+        x = out * 0.9f;
+        break; }
+    case 14: {                                                      /* EFFECT: a tone and a filtered noise, both swept; the level either blooms up to a peak or hits and falls */
+        const float L = v->nx[0], u = v->t / L;
+        if (u > 1.3f) { v->active = 0; break; }
+        v->nx[7] *= (u < 1.0f ? v->nx[8] : 1.0f); v->nx[9] *= (u < 1.0f ? v->nx[10] : 1.0f);
+        v->ph += v->nx[7] * dt; WRAP(v->ph);
+        const float tone = fast_tanh(sinf(TWO_PI * v->ph) * 1.6f) * 0.8f;
+        const float nz = noise(s);
+        const float g = tanf(3.14159265f * clampf(v->nx[9], 20.0f, 0.45f * s->sr) * dt), k2 = 2.0f - 1.94f * clampf(q[5], 0.0f, 1.0f);
+        const float a1 = 1.0f / (1.0f + g * (g + k2)), a2 = g * a1, a3 = g * a2;
+        const float v3 = nz - v->nx[6], v1 = a1 * v->nx[5] + a2 * v3, v2 = v->nx[6] + a2 * v->nx[5] + a3 * v3;
+        v->nx[5] = 2.0f * v1 - v->nx[5]; v->nx[6] = 2.0f * v2 - v->nx[6];
+        const int ft = (int)(q[9] + 0.5f);
+        float fl = ft == 0 ? v2 : (ft == 1 ? v1 * (0.3f + 0.7f * q[5]) : nz - k2 * v1 - v2);
+        const float pk = clampf(q[8], 0.0f, 0.98f);
+        float env;
+        if (pk < 0.02f) env = expf(-u * 5.0f);
+        else if (u < pk) { const float r = u / pk; env = r * r; }
+        else env = expf(-(u - pk) * 7.0f / (1.3f - pk));
+        if (u < 0.002f) env *= u / 0.002f;
+        x = (tone * q[7] + fl * q[6] * 1.5f) * env;
         break; }
     default: {                                                      /* MORPH: two real wavetables crossfaded over time */
         const float f = v->f0;
@@ -1594,7 +2368,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         else { pos += step; if (pos >= (double)v->s1) { if (loop && v->gate) pos -= (double)(v->s1 - v->s0); else v->active = 0; } }
         v->sp = pos;
         break; }
-    case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: x = nx_render(s, v); break;
+    case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: x = nx_render(s, v, p); break;
     default: v->active = 0; break;
     }
     v->t += dt;
@@ -1662,7 +2436,7 @@ static void clip_activate_lane(inst_t *s, int l, int c) {
     }
 }
 static void clip_activate(inst_t *s, int t, int c) {
-    s->clip[t] = c;
+    s->clip[t] = c; s->fol_cnt[t] = 0;
     if (s->isdrum[t]) { int d = track_slot(s, t); if (d >= 0) for (int k = 0; k < 16; k++) clip_activate_lane(s, NTRK + d * 16 + k, c); }
     else clip_activate_lane(s, t, c);
 }
@@ -1712,17 +2486,52 @@ static void rt_fire(inst_t *s, int t) {
     if (--s->rt_n[t] > 0) s->rt_cnt[t] += s->rt_int[t];
 }
 
+/* swing phase of step g: 0 = long (on-beat), 1 = short (off-beat), 2 = neutral. With an odd main loop length the groove restarts with every pass (last step neutral), so the loop sounds the same each time. */
+static int sw_ph(const inst_t *s, long g) {
+    int M = 16; for (int t = 0; t < NTRK; t++) if (s->seqlen[t] != 16 && s->seqlen[t] > 0) { M = s->seqlen[t]; break; }
+    if (M & 1) { long i = g % M; return i == M - 1 ? 2 : (int)(i & 1); }
+    return (int)(g & 1);
+}
 static void seq_step(inst_t *s) {
     const float L = s->sr * 60.0f / s->bpm / 4.0f;
+    {   /* follow actions: when a clip has played its loops, queue the next one */
+        static const int LP[6] = { 1, 2, 3, 4, 8, 16 };
+        if (s->gs > 0) for (int t = 0; t < NTRK; t++) {
+            const int c = s->clip[t]; if (c < 0 || c >= NPAT || s->qclip[t] != -2) continue;
+            const int act = s->fol[t][c] & 7; if (act == 0) continue;
+            int len = s->seqlen[t]; if (len < 1) len = 1;
+            if ((s->gs % len) != 0) continue;
+            int li = (s->fol[t][c] >> 3) & 7; if (li > 5) li = 5;
+            if (++s->fol_cnt[t] < LP[li]) continue;
+            s->fol_cnt[t] = 0;
+            int tgt = c;
+            if (act == 5) tgt = -1;
+            else {
+                int cand[NPAT], n = 0;
+                for (int k = 0; k < NPAT; k++) if (clip_has(s, k, t)) cand[n++] = k;
+                if (n == 0) continue;
+                if (act == 1 || act == 2) {
+                    int d = (act == 1) ? 1 : NPAT - 1;
+                    for (int k = 1; k <= NPAT; k++) { int q = (c + d * k) % NPAT; if (clip_has(s, q, t)) { tgt = q; break; } }
+                } else if (act == 3) tgt = cand[0];
+                else if (act == 4) {
+                    s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
+                    if (n > 1) { int pick = (int)((s->rng >> 8) % (unsigned)(n - 1)), k = 0; for (int i = 0; i < n; i++) { if (cand[i] == c) continue; if (k++ == pick) { tgt = cand[i]; break; } } }
+                }
+            }
+            if (tgt != c) s->qclip[t] = tgt;
+        }
+    }
     {
         float qv = s->g[G_QNT];
         static const int QM[7] = { 0, 1, 3, 7, 15, 31, 63 };   /* 1/16 1/8 1/4 1/2 bar 2bar 4bar */
         int qi = (int)(qv * 7.0f); if (qi < 0) qi = 0; if (qi > 6) qi = 6;
         int qm = QM[qi];
-        if ((s->gs & qm) == 0) apply_pending(s);
+        if (s->pend_on) qm = s->pend_qm;
+        if ((s->gs & qm) == 0) { apply_pending(s); s->pend_on = 0; }
     }
     if (s->rec_state == 1 && (s->gs & 15) == 0) { s->rec_state = 2; s->rec_n = 0; s->rec_len = (long)((float)(s->rec_bars * 16) * L); if (s->rec_len > s->rec_max) s->rec_len = s->rec_max; }
-    if (s->g[G_MET] > 0.01f && (s->gs & 3) == 0) { s->met_env = 1.0f; s->met_ph = 0.0f; s->met_f = ((s->gs & 15) == 0) ? 1700.0f : 1100.0f; }
+    if (s->g[G_MET] > 0.01f && (s->gs & 3) == 0) { s->met_amp = s->g[G_MET]; s->met_env = 1.0f; s->met_ph = 0.0f; s->met_f = ((s->gs & 15) == 0) ? 1700.0f : 1100.0f; }
     for (int t = 0; t < NLANE; t++) {                              /* t = lane */
         if (!lane_on(s, t)) continue;
         const int tk = lane_trk(s, t);
@@ -1752,16 +2561,17 @@ static void seq_step(inst_t *s) {
             int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7;
             float iv = L / (float)n;
             float gs_ = gi == 0 ? 0.8f * iv : GT[gi] * L;
+            if (st[6] > 0) gs_ = (float)st[6] * L - 1.0f;      /* held-step length: lasts exactly until the chosen step */
             if (n > 1 && gs_ > 0.9f * iv) gs_ = 0.9f * iv;
             s->rt_n[t] = n; s->rt_int[t] = iv; s->rt_semi[t] = semi; s->rt_vel[t] = hv; s->rt_gate[t] = (int)gs_;
             s->rt_cnt[t] = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * L;      /* nudge: delay up to 70 % of a step in 2.5 % steps (older saves: 10 % steps) */
-            if ((s->gs & 1) && s->pp[tk][PP_TSW] > 0.52f) s->rt_cnt[t] += (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * L;   /* per-track extra swing on the off-beat steps */
+            if (sw_ph(s, s->gs) == 1 && s->pp[tk][PP_TSW] > 0.52f) s->rt_cnt[t] += (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * L;   /* per-track extra swing on the off-beat steps */
             if (s->rt_cnt[t] <= 0.0f) rt_fire(s, t);
         }
     }
     float off = (2.0f * s->swing - 1.0f) * L;
     s->last_time = s->next_time;
-    s->next_time += (double)(L + (((s->gs & 1) == 0) ? off : -off));
+    { const int ph = sw_ph(s, s->gs); s->next_time += (double)(L + (ph == 2 ? 0.0f : (ph == 0 ? off : -off))); }
     s->gs++;
 }
 
@@ -1778,12 +2588,15 @@ static void seq_stop(inst_t *s) {
 static int hexv(char c) { return c >= '0' && c <= '9' ? c - '0' : (c >= 'a' && c <= 'f' ? c - 'a' + 10 : (c >= 'A' && c <= 'F' ? c - 'A' + 10 : 0)); }
 static void put_step(inst_t *s, int pat, int t, int st, const char *h, int w) {
     if (pat < 0 || pat >= NPAT || t < 0 || t >= NLANE || st < 0 || st >= MAXSTEP) return;
+    const int bb = (hexv(h[2]) << 4) | hexv(h[3]), ee = (hexv(h[8]) << 4) | hexv(h[9]), ff = w >= 12 ? (hexv(h[10]) << 4) | hexv(h[11]) : 0;
     s->stp[pat][t][st][0] = (uint8_t)((hexv(h[0]) << 4) | hexv(h[1]));
-    s->stp[pat][t][st][1] = (uint8_t)((hexv(h[2]) << 4) | hexv(h[3]));
+    s->stp[pat][t][st][1] = (uint8_t)(bb & 0x9F);
     s->stp[pat][t][st][2] = (uint8_t)((hexv(h[4]) << 4) | hexv(h[5]));
     s->stp[pat][t][st][3] = (uint8_t)((hexv(h[6]) << 4) | hexv(h[7]));
-    s->stp[pat][t][st][4] = (uint8_t)(((hexv(h[8]) << 4) | hexv(h[9])) & 0x7F);
-    s->stp[pat][t][st][5] = w >= 12 ? (uint8_t)(((hexv(h[10]) << 4) | hexv(h[11])) & 0x7F) : 0;
+    s->stp[pat][t][st][4] = (uint8_t)(ee & 0x7F);
+    s->stp[pat][t][st][5] = (uint8_t)(ff & 0x7F);
+    /* exact step length 1..15 steps (0 = use the gate setting): 4 spare bits - probability byte bits 5-6, nudge byte bit 7, lock byte bit 7 */
+    s->stp[pat][t][st][6] = (bb & 0x80) ? (uint8_t)(((bb >> 5) & 1) | (((bb >> 6) & 1) << 1) | (((ee >> 7) & 1) << 2) | (((ff >> 7) & 1) << 3)) : 0;
 }
 
 /* a pad event from Move (or the UI): 0..15 = track sound, 16..31 = note pads for the selected track */
@@ -1805,6 +2618,13 @@ static void pad_event(inst_t *s, int idx, int vel) {
     }
 }
 
+static void rep_clear(inst_t *s) { for (int i = 0; i < REP_N; i++) s->rp_on[i] = 0; }
+static void rep_stop(inst_t *s, int k) { for (int i = 0; i < REP_N; i++) if (s->rp_on[i] && s->rp_k[i] == k) s->rp_on[i] = 0; }
+static void rep_start(inst_t *s, int t, int k, float semi, float vel) {
+    int f = -1; for (int i = 0; i < REP_N; i++) { if (s->rp_on[i] && s->rp_k[i] == k) { f = i; break; } if (f < 0 && !s->rp_on[i]) f = i; }
+    if (f < 0) f = 0;
+    s->rp_on[f] = 1; s->rp_t[f] = t; s->rp_k[f] = k; s->rp_semi[f] = semi; s->rp_vel[f] = vel; s->rp_cnt[f] = rep_step_samples(s);
+}
 /* pad k (0..31) plays the selected track chromatically in the scale; repeat = retrigger while held at the track's rate */
 static void sel_pad(inst_t *s, int k, int vel, int repeat) {
     if (k < 0 || k >= 96) return;
@@ -1823,9 +2643,9 @@ static void sel_pad(inst_t *s, int k, int vel, int repeat) {
         }
         s->vc[t].gk = k + 1;
         s->ar[t].held = 1;
-        if (repeat) { s->rep_on = 1; s->rep_t = t; s->rep_k = k; s->rep_semi = (float)sm; s->rep_vel = (float)vel / 127.0f; s->rep_cnt = rep_step_samples(s); }
+        if (repeat) rep_start(s, t, k, (float)sm, (float)vel / 127.0f);
     } else {
-        if (s->rep_on && s->rep_k == k) s->rep_on = 0;
+        rep_stop(s, k);
         int t = s->np_trk[kk];
         if (t >= 0 && t < NLANE) {
             if (s->ar[t].key == kk) { s->ar[t].on = 0; s->ar[t].key = -1; }
@@ -1841,9 +2661,9 @@ static void lane_hit(inst_t *s, int l, int vel, int repeat) {
     if (vel > 0) {
         trig(s, l, (float)vel / 127.0f, 0, 1);
         s->vc[l].gk = 99;
-        if (repeat) { s->rep_on = 1; s->rep_t = l; s->rep_k = 100 + l; s->rep_semi = 0.0f; s->rep_vel = (float)vel / 127.0f; s->rep_cnt = rep_step_samples(s); }
+        if (repeat) rep_start(s, l, 100 + l, 0.0f, (float)vel / 127.0f);
     } else {
-        if (s->rep_on && s->rep_k == 100 + l) s->rep_on = 0;
+        rep_stop(s, 100 + l);
         s->vc[l].gate = 0;
     }
 }
@@ -1912,13 +2732,15 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
     if (st != 0x90 && st != 0x80) return;
     int p = note_to_pad(msg[1]);
     if (p < 0) return;
+    const int rcol = p & 7;
     int vel = (st == 0x90 && msg[2] > 0) ? msg[2] : 0;
+    if (s->pads_off == 4 && msg[1] >= 68 && msg[1] <= 99 && (p >> 3) >= 2) return;      /* LIVE FX: the top two pad rows are effect pads, the UI handles them */
     if (msg[1] >= 68 && msg[1] <= 99) {                                 /* a Move pad: the same layout as the UI (MOVE rows 3 degrees apart, SEQ, OCT, CHR) */
         const int col = p & 7, row = p >> 3;
-        p = s->lay_s == 3 ? 32 + col + 5 * row : (s->lay_s == 0 ? col + 3 * row : (s->lay_s == 1 ? row * 8 + col : col + 7 * row));
+        p = s->lay_s >= 3 ? 32 + col + (s->lay_s == 3 ? 5 : (s->lay_s == 4 ? 4 : 8)) * row : (s->lay_s == 0 ? col + 3 * row : (s->lay_s == 1 ? row * 8 + col : col + 7 * row));
     }
     if (s->pads_off == 1) { if (!vel) sel_pad(s, p, 0, 0); return; }     /* UI owns the pads (session, steps, menus) */
-    sel_pad(s, p, vel, s->pads_off == 3);
+    sel_pad(s, p, vel, s->pads_off == 3 && rcol >= 4);      /* NOTE REPEAT: only the right 16 pads repeat (several at once), the left 16 play normally */
 }
 
 static int parse_pad_key(const char *key, int *pad, const char **name) {
@@ -1949,13 +2771,96 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
         else if (k == PP_WAVE) { int e = enum_index(val, WAVE_NAME, 16);      if (e < 0) return; v = (float)e; }
         else if (k == PP_POLY) { int e = enum_index(val, POLY_NAME, 2);       if (e < 0) return; v = (float)e; }
         else if (k == PP_DTIME) { int e = enum_index(val, DT_NAME, 5);        if (e < 0) return; v = (float)e; }
-        else if (k == PP_XFX || k == PP_MFX)  { v = clampf((float)atof(val), 0.0f, 10.0f); }
+        else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX)  { v = clampf((float)atof(val), 0.0f, 11.0f); }
+        else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO) { v = clampf((float)atof(val), 0.0f, 2.0f); }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         s->pp[p][k] = v;
         if (s->plk_t[p] == k) s->plk_b[p] = v;
         update_pad(s, p);
         return;
     }
+}
+
+
+/* ---- MIDI file export: "path|clip" (clip 0..7, or -1 = all clips one after another). Type 1 file, 480 ticks per quarter, one track per sound with steps.
+ * Drum sounds use the Move drum rack notes 36..51, synth tracks use C3 (60) + semitones. Swing, nudge, ratchet and gate are written as they play; probability and conditions are ignored. */
+typedef struct { uint8_t *b; int n, cap; } mb_t;
+static void mb_put(mb_t *m, int v) { if (m->n >= m->cap) { m->cap = m->cap ? m->cap * 2 : 4096; m->b = (uint8_t *)realloc(m->b, (size_t)m->cap); } if (m->b) m->b[m->n++] = (uint8_t)v; }
+static void mb_vlq(mb_t *m, long v) { uint8_t t[5]; int k = 0; t[k++] = (uint8_t)(v & 0x7F); while ((v >>= 7) > 0) t[k++] = (uint8_t)(0x80 | (v & 0x7F)); while (k) mb_put(m, t[--k]); }
+typedef struct { long tick; int on, note, vel; } me_t;
+static int me_cmp(const void *a, const void *b) { const me_t *x = (const me_t *)a, *y = (const me_t *)b; if (x->tick != y->tick) return x->tick < y->tick ? -1 : 1; return x->on - y->on; }
+static char g_mx_res[96] = "none";
+static void midi_export(inst_t *s, const char *val) {
+    char path[200]; int clip = 0;
+    const char *bar = strchr(val, '|'); if (!bar || bar - val >= (int)sizeof path) { snprintf(g_mx_res, sizeof g_mx_res, "error,bad request"); return; }
+    memcpy(path, val, (size_t)(bar - val)); path[bar - val] = 0; clip = atoi(bar + 1);
+    if (clip < -1 || clip >= NPAT) { snprintf(g_mx_res, sizeof g_mx_res, "error,bad clip"); return; }
+    const int c0 = clip < 0 ? 0 : clip, c1 = clip < 0 ? NPAT - 1 : clip, TQ = 120;      /* ticks per 1/16 step */
+    long start[NPAT + 1]; long total = 0;
+    for (int c = c0; c <= c1; c++) {                                  /* length of every clip section: the longest lane, rounded up to whole bars */
+        int mx = 0;
+        for (int l = 0; l < NLANE; l++) {
+            if (!lane_on(s, l)) continue;
+            int any = 0; for (int i = 0; i < MAXSTEP && !any; i++) if (s->stp[c][l][i][0] & 0x80) any = 1;
+            if (!any) continue;
+            const int tk = lane_trk(s, l); int len = s->llen[l] > 0 ? s->llen[l] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
+            if (len > mx) mx = len;
+        }
+        start[c] = total; if (mx > 0) total += (long)((mx + 15) / 16) * 16;
+    }
+    start[c1 + 1 > NPAT ? NPAT : c1 + 1] = total;
+    if (total == 0) { snprintf(g_mx_res, sizeof g_mx_res, "error,nothing to export"); return; }
+    mb_t file = { 0, 0, 0 }; int ntr = 0; mb_t tracks = { 0, 0, 0 };
+    me_t *ev = (me_t *)malloc(sizeof(me_t) * 20000); if (!ev) { snprintf(g_mx_res, sizeof g_mx_res, "error,memory"); return; }
+    /* tempo track */
+    { mb_t t = { 0, 0, 0 }; long us = (long)(60000000.0f / s->bpm);
+      mb_put(&t, 0); mb_put(&t, 0xFF); mb_put(&t, 0x51); mb_put(&t, 3); mb_put(&t, (int)((us >> 16) & 255)); mb_put(&t, (int)((us >> 8) & 255)); mb_put(&t, (int)(us & 255));
+      mb_put(&t, 0); mb_put(&t, 0xFF); mb_put(&t, 0x58); mb_put(&t, 4); mb_put(&t, 4); mb_put(&t, 2); mb_put(&t, 24); mb_put(&t, 8);
+      mb_put(&t, 0); mb_put(&t, 0xFF); mb_put(&t, 0x2F); mb_put(&t, 0);
+      static const uint8_t H[] = { 'M','T','r','k' }; for (int i = 0; i < 4; i++) mb_put(&tracks, H[i]);
+      mb_put(&tracks, (t.n >> 24) & 255); mb_put(&tracks, (t.n >> 16) & 255); mb_put(&tracks, (t.n >> 8) & 255); mb_put(&tracks, t.n & 255);
+      for (int i = 0; i < t.n; i++) mb_put(&tracks, t.b[i]); free(t.b); ntr++; }
+    static const float GT[8] = { 0.0f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 8.0f };
+    for (int l = 0; l < NLANE; l++) {
+        int ne = 0; const int tk = lane_trk(s, l), drum = l >= NTRK;
+        if (!lane_on(s, l)) continue;
+        for (int c = c0; c <= c1 && ne < 19000; c++) {
+            const long len0 = (c + 1 <= c1 ? start[c + 1] : total) - start[c]; if (len0 <= 0) continue;
+            int len = s->llen[l] > 0 ? s->llen[l] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
+            for (long g = 0; g < len0 && ne < 19000; g++) {
+                const uint8_t *st = s->stp[c][l][g % len]; if (!(st[0] & 0x80)) continue;
+                const int semi = (int)st[2] - 64, vel = st[0] & 0x7F; int note = drum ? 36 + ((l - NTRK) & 15) : 60 + semi; if (note < 0) note = 0; if (note > 127) note = 127;
+                const float sw = (g & 1) ? (2.0f * s->swing - 1.0f) * TQ + (s->pp[tk][PP_TSW] > 0.52f ? (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * TQ : 0.0f) : 0.0f;
+                const float nd = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * TQ;
+                const int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7; const float iv = (float)TQ / (float)n;
+                float gl = gi == 0 ? 0.8f * iv : GT[gi] * TQ; if (n > 1 && gl > 0.9f * iv) gl = 0.9f * iv;
+                for (int r = 0; r < n && ne < 19998; r++) {
+                    long t0 = (start[c] + g) * TQ + (long)(sw + nd + iv * r), t1 = t0 + (long)(gl < 1.0f ? 1.0f : gl);
+                    ev[ne].tick = t0; ev[ne].on = 1; ev[ne].note = note; ev[ne].vel = vel ? vel : 1; ne++;
+                    ev[ne].tick = t1; ev[ne].on = 0; ev[ne].note = note; ev[ne].vel = 0; ne++;
+                }
+            }
+        }
+        if (!ne) continue;
+        qsort(ev, (size_t)ne, sizeof(me_t), me_cmp);
+        mb_t t = { 0, 0, 0 }; char nm[32]; int nl = snprintf(nm, sizeof nm, drum ? "Track %d pad %d" : "Track %d", tk + 1, ((l - NTRK) & 15) + 1);
+        mb_put(&t, 0); mb_put(&t, 0xFF); mb_put(&t, 3); mb_put(&t, nl); for (int i = 0; i < nl; i++) mb_put(&t, nm[i]);
+        long last = 0; const int ch = drum ? 9 : (tk & 7);
+        for (int i = 0; i < ne; i++) { mb_vlq(&t, ev[i].tick - last); last = ev[i].tick; mb_put(&t, (ev[i].on ? 0x90 : 0x80) | ch); mb_put(&t, ev[i].note); mb_put(&t, ev[i].vel); }
+        mb_vlq(&t, (long)total * TQ - last > 0 ? (long)total * TQ - last : 0); mb_put(&t, 0xFF); mb_put(&t, 0x2F); mb_put(&t, 0);
+        static const uint8_t H[] = { 'M','T','r','k' }; for (int i = 0; i < 4; i++) mb_put(&tracks, H[i]);
+        mb_put(&tracks, (t.n >> 24) & 255); mb_put(&tracks, (t.n >> 16) & 255); mb_put(&tracks, (t.n >> 8) & 255); mb_put(&tracks, t.n & 255);
+        for (int i = 0; i < t.n; i++) mb_put(&tracks, t.b[i]); free(t.b); ntr++;
+    }
+    free(ev);
+    if (ntr < 2) { free(tracks.b); snprintf(g_mx_res, sizeof g_mx_res, "error,nothing to export"); return; }
+    static const uint8_t H[] = { 'M','T','h','d', 0,0,0,6, 0,1 };
+    for (int i = 0; i < 10; i++) mb_put(&file, H[i]);
+    mb_put(&file, (ntr >> 8) & 255); mb_put(&file, ntr & 255); mb_put(&file, (480 >> 8) & 255); mb_put(&file, 480 & 255);
+    FILE *f = fopen(path, "wb"); int ok = 0;
+    if (f) { ok = fwrite(file.b, 1, (size_t)file.n, f) == (size_t)file.n && fwrite(tracks.b, 1, (size_t)tracks.n, f) == (size_t)tracks.n; fclose(f); }
+    if (ok) snprintf(g_mx_res, sizeof g_mx_res, "ok,%d,%ld", ntr - 1, (long)(file.n + tracks.n)); else snprintf(g_mx_res, sizeof g_mx_res, "error,cannot write file");
+    free(file.b); free(tracks.b);
 }
 
 static void set_param(void *instance, const char *key, const char *val) {
@@ -2018,28 +2923,47 @@ static void set_param(void *instance, const char *key, const char *val) {
         s->rec_state = 0;
         return;
     }
+    if (strcmp(key, "lfx") == 0) { int r = atoi(val); s->lf_req = r < 0 ? 0 : (r > 15 ? 15 : r); return; }
     if (strcmp(key, "reprate") == 0) { int r = atoi(val); s->rep_idx = r < 0 ? 0 : (r > 15 ? 15 : r); return; }
-    if (strcmp(key, "laysyn") == 0) { int v = atoi(val); s->lay_s = v < 0 ? 0 : (v > 3 ? 3 : v); return; }
+    if (strcmp(key, "laysyn") == 0) { int v = atoi(val); s->lay_s = v < 0 ? 0 : (v > 5 ? 5 : v); return; }
     if (strcmp(key, "padoct") == 0) { int o = atoi(val); s->pad_oct = o < -36 ? -36 : (o > 36 ? 36 : o); return; }
-    if (strcmp(key, "padsoff") == 0) { s->pads_off = atoi(val); if (s->pads_off == 1) s->rep_on = 0; return; }
+    if (strcmp(key, "padsoff") == 0) { s->pads_off = atoi(val); if (s->pads_off == 1) rep_clear(s); return; }
     if (strcmp(key, "npad") == 0) {                /* "k,vel,rep" from the UI */
         int k = atoi(val); const char *c = strchr(val, ','); int vel = c ? atoi(c + 1) : 100; const char *c2 = c ? strchr(c + 1, ',') : NULL;
         sel_pad(s, k, vel, c2 ? atoi(c2 + 1) : 0);
         return;
     }
-    if (strcmp(key, "panic") == 0) { for (int i = 0; i < NLANE + NGH; i++) { s->vc[i].active = 0; s->vc[i].gate = 0; } for (int t = 0; t < NLANE; t++) { s->ar[t].on = 0; s->ar[t].key = -1; } s->rep_on = 0; return; }
-    if (strcmp(key, "play") == 0) { if (val[0] == '1') seq_start(s); else seq_stop(s); return; }
+    if (strcmp(key, "panic") == 0) { for (int i = 0; i < NLANE + NGH; i++) { s->vc[i].active = 0; s->vc[i].gate = 0; } for (int t = 0; t < NLANE; t++) { s->ar[t].on = 0; s->ar[t].key = -1; } rep_clear(s); s->lf_req = 0; return; }
+    if (strcmp(key, "play") == 0) {
+        if (val[0] == '2') { if (!s->playing && s->ci_left == 0) { s->ci_b = (int)(s->sr * 60.0f / s->bpm); if (s->ci_b < 1) s->ci_b = 1; s->ci_t = 0; s->ci_left = 4 * s->ci_b; } return; }
+        s->ci_left = 0;
+        if (val[0] == '1') seq_start(s); else seq_stop(s);
+        return;
+    }
+    if (strcmp(key, "fol") == 0) {                 /* "track,clip,value" follow action of one clip */
+        int t = atoi(val); const char *c = strchr(val, ','); const char *c2 = c ? strchr(c + 1, ',') : NULL;
+        if (!c || !c2 || t < 0 || t >= NTRK) return;
+        int cl = atoi(c + 1), v = atoi(c2 + 1); if (cl < 0 || cl >= NPAT || v < 0 || v > 63) return;
+        s->fol[t][cl] = (uint8_t)v; return;
+    }
+    if (strcmp(key, "midiexp") == 0) { midi_export(s, val); return; }
     if (strcmp(key, "bpm") == 0)  { s->bpm = clampf((float)atof(val), 40.0f, 240.0f); return; }
     if (strcmp(key, "swing") == 0){ s->swing = clampf((float)atof(val), 0.5f, 0.75f); return; }
     if (strcmp(key, "pat") == 0)  { int n = atoi(val); if (n >= 0 && n < NPAT) s->cur_pat = n; return; }
     if (strcmp(key, "clip") == 0) {                /* "track,clip" clip -1 = stop; quantised to the bar */
         int t = atoi(val); const char *c = strchr(val, ','); if (!c || t < 0 || t >= NTRK) return;
         int cl = atoi(c + 1); if (cl < -1 || cl >= NPAT) return;
+        s->pend_on = 0;
         if (s->playing) s->qclip[t] = cl; else { clip_activate(s, t, cl); s->qclip[t] = -2; }
         return;
     }
+    if (strcmp(key, "sceneq") == 0) {              /* "scene,mode": 0 global, 1 now, 2 beat, 3 bar, 4 four bars */
+        int c = atoi(val); const char *m = strchr(val, ','); if (!m || c < 0 || c >= NPAT) return;
+        int md = atoi(m + 1); if (md < 0) md = 0; if (md > 4) md = 4; s->scq[c] = md; return;
+    }
     if (strcmp(key, "scene") == 0) {               /* launch clip n on every track that has one, stop the rest */
         int cl = atoi(val); if (cl < 0 || cl >= NPAT) return;
+        { static const int SQM[5] = { 0, 0, 3, 15, 63 }; s->pend_on = (s->playing && s->scq[cl] > 0); s->pend_qm = SQM[s->scq[cl]]; }
         for (int t = 0; t < NTRK; t++) {
             int target = clip_has(s, cl, t) ? cl : -1;
             if (s->playing) s->qclip[t] = target; else { clip_activate(s, t, target); s->qclip[t] = -2; }
@@ -2064,7 +2988,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         if (c && t >= 0 && t < NTRK) s->tg[t] = clampf((float)atof(c + 1), 0.0f, 1.5f);
         return;
     }
-    if (strcmp(key, "sel") == 0)  { int n = atoi(val); if (n >= 0 && n < NLANE) { if (n != s->sel_track) s->rep_on = 0; s->sel_track = n; } return; }
+    if (strcmp(key, "sel") == 0)  { int n = atoi(val); if (n >= 0 && n < NLANE) { if (n != s->sel_track) rep_clear(s); s->sel_track = n; } return; }
     if (strcmp(key, "len") == 0)  {                /* "track,length" */
         int t = atoi(val); const char *c = strchr(val, ',');
         if (c && t >= 0 && t < NTRK) { int l = atoi(c + 1); if (l >= 1 && l <= MAXSTEP) s->seqlen[t] = l; }
@@ -2112,7 +3036,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         int l = atoi(val); const char *c = strchr(val, ','); if (!c || l < 0 || l >= NLANE) return;
         int k = atoi(c + 1);
         if (s->plk_t[l] > 0) { s->pp[l][s->plk_t[l]] = s->plk_b[l]; update_pad(s, l); }       /* put the old target back to its base value */
-        if (k < 1 || k >= PP_N || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX) k = 0;
+        if (k < 1 || k >= PP_N || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX || k == PP_DMODE || k == PP_RMODE || k == PP_MONO) k = 0;
         s->plk_t[l] = (uint8_t)k; if (k) s->plk_b[l] = s->pp[l][k];
         return;
     }
@@ -2134,7 +3058,8 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_WAVE) v = clampf(v, 0.0f, 15.0f);
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
-            else if (k == PP_XFX || k == PP_MFX) v = clampf(v, 0.0f, 10.0f);
+            else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, 11.0f);
+            else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO) v = clampf(v, 0.0f, 2.0f);
             else v = clampf(v, 0.0f, 1.0f);
             s->cpp[c][t][k] = v;
             q = (*end == ',') ? end + 1 : end;
@@ -2155,7 +3080,8 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_WAVE) v = clampf(v, 0.0f, 15.0f);
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
-            else if (k == PP_XFX || k == PP_MFX) v = clampf(v, 0.0f, 10.0f);
+            else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, 11.0f);
+            else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO) v = clampf(v, 0.0f, 2.0f);
             else v = clampf(v, 0.0f, 1.0f);
             s->pp[n - 1][k] = v;
             q = (*end == ',') ? end + 1 : end;
@@ -2276,17 +3202,13 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
         double span = s->next_time - s->last_time;
         int fr = (s->playing && span > 1.0) ? (int)(100.0 * (s->tsamp - s->last_time) / span) : 0;
         if (fr < 0) fr = 0; if (fr > 99) fr = 99;
-        return snprintf(buf, (size_t)buf_len, "%d,%d,%d,%d", s->playing, s->gs, s->cur_pat, fr);
+        return snprintf(buf, (size_t)buf_len, "%d,%d,%d,%d,%d", s->playing, s->gs, s->cur_pat, fr, s->ci_left > 0 ? (s->ci_left + s->ci_b - 1) / s->ci_b : 0);
     }
     if (strcmp(key, "brn") == 0) return snprintf(buf, (size_t)buf_len, "%d", br_n);
     if (strcmp(key, "brerr") == 0) return snprintf(buf, (size_t)buf_len, "%d,%d,%d", br_err, br_skip, br_trunc);
     if (strcmp(key, "brres") == 0) return snprintf(buf, (size_t)buf_len, "%d", br_res);
     if (strcmp(key, "brpath") == 0) return snprintf(buf, (size_t)buf_len, "%s", BR_DIR);
     if (strncmp(key, "br_", 3) == 0) { int i = atoi(key + 3); if (i < 0 || i >= br_n) return -1; return snprintf(buf, (size_t)buf_len, "%c|%s", BR[i].dir ? 'd' : 'f', BR[i].name); }
-    if (strcmp(key, "recmaxbars") == 0) {            /* longest resample take that fits the 40 s buffer at the current tempo */
-        int b = (int)(40.0f * s->bpm / 240.0f); if (b < 1) b = 1; if (b > 16) b = 16;
-        return snprintf(buf, (size_t)buf_len, "%d", b);
-    }
     if (strcmp(key, "smpmem") == 0) return snprintf(buf, (size_t)buf_len, "%u", (unsigned)(((unsigned long long)smp_bytes * 100ull) / SMP_MAX_BYTES));
     if (strcmp(key, "smpn") == 0) { int n = 0; for (int i = 0; i < NSMP; i++) if (SMP[i].name[0]) n = i + 1; return snprintf(buf, (size_t)buf_len, "%d", n); }
     if (strncmp(key, "smp_", 4) == 0) {
@@ -2345,6 +3267,7 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
         if (buf_len <= n) return -1;
         memcpy(buf, tmp, (size_t)n + 1); return n;
     }
+    if (strcmp(key, "midiexp") == 0) { snprintf(buf, (size_t)buf_len, "%s", g_mx_res); return (int)strlen(buf); }
     if (strcmp(key, "scope") == 0) {                 /* 64 wave points (2 hex digits each, triggered on a rising zero crossing) + 8 band levels (2 hex digits each) */
         char tmp[160]; int n = 0, st = 0, o = s->sc_i;
         for (int i = 0; i < 60; i++) { float a = s->sc_w[(o + i) & 127], b = s->sc_w[(o + i + 1) & 127]; if (a < 0.0f && b >= 0.0f) { st = i + 1; break; } }
@@ -2352,6 +3275,23 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
         for (int b = 0; b < 8; b++) { int q = (int)(sqrtf(s->sc_env[b]) * 400.0f); if (q > 255) q = 255; n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%02x", q); }
         if (buf_len <= n) return -1;
         memcpy(buf, tmp, (size_t)n + 1); return n;
+    }
+    if (strncmp(key, "grnv_", 5) == 0) {             /* granulator display of one sound: 32 history levels (0-9 a-f) | grains: back (0-99), size (0-99), pitch (0-9), age (0-99), pan (0-9) ; ... */
+        const int ln = atoi(key + 5) - 1; char tmp[300]; int n = 0;
+        if (ln < 0 || ln >= NLANE || !s->gr_slot[ln]) { buf[0] = 0; return 0; }
+        const int sl = s->gr_slot[ln] - 1;
+        for (int k = 0; k < 32; k++) {
+            float pk = 0.0f; const int base = (s->gr[sl].w - (32 - k) * (GRN_SZ / 32) + GRN_SZ) & (GRN_SZ - 1);
+            for (int j = 0; j < GRN_SZ / 32; j += 64) { const float v = fabsf(s->gr[sl].buf[0][(base + j) & (GRN_SZ - 1)]); if (v > pk) pk = v; }
+            int lv = (int)(sqrtf(pk) * 15.0f); if (lv > 15) lv = 15; tmp[n++] = "0123456789abcdef"[lv];
+        }
+        tmp[n++] = '|';
+        for (int g = 0; g < 8; g++) if (s->gr[sl].age[g] < s->gr[sl].len[g]) {
+            int back = (s->gr[sl].w - (int)s->gr[sl].pos[g] + GRN_SZ) & (GRN_SZ - 1);
+            n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%d,%d,%d,%d,%d;", back * 99 / GRN_SZ, s->gr[sl].len[g] * 99 / (int)(0.32f * s->sr), (int)(s->gr[sl].inc[g] * 4.0f), s->gr[sl].age[g] * 99 / s->gr[sl].len[g], (int)(s->gr[sl].pr[g] / (s->gr[sl].pl[g] + s->gr[sl].pr[g]) * 9.0f));
+        }
+        if (buf_len <= n) return -1;
+        tmp[n] = 0; memcpy(buf, tmp, (size_t)n + 1); return n;
     }
     if (strcmp(key, "cpu") == 0)
         return snprintf(buf, (size_t)buf_len, "%d,%d", (int)(s->cpu_avg * 100.0f + 0.5f), (int)(s->cpu_peak * 100.0f + 0.5f));
@@ -2400,12 +3340,13 @@ static int get_error(void *instance, char *buf, int buf_len) {
     return 0;
 }
 
-static void eq_coef(float *c, int band, float gdb, float sr) {     /* RBJ biquad: band 0 low shelf 100 Hz, 1 peak 1 kHz, 2 high shelf 8 kHz; c = b0 b1 b2 a1 a2 (normalised) */
-    const float f = band == 0 ? 100.0f : (band == 1 ? 1000.0f : 8000.0f);
+static void eq_coef(float *c, int band, float gdb, float sr, float fx, float qx) {     /* RBJ biquad: band 0 low shelf 100 Hz, 1 peak 1 kHz, 2 high shelf 8 kHz; c = b0 b1 b2 a1 a2 (normalised) */
+    float f = band == 0 ? 100.0f * powf(3.0f, (fx - 0.5f) * 2.0f) : (band == 1 ? 1000.0f * powf(8.0f, (fx - 0.5f) * 2.0f) : 8000.0f * powf(2.0f, (fx - 0.5f) * 2.0f));
+    if (f > sr * 0.45f) f = sr * 0.45f;
     const float A = powf(10.0f, gdb / 40.0f), w0 = 6.2831853f * f / sr, cw = cosf(w0), sw = sinf(w0);
     float b0, b1, b2, a0, a1, a2;
     if (band == 1) {
-        const float al = sw / (2.0f * 0.9f);
+        const float al = sw / (2.0f * 0.9f * powf(4.0f, (qx - 0.5f) * 2.0f));
         b0 = 1.0f + al * A; b1 = -2.0f * cw; b2 = 1.0f - al * A; a0 = 1.0f + al / A; a1 = -2.0f * cw; a2 = 1.0f - al / A;
     } else {
         const float al = sw * 0.70710678f, sa = 2.0f * sqrtf(A) * al;
@@ -2422,7 +3363,18 @@ static void render_block(void *instance, int16_t *out_lr, int frames) {
     if (!s) { memset(out_lr, 0, (size_t)frames * 2 * sizeof(int16_t)); return; }
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
+#if defined(__aarch64__)
+    uint64_t fpcr_old; __asm__ volatile("mrs %0, fpcr" : "=r"(fpcr_old));
+    __asm__ volatile("msr fpcr, %0" :: "r"(fpcr_old | (1ull << 24)));          /* flush denormals to zero: decaying filter / reverb / delay tails no longer cost extra CPU (a cause of crackling) */
+#elif defined(__SSE__)
+    unsigned int mx_old = _mm_getcsr(); _mm_setcsr(mx_old | 0x8040u);
+#endif
     render_block_impl(instance, out_lr, frames);
+#if defined(__aarch64__)
+    __asm__ volatile("msr fpcr, %0" :: "r"(fpcr_old));
+#elif defined(__SSE__)
+    _mm_setcsr(mx_old);
+#endif
     clock_gettime(CLOCK_MONOTONIC, &t1);
     double el = (double)(t1.tv_sec - t0.tv_sec) * 1e9 + (double)(t1.tv_nsec - t0.tv_nsec);
     float load = (float)(el / ((double)frames / (double)s->sr * 1e9));
@@ -2455,6 +3407,13 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         float tl[NLANE], tr[NLANE], tsd[NLANE], tsr[NLANE]; int tact[NLANE];      /* one bus per sound lane: a drum sound has its own effects, a synth track one set */
         for (int t = 0; t < NLANE; t++) { tl[t] = tr[t] = tsd[t] = tsr[t] = 0.0f; tact[t] = 0; }
 
+        /* count-in: one bar of clicks, then the sequencer starts */
+        if (s->ci_left > 0) {
+            if (s->ci_b > 0 && s->ci_t % s->ci_b == 0) { s->met_amp = s->g[G_MET] > 0.6f ? s->g[G_MET] : 0.6f; s->met_env = 1.0f; s->met_ph = 0.0f; s->met_f = (s->ci_t == 0) ? 1700.0f : 1100.0f; }
+            s->ci_t++;
+            if (--s->ci_left == 0) seq_start(s);
+        }
+
         /* sequencer */
         if (s->playing) {
             if (s->tsamp >= s->next_time) seq_step(s);
@@ -2486,9 +3445,9 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             if (s->eq[i].cnt <= 0) continue;
             if (--s->eq[i].cnt == 0 && lane_on(s, s->eq[i].lane) && !s->mute[lane_trk(s, s->eq[i].lane)]) trig_layer(s, s->eq[i].lane, s->eq[i].vel, s->eq[i].semi, s->eq[i].follow);
         }
-        if (s->rep_on) {
-            s->rep_cnt -= 1.0f;
-            if (s->rep_cnt <= 0.0f) { trig(s, s->rep_t, s->rep_vel, (int)s->rep_semi, 1); s->rep_cnt += rep_step_samples(s); }
+        for (int ri = 0; ri < REP_N; ri++) if (s->rp_on[ri]) {
+            s->rp_cnt[ri] -= 1.0f;
+            if (s->rp_cnt[ri] <= 0.0f) { trig(s, s->rp_t[ri], s->rp_vel[ri], (int)s->rp_semi[ri], 1); s->rp_cnt[ri] += rep_step_samples(s); }
         }
 
         {
@@ -2520,12 +3479,23 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                     x = v->l2;
                 }
             }
+            {                                                              /* sound design 2: noise layer that follows the sound, wave folder */
+                const float *q2 = s->pp[p];
+                if (q2[PP_SNZ] > 0.01f) {
+                    v->nze += 0.002f * (fabsf(x) - v->nze);
+                    s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
+                    x += ((float)(s->rng & 0xFFFF) * (1.0f / 32768.0f) - 1.0f) * q2[PP_SNZ] * 2.0f * v->nze;
+                }
+                if (q2[PP_SFLD] > 0.01f) { const float f = q2[PP_SFLD]; x = (1.0f - f) * x + f * sinf(x * (1.0f + f * 6.0f) * 1.5708f); }
+            }
             {
                 float cu = s->pp[p][PP_CUT] * ch->cm, fa = s->pp[p][PP_FENV] + ch->fenv, rs_ = s->pp[p][PP_RES] + ch->res;
                 if (fa > 1.0f) fa = 1.0f; if (rs_ > 1.0f) rs_ = 1.0f;
                 const float fmd = s->pp[p][PP_FMODE];
                 if (cu < 0.995f || fa > 0.01f || rs_ > 0.01f || fmd > 0.01f) {
-                    float ce = cu + fa * v->fenv + v->fkoff; if (ce > 1.0f) ce = 1.0f; if (ce < 0.0f) ce = 0.0f;
+                    float ramp = 1.0f;
+                    if (s->pp[p][PP_FATK] > 0.01f) { const float at_ = 0.001f + s->pp[p][PP_FATK] * s->pp[p][PP_FATK] * 1.5f; ramp = v->t < at_ ? v->t / at_ : 1.0f; }
+                    float ce = cu + fa * v->fenv * ramp + v->fkoff + s->pp[p][PP_VFLT] * (v->vel - 0.6f) * 0.8f; if (ce > 1.0f) ce = 1.0f; if (ce < 0.0f) ce = 0.0f;
                     v->fenv *= 1.0f - s->fdk[p];
                     float fq = 40.0f + ce * ce * ce * 7400.0f;
                     float g = 6.2832f * fq * s->inv_sr; if (g > 1.0f) g = 1.0f;
@@ -2566,23 +3536,33 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 }
                 float rg = s->pp[p][PP_RING] + ch->ring; if (rg > 1.0f) rg = 1.0f;
                 if (rg > 0.01f) {
-                    v->ring_ph += (80.0f + rg * 900.0f) * s->inv_sr; if (v->ring_ph >= 1.0f) v->ring_ph -= 1.0f;
+                    { const float rq = s->pp[p][PP_RFQ]; v->ring_ph += (rq > 0.01f ? 40.0f + rq * rq * 2000.0f : 80.0f + rg * 900.0f) * s->inv_sr; } if (v->ring_ph >= 1.0f) v->ring_ph -= 1.0f;
                     float tri = 4.0f * fabsf(v->ring_ph - 0.5f) - 1.0f;
                     float m = rg * 3.0f; if (m > 1.0f) m = 1.0f;
                     x = x * (1.0f - m) + x * tri * m;
                 }
                 float pm = s->pp[p][PP_PUMP];
-                if (pm > 0.01f) { float q = 1.0f - s->pump_ph; x *= 1.0f - pm * q * q; }
+                if (pm > 0.01f) { float q = 1.0f - s->pump_ph, e = q * q; const float pc = s->pp[p][PP_PCV]; if (pc > 0.01f) e = e * (1.0f - pc) + e * e * e * pc; x *= 1.0f - pm * e; }
+            }
+            float pgl = s->pl[p], pgr = s->pr[p];
+            {                                                              /* chop (1/16 pulse), tremolo, auto-pan */
+                const float *q2 = s->pp[p];
+                if (q2[PP_SCHP] > 0.01f) { float ph = s->pump_ph * 4.0f; ph -= floorf(ph); x *= 1.0f - q2[PP_SCHP] * (0.5f - 0.5f * cosf(TWO_PI * ph)); }
+                if (q2[PP_TREM] > 0.01f || q2[PP_APAN] > 0.01f) {
+                    v->trp += (0.5f + q2[PP_TRAT] * q2[PP_TRAT] * 14.5f) * s->inv_sr; if (v->trp >= 1.0f) v->trp -= 1.0f;
+                    if (q2[PP_TREM] > 0.01f) x *= 1.0f - q2[PP_TREM] * (0.5f - 0.5f * cosf(TWO_PI * v->trp));
+                    if (q2[PP_APAN] > 0.01f) { const float lf = sinf(TWO_PI * v->trp); pgl *= 1.0f - q2[PP_APAN] * 0.5f * (1.0f + lf); pgr *= 1.0f - q2[PP_APAN] * 0.5f * (1.0f - lf); }
+                }
             }
             x *= v->vel * s->gain[p] * s->tg[gi] * ch->gn;
             float wb = s->pp[p][PP_WOB];
             if (wb > 0.01f) {
                 float tw = 4.0f * fabsf(s->wob_ph - 0.5f) - 1.0f;
-                tl[p] += x * s->pl[p] * (1.0f - wb * 0.5f * (1.0f + tw));
-                tr[p] += x * s->pr[p] * (1.0f - wb * 0.5f * (1.0f - tw));
+                tl[p] += x * pgl * (1.0f - wb * 0.5f * (1.0f + tw));
+                tr[p] += x * pgr * (1.0f - wb * 0.5f * (1.0f - tw));
             } else {
-                tl[p] += x * s->pl[p];
-                tr[p] += x * s->pr[p];
+                tl[p] += x * pgl;
+                tr[p] += x * pgr;
             }
             tsd[p] += x * s->pp[p][PP_DLY];
             float rs = s->pp[p][PP_RVB];
@@ -2642,104 +3622,18 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 }
                 l = in2[0]; r_ = in2[1];
             }
-            {   /* insert effect: 10 types (xfx), amount / rate / depth meaning depends on the type */
-                const int xt = (int)(q[PP_XFX] + 0.5f);
-                if (xt > 0 && xt <= 10) {
-                    const float am = q[PP_XMIX], pa = q[PP_XRT], pb = q[PP_XDP];
-                    float in2[2] = { l, r_ }, out2[2] = { l, r_ };
-                    float *z = &s->xz[t][0][0];
-                    const float wet2 = pb * 2.0f > 1.0f ? 1.0f : pb * 2.0f;
-                    if (xt == 1 || xt == 2) {                                   /* 1 STUTTER / 2 REVERSE: capture a slice (1/8 .. 1/64 beat), then repeat it (or play it backwards) for some of every 4 slices */
-                        static const float SD[4] = { 2.0f, 4.0f, 8.0f, 16.0f };
-                        int di = (int)(pa * 3.99f); if (di < 0) di = 0; if (di > 3) di = 3;
-                        int ls = (int)(60.0f / s->bpm * s->sr / SD[di]); if (ls < 64) ls = 64; if (ls > SB_SIZE) ls = SB_SIZE;
-                        int cn = s->scnt[t]; if (cn >= ls) { cn = 0; s->sn[t]++; }
-                        const int hold = (s->sn[t] & 3) < (int)(pb * 3.0f + 0.5f);
-                        if (hold) {
-                            const int ri = xt == 1 ? cn : ls - 1 - cn;
-                            float g = 1.0f; if (cn < 48) g = (float)cn / 48.0f; else if (ls - cn < 48) g = (float)(ls - cn) / 48.0f;
-                            for (int c = 0; c < 2; c++) out2[c] = in2[c] * (1.0f - am) + s->sbuf[t][c][ri] * g * am;
-                        } else {
-                            for (int c = 0; c < 2; c++) s->sbuf[t][c][cn] = in2[c];
-                        }
-                        s->scnt[t] = cn + 1;
-                    } else if (xt == 3 || xt == 6) {                            /* FLANGER / COMB */
-                        const int w = s->xw[t];
-                        if (xt == 3) {
-                            s->xph[t] += (0.05f + pa * pa * 5.0f) * s->inv_sr; if (s->xph[t] >= 1.0f) s->xph[t] -= 1.0f;
-                        }
-                        for (int c = 0; c < 2; c++) {
-                            float ph = s->xph[t] + 0.25f * (float)c; if (ph >= 1.0f) ph -= 1.0f;
-                            float d = xt == 3 ? (0.0005f + (0.5f + 0.5f * sinf(TWO_PI * ph)) * 0.0035f) * s->sr : 22.0f + pa * 400.0f;
-                            if (d > (float)(XB_SIZE - 4)) d = (float)(XB_SIZE - 4);
-                            float pos = (float)w - d; if (pos < 0.0f) pos += (float)XB_SIZE;
-                            int i0 = (int)pos; float fr = pos - (float)i0; i0 &= (XB_SIZE - 1); int i1 = (i0 + 1) & (XB_SIZE - 1);
-                            float y = s->xbuf[t][c][i0] * (1.0f - fr) + s->xbuf[t][c][i1] * fr;
-                            float fb = xt == 3 ? pb * 0.85f : 0.2f + pb * 0.7f;
-                            s->xbuf[t][c][w] = in2[c] + y * fb;
-                            out2[c] = xt == 3 ? in2[c] + y * am : in2[c] * (1.0f - 0.4f * am) + y * am * 0.7f;
-                        }
-                        s->xw[t] = (w + 1) & (XB_SIZE - 1);
-                    } else if (xt == 4 || xt == 5) {                            /* TREMOLO / AUTO-PAN */
-                        s->xph[t] += (0.5f + pa * pa * 14.0f) * s->inv_sr; if (s->xph[t] >= 1.0f) s->xph[t] -= 1.0f;
-                        if (xt == 4) {
-                            for (int c = 0; c < 2; c++) {
-                                float ph = s->xph[t] + 0.5f * pb * (float)c; if (ph >= 1.0f) ph -= 1.0f;
-                                out2[c] = in2[c] * (1.0f - am * (0.5f + 0.5f * sinf(TWO_PI * ph)));
-                            }
-                        } else {
-                            float lfo = tanhf(sinf(TWO_PI * s->xph[t]) * (1.0f + pb * 8.0f)) * am;
-                            out2[0] = in2[0] * (1.0f - (lfo > 0.0f ? lfo : 0.0f));
-                            out2[1] = in2[1] * (1.0f + (lfo < 0.0f ? lfo : 0.0f));
-                        }
-                    } else if (xt == 7) {                                       /* AUTO-WAH (state variable band-pass) */
-                        s->xph[t] += (0.2f + pa * pa * 6.0f) * s->inv_sr; if (s->xph[t] >= 1.0f) s->xph[t] -= 1.0f;
-                        const float fc = 300.0f + 2400.0f * (0.5f + 0.5f * sinf(TWO_PI * s->xph[t]));
-                        const float f = 2.0f * sinf(3.14159f * fc * s->inv_sr), qd = 1.0f - pb * 0.9f;
-                        for (int c = 0; c < 2; c++) {
-                            float *st = &z[c * 4];
-                            float hp = in2[c] - st[0] - qd * st[1];
-                            st[1] += f * hp; st[0] += f * st[1];
-                            if (!(fabsf(st[0]) < 8.0f) || !(fabsf(st[1]) < 8.0f)) { st[0] = st[1] = 0.0f; }
-                            out2[c] = in2[c] * (1.0f - am) + st[1] * am * 2.5f;
-                        }
-                    } else if (xt == 8) {                                       /* GATE: tempo-synced chop (1/4 .. 1/32) */
-                        static const float DIV[4] = { 1.0f, 2.0f, 4.0f, 8.0f };
-                        int di = (int)(pa * 3.99f); if (di < 0) di = 0; if (di > 3) di = 3;
-                        s->xph[t] += s->bpm / 60.0f * DIV[di] * s->inv_sr; if (s->xph[t] >= 1.0f) s->xph[t] -= 1.0f;
-                        const float tgt = s->xph[t] < 0.5f ? 1.0f : 1.0f - am, k = 0.003f + (1.0f - pb) * 0.2f;
-                        s->xhold[t][0] += k * (tgt - s->xhold[t][0]);
-                        out2[0] = in2[0] * s->xhold[t][0]; out2[1] = in2[1] * s->xhold[t][0];
-                    } else if (xt == 9) {                                       /* LO-FI: sample-rate + bit reduction */
-                        const int n = 1 + (int)(am * 15.0f);
-                        const float lv = 8.0f + (1.0f - pa) * 2000.0f;
-                        if (++s->xcnt[t] >= n) { s->xcnt[t] = 0; for (int c = 0; c < 2; c++) s->xhold[t][c] = floorf(in2[c] * lv + 0.5f) / lv; }
-                        for (int c = 0; c < 2; c++) out2[c] = in2[c] * (1.0f - wet2) + s->xhold[t][c] * wet2;
-                    } else {                                                    /* DJ FILTER: left = low-pass, right = high-pass, middle = off */
-                        const float pos = pa - 0.5f, ap = fabsf(pos) * 2.0f;
-                        if (ap > 0.04f) {
-                            float fc = pos < 0.0f ? 18000.0f * powf(0.006f, ap) : 20.0f * powf(300.0f, ap);
-                            if (fc > 0.2f * s->sr) fc = 0.2f * s->sr;
-                            const float f = 2.0f * sinf(3.14159f * fc * s->inv_sr), qd = 1.0f - am * 0.85f;
-                            for (int c = 0; c < 2; c++) {
-                                float *st = &z[c * 4];
-                                float hp = in2[c] - st[0] - qd * st[1];
-                                st[1] += f * hp; st[0] += f * st[1];
-                                if (!(fabsf(st[0]) < 8.0f) || !(fabsf(st[1]) < 8.0f)) { st[0] = st[1] = 0.0f; }
-                                out2[c] = pos < 0.0f ? st[0] : hp;
-                            }
-                        }
-                    }
-                    l = out2[0]; r_ = out2[1];
-                    if (!(fabsf(l) < 16.0f)) l = 0.0f;
-                    if (!(fabsf(r_) < 16.0f)) r_ = 0.0f;
-                }
+            {   /* audio effect chain: slot 1, then slot 2 */
+                xfx_proc(s, &s->xs[0][t], s->sbuf[t], (int)(q[PP_XFX] + 0.5f), q[PP_XMIX], q[PP_XRT], q[PP_XDP], &l, &r_);
+                xfx_proc(s, &s->xs[1][t], NULL, (int)(q[PP_X2FX] + 0.5f), q[PP_X2MIX], q[PP_X2RT], q[PP_X2DP], &l, &r_);
+                if (q[PP_GRN] >= 0.01f || s->gr_slot[t]) gran_proc(s, t, q, &l, &r_);
             }
             {   /* per-sound EQ: low shelf 100 Hz, peak 1 kHz, high shelf 8 kHz, +-12 dB (skipped while flat) */
                 const float gq[3] = { (q[PP_EQL] - 0.5f) * 24.0f, (q[PP_EQM] - 0.5f) * 24.0f, (q[PP_EQH] - 0.5f) * 24.0f };
                 if (fabsf(gq[0]) > 0.15f || fabsf(gq[1]) > 0.15f || fabsf(gq[2]) > 0.15f) {
                     if (!s->eq_on[t]) { memset(s->eq_z[t], 0, sizeof s->eq_z[t]); for (int b = 0; b < 3; b++) s->eq_g[t][b] = 999.0f; s->eq_on[t] = 1; }
-                    for (int b = 0; b < 3; b++) if (s->eq_g[t][b] != gq[b]) { eq_coef(s->eq_c[t][b], b, gq[b], s->sr); s->eq_g[t][b] = gq[b]; }
+                    const float fq[4] = { q[PP_EQLF], q[PP_EQMF], q[PP_EQHF], q[PP_EQQ] };
+                    if (fq[0] != s->eq_p[t][0] || fq[1] != s->eq_p[t][1] || fq[2] != s->eq_p[t][2] || fq[3] != s->eq_p[t][3]) { for (int b = 0; b < 3; b++) s->eq_g[t][b] = 999.0f; memcpy(s->eq_p[t], fq, sizeof fq); }
+                    for (int b = 0; b < 3; b++) if (s->eq_g[t][b] != gq[b]) { eq_coef(s->eq_c[t][b], b, gq[b], s->sr, s->eq_p[t][b], s->eq_p[t][3]); s->eq_g[t][b] = gq[b]; }
                     float io[2] = { l, r_ };
                     for (int c = 0; c < 2; c++) {
                         float x = io[c];
@@ -2752,29 +3646,62 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                     }
                     l = io[0]; r_ = io[1];
                 } else s->eq_on[t] = 0;
+                if (q[PP_EQO] != s->eq_ogp[t]) { s->eq_ogp[t] = q[PP_EQO]; s->eq_og[t] = fabsf(q[PP_EQO] - 0.5f) < 0.01f ? 1.0f : powf(10.0f, (q[PP_EQO] - 0.5f) * 1.2f); }
+                if (s->eq_og[t] != 1.0f) { l *= s->eq_og[t]; r_ *= s->eq_og[t]; }
             }
+            if (q[PP_MONO] > 1.5f) { const float mm = 0.5f * (l + r_); l = mm * s->pl[t]; r_ = mm * s->pr[t]; }      /* DRY: only the dry sound is mono, the reverb / delay returns stay stereo */
             L += l; R += r_;
 
             if (tsd[t] != 0.0f || tsr[t] != 0.0f) s->dr_act[t] = (int)(6.0f * s->sr);     /* delay + reverb only run while this bus sends to them (and for their tail) */
             if (s->dr_act[t] > 0) {
                 if (--s->dr_act[t] == 0) {
                     memset(s->dlL[t], 0, sizeof s->dlL[t]); memset(s->dlR[t], 0, sizeof s->dlR[t]); memset(s->rv[t], 0, sizeof s->rv[t]);
-                    memset(s->rv_z[t], 0, sizeof s->rv_z[t]); s->dly_z[t][0] = s->dly_z[t][1] = 0.0f;
+                    memset(s->rv_z[t], 0, sizeof s->rv_z[t]); s->dly_z[t][0] = s->dly_z[t][1] = 0.0f; memset(s->shb[t], 0, sizeof s->shb[t]); s->dly_hp[t][0] = s->dly_hp[t][1] = 0.0f;
                 }
-            /* delay (ping-pong) */
+            /* delay: 0 PING-PONG, 1 TAPE (wow + flutter, dark, saturated), 2 DUB (dotted right side, band-limited feedback) */
             {
                 const float dfb = q[PP_DFB] * 0.9f;
-                int rp = (s->dw[t] - dlen_t[t]) & DLY_MASK;
-                float yl = s->dlL[t][rp], yr = s->dlR[t][rp];
-                s->dly_z[t][0] += s->a_dly * (yl - s->dly_z[t][0]);
-                s->dly_z[t][1] += s->a_dly * (yr - s->dly_z[t][1]);
-                s->dlL[t][s->dw[t]] = tsd[t] + s->dly_z[t][1] * dfb;
-                s->dlR[t][s->dw[t]] = s->dly_z[t][0] * dfb;
+                const int dm = (int)(q[PP_DMODE] + 0.5f);
+                float yl, yr;
+                if (dm == 0) {
+                    int rp = (s->dw[t] - dlen_t[t]) & DLY_MASK;
+                    yl = s->dlL[t][rp]; yr = s->dlR[t][rp];
+                    { const float ta = fminf(1.0f, s->a_dly * (0.2f + 1.6f * q[PP_DTN]));
+                    s->dly_z[t][0] += ta * (yl - s->dly_z[t][0]);
+                    s->dly_z[t][1] += ta * (yr - s->dly_z[t][1]); }
+                    s->dlL[t][s->dw[t]] = tsd[t] + s->dly_z[t][1] * dfb;
+                    s->dlR[t][s->dw[t]] = s->dly_z[t][0] * dfb;
+                } else {
+                    float dl_l = (float)dlen_t[t], dl_r = (float)dlen_t[t];
+                    if (dm == 1) {
+                        s->dly_ph[t] += 0.7f * s->inv_sr; if (s->dly_ph[t] >= 1.0f) s->dly_ph[t] -= 1.0f;
+                        const float wob = (0.0007f * sinf(TWO_PI * s->dly_ph[t]) + 0.00025f * sinf(TWO_PI * 7.3f * s->dly_ph[t])) * s->sr;
+                        dl_l += wob; dl_r += wob * 0.8f;
+                    } else dl_r *= 0.75f;
+                    if (dl_l < 8.0f) dl_l = 8.0f; if (dl_r < 8.0f) dl_r = 8.0f;
+                    float pl = (float)s->dw[t] - dl_l, pr = (float)s->dw[t] - dl_r;
+                    int il = (int)floorf(pl), ir = (int)floorf(pr); const float fl = pl - (float)il, fr_ = pr - (float)ir;
+                    yl = s->dlL[t][il & DLY_MASK] * (1.0f - fl) + s->dlL[t][(il + 1) & DLY_MASK] * fl;
+                    yr = s->dlR[t][ir & DLY_MASK] * (1.0f - fr_) + s->dlR[t][(ir + 1) & DLY_MASK] * fr_;
+                    const float aa = fminf(1.0f, (dm == 1 ? s->a_dly * 0.45f : s->a_dly * 0.8f) * (0.2f + 1.6f * q[PP_DTN]));
+                    s->dly_z[t][0] += aa * (yl - s->dly_z[t][0]);
+                    s->dly_z[t][1] += aa * (yr - s->dly_z[t][1]);
+                    float fa = s->dly_z[t][0], fb = s->dly_z[t][1];
+                    if (dm == 2) {                       /* high-pass the repeats: they thin out while they fade */
+                        s->dly_hp[t][0] += 0.02f * (fa - s->dly_hp[t][0]); fa -= s->dly_hp[t][0];
+                        s->dly_hp[t][1] += 0.02f * (fb - s->dly_hp[t][1]); fb -= s->dly_hp[t][1];
+                    }
+                    fa = fast_tanh(fa * 1.4f) * 0.714f; fb = fast_tanh(fb * 1.4f) * 0.714f;
+                    s->dlL[t][s->dw[t]] = tsd[t] + fb * dfb;
+                    s->dlR[t][s->dw[t]] = fa * dfb;
+                }
                 s->dw[t] = (s->dw[t] + 1) & DLY_MASK;
+                { const float wd = q[PP_DWD] * 2.0f, md = 0.5f * (yl + yr), sd = 0.5f * (yl - yr); yl = md + sd * wd; yr = md - sd * wd; }      /* width: 0 = mono, 1 = normal, 2 = wide */
                 L += yl * dret; R += yr * dret;
             }
-            /* reverb: 4-line FDN, Hadamard mixing */
+            /* reverb: 4-line FDN. 0 HALL (Hadamard mixing), 1 ECHO (no mixing, long separate lines = distinct repeats), 2 SHIMMER (hall + octave-up feedback) */
             {
+                const int rm = (int)(q[PP_RMODE] + 0.5f);
                 float o[NLINES];
                 for (int i = 0; i < NLINES; i++) {
                     int rr = (s->rw[t] - s->rv_len[t][i]) & RV_MASK;
@@ -2782,20 +3709,45 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                     s->rv_z[t][i] += s->rv_a[t] * (y - s->rv_z[t][i]);
                     o[i] = s->rv_z[t][i] * s->rv_g[t][i];
                 }
-                float h0 = 0.5f * (o[0] + o[1] + o[2] + o[3]);
-                float h1 = 0.5f * (o[0] - o[1] + o[2] - o[3]);
-                float h2 = 0.5f * (o[0] + o[1] - o[2] - o[3]);
-                float h3 = 0.5f * (o[0] - o[1] - o[2] + o[3]);
-                float in = tsr[t];
-                s->rv[t][0][s->rw[t]] = h0 + in + 1e-20f;
-                s->rv[t][1][s->rw[t]] = h1 + in - 1e-20f;
-                s->rv[t][2][s->rw[t]] = h2 + in + 1e-20f;
-                s->rv[t][3][s->rw[t]] = h3 + in - 1e-20f;
+                float in = tsr[t], shv = 0.0f;
+                if (rm == 2) {
+                    const float m = 0.25f * (o[0] + o[1] + o[2] + o[3]);
+                    s->shb[t][s->shw[t]] = m;
+                    s->sh_ph[t] += 1.0f / 1024.0f; if (s->sh_ph[t] >= 1.0f) s->sh_ph[t] -= 1.0f;
+                    for (int k = 0; k < 2; k++) {
+                        float ph = s->sh_ph[t] + 0.5f * (float)k; if (ph >= 1.0f) ph -= 1.0f;
+                        const float d = 8.0f + 1024.0f * (1.0f - ph), w = sinf(3.14159265f * ph);
+                        float pp_ = (float)s->shw[t] - d; if (pp_ < 0.0f) pp_ += (float)SH_SIZE;
+                        const int i0 = (int)pp_ & (SH_SIZE - 1), i1 = (i0 + 1) & (SH_SIZE - 1); const float f = pp_ - floorf(pp_);
+                        shv += (s->shb[t][i0] * (1.0f - f) + s->shb[t][i1] * f) * w * w;
+                    }
+                    s->shw[t] = (s->shw[t] + 1) & (SH_SIZE - 1);
+                    if (!(fabsf(shv) < 8.0f)) { shv = 0.0f; memset(s->shb[t], 0, sizeof s->shb[t]); }
+                    in += fast_tanh(shv) * 0.14f;
+                }
+                if (rm == 1) {
+                    s->rv[t][0][s->rw[t]] = o[0] * 0.92f + in + 1e-20f;
+                    s->rv[t][1][s->rw[t]] = o[1] * 0.92f + in * 0.8f - 1e-20f;
+                    s->rv[t][2][s->rw[t]] = o[2] * 0.92f + in * 0.6f + 1e-20f;
+                    s->rv[t][3][s->rw[t]] = o[3] * 0.92f + in * 0.4f - 1e-20f;
+                } else {
+                    float h0 = 0.5f * (o[0] + o[1] + o[2] + o[3]);
+                    float h1 = 0.5f * (o[0] - o[1] + o[2] - o[3]);
+                    float h2 = 0.5f * (o[0] + o[1] - o[2] - o[3]);
+                    float h3 = 0.5f * (o[0] - o[1] - o[2] + o[3]);
+                    s->rv[t][0][s->rw[t]] = h0 + in + 1e-20f;
+                    s->rv[t][1][s->rw[t]] = h1 + in - 1e-20f;
+                    s->rv[t][2][s->rw[t]] = h2 + in + 1e-20f;
+                    s->rv[t][3][s->rw[t]] = h3 + in - 1e-20f;
+                }
                 s->rw[t] = (s->rw[t] + 1) & RV_MASK;
-                L += (o[0] - o[2]) * 0.7f * rret;
-                R += (o[1] - o[3]) * 0.7f * rret;
+                float rl = (o[0] - o[2]) * 0.7f * rret + shv * 0.35f * rret, rr2 = (o[1] - o[3]) * 0.7f * rret + shv * 0.35f * rret;
+                { const float wd = q[PP_RWD] * 2.0f, md = 0.5f * (rl + rr2), sd = 0.5f * (rl - rr2); rl = md + sd * wd; rr2 = md - sd * wd; }
+                if (q[PP_RLC] > 0.01f) { const float ca = 0.002f + q[PP_RLC] * q[PP_RLC] * 0.12f; s->rlc_z[t][0] += ca * (rl - s->rlc_z[t][0]); s->rlc_z[t][1] += ca * (rr2 - s->rlc_z[t][1]); rl -= s->rlc_z[t][0]; rr2 -= s->rlc_z[t][1]; }
+                L += rl; R += rr2;
             }
             }
+            if (q[PP_MONO] > 0.5f && q[PP_MONO] < 1.5f) { const float mm = 0.5f * ((L - L0) + (R - R0)); L = L0 + mm * s->pl[t]; R = R0 + mm * s->pr[t]; }      /* MONO: the sound stays in the middle, no stereo from effects */
             if (s->rec_src == tk) { rec_l += L - L0; rec_r += R - R0; }
         }
         for (int k = 0; k < NTRK; k++) s->meter[k] = mtr[k] > s->meter[k] ? mtr[k] : s->meter[k] * 0.9997f;
@@ -2860,7 +3812,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         }
         if (s->met_env > 0.001f) {
             s->met_ph += s->met_f * s->inv_sr; if (s->met_ph >= 1.0f) s->met_ph -= 1.0f;
-            float cl = (4.0f * fabsf(s->met_ph - 0.5f) - 1.0f) * s->met_env * s->g[G_MET] * 0.5f;
+            float cl = (4.0f * fabsf(s->met_ph - 0.5f) - 1.0f) * s->met_env * s->met_amp * 0.5f;
             s->met_env *= 0.9965f; L += cl; R += cl;
         }
         if (!(fabsf(L) < 16.0f) || !(fabsf(R) < 16.0f)) {            /* NaN / runaway: wipe the feedback buffers */
@@ -2883,6 +3835,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 L = in2[0]; R = in2[1];
             }
         }
+        lfx_proc(s, &L, &R);
         L *= mvol; R *= mvol;
         {   /* master limiter: instant attack, slow release; ceiling falls from 1.0 to 0.3 */
             const float lm = s->g[G_LIM];

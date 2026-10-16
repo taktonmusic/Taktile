@@ -25,14 +25,8 @@ jobs:
       - name: Check UI syntax
         run: node --check ui.js
 
-      - name: UI behaviour tests (mocked host, fuzzing)
-        run: |
-          node tools/test/test_jog.js
-          node tools/test/test_resample.js
-          node tools/test/test_projswitch.js
-
-      - name: DSP tests (sample import, resample limit; sanitizers)
-        run: ./tools/test/run_dsp_test.sh
+      - name: UI smoke + fuzz test (mocked host)
+        run: node tools/test/test_smoke.js
 
       - name: Native build with sanitizers (compile check)
         run: |

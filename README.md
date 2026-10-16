@@ -6,14 +6,14 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-ff4d6d">
   <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-8d6bff">
   <img alt="Language" src="https://img.shields.io/badge/DSP-C-2ec4b6">
-  <img alt="Version" src="https://img.shields.io/badge/version-5.4.1-ffb703">
+  <img alt="Version" src="https://img.shields.io/badge/version-5.75.0-ffb703">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-lightgrey">
 </p>
 
 <p align="center"><b>16 tracks of synths and drums, a step sequencer, sounds, effects and live performance tools – all running as a Schwung overtake module on the Ableton Move.</b></p>
 
 > [!NOTE]
-> **Status:** Tested on a real Ableton Move. UI logic and DSP are also checked on a desktop (UI simulator, 60,000-event fuzzing, native ASAN/UBSAN runs).
+> **Status:** Developed and tested together with a real Ableton Move. Release 5.75.0 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds); please report anything that behaves differently on the device.
 
 ---
 
@@ -34,12 +34,12 @@ Taktile is a pattern-based groove box built for jamming live. It takes over the 
 | | |
 |---|---|
 | 🎹 **Tracks** | 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain |
-| 🔊 **Sounds** | 1210 built-in sounds, your own WAV samples (64 slots / 40 MB), slicing, kits from 16 WAVs, time-stretch, resampling |
-| 🗂️ **Track pages** | Tabs on a synth track: SYNTH → SOUND → FILTER → MOD → FX → FX 2 → EUCLID → MIDI FX. Drum tracks and sample sounds get SAMPLE as the last tab instead of SYNTH |
-| 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 10 insert effects, 10 MIDI effects, sidechain (auto / all / off) |
-| 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator, MIDI clock + note out (USB-A) |
+| 🔊 **Sounds** | 1462 built-in sounds, your own WAV samples (64 slots / 40 MB) on synth and drum tracks, slicing, kits from 16 WAVs, time-stretch, resampling |
+| 🗂️ **Track tiles** | Synth track: 1 PRESET · 2 SYNTH · 3 MOD · 4 FILTER (+ EQ) · 5 FX (+ GRAIN) · 6 FX TYPE (+ FX TIME) · 7 EUCLID · 8 MIDI FX · 9 SAMPLE. Drum tracks have no SYNTH tile. The header shows the tile top left and the page (e.g. 2/2) top right; jog click switches the page |
+| 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 11 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off) |
+| 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator (switch, off by default), quantize grid 1/4 … 1/32 with strength, auto-growing clips while recording, MIDI clock + note out (USB-A) |
 | 🧪 **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |
-| 💾 **Workflow** | 32 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
+| 💾 **Workflow** | 32 project slots (load, save, rename, new empty, delete), rolling backups, undo history, CPU meter and scope animations (Menu → EXPERT), in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
 
 ## Signal flow
 
@@ -80,9 +80,9 @@ If your Schwung is a different version, build with `SCHWUNG_REF=<tag> ./scripts/
 ## Limits
 
 - Up to 16 tracks, max. 4 of them drum tracks (16 sounds each), up to 128 steps per track, 8 clips per track
-- Own samples: 64 slots / 40 MB in total. WAV only: 8/16/24/32-bit PCM or 32-bit float, 8 kHz to 192 kHz. Files are stored as mono (stereo = L+R averaged), so a stereo file needs no more space than a mono one
-- Resample takes: up to 16 bars, at most 40 seconds (fewer bars are chosen automatically at slow tempi)
-- State is stored under `/data/UserData/schwung/taktile-*`. A project from an unreadable file is rejected with `CORRUPT` and your current state stays untouched
+- Own samples: 64 slots / 40 MB in total. WAV only: 8/16/24/32-bit PCM or 32-bit float
+- Resample takes: up to 16 bars
+- State is stored under `/data/UserData/schwung/taktile-*`
 
 ## Troubleshooting
 
@@ -124,16 +124,16 @@ State is stored under `/data/UserData/schwung/taktile-*`.
 | | |
 |---|---|
 | **Jog turn** | walks through the track pages / the list on the current page |
-| **Jog click** | open or confirm (SEQ/SOUND: preset browser; menus and lists: the selected entry). On a track tab: back to the last tab. Elsewhere: HOME |
+| **Jog click** | open or confirm (SEQ/SOUND: preset browser; menus and lists: the selected entry). On a tile with two pages (FILTER + EQ, FX + GRAIN, FX TYPE + FX TIME, SYNTH + ENGINE 2, MIDI FX + 2): switches the page |
 | **Shift + Jog click** | HOME from anywhere (on the TEMPO page: tap tempo) |
-| **Shift + Left / Right** | previous / next sub-page on MIX, EUCLID, SAMPLE and SCOPE. On the sequencer: previous / next step page |
+| **Left / Right** | previous / next track. With Shift: step page. In lists and name entry: move the selection / cursor |
+| **Shift + Step 1…16** | direct jumps: project, HOME, quantize options + pad layout, live FX, tempo, metronome, swing, … (see the manual) |
 
 ## Playing long live sets
 
 Taktile is made for sets that run for a long time without stopping the music:
 
 - **Song list** (MORE → SONG): up to 32 entries with scenes, bars, repeats, own tempo and a way in (HARD, FILL, DRUMS 1ST)
-- **Live project switch** (MORE → PROJECT): pick a slot with *Slot*, turn *Load* while the sequencer plays. The project is queued and swaps in at the end of the bar, with a short silence while it loads. Turn *Load* again to cancel
 - **Background mode**: Back on the top level asks BACKGROUND / CLOSE, the sequencer keeps playing while you use the Move
 - **Safety**: 32 project slots, rolling backups, undo history
 

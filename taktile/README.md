@@ -2,16 +2,16 @@
 
 A pattern-based groove box for the **Ableton Move**, written as an *overtake* module for [Schwung](https://github.com/charlesvestal/schwung). It takes over pads, buttons, knobs and display; all sound comes from its own C DSP (`dsp.so`).
 
-> **Status:** Tested on a real Ableton Move. UI logic and DSP are also checked on a desktop (UI simulator, 60,000-event fuzzing, native ASAN/UBSAN runs).
+> **Status:** Developed and tested together with a real Ableton Move. Release 5.75.0 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds).
 
 ![display preview](docs/display-preview.png)
 
 ## Features
 - 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain
-- 1210 built-in sounds, own WAV samples (64 slots / 40 MB), slicing, kits from 16 WAVs, time-stretch, resampling
-- Track pages as tabs (synth track): SYNTH, SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX (drum tracks and sample sounds: SAMPLE last instead of SYNTH)
-- Per-track delay, reverb, chorus, phaser, 10 insert effects, 10 MIDI effects, sidechain (auto / all / off)
-- Per-step parameter locks, per-track swing, Euclid generator, MIDI clock + note out (USB-A)
+- 1462 built-in sounds, own WAV samples (64 slots / 40 MB) on synth and drum tracks, slicing, kits from 16 WAVs, time-stretch, resampling
+- Track tiles (synth track): 1 PRESET, 2 SYNTH, 3 MOD, 4 FILTER (+ EQ), 5 FX (+ GRAIN), 6 FX TYPE (+ FX TIME), 7 EUCLID, 8 MIDI FX, 9 SAMPLE; drum tracks have no SYNTH tile. Tile top left, page top right, jog click = next page
+- Per-track delay, reverb, chorus, phaser, 11 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off)
+- Per-step parameter locks, per-track swing, Euclid generator (off by default), quantize with grid and strength, clips that grow while recording, MIDI clock + note out (USB-A)
 - Master: filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter
 - 32 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu
 
