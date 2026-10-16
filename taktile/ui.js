@@ -2171,9 +2171,10 @@ function resetLen(t) {                                    /* an emptied clip goe
     growTrk[t] = false;
 }
 function recStopLen() {                                   /* Rec pressed the second time: the clip is as long as you played (16, 32, 48 ... steps, rounded up) */
+    let gpos = gs - 1; { const r = dspGet('pos'); if (typeof r === 'string') { const a = r.split(','), g = parseInt(a[1]) || 0; if (g > 0) gpos = g - 1 + (parseInt(a[3]) || 0) / 100; } }      /* the DSP's own step counter, the same one the recorded hits use */
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
-        const el = Math.max(1, gs - growG0[t]), n = clamp(Math.ceil(el / 16) * 16, 16, MAXSTEP);
+        const el = Math.max(0.01, gpos - growG0[t]), n = clamp(Math.ceil(el / 16) * 16, 16, MAXSTEP);
         if (lens[t] !== n) { lens[t] = n; enqueue('len' + t, 'len', t + ',' + n); }
         showToast('REC LENGTH', n + ' STEPS', n / MAXSTEP);
     }

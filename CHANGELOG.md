@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.79.1 (16 October 2026)
+- Recording length now uses the DSP's exact play position when Rec is pressed the second time (pressing Rec within the first 16 steps keeps 16)
+
 ## 5.79.0 (16 October 2026)
 - Recording: the clip length is set when Rec is pressed the second time (rounded up to 16, 32, 48 ... steps), on synth and drum tracks
 - Clearing a clip sets its length back to 16 steps
