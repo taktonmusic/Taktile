@@ -3556,6 +3556,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             float pgl = s->pl[p], pgr = s->pr[p];
             {                                                              /* chop (1/16 pulse), tremolo, auto-pan */
                 const float *q2 = s->pp[p];
+                if (q2[PP_SCHP] > 0.01f) { float ph = s->pump_ph * 4.0f; ph -= floorf(ph); x *= 1.0f - q2[PP_SCHP] * (0.5f - 0.5f * cosf(TWO_PI * ph)); }
                 if (q2[PP_TREM] > 0.01f || q2[PP_APAN] > 0.01f) {
                     v->trp += (0.5f + q2[PP_TRAT] * q2[PP_TRAT] * 14.5f) * s->inv_sr; if (v->trp >= 1.0f) v->trp -= 1.0f;
                     if (q2[PP_TREM] > 0.01f) x *= 1.0f - q2[PP_TREM] * (0.5f - 0.5f * cosf(TWO_PI * v->trp));

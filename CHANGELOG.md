@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.80.0 (16 October 2026)
+- SYNTH tile page 2: Chop is back for the sound engines; classic synths show Drive in its place (and the waveform window on the PRESET tile)
+
 ## 5.79.3 (16 October 2026)
 - Sound engines: Drive is back on the PRESET tile (the waveform window stays on classic synths only)
 
