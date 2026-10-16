@@ -4763,6 +4763,8 @@ globalThis.onMidiMessageInternal = function (data) {
     }
     if (type !== 0xB0) return;
     if (d1 !== CC.DELETE) delAge = 0;
+    if (d1 === CC.DELETE && d2 === 0 && deleteHeld) { deleteHeld = false; needsRedraw = true; }        /* a released Delete always ends delete mode, also while a menu or dialog is open */
+    if (d2 > 0 && deleteHeld && (d1 === CC.BACK || d1 === CC.PLAY || d1 === CC.REC || d1 === CC.MENU || d1 === CC.UNDO)) { deleteHeld = false; needsRedraw = true; }      /* these buttons never belong to a delete: a stuck Delete is cleared by them */
     if (menuOpen && d1 !== CC.SHIFT) {
         if (d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && gName() === 'FIND') findStep(dl); else menuMove(dl); } }
         else if (d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) { menuKA += dl; if (Math.abs(menuKA) >= 2) { const sg = menuKA > 0 ? 1 : -1; menuKA = 0; if (shiftHeld && gName() === 'FIND') findStep(sg); else menuMove(sg); } } }      /* knob 1 scrolls the menus and the pickers (themes, language) like the jogwheel */

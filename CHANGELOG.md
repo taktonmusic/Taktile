@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.80.1 (16 October 2026)
+- Delete mode can no longer get stuck: releasing Delete always ends it (also with a menu open), and Back / Play / Rec / Menu / Undo clear it
+
 ## 5.80.0 (16 October 2026)
 - SYNTH tile page 2: Chop is back for the sound engines; classic synths show Drive in its place (and the waveform window on the PRESET tile)
 
