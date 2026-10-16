@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.86.0 (16 October 2026)
+- Synth tracks have no SAMPLE tile any more (own samples stay on drum tracks)
+- Song mode: hold Delete + step pad deletes that song step (a short tap on Delete deletes the selected one); Copy + pad picks a step, Copy + another pad pastes a copy there; the display shows all 8 scenes (filled = has notes), the step LEDs 1-8 are bright for scenes with notes
+
 ## 5.85.1 (16 October 2026)
 - Live FX fill pads always use the sounds of the first loaded drum track, whichever track is selected
 

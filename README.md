@@ -6,14 +6,14 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-ff4d6d">
   <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-8d6bff">
   <img alt="Language" src="https://img.shields.io/badge/DSP-C-2ec4b6">
-  <img alt="Version" src="https://img.shields.io/badge/version-5.85.1-ffb703">
+  <img alt="Version" src="https://img.shields.io/badge/version-5.86.0-ffb703">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-lightgrey">
 </p>
 
 <p align="center"><b>16 tracks of synths and drums, a step sequencer, sounds, effects and live performance tools – all running as a Schwung overtake module on the Ableton Move.</b></p>
 
 > [!NOTE]
-> **Status:** Developed and tested together with a real Ableton Move. Release 5.85.1 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds); please report anything that behaves differently on the device.
+> **Status:** Developed and tested together with a real Ableton Move. Release 5.86.0 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds); please report anything that behaves differently on the device.
 
 ---
 
@@ -34,8 +34,8 @@ Taktile is a pattern-based groove box built for jamming live. It takes over the 
 | | |
 |---|---|
 | 🎹 **Tracks** | 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain |
-| 🔊 **Sounds** | 1462 built-in sounds, your own WAV samples (64 slots / 40 MB) on synth and drum tracks, slicing, kits from 16 WAVs, time-stretch, resampling |
-| 🗂️ **Track tiles** | Synth track: 1 PRESET · 2 SYNTH · 3 MOD · 4 FILTER (+ EQ) · 5 FX (+ GRAIN) · 6 FX TYPE (+ FX TIME) · 7 EUCLID · 8 MIDI FX · 9 SAMPLE. Drum tracks have no SYNTH tile. The header shows the tile top left and the page (e.g. 2/2) top right; jog click switches the page |
+| 🔊 **Sounds** | 1462 built-in sounds, your own WAV samples (64 slots / 40 MB) on drum tracks, slicing, kits from 16 WAVs, time-stretch, resampling |
+| 🗂️ **Track tiles** | Synth track: 1 PRESET · 2 SYNTH · 3 MOD · 4 FILTER (+ EQ) · 5 FX (+ GRAIN) · 6 FX TYPE (+ FX TIME) · 7 EUCLID · 8 MIDI FX. Drum tracks have no SYNTH tile but a SAMPLE tile. The header shows the tile top left and the page (e.g. 2/2) top right; jog click switches the page |
 | 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 11 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off) |
 | 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator (switch, off by default), quantize grid 1/4 … 1/32 with strength, auto-growing clips while recording, MIDI clock + note out (USB-A) |
 | 🧪 **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |

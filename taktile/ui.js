@@ -93,7 +93,7 @@ const TAB_SYM = { 50: 'GRAIN', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2
 const TAB_NAME = { 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX MIX', 39: 'FX MIX 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX TYPE' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; return syn ? [1, 9, 3, 2, 38, 46, 36, 27, 28] : [1, 3, 2, 38, 46, 36, 27, 28]; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; return syn ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 46, 36, 27, 28]; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -3755,6 +3755,7 @@ function meterTick() {
 let songMutePend = false, songMuteBar = -1, songOn = false, songLoop = true, songList = [[0, 4, 1, 0, 0, 0]], songSlot = 0, songSent = -1, songLaunched = -1, songOff = 0, songNext = -1, songFillBar = -1, songMuted = false, songTempoOn = false;
 const SONG_MAX = 32, SONG_TAG = ['--', 'INTRO', 'BUILD', 'DROP', 'BREAK', 'VERSE', 'CHORUS', 'OUTRO'], SONG_TRANS = ['HARD', 'FILL', 'DRUMS 1ST'], TAG_COL = [124, 12, 20, 1, 40, 60, 85, 100];
 function songNorm(e) { e = Array.isArray(e) ? e : []; return [clamp(Number(e[0]) | 0, 0, NPAT - 1), clamp(Number(e[1]) | 0 || 1, 1, 32), clamp(Number(e[2]) | 0 || 1, 1, 16), (Number(e[3]) | 0) >= 40 ? clamp(Number(e[3]) | 0, 40, 240) : 0, clamp(Number(e[4]) | 0, 0, 2), clamp(Number(e[5]) | 0, 0, 7)]; }
+function sceneHas(c) { for (let t = 0; t < NTRK; t++) if (trackHasSteps(c, t)) return true; return false; }
 function songLen(e) { return e[1] * (e[2] || 1); }
 function songIns() { if (songList.length >= SONG_MAX) { showToast('SONG', 'FULL', 1); return; } const e = songList[songSlot] || [0, 4, 1, 0, 0, 0]; songList.splice(songSlot + 1, 0, e.slice()); songSlot++; songSent = -1; songOff = 0; songNext = -1; showToast('SONG', 'STEP ' + (songSlot + 1) + ' ADDED', songSlot / (SONG_MAX - 1)); dirty = true; needsRedraw = true; }
 function songDel() { if (songList.length <= 1) { songList = [[0, 4, 1, 0, 0, 0]]; songSlot = 0; songBlank = true; showToast('SONG', 'CLEARED', 0); } else { songList.splice(songSlot, 1); songSlot = clamp(songSlot, 0, songList.length - 1); showToast('SONG', 'STEP DELETED', 0); } songSent = -1; songOff = 0; songNext = -1; dirty = true; needsRedraw = true; }
@@ -3802,7 +3803,7 @@ function songTick() {
         if (r[1]) songEnter(r[0]);
     }
 }
-let songFromClips = false, songBlank = true;
+let songFromClips = false, songBlank = true, songDelOn = false, songDelUsed = false, songCopySrc = -1;
 function songOpen(fromClips) { symOpen = -1; navStack = []; padMenu = false; menuOpen = false; songFromClips = !!fromClips; view = 31; acc.fill(0); showToast('SONG', 'STEPS 1-8 = ADD SCENE', 0.5); needsRedraw = true; }
 const SONG_BARS = [1, 2, 4, 8, 16, 32];
 function songStepKey(i) {                                       /* in the song: steps 1-8 add scene 1-8, 9-14 = bars, 15 = copy, 16 = song on / off */
@@ -3819,7 +3820,13 @@ function songStepKey(i) {                                       /* in the song: 
 }
 function songPad(k) {                                           /* pad k = song step k: select, or (song running) jump there at the end of the bar */
     const L = songList.length;
-    if (deleteHeld && k < L) { songSlot = k; songDel(); return; }
+    if (deleteHeld && k < L) { songDelUsed = true; songSlot = k; songDel(); return; }
+    if (copyHeld && k <= L) {                                      /* Copy + step pad: pick a step, then Copy + another pad pastes a copy there (the others move along) */
+        if (songCopySrc < 0 || songCopySrc >= L) { if (k < L) { songCopySrc = k; showToast('SONG', 'COPY STEP ' + (k + 1) + ' > PICK SPOT', 0.5); } return; }
+        if (L >= SONG_MAX) { showToast('SONG', 'FULL', 1); return; }
+        songList.splice(k, 0, songList[songCopySrc].slice()); songSlot = k; songSent = -1; songOff = 0; songNext = -1; songBlank = false; dirty = true; needsRedraw = true;
+        showToast('SONG', 'PASTED AT STEP ' + (k + 1), k / (SONG_MAX - 1)); return;
+    }
     if (shiftHeld && k < L) { songSlot = k; songIns(); return; }
     if (k < L) {
         songSlot = k; needsRedraw = true;
@@ -4189,7 +4196,7 @@ function songPlayIdx() { if (!songOn || !playing || songSent < 0) return -1; ret
 function drawSong() {
     const L = songList.length;
     titleBar('SONG ' + (songOn ? (songLoop ? 'LOOP' : 'ONCE') : 'OFF'), songTotal() + ' BARS');
-    const rows = 5, st = clamp(songSlot - 2, 0, Math.max(0, L - rows)), pl = songPlayIdx(), tot = songTotal();
+    const rows = 4, st = clamp(songSlot - 2, 0, Math.max(0, L - rows)), pl = songPlayIdx(), tot = songTotal();
     for (let i = 0; i < rows; i++) {
         const k = st + i; if (k >= L) break;
         const y = 12 + i * 9, on = k === songSlot, e = songList[k];
@@ -4201,7 +4208,9 @@ function drawSong() {
         txt(122 - 3 - tw(bs), y + 1, bs, c);
     }
     if (songBlank && L === 1) { txt(2, 26, 'STEP 1-8 = ADD SCENE', 1); txt(2, 36, 'STEP 9-14 = BARS', 1); txt(2, 46, 'PLAY = START SONG', 1); }
-    if (L > rows) { const h = Math.max(4, Math.round(45 * rows / L)), y = 12 + Math.round(45 * (st / L)); fill_rect(125, 12, 1, 45, 1); fill_rect(124, y, 3, h, 1); }
+    if (L > rows) { const h = Math.max(4, Math.round(36 * rows / L)), y = 12 + Math.round(36 * (st / L)); fill_rect(125, 12, 1, 36, 1); fill_rect(124, y, 3, h, 1); }
+    { const cur = songList[songSlot] ? songList[songSlot][0] : -1;           /* every scene you built: filled = has notes, frame = empty, thick frame = the selected step's scene (steps 1-8 add it) */
+      for (let c = 0; c < 8; c++) { const x = 1 + c * 15, has = sceneHas(c); if (has) fill_rect(x, 49, 13, 7, 1); else draw_rect(x, 49, 13, 7, 1); txtS(x + 5, 50, String(c + 1), has ? 0 : 1); if (c === cur) draw_rect(x - 1, 48, 15, 9, 1); } }
     fill_rect(0, 58, 128, 1, 1);
     let bw = 0; for (let k = 0; k < L; k++) { const w = Math.max(1, Math.round(126 * songLen(songList[k]) / tot)); if (k === songSlot) fill_rect(1 + bw, 60, w, 3, 1); else fill_rect(1 + bw, 61, w, 1, 1); bw += w; if (bw > 126) break; }
 }
@@ -4554,7 +4563,7 @@ function updateLeds() {
             if (loopHeld) { let pl = false, hs = false; if (i < NPAT) { for (let t = 0; t < NTRK; t++) { if (clipsCur[t] === i) pl = true; if (trackHasSteps(i, t)) hs = true; } } c = i >= NPAT ? 0 : (pl ? 120 : (hs ? 118 : 123)); }
             else c = i === sel ? 120 : (mutes[i] ? 0 : trkCol(i));
         }
-        else if (view === 31) c = i < 8 ? trkCol(i) : (i < 14 ? 118 : (i === 14 ? 123 : (songOn ? 126 : 120)));
+        else if (view === 31) c = i < 8 ? (sceneHas(i) ? trkCol(i) : dimCol(trkCol(i))) : (i < 14 ? 118 : (i === 14 ? 123 : (songOn ? 126 : 120)));
         else if (askKind >= 0 || exitDlg >= 0 || (view === 28 && broOpen)) c = 0;      /* the steps stay visible in every page, they can be pressed there too */
         else if (s >= LL()) c = 0;
         else if (heldStep >= 0 && heldStep < LL() && s > heldStep && s < heldStep + (steps[ed[sel]][ln()][heldStep][9] || 0)) c = 126;      /* hold a step: the steps it lasts over light up white */
@@ -4819,8 +4828,9 @@ globalThis.onMidiMessageInternal = function (data) {
     }
     switch (d1) {
     case CC.SHIFT:  shiftHeld = d2 > 0; syncPadsOff(); return;
-    case CC.COPY:   copyHeld = d2 > 0; if (!copyHeld) stepClip = null; return;
-    case CC.DELETE: if (d2 > 0 && view === 31 && !menuOpen) { songDel(); return; } if (d2 > 0 && view === 45 && !menuOpen && !fb) { devClear(); return; } deleteHeld = d2 > 0 && !deleteHeld; delAge = 0; needsRedraw = true; return;      /* pressing again while it seems stuck (lost release) switches it off */
+    case CC.COPY:   copyHeld = d2 > 0; if (!copyHeld) { stepClip = null; songCopySrc = -1; } return;
+    case CC.DELETE: if (view === 31 && !menuOpen && (d2 > 0 || songDelOn)) { if (d2 > 0) { deleteHeld = true; songDelOn = true; songDelUsed = false; delAge = 0; } else { songDelOn = false; deleteHeld = false; if (!songDelUsed) songDel(); } needsRedraw = true; return; }      /* song: Delete held + step pad = delete that step; a plain tap deletes the selected step */
+        if (d2 > 0 && view === 45 && !menuOpen && !fb) { devClear(); return; } deleteHeld = d2 > 0 && !deleteHeld; delAge = 0; needsRedraw = true; return;      /* pressing again while it seems stuck (lost release) switches it off */
     case CC.LOOP:   loopHeld = d2 > 0; if (d2 > 0) { snapEu = false; showToast('LOOP HELD', 'TURN JOG = LENGTH', LL() / MAXSTEP); } return;
     case CC.UNDO:   if (d2 > 0) { if (shiftHeld) doRedo(); else doUndo(); } return;
     case CC.SAMPLE: if (d2 > 0) { if (copyHeld) opVary(); else randomize(shiftHeld); } return;
