@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.89.0 (17 October 2026)
+- PRESET tile on synth tracks now reads Engine, Attack, Decay, Tone / Tune, Pan, Voices, Volume
+- Streamlined synth tiles: no knob appears on two tiles any more. SYNTH keeps only its own controls (Wave/Detune/Sub/Drive, FM Init: Ratio/Index/Feedback/Drive, engines: their specific knobs + Drive); Voices lives on PRESET, cutoff/resonance/filter envelope on FILTER. Where an engine uses Filter Key/Decay as its own knobs, FILTER shows FltAtk/VelFilt instead
+
 ## 5.88.0 (17 October 2026)
 - PRESET tile on synth tracks: Attack takes the place of Drive (Type, Tune, Decay, Tone, Attack, Pan, Voices, Vol) for instant sound shaping. Drive moves to the position Attack had on the SYNTH tile; Chop is back on SYNTH page 2; the wave stays on the SYNTH tile
 
