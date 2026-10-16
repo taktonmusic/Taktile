@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.79.3 (16 October 2026)
+- Sound engines: Drive is back on the PRESET tile (the waveform window stays on classic synths only)
+
 ## 5.79.2 (16 October 2026)
 - The waveform window on the PRESET tile only shows for classic synths (where the wave has an effect); sound engines show the delay send there
 

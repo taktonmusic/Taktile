@@ -4258,12 +4258,11 @@ const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0]], [
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
 const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['dly', 'Delay', 'Dly'] : it);
-const SND_ENG = SND_ALL.map(it => it[0] === 'drive' ? ['dly', 'Delay', 'Dly'] : it);
 const SND_SYN = SND_ALL.map(it => it[0] === 'drive' ? ['wave', 'Wave'] : it);       /* synth: Drive lives on the 2nd SYNTH page; the wave (Saw, Square ...) sits here as a small preset-style box */
 function viewItemsFix() {
     VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
     const t = kind[sel] ? 0 : Math.round(pads[sel][0]), e = nxEng(t);
-    VIEW_ITEMS[1] = kind[sel] ? SND_DRM : ((e || (FMI > 0 && t === FMI)) ? SND_ENG : SND_SYN);      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
+    VIEW_ITEMS[1] = kind[sel] ? SND_DRM : ((e || (FMI > 0 && t === FMI)) ? SND_ALL : SND_SYN);      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
     VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : SYN_PG);
 }
 
