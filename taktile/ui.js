@@ -190,7 +190,7 @@ const VIEW_ITEMS = {
     28: [['smp','File'],['sst','Start','Strt'],['sen','End'],['smd','Mode'],['tune','Tune'],['sgn','Gain'],['pan','Pan'],['vol','Vol']],
     21: [['kind','Kind'],['tvol','Volume','Vol'],['pmode','Pads'],['dsel','Sound','Snd'],['lay','Layout','Lay'],['tcol','Color','Col'],['tsw','Swing+','Swg+'],['pan','Pan']],
     47: [['snz','Noise'],['fatk','FltAtk','FAtk'],['sfld','Fold'],['schp','Chop'],['trem','Tremolo','Trem'],['trat','TremRate','TRt'],['apan','AutoPan','APan'],['vflt','VelFilt','VFlt']],
-    9: [['wave','Wave'],['det','Detune','Det'],['sub','Sub'],['att','Attack','Atk'],['cut','LPCut','LPF'],['res','Reso','Res'],['fenv','FltEnv','FEnv'],['poly','Voices','Poly']],
+    9: [['wave','Wave'],['det','Detune','Det'],['sub','Sub'],['drive','Drive','Drv'],['cut','LPCut','LPF'],['res','Reso','Res'],['fenv','FltEnv','FEnv'],['poly','Voices','Poly']],
 };
 /* home / fx / master hubs: tiles you pick with the jogwheel (turn = choose, click = open, Back = up one level) */
 const HUBS = {
@@ -4305,20 +4305,19 @@ function drawParams() {
 }
 const MOD_SYN = [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']];
 const MOD_DRM = [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['rmb','Rumble','Rmbl'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['rmt','RumbleTail','RTail']];
-const SYN_PG = VIEW_ITEMS[9], FMI_PG = [['det','Ratio'],['sub','Index'],['fkey','Feedback','Fdbk'],['att','Attack','Atk'],['cut','LPCut','LPF'],['res','Reso','Res'],['fenv','FltEnv','FEnv'],['poly','Voices','Poly']];
+const SYN_PG = VIEW_ITEMS[9], FMI_PG = [['det','Ratio'],['sub','Index'],['fkey','Feedback','Fdbk'],['drive','Drive','Drv'],['cut','LPCut','LPF'],['res','Reso','Res'],['fenv','FltEnv','FEnv'],['poly','Voices','Poly']];
 const FMI = TYPE_NAME.indexOf('FmInit');                       /* the plain 2-operator FM INIT sound: Ratio, Index, Feedback (+ Decay on the sound page) */
 const ENG_KN = { 6: ['Detune', 'Sub', 'Sync', 'Width'], 7: ['Position', 'Sweep', 'Warp', 'Detune'], 8: ['Index', 'Ratio', 'Feedback', 'Algo'], 9: ['Tilt', 'Odd/Even', 'Stretch', 'Shimmer'], 10: ['Detune', 'Spread', 'PWM', 'Motion'], 11: ['Bright', 'Pick', 'Damp', 'Excite'], 12: ['Fold', 'Sweep', 'Symmetry', 'Harmonics'] };
-const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0]], ['sub', ENG_KN[e][1]], ['fkey', ENG_KN[e][2]], ['fdec', ENG_KN[e][3]], ['att', 'Attack', 'Atk'], ['cut', 'LPCut', 'LPF'], ['res', 'Reso', 'Res'], ['poly', 'Voices', 'Poly']];
+const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0]], ['sub', ENG_KN[e][1]], ['fkey', ENG_KN[e][2]], ['fdec', ENG_KN[e][3]], ['drive', 'Drive', 'Drv'], ['cut', 'LPCut', 'LPF'], ['res', 'Reso', 'Res'], ['poly', 'Voices', 'Poly']];
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
 const PG47_ENG = VIEW_ITEMS[47], PG47_SYN = PG47_ENG.map(it => it[0] === 'schp' ? ['drive', 'Drive', 'Drv'] : it);
 const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['dly', 'Delay', 'Dly'] : it);
-const SND_SYN = SND_ALL.map(it => it[0] === 'drive' ? ['wave', 'Wave'] : it);       /* synth: Drive lives on the 2nd SYNTH page; the wave (Saw, Square ...) sits here as a small preset-style box */
+const SND_SYN = SND_ALL.map(it => it[0] === 'drive' ? ['att', 'Attack', 'Atk'] : it);       /* synth: Drive lives on the 2nd SYNTH page; the wave (Saw, Square ...) sits here as a small preset-style box */
 function viewItemsFix() {
     VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
     const t = kind[sel] ? 0 : Math.round(pads[sel][0]), e = nxEng(t);
-    VIEW_ITEMS[47] = (!kind[sel] && !e && !(FMI > 0 && t === FMI)) ? PG47_SYN : PG47_ENG;      /* ENGINE 2: classic synths have Drive in place of Chop */
-    VIEW_ITEMS[1] = kind[sel] ? SND_DRM : ((e || (FMI > 0 && t === FMI)) ? SND_ALL : SND_SYN);      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
+    VIEW_ITEMS[1] = kind[sel] ? SND_DRM : SND_SYN;      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
     VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : SYN_PG);
 }
 

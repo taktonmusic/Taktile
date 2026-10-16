@@ -6,14 +6,14 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-ff4d6d">
   <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-8d6bff">
   <img alt="Language" src="https://img.shields.io/badge/DSP-C-2ec4b6">
-  <img alt="Version" src="https://img.shields.io/badge/version-5.87.0-ffb703">
+  <img alt="Version" src="https://img.shields.io/badge/version-5.88.0-ffb703">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-lightgrey">
 </p>
 
 <p align="center"><b>16 tracks of synths and drums, a step sequencer, sounds, effects and live performance tools – all running as a Schwung overtake module on the Ableton Move.</b></p>
 
 > [!NOTE]
-> **Status:** Developed and tested together with a real Ableton Move. Release 5.87.0 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds); please report anything that behaves differently on the device.
+> **Status:** Developed and tested together with a real Ableton Move. Release 5.88.0 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds); please report anything that behaves differently on the device.
 
 ---
 

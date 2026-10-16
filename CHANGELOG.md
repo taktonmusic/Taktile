@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.88.0 (17 October 2026)
+- PRESET tile on synth tracks: Attack takes the place of Drive (Type, Tune, Decay, Tone, Attack, Pan, Voices, Vol) for instant sound shaping. Drive moves to the position Attack had on the SYNTH tile; Chop is back on SYNTH page 2; the wave stays on the SYNTH tile
+
 ## 5.87.0 (16 October 2026)
 - Live FX mode: the pads only trigger effects and fill hits, the synth no longer sounds on the bottom pads
 - Switching to another track ends the Live FX mode (switch it on again where you need it)
