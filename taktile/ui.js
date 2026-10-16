@@ -2115,7 +2115,8 @@ function drumCol(t, k) {                                  /* colour of drum soun
     return (n & 1) ? dimCol(col) : col;
 }
 function inboundActive() { return (typeof shadow_inbound_pad_midi_active === 'function') && shadow_inbound_pad_midi_active(); }
-function selectTrack(t) { drumHeldK = []; padHold = {}; growTrk.fill(false); bank = t >> 2; if (sel !== t) { fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); } needsRedraw = true; }
+function selectTrack(t) { drumHeldK = []; padHold = {}; growTrk.fill(false); bank = t >> 2; if (sel !== t) { for (let q = 0; q < NTRK; q++) if (topModes[q] === 3) { liveFxAllOff(); topModes[q] = topPrev[q] !== 3 ? topPrev[q] : 0; markEdited(); }      /* Live FX is a visit: another track = gone until you switch it on again */
+        fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); } needsRedraw = true; }
 function wipeSlot(d) {                                    /* a kit is handed to another track: back to the default kit */
     ensureCs(); const def = defaultPads();
     for (let k = 0; k < 16; k++) {

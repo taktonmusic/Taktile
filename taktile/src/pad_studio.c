@@ -2757,7 +2757,7 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
     if (p < 0) return;
     const int rcol = p & 7;
     int vel = (st == 0x90 && msg[2] > 0) ? msg[2] : 0;
-    if (s->pads_off == 4 && msg[1] >= 68 && msg[1] <= 99 && (p >> 3) >= 2) return;      /* LIVE FX: the top two pad rows are effect pads, the UI handles them */
+    if (s->pads_off == 4 && msg[1] >= 68 && msg[1] <= 99) return;      /* LIVE FX: every pad belongs to the UI (effect pads on top, fill hits at the bottom) - no notes of the synth */
     if (msg[1] >= 68 && msg[1] <= 99) {                                 /* a Move pad: the same layout as the UI (MOVE rows 3 degrees apart, SEQ, OCT, CHR) */
         const int col = p & 7, row = p >> 3;
         p = s->lay_s >= 3 ? 32 + col + (s->lay_s == 3 ? 5 : (s->lay_s == 4 ? 4 : 8)) * row : (s->lay_s == 0 ? col + 3 * row : (s->lay_s == 1 ? row * 8 + col : col + 7 * row));
