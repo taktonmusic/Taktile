@@ -1190,10 +1190,10 @@ static void init_static(inst_t *s) {
 typedef struct { int type; float tune, decay; int arp, rate; float dly, rvb; } lay_t;
 static const lay_t LAYOUT[NPADS] = {
     /* tracks 1-16 */
-    { T_KICK,0.5f,0.5f,0,1,0,0 },        { T_RUMBKICK,0.5f,0.5f,0,1,0,0.9f }, { T_CLAP,0.5f,0.5f,0,1,0.1f,0.15f }, { T_SNARE,0.5f,0.5f,0,1,0,0.12f },
+    { T_KICK,0.5f,0.5f,0,1,0,0 },        { T_RUMBKICK,0.5f,0.5f,0,1,0,0 }, { T_CLAP,0.5f,0.5f,0,1,0,0 }, { T_SNARE,0.5f,0.5f,0,1,0,0 },
     { T_HATCL,0.5f,0.5f,0,1,0,0 },       { T_HATOP,0.5f,0.5f,0,1,0,0 },       { T_RIDE,0.5f,0.5f,0,1,0,0 },        { T_RIM,0.5f,0.5f,0,1,0,0 },
-    { T_TOM,0.5f,0.5f,0,1,0,0 },         { T_PERC,0.5f,0.5f,0,1,0.15f,0 },    { T_SUBBASS,0.5f,0.5f,0,1,0,0 },     { T_ROLLBASS,0.5f,0.5f,0,1,0,0 },
-    { T_ACID,0.5f,0.5f,0,1,0.2f,0 },     { T_PLUCK,0.5f,0.5f,0,1,0.35f,0.2f },{ T_STAB,0.5f,0.5f,0,1,0.25f,0.25f }, { T_PAD,0.5f,0.5f,0,1,0,0.5f },
+    { T_TOM,0.5f,0.5f,0,1,0,0 },         { T_PERC,0.5f,0.5f,0,1,0,0 },    { T_SUBBASS,0.5f,0.5f,0,1,0,0 },     { T_ROLLBASS,0.5f,0.5f,0,1,0,0 },
+    { T_ACID,0.5f,0.5f,0,1,0,0 },     { T_PLUCK,0.5f,0.5f,0,1,0,0 },{ T_STAB,0.5f,0.5f,0,1,0,0 }, { T_PAD,0.5f,0.5f,0,1,0,0 },
     /* drum kit (lanes 16-79: each drum track owns 16 of these) */
     { T_KICK,0.5f,0.5f,0,1,0,0 },        { T_KICKHRD,0.5f,0.5f,0,1,0,0 },     { T_SNARE,0.5f,0.5f,0,1,0,0.12f },  { T_CLAP,0.5f,0.5f,0,1,0.1f,0.15f },
     { T_RIM,0.5f,0.5f,0,1,0,0 },         { T_HATCL,0.5f,0.5f,0,1,0,0 },       { T_HATOP,0.5f,0.5f,0,1,0,0 },       { T_RIDE,0.5f,0.5f,0,1,0,0 },

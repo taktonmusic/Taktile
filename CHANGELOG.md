@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.85.0 (16 October 2026)
+- INIT patches are dry: no delay or reverb send. New synth tracks start without delay and reverb (before, some tracks had a reverb send by default). Delay, reverb and all other effects stay adjustable per synth track and per drum pad on the FX tiles; master returns on the BUS tile
+
 ## 5.84.0 (16 October 2026)
 - Shift + Step 11 opens the Note Repeat options (Rate, Repeat on/off, Full Velocity, RecSnap, ScaleQ, BPM, Swing), also when the Repeat mode is not open. Repeat on/off is an item of that page
 

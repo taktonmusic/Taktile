@@ -76,10 +76,10 @@ function nudTxt(n) { return '+' + (n * 2.5).toFixed(n % 2 ? 1 : 0) + '%'; }
 
 /* default sounds for the 16 tracks: type, tune, decay, arp, rate, dly, rvb (mirrors the DSP) */
 const LAYOUT = [
-    [0,.5,.5,0,1,0,0],[3,.5,.5,0,1,0,.9],[5,.5,.5,0,1,.1,.15],[6,.5,.5,0,1,0,.12],
+    [0,.5,.5,0,1,0,0],[3,.5,.5,0,1,0,0],[5,.5,.5,0,1,0,0],[6,.5,.5,0,1,0,0],
     [8,.5,.5,0,1,0,0],[9,.5,.5,0,1,0,0],[12,.5,.5,0,1,0,0],[7,.5,.5,0,1,0,0],
-    [13,.5,.5,0,1,0,0],[16,.5,.5,0,1,.15,0],[19,.5,.5,0,1,0,0],[20,.5,.5,0,1,0,0],
-    [21,.5,.5,0,1,.2,0],[23,.5,.5,0,1,.35,.2],[24,.5,.5,0,1,.25,.25],[25,.5,.5,0,1,0,.5],
+    [13,.5,.5,0,1,0,0],[16,.5,.5,0,1,0,0],[19,.5,.5,0,1,0,0],[20,.5,.5,0,1,0,0],
+    [21,.5,.5,0,1,0,0],[23,.5,.5,0,1,0,0],[24,.5,.5,0,1,0,0],[25,.5,.5,0,1,0,0],
 ];
 const DRUM_LAYOUT = [
     [0,.5,.5,0,1,0,0],[1,.5,.5,0,1,0,0],[6,.5,.5,0,1,0,.12],[5,.5,.5,0,1,.1,.15],
@@ -3344,6 +3344,7 @@ function fbApply() {
 function initSound(L) {                                    /* every sound parameter back to its default (volume, pan and type stay) */
     const d = defaultPads()[L]; if (!d) return;
     for (let i = 0; i < PK.length; i++) if (i !== PI.vol && i !== PI.pan && i !== 0) pads[L][i] = d[i];
+    pads[L][PI.dly] = 0; pads[L][PI.rvb] = 0;                  /* an INIT sound is dry: no delay or reverb send (set them per track / per drum pad on the FX tile) */
     qPad(L);
 }
 function fbRestore() {
