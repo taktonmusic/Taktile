@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.85.1 (16 October 2026)
+- Live FX fill pads always use the sounds of the first loaded drum track, whichever track is selected
+
 ## 5.85.0 (16 October 2026)
 - INIT patches are dry: no delay or reverb send. New synth tracks start without delay and reverb (before, some tracks had a reverb send by default). Delay, reverb and all other effects stay adjustable per synth track and per drum pad on the FX tiles; master returns on the BUS tile
 

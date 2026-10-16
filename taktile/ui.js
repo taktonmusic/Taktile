@@ -1335,7 +1335,8 @@ function lfxSet(L, k, v) { const b = L + k; if (!lfxBase[b]) lfxBase[b] = { old:
 const fillHeld = {};
 function fillPad(idx) { return !kind[sel] && (idx >> 3) < 2; }
 function fillLanes() {
-    let t = kind[sel] ? sel : -1; if (t < 0) for (let q = 0; q < NTRK; q++) if (kind[q]) { t = q; break; }
+    let t = -1; for (let q = 0; q < NTRK; q++) if (kind[q] && chosen[q]) { t = q; break; }      /* the fills always play the sounds of the first loaded drum track, whichever track is selected */
+    if (t < 0) for (let q = 0; q < NTRK; q++) if (kind[q]) { t = q; break; }
     if (t < 0) return null;
     const out = [], quota = [[2, 3], [1, 2], [0, 1], [3, 2], [2, 8], [1, 8], [3, 8], [4, 8], [5, 8], [6, 8], [7, 8], [0, 8]];      /* hats (3), snares (2), kick, perc (2), then whatever is left */
     for (const [c, q] of quota) { let n = 0; for (let k = 0; k < 16 && out.length < 8 && n < q; k++) { const l = laneOf(t, k); if (out.indexOf(l) < 0 && catOf(Math.round(pads[l][0])) === c) { out.push(l); n++; } } }
