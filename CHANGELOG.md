@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.82.0 (16 October 2026)
+- Granulator: Tone is replaced by WINDOW (RECT, TRI, SINE, GAUSS, HANN, blended); the grain picture is redrawn with the real window shape of every grain
+- Recording: when a clip grows or shrinks to the length of the take, the notes keep their place on the shared beat grid, so the clip stays in sync with the other clips
+
 ## 5.81.0 (16 October 2026)
 - Undo / Redo now also covers: loop length changes (incl. drum sound lengths), recorded and cleared automation (knob motion), copied sounds / tracks, BPM and swing set with Shift + knob
 

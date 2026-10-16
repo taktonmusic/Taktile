@@ -158,7 +158,7 @@ const VIEW_ITEMS = {
     3: [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']],       /* synth tracks; drum tracks add the kick rumble (viewItemsFix) */
     38: [['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['chor','Chorus','Cho'],['phas','Phaser','Pha'],['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth']],
     46: [['dmode','DlyType','DTyp'],['rmode','RvbType','RTyp'],['mono','Output','Out'],['morph','Morph A>B','Morph'],['dtn','DlyTone'],['dwd','DlyWide'],['rwd','RvbWide'],['rlc','RvbLow']],
-    50: [['grn','Grain'],['gsz','Size'],['gsp','Spread'],['gpi','Pitch'],['gdn','Density'],['grv','Reverse'],['gfz','Freeze'],['gtn','Tone']],
+    50: [['grn','Grain'],['gsz','Size'],['gsp','Spread'],['gpi','Pitch'],['gdn','Density'],['grv','Reverse'],['gfz','Freeze'],['gtn','Window','Win']],
     39: [['dtime','DlyTime','DTim'],['dfb','DlyFdbk','DFb'],['rsize','RvbSize','RSiz'],['rdark','RvbDark','RDrk'],['chrt','ChoRate','CRt'],['chdp','ChoDepth','CDp'],['phrt','PhaRate','PRt'],['phfb','PhaFdbk','PFb']],
     41: [['m_eql','Low'],['m_eqm','Mid'],['m_eqh','High'],['m_lim','Limiter','Lim'],['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_comp','Comp']],
     4: [['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_wid','Width','Wid'],['m_comp','Comp'],['dly_ret','DlyRet'],['rvb_ret','RvbRet'],['m_lim','Limiter','Lim']],
@@ -483,7 +483,8 @@ function fmtVal(key, v) {
     if (key === 'm_met') return v > 0.05 ? String(Math.round(v * 100)) : 'OFF';
     if (key === 'm_qnt') return ['1/16', '1/8', '1/4', '1/2', 'BAR', '2 BAR', '4 BAR'][Math.min(6, Math.floor(v * 7))];
     if (key === 'kind') return v > 0.5 ? 'DRUM' : 'SYN';
-    if (key === 'dtn' || key === 'gdn' || key === 'grv' || key === 'gtn') return Math.round(v * 100) + '%';
+    if (key === 'gtn') return ['RECT', 'TRI', 'SINE', 'GAUSS', 'HANN'][clamp(Math.round(v * 4), 0, 4)];
+    if (key === 'dtn' || key === 'gdn' || key === 'grv') return Math.round(v * 100) + '%';
     if (key === 'dwd' || key === 'rwd') return v < 0.03 ? 'MONO' : Math.round(v * 200) + '%';
     if (key === 'rlc') return v < 0.02 ? 'OFF' : Math.round(30 + v * v * 600) + 'Hz';
     if (key === 'gfz') return v > 0.5 ? 'FREEZE' : 'LIVE';
@@ -865,7 +866,7 @@ const HELP = {
     38: ['FX MIX: Pegel Delay,', 'Reverb, Chorus, Phaser', 'Jog klick: FX TIME'],
     39: ['Zeiten der Effekte', 'Delay, Reverb, Chorus', 'Phaser'],
     46: ['Typ: Delay, Reverb, Out', 'Knopf 4: Morph zu A', 'Knopf 5-8: Ton + Breite', 'Delay und Reverb'],
-    50: ['Granulator: Grain = Mix', 'Size, Spread, Pitch, Density', 'Reverse, Freeze, Tone', 'Bild unten: Grains live'],
+    50: ['Granulator: Grain = Mix', 'Size, Spread, Pitch, Density', 'Reverse, Freeze, Window', 'Bild unten: Grains live'],
     16: ['SOUND = Track-Seiten', 'EDIT = Aktionen', 'MORE = Projekt, Song'],
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
@@ -899,7 +900,7 @@ const HELP_EN = {
     38: ['FX MIX: level of Delay,', 'Reverb, Chorus, Phaser', 'Jog click: FX TIME'],
     39: ['Times of the effects', 'Delay, Reverb, Chorus', 'Phaser'],
     46: ['Type: Delay, Reverb, Out', 'Knob 4: Morph to A', 'Knobs 5-8: tone + width', 'Delay and reverb'],
-    50: ['Granulator: Grain = mix', 'Size, Spread, Pitch, Density', 'Reverse, Freeze, Tone', 'Picture below: live grains'],
+    50: ['Granulator: Grain = mix', 'Size, Spread, Pitch, Density', 'Reverse, Freeze, Window', 'Picture below: live grains'],
     16: ['SOUND = track pages', 'EDIT = actions', 'MORE = project, song'],
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
@@ -1834,7 +1835,7 @@ const LONG_NAME = { dmode: 'Delay Type', rmode: 'Reverb Type', dtime: 'Delay Tim
     rvar: 'Random Velocity', rkey: 'Random In Key', rrat: 'Random Ratchet', rqoff: 'Record Snap', fullvel: 'Full Velocity', m_hum: 'Humanize', m_met: 'Metronome', m_qnt: 'Launch Quantize',
     qscale: 'Quantize To Scale', sst: 'Sample Start', sen: 'Sample End', smd: 'Sample Mode', smp: 'Sample File', sgn: 'Sample Gain', satk: 'Sample Attack', srel: 'Sample Release', sstr: 'Time Stretch',
     mch: 'Note Chance', mvb: 'Velocity Bias', trn: 'Transpose', orn: 'Random Octave', vhm: 'Velocity Humanize', vmn: 'Velocity Min', vmx: 'Velocity Max', eqlf: 'EQ Low Freq', eqmf: 'EQ Mid Freq', eqhf: 'EQ High Freq', eqq: 'EQ Mid Width', eqo: 'EQ Output', pcv: 'Pump Curve', rfq: 'Ring Frequency',
-    dtn: 'Delay Tone', dwd: 'Delay Width', rwd: 'Reverb Width', rlc: 'Reverb Low Cut', gdn: 'Grain Density', grv: 'Grain Reverse', gfz: 'Grain Freeze', gtn: 'Grain Tone',
+    dtn: 'Delay Tone', dwd: 'Delay Width', rwd: 'Reverb Width', rlc: 'Reverb Low Cut', gdn: 'Grain Density', grv: 'Grain Reverse', gfz: 'Grain Freeze', gtn: 'Grain Window',
     enot: 'Euclid Note', ealt: 'Euclid Alt Note', eacn: 'Euclid Accent Note', ewlk: 'Euclid Walk', ewln: 'Euclid Walk Length', ernd: 'Euclid Random Note', eoup: 'Euclid Octave Up', eodn: 'Euclid Octave Down', eon: 'Euclid Mode', qgrid: 'Quantize Grid', qstr: 'Quantize Strength', qtime: 'Quantize Now',
     rmb: 'Kick Rumble', rmt: 'Rumble Tail', ehit: 'Euclid Hits', erot: 'Euclid Rotate', elen: 'Euclid Length', emut: 'Euclid Mutate', mamt: 'MIDI FX Amount', mprm: 'MIDI FX Param', mfx: 'MIDI Effect', xfx: 'Insert Effect', xmix: 'Insert Amount', m2fx: 'MIDI Effect 2', m2amt: 'MIDI 2 Amount', m2prm: 'MIDI 2 Param', x2fx: 'Audio Effect 2', x2mix: 'Audio 2 Amount', x2rt: 'Audio 2 Rate', x2dp: 'Audio 2 Depth',
     xrt: 'Insert Rate', xdp: 'Insert Depth', fdec: 'Filter Env Decay', fkey: 'Filter Key Track', fmode: 'Filter Mode', slg: 'Slices To Pads' };
@@ -2179,7 +2180,7 @@ function recStopLen() {                                   /* Rec pressed the sec
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
         const el = Math.max(0.01, gpos - growG0[t]), n = clamp(Math.ceil(el / 16) * 16, 16, MAXSTEP);
-        if (lens[t] !== n) { lens[t] = n; enqueue('len' + t, 'len', t + ',' + n); }
+        if (lens[t] !== n) { reMap(t, lens[t], n); lens[t] = n; enqueue('len' + t, 'len', t + ',' + n); }
         showToast('REC LENGTH', n + ' STEPS', n / MAXSTEP);
     }
 }
@@ -2191,10 +2192,28 @@ function growTick() {                                     /* recording into an e
         if (gs - 1 >= 0 && (gs - 1) % len === len - 1 && gs - 1 < len * 2) growLoop(t, len + 16);
     }
 }
+function reMap(t, oldLen, n) {                           /* a clip that changes length keeps every note on the same beat of the shared grid: notes recorded from a bar line that is not a multiple of the new length move along, a shorter clip folds back */
+    const c = ed[t], sh = ((growG0[t] % n) + n) % n;
+    for (const l of lanesOf(t)) {
+        const a = steps[c][l], tmp = a.slice(0, Math.max(oldLen, n)).map(x => x.slice());
+        let ch = false;
+        if (n > oldLen) {
+            if (!sh) continue;
+            const out = []; for (let i = 0; i < n; i++) out.push([0, 100, 0, 0]);
+            for (let i = oldLen; i < n; i++) if (tmp[i][0]) out[i] = tmp[i];
+            for (let i = 0; i < oldLen; i++) out[(i + sh) % n] = tmp[i];
+            for (let i = 0; i < n; i++) a[i] = out[i];
+            ch = true;
+        } else if (n < oldLen) {
+            for (let i = n; i < oldLen; i++) if (tmp[i][0]) { if (!a[i % n][0]) a[i % n] = tmp[i]; a[i] = [0, 100, 0, 0]; ch = true; }
+        }
+        if (ch) qSeq(c, l);
+    }
+}
 function growLoop(lane, n) {
     const t = laneTrk(lane); n = clamp(n, 1, MAXSTEP);
     if (kind[t] && llen[lane]) { llen[lane] = n; enqueue('llen' + lane, 'llen', lane + ',' + n); }
-    else { lens[t] = n; enqueue('len' + t, 'len', t + ',' + n); }
+    else { if (growTrk[t] && !(kind[t] && llen[lane])) reMap(t, lens[t], n); lens[t] = n; enqueue('len' + t, 'len', t + ',' + n); }
     showToast('LOOP GROWS', n + ' STEPS', n / MAXSTEP);
 }
 let recSnap = {}, recGrp = 0, recLastT = 0;
@@ -4180,23 +4199,32 @@ function grainPoll() {                                     /* live picture of th
     const r = dspGet('grnv_' + (ln() + 1)); if (typeof r !== 'string') return;
     const pt = r.split('|'); grEnv = pt[0] || ''; grains = (pt[1] || '').split(';').filter(x => x.length).map(x => x.split(',').map(Number));
 }
-function drawGrains() {                                    /* left = a while ago, right = now: dotted line = what the sound played, bars = the grains reading from it (height = pitch, length = size) */
-    const y0 = 50, h = 14, yc = y0 + 7, on = pads[ln()][PI.grn] >= 0.01, frz = pads[ln()][PI.gfz] > 0.5;
+const GWIN = [ph => Math.min(1, Math.min(ph, 1 - ph) * 12), ph => 2 * Math.min(ph, 1 - ph), ph => Math.sin(Math.PI * ph), ph => Math.exp(-20 * (ph - 0.5) * (ph - 0.5)), ph => { const s = Math.sin(Math.PI * ph); return s * s; }];
+function gWin(ph, v) { const m = clamp(v, 0, 1) * 4, i = Math.min(3, Math.floor(m)), f = m - i; return GWIN[i](ph) * (1 - f) + GWIN[i + 1](ph) * f; }
+function drawGrains() {                                    /* left = a while ago, right = now: the sound's level as a soft mirrored wave, every grain drawn with the real WINDOW shape (width = size, height = pitch) */
+    const y0 = 49, h = 15, yc = y0 + 7, on = pads[ln()][PI.grn] >= 0.01, frz = pads[ln()][PI.gfz] > 0.5, wv = pads[ln()][PI.gtn];
     draw_rect(0, y0, 128, h, 1);
-    if (!on) { txtS(28, y0 + 4, 'GRAIN OFF  TURN KNOB 1', 1); return; }
-    if (frz) txtS(3, y0 + 2, 'FRZ', 1);
-    for (let k = 0; k < 32 && k < grEnv.length; k++) {
-        const a = parseInt(grEnv[k], 16) / 15 || 0, hh = Math.round(a * 4), x = 3 + Math.round(k * 3.75);
-        for (let yy = yc - hh; yy <= yc + hh; yy += 2) set_pixel(x, yy, 1);
-        set_pixel(x, yc, 1);
+    if (!on) { txtS(28, y0 + 5, 'GRAIN OFF  TURN KNOB 1', 1); return; }
+    if (frz) { txtS(3, y0 + 2, 'FRZ', 1); for (let x = 2; x < 126; x += 4) set_pixel(x, yc, 1); }
+    for (let k = 0; k < 32 && k < grEnv.length; k++) {                       /* history: thin mirrored bars, rounded to a wave */
+        const a = parseInt(grEnv[k], 16) / 15 || 0, hh = Math.round(a * 5), x = 3 + Math.round(k * 3.75);
+        if (hh > 0) fill_rect(x, yc - hh, 1, hh * 2 + 1, 1); else set_pixel(x, yc, 1);
     }
+    const big = frz ? 0 : 1;
     for (let k = 0; k < grains.length; k++) {
-        const g = grains[k], rv = g[2] < 0, w = clamp(Math.round(2 + g[1] * 0.3), 2, 28), x = clamp(Math.round(124 - g[0] * 1.15), 2, 124 - w), yy = clamp(y0 + 7 - Math.round((Math.abs(g[2]) - 4) * 1.1), y0 + 2, y0 + h - 4);
-        if (rv) { draw_rect(x, yy, w, 3, 1); } else fill_rect(x, yy, w, 2, 1);      /* hollow = plays backwards */
-        set_pixel(x, yy - 1, 1); set_pixel(x + w - 1, yy + 2, 1);               /* little end marks: where it starts and where it stops */
-        if (g[3] < 35) fill_rect(x, yy - 2, 1, 6, 1);                           /* a fresh grain starts with a tick */
+        const g = grains[k], rv = g[2] < 0, w = clamp(Math.round(6 + g[1] * 0.45), 6, 40), x0 = clamp(Math.round(124 - g[0] * 1.15), 2, 124 - w), base = clamp(y0 + h - 3 - Math.round((Math.abs(g[2]) - 4) * 0.9), y0 + 7, y0 + h - 3), ah = 6;
+        let py = -1;
+        for (let i = 0; i < w; i++) {                                         /* the window shape as an outline arch (backwards grains lean the other way) */
+            const ph = (rv ? w - 1 - i : i) / (w - 1), yy = base - Math.round(gWin(ph, wv) * ah);
+            set_pixel(x0 + i, yy, 1);
+            if (py >= 0 && Math.abs(yy - py) > 1) { const lo = Math.min(yy, py), hi = Math.max(yy, py); for (let q = lo; q <= hi; q++) set_pixel(x0 + i, q, 1); }
+            py = yy;
+        }
+        fill_rect(x0, base, w, 1, 1);                                          /* baseline under the arch */
+        if (g[3] < 35) fill_rect(x0, base - ah, 1, ah + 1, 1);                 /* fresh grain: start tick */
     }
     fill_rect(126, y0 + 1, 1, h - 2, 1);
+    if (big) fill_rect(125, yc, 3, 1, 1);
 }
 function drawParams() {
     const items = VIEW_ITEMS[pg2(view)], scope = padView(view) ? 'pad' : 'master';

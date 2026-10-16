@@ -781,6 +781,19 @@ static int gran_slot(inst_t *s, int t, float mix) {
     }
     return -1;
 }
+static float g_win[5][257]; static int g_win_ok;
+static void gwin_init(void) {                             /* grain windows: 0 rect (short fades), 1 triangle, 2 sine, 3 gauss, 4 hann (the original) */
+    for (int k = 0; k <= 256; k++) {
+        const float ph = (float)k / 256.0f, e = ph < 0.5f ? ph : 1.0f - ph;
+        const float d = ph - 0.5f, hs = sinf(3.14159265f * ph);
+        g_win[0][k] = e * 12.0f < 1.0f ? e * 12.0f : 1.0f;
+        g_win[1][k] = 2.0f * e;
+        g_win[2][k] = hs;
+        g_win[3][k] = expf(-20.0f * d * d);
+        g_win[4][k] = hs * hs;
+    }
+    g_win_ok = 1;
+}
 static void gran_proc(inst_t *s, int t, const float *q, float *Lp, float *Rp) {
     const float mix = q[PP_GRN];
     const int sl = gran_slot(s, t, mix);
@@ -811,10 +824,13 @@ static void gran_proc(inst_t *s, int t, const float *q, float *Lp, float *Rp) {
             break;
         }
     }
+    if (!g_win_ok) gwin_init();
+    const float wm = (q[PP_GTN] < 0.0f ? 0.0f : (q[PP_GTN] > 1.0f ? 1.0f : q[PP_GTN])) * 4.0f; int wi = (int)wm; if (wi > 3) wi = 3; const int wj = wi + 1; const float wf = wm - (float)wi;      /* Window: morphs between the five shapes */
     float gl = 0.0f, gr = 0.0f;
     for (int g = 0; g < 8; g++) {
         if (G->age[g] >= G->len[g]) continue;
-        const float ph = (float)G->age[g] / (float)G->len[g], win = sinf(3.14159265f * ph), w2 = win * win;
+        const float ph = (float)G->age[g] / (float)G->len[g], pk = ph * 256.0f; const int pi_ = (int)pk; const float pf = pk - (float)pi_;
+        const float wa = g_win[wi][pi_] * (1.0f - pf) + g_win[wi][pi_ + 1] * pf, wb = g_win[wj][pi_] * (1.0f - pf) + g_win[wj][pi_ + 1] * pf, w2 = wa * (1.0f - wf) + wb * wf;
         const int i0 = (int)G->pos[g] & (GRN_SZ - 1), i1 = (i0 + 1) & (GRN_SZ - 1); const float fr = G->pos[g] - floorf(G->pos[g]);
         gl += (G->buf[0][i0] * (1.0f - fr) + G->buf[0][i1] * fr) * w2 * G->pl[g];
         gr += (G->buf[1][i0] * (1.0f - fr) + G->buf[1][i1] * fr) * w2 * G->pr[g];
@@ -822,7 +838,6 @@ static void gran_proc(inst_t *s, int t, const float *q, float *Lp, float *Rp) {
         G->age[g]++;
     }
     if (!(fabsf(gl) < 8.0f) || !(fabsf(gr) < 8.0f)) { gl = gr = 0.0f; memset(G->buf, 0, sizeof G->buf); }
-    if (q[PP_GTN] < 0.99f) { const float a = 0.02f + q[PP_GTN] * q[PP_GTN] * 0.9f; G->lpl += a * (gl - G->lpl); G->lpr += a * (gr - G->lpr); gl = G->lpl; gr = G->lpr; }      /* Tone: dark grains */
     *Lp = *Lp * (1.0f - 0.55f * mix) + gl * 0.95f * mix; *Rp = *Rp * (1.0f - 0.55f * mix) + gr * 0.95f * mix;
 }
 #define LF_SIZE 131072
