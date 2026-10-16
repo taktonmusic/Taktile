@@ -4205,6 +4205,7 @@ function drawParams() {
             else { txtS(x + 2, y + 2, nm, 1); const bw = cw - 3; if (isHot) fill_rect(x + 1, y + 9, bw, 11, 1); else draw_rect(x + 1, y + 9, bw, 11, 1); const vt = fit(vs, bw - 4); txt(x + 1 + Math.floor((bw - tw(vt)) / 2), y + 10, vt, isHot ? 0 : 1); const mw = Math.round((bw - 4) * clamp(fr, 0, 1)); fill_rect(x + 3, y + 23, bw - 4, 1, 1); if (mw > 0) fill_rect(x + 3, y + 22, mw, 3, 1); }
             continue;
         }
+        if (view === 1 && items[i][0] === 'wave' && cw >= 32) { drawPresetBox(x, y, cw, (ENUMS.wave[Math.round(v)] || vs)); continue; }
         { const si = (ps !== 3 && cw >= 32) ? selInfo(items[i][0], v) : null; if (si) { cellSel(x, y, lab, vs, si[0], si[1], cw, isHot, view === 27); continue; } }
         if (view === 27) { cellSmall(x, y, lab, vs, fr, cw, isHot); continue; }
         if (view === 1 && items[i][0] === 'type' && cw >= 32) { drawPresetBox(x, y, cw, TYPE_NAME[Math.round(v)] || vs); continue; }
@@ -4243,7 +4244,7 @@ const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0]], [
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
 const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['dly', 'Delay', 'Dly'] : it);
-const SND_SYN = SND_ALL.map(it => it[0] === 'drive' ? ['dly', 'Delay', 'Dly'] : it);       /* synth: Drive lives on the 2nd SYNTH page */
+const SND_SYN = SND_ALL.map(it => it[0] === 'drive' ? ['wave', 'Wave'] : it);       /* synth: Drive lives on the 2nd SYNTH page; the wave (Saw, Square ...) sits here as a small preset-style box */
 function viewItemsFix() {
     VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
     VIEW_ITEMS[1] = kind[sel] ? SND_DRM : SND_SYN;                          /* a drum sound has no voices: the delay send takes that place */

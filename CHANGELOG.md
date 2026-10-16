@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.78.0 (16 October 2026)
+- PRESET tile on synth tracks: a small preset-style window to pick the waveform (Auto, Saw, Square, Tri, Sine ...) where Drive was. Drive is on SYNTH page 2
+- Manuals, README and guides corrected accordingly
+
 ## 5.77.1 (16 October 2026)
 - New synth track: the browser opens on the SYNTHS family list (Analog, Wavetable, FM 4-OP, FM 2-OP, Fold ...) instead of inside the first family
 
