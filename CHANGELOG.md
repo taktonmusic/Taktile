@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.77.0 (16 October 2026)
+- SYNTH tile, page 2: Drive replaces Chop (Chop removed). On synth tracks the SOUND tile shows the delay send where Drive was (drums keep Drive)
+
+## 5.76.0 (16 October 2026)
+- Synth tracks: no more click when the next pad is played (the old note now fades out in about 10 ms instead of being cut)
+- Setting a step while stopped starts playback
+
 ## 5.75.0 (16 October 2026)
 Desktop-tested (UI simulator, 60,000-event fuzzing, native builds, GLIBC 2.17 check); not yet confirmed on the device.
 

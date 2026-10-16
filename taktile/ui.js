@@ -189,7 +189,7 @@ const VIEW_ITEMS = {
     48: [['smfit','Fit Tempo','Fit'],['smhf','Half'],['smdb','Double','Dbl'],['smnx','Move'],['smrn','Random','Rand'],['smrv','Reverse','Rev'],['smnm','Normal','Norm'],['smrs','Reset']],
     28: [['smp','File'],['sst','Start','Strt'],['sen','End'],['smd','Mode'],['tune','Tune'],['sgn','Gain'],['pan','Pan'],['vol','Vol']],
     21: [['kind','Kind'],['tvol','Volume','Vol'],['pmode','Pads'],['dsel','Sound','Snd'],['lay','Layout','Lay'],['tcol','Color','Col'],['tsw','Swing+','Swg+'],['pan','Pan']],
-    47: [['snz','Noise'],['fatk','FltAtk','FAtk'],['sfld','Fold'],['schp','Chop'],['trem','Tremolo','Trem'],['trat','TremRate','TRt'],['apan','AutoPan','APan'],['vflt','VelFilt','VFlt']],
+    47: [['snz','Noise'],['fatk','FltAtk','FAtk'],['sfld','Fold'],['drive','Drive','Drv'],['trem','Tremolo','Trem'],['trat','TremRate','TRt'],['apan','AutoPan','APan'],['vflt','VelFilt','VFlt']],
     9: [['wave','Wave'],['det','Detune','Det'],['sub','Sub'],['att','Attack','Atk'],['cut','LPCut','LPF'],['res','Reso','Res'],['fenv','FltEnv','FEnv'],['poly','Voices','Poly']],
 };
 /* home / fx / master hubs: tiles you pick with the jogwheel (turn = choose, click = open, Back = up one level) */
@@ -4242,7 +4242,8 @@ const ENG_KN = { 6: ['Detune', 'Sub', 'Sync', 'Width'], 7: ['Position', 'Sweep',
 const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0]], ['sub', ENG_KN[e][1]], ['fkey', ENG_KN[e][2]], ['fdec', ENG_KN[e][3]], ['att', 'Attack', 'Atk'], ['cut', 'LPCut', 'LPF'], ['res', 'Reso', 'Res'], ['poly', 'Voices', 'Poly']];
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
-const SND_SYN = VIEW_ITEMS[1], SND_DRM = SND_SYN.map(it => it[0] === 'poly' ? ['dly', 'Delay', 'Dly'] : it);
+const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['dly', 'Delay', 'Dly'] : it);
+const SND_SYN = SND_ALL.map(it => it[0] === 'drive' ? ['dly', 'Delay', 'Dly'] : it);       /* synth: Drive lives on the 2nd SYNTH page */
 function viewItemsFix() {
     VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
     VIEW_ITEMS[1] = kind[sel] ? SND_DRM : SND_SYN;                          /* a drum sound has no voices: the delay send takes that place */
