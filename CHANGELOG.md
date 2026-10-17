@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.109.0 (17 October 2026)
+- ENGINE 2 page removed (noise, fold, chop, tremolo, auto-pan ... ): Jog click on the engine page now opens the sound browser; old projects load with those knobs at neutral values
+
 ## 5.108.0 (17 October 2026)
 - Hardware-style pages: named blocks of four knobs (ENGINE / FILTER + VOICES, TONE SHAPE / MOVEMENT, RING + PUMP / DUCK, INSERT / THIS TRACK + SENDS + OUTPUT, DELAY / ALL TRACKS + REVERB / ALL TRACKS)
 - FX BUS pages regrouped: delay knobs together, reverb knobs together; type and width moved to page 2

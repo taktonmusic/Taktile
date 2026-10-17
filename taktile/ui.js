@@ -393,6 +393,8 @@ function saveState() {
 }
 let saveFlash = 0;
 let freshState = false;
+const ENG2_KEYS = ['snz', 'fatk', 'sfld', 'schp', 'trem', 'trat', 'apan', 'vflt'];
+function neutEng2(a) { for (const k of ENG2_KEYS) if (PI[k] !== undefined) a[PI[k]] = defOf(PI[k]); return a; }      /* the ENGINE 2 page (noise, fold, chop, tremolo, auto-pan ...) is gone: old projects load with those knobs at their neutral values */
 function loadState() {
     miscLast = null; pads = defaultPads(); steps = newSteps();
     try {
@@ -403,7 +405,7 @@ function loadState() {
         const o = JSON.parse(txt);
         if (!o || o.v !== 2) { freshState = true; return; }
         if (Array.isArray(o.pads) && (o.pads.length === NTRK || o.pads.length === NLANE)) {
-            const loaded = o.pads.map(r => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); return a; });
+            const loaded = o.pads.map(r => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); return neutEng2(a); });
             for (let l = 0; l < loaded.length; l++) pads[l] = loaded[l];
         }
         if (Array.isArray(o.ly) && o.ly.length === 2) { layS = clamp(Number(o.ly[0]) | 0, 0, 5); layD = clamp(Number(o.ly[1]) | 0, 0, 1); }
@@ -434,7 +436,7 @@ function loadState() {
             if (h && steps[p][t]) { const w = o.sf === 12 ? 12 : (o.sf === 10 ? 10 : (o.sf === 6 ? 6 : 4)); for (let s = 0; s < Math.min(MAXSTEP, Math.floor(h.length / w)); s++) steps[p][t][s] = w >= 10 ? decStep(h.substr(w * s, w)) : (w === 6 ? decStep(h.substr(6 * s, 6)) : decStepOld(h.substr(4 * s, 4))); }
         }
         if (Array.isArray(o.cs) && o.cs.length === NPAT && o.cs.every(row => Array.isArray(row) && (row.length === NTRK || row.length === NLANE))) {
-            csnd = o.cs.map(row => { const out = []; for (let l = 0; l < NLANE; l++) { const a = row[l]; if (Array.isArray(a)) { const b = a.map(Number); while (b.length < PK.length) b.push(defOf(b.length)); out.push(b); } else out.push(pads[l].slice()); } return out; });
+            csnd = o.cs.map(row => { const out = []; for (let l = 0; l < NLANE; l++) { const a = row[l]; if (Array.isArray(a)) { const b = a.map(Number); while (b.length < PK.length) b.push(defOf(b.length)); out.push(neutEng2(b)); } else out.push(pads[l].slice()); } return out; });
         }
         if (o.fx !== 2) {                                                    /* older saves: effects were per track; every pad of a drum track starts with a copy */
             for (let t = 0; t < NTRK; t++) if (kind[t] && slot[t] >= 0) for (let k = 0; k < 16; k++) {
@@ -875,7 +877,7 @@ const HELP = {
     1: ['Preset: Klang waehlen', 'Jog: Reiter wechseln', 'Shift+Jog: Presets'],
     2: ['Filter: LP, HP, Crush', 'Jog: Reiter wechseln', 'Jog klick: letzter Reiter'],
     3: ['Mod: Ring, Pump, Wobble', 'Duck = Sidechain Tiefe', 'Jog: Reiter wechseln'],
-    9: ['Engine: Wave, Sub, Filter', 'Jog klick: Seite 2 (Noise, Fold, Tremolo)', 'Jog: Reiter wechseln'],
+    9: ['Engine: Wave, Sub, Filter', 'Jog klick: Sound-Browser', 'Jog: Reiter wechseln'],
     28: ['Sample: Datei=Knopf 1. Shift+Jog klick: Browser. Dort Shift+Klick auf Ordner = Kit aus 16 WAVs. Jog klick: Slice/ENV/Tools. Tools: Fit, Half, Move. Slice: Add, Del, Snap.'],
     27: ['MIDI-Effekt + Arp', 'Jog klick: MIDI FX 2', 'Jog: Reiter wechseln'],
     36: ['Euklid: 7 Seiten', 'Jog klick: Seite', 'Aendert das Pattern'],
@@ -909,7 +911,7 @@ const HELP_EN = {
     1: ['Preset: choose a sound', 'Jog: change tab', 'Shift+Jog: presets'],
     2: ['Filter: LP, HP, Crush', 'Jog: change tab', 'Jog click: last tab'],
     3: ['Mod: Ring, Pump, Wobble', 'Duck = sidechain depth', 'Jog: change tab'],
-    9: ['Engine: Wave, Sub, Filter', 'Jog click: page 2 (Noise, Fold, Tremolo)', 'Jog: change tab'],
+    9: ['Engine: Wave, Sub, Filter', 'Jog click: sound browser', 'Jog: change tab'],
     28: ['Sample: File = knob 1. Shift+Jog click: browser. There Shift+click on a folder = kit from 16 WAVs. Jog click: Slice/ENV/Tools. Tools: Fit, Half, Move. Slice: Add, Del, Snap.'],
     27: ['MIDI effect + Arp', 'Jog click: MIDI FX 2', 'Jog: change tab'],
     36: ['Euclid: 7 pages', 'Jog click: page', 'Changes the pattern'],
@@ -2487,7 +2489,7 @@ let synPage = 0, fxPage = 0;
 function tabPg(t) {                                        /* [page, pages] inside the current tile, always shown: tile name top left, page top right */
     if (t === 36) return [euPage + 1, EU_NPG];
     if (t === 28) return [smpPage + 1, 4];
-    const two = (t === 9 || t === 2 || t === 38 || t === 46 || t === 27);
+    const two = (t === 2 || t === 38 || t === 46 || t === 27);
     return [tabPageNum() ? 2 : 1, two ? 2 : 1];
 }
 function pg2(v) { return v === 9 && synPage ? 47 : (v === 38 && fxPage ? 39 : (v === 27 && fxPage ? 49 : v)); }      /* second pages (Jog click): ENGINE 2, FX TIME, MIDI FX 2 */
@@ -5008,7 +5010,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (d2 > 0 && view === 40 && !menuOpen && !shiftHeld) { if (undoStack.length) histApply(); return; }
         if (d2 > 0 && view === 20 && !menuOpen && !padMenu && !shiftHeld) { mixMode = (mixMode + 1) % 3; needsRedraw = true; showToast('MIX', ['VOLUME', 'DELAY SEND', 'REVERB SEND'][mixMode], mixMode / 2); return; }
         if (d2 > 0 && (view === 0 || view === 1) && !menuOpen && !padMenu && !shiftHeld && askKind < 0 && !fb) { fbOpen(); acc.fill(0); needsRedraw = true; return; }   /* jog click on SEQ/SOUND = preset browser (HOME: Shift + step 3) */
-        if (d2 > 0 && view === 9 && !menuOpen && !padMenu && !shiftHeld) { synPage ^= 1; acc.fill(0); showToast(String(synPage + 1), '', 0); toast.ticks = 40; needsRedraw = true; return; }
+        if (false) { acc.fill(0); showToast(String(synPage + 1), '', 0); toast.ticks = 40; needsRedraw = true; return; }
         if (d2 > 0 && (view === 38 || view === 27 || view === 2 || view === 43 || view === 46 || view === 50) && !menuOpen && !padMenu && !shiftHeld) {      /* second / third page of FX (TIME, TYPE) and of FILTER (EQ) */
             let pg;
             if (view === 2) { view = 43; pg = 2; }
