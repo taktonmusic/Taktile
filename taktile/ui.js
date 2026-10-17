@@ -2164,7 +2164,7 @@ function drumCol(t, k) {                                  /* colour of drum soun
 }
 function inboundActive() { return (typeof shadow_inbound_pad_midi_active === 'function') && shadow_inbound_pad_midi_active(); }
 function selectTrack(t) { drumHeldK = []; padHold = {}; growTrk.fill(false); bank = t >> 2; if (sel !== t) { for (let q = 0; q < NTRK; q++) if (topModes[q] === 3) { liveFxAllOff(); topModes[q] = topPrev[q] !== 3 ? topPrev[q] : 0; markEdited(); }      /* Live FX is a visit: another track = gone until you switch it on again */
-        fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); } needsRedraw = true; }
+        fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); if (view === 44 && !chordOn()) tabEnter(1); } needsRedraw = true; }
 function wipeSlot(d) {                                    /* a kit is handed to another track: back to the default kit */
     ensureCs(); const def = defaultPads();
     for (let k = 0; k < 16; k++) {
@@ -3570,6 +3570,9 @@ function projFile(n) { return '/data/UserData/schwung/taktile-proj-' + (n + 1) +
 function projScan() { projUsed = []; for (let n = 0; n < 32; n++) { let t = null; try { t = host_read_file(projFile(n)); } catch (e) { t = null; } projUsed.push(!!t); } }
 function projSave() { projRemember(); saveState(); try { const t = host_read_file(STATE_FILE); if (t) { host_write_file(projFile(projSlot), t); projUsed[projSlot] = true; showToast('PROJECT ' + (projSlot + 1), 'SAVED', 1); return; } } catch (e) { /* ignore */ } showToast('PROJECT', 'SAVE FAILED', 0); }
 let DEF = null, clrPend = { t: -1, ticks: 0 };
+function firstDrum() {                                     /* a new project: track 1 is a Drum track (default kit), so the beat can start right away */
+    chosen[0] = 1; setKind(0, 1); kitFresh[0] = true;
+}
 function firstSynth() {                                    /* a new project: track 1 is always a Synth with the first (plain FM) sound, so it plays right away */
     chosen[0] = 1; kind[0] = 0; slot[0] = -1;
     if (FMI > 0) { initSound(0); pads[0][PI.det] = 0.25; pads[0][PI.sub] = 0.3; pads[0][PI.fkey] = 0; pads[0][PI.decay] = 0.45; fltSet(0, FLT_OPEN); pads[0][0] = FMI; qPad(0); storeCs(0); }
@@ -3581,9 +3584,9 @@ function newProject() {                                    /* empty project: one
     lmutes = new Array(NLANE).fill(0); chosen = new Array(NTRK).fill(0); AUTO = {}; autoLast = {}; songOn = false; songLoop = true; songList = [[0, 4, 1, 0, 0, 0]]; songOff = 0; songNext = -1; songMuted = false; songTempoOn = false; songSlot = 0; layS = 0; layD = 0; moClk = 0; moMask = 0; moChn = 0; moXp = 0; moVp = 0; moDn = 0;
     euKL.fill(4); euRL.fill(0); euV = 100; for (let i = 0; i < NLANE; i++) euP[i] = euDef();
     pads = defaultPads(); steps = newSteps(); csnd = null; undoStack = []; redoStack = []; miscLast = null; fillChg = []; tcolO.fill(0); lockT.fill(0); for (const r of fol) r.fill(0);
-    ensureCs(); for (let tt = 0; tt < NTRK; tt++) applyClipSound(tt, ed[tt]); firstSynth();
+    ensureCs(); for (let tt = 0; tt < NTRK; tt++) applyClipSound(tt, ed[tt]); firstDrum();
     queue = []; qEverything(); initialPush = 100; sel = 0; stepPage = 0; heldStep = -1; heldPad = -1; navStack = []; view = 0; askKind = -1;
-    markEdited(); saveState(); showToast('NEW PROJECT', 'TRACK 1 = SYNTH', 1); needsRedraw = true;
+    markEdited(); saveState(); showToast('NEW PROJECT', 'TRACK 1 = DRUM', 1); needsRedraw = true;
 }
 const BAK_IDX = '/data/UserData/schwung/taktile-backup.idx', BAK_N = 6;
 function bakFile(n) { return '/data/UserData/schwung/taktile-backup-' + (((n % BAK_N) + BAK_N) % BAK_N) + '.json'; }
@@ -4141,7 +4144,7 @@ function hubEnter() {
     const t = HUBS[view][1][hubSel[view]];
     if (t[1] === -1) { menuOpen = true; quickRebuild(); menuIdx = 0; menuGrp = -1; menuSub = 0; needsRedraw = true; return; }
     navStack.push(view); view = t[1]; acc.fill(0); needsRedraw = true;
-    { const lt = lastTab[sel] || trackTabs()[0]; if (view === 1 && lt !== 1) { const w = lt === 9 ? lastTabId() : lt; tabEnter(w); } }
+    { const tt = trackTabs(), lt = tt.indexOf(lastTab[sel]) >= 0 ? lastTab[sel] : (tt.indexOf(1) >= 0 ? 1 : tt[0]); if (view === 1 && lt !== 1) { const w = lt === 9 ? lastTabId() : lt; tabEnter(w); } }
     if (view === 28) { smpPage = 0; broOpen = false; sampleRescan(); }
     if (view === 36) euSetPage(euPage);
     if (view === 35) projScan();
@@ -4695,7 +4698,7 @@ globalThis.init = function () {
     if (!freshState) backupState();
     if (freshState) { chosen.fill(0); }       /* a new project: track 1 is a Synth, every other track asks Synth or Drum */
     ensureCs(); for (let t = 0; t < NTRK; t++) applyClipSound(t, ed[t]);
-    if (freshState) firstSynth(); crumb('state');
+    if (freshState) firstDrum(); crumb('state');
     queue = []; ledWant = {}; ledSent = {}; btnWant = {}; btnSent = {}; ledAge = 0; ledRot = 0; menuOpen = false; padMenu = false;
     sel = 0; view = 0; stepPage = 0; playing = false; gs = 0; heldStep = -1; heldPad = -1;
     qEverything(); initialPush = 100;

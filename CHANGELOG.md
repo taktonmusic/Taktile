@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.102.0 (17 October 2026)
+- New project: track 1 is now a Drum track (default kit) instead of a Synth
+- Switching tracks no longer leaves the Favorites / chord page open on a drum or non-chord track; the track opens on its first page
+
 ## 5.101.0 (17 October 2026)
 - Synth tracks no longer show the drum knob row in the sequencer view: they get TUN ATK DCY TON CUT RES PAN VOL (attack instead of drive)
 - Drum tracks: Shift + step 8 walks note layout > note repeat > step sequencer; synth tracks: Shift + step 8 = note layout <> chord
