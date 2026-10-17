@@ -2141,8 +2141,8 @@ function stepKnob(i, delta) {
 const STEP_F = [1, 2, 3, 5, 4, 6, 7, 8];
 function grpSync(i) { if (!heldGrp.length || heldStep < 0) return; const st = stepAt(heldStep), f = STEP_F[i], L = ln(); for (const g of heldGrp) { const o = stepAt(g); o[f] = st[f]; if (i === 3) o[9] = 0; qStep(ed[sel], L, g); } }
 function drawStepEdit() {
-    const st = stepAt(heldStep);
-    titleBar('STEP ' + (heldStep + 1) + (heldGrp.length ? ' x' + (heldGrp.length + 1) : '') + '  ' + (kind[sel] ? 'D' + (dsel[sel] + 1) : p2(sel + 1)), 'CLIP ' + (ed[sel] + 1));
+    const st = stepAt(heldStep), tsv = tabStrip; tabStrip = false;      /* the step window has its own header, not the tile row */
+    titleBar('STEP ' + (heldStep + 1) + (heldGrp.length ? ' x' + (heldGrp.length + 1) : '') + '  ' + (kind[sel] ? 'D' + (dsel[sel] + 1) : p2(sel + 1)), 'CLIP ' + (ed[sel] + 1)); tabStrip = tsv;
     const L = [['Vel', String(st[1]), st[1] / 127], ['Pitch', (st[2] > 0 ? '+' : '') + st[2], (st[2] + 64) / 127], ['Prob', PROB_PCT[st[3]] + '%', PROB_PCT[st[3]] / 100],
                ['Gate', gateTxt(st), st[9] > 0 ? Math.min(1, st[9] / 16) : st[5] / 6], ['Ratch', (st[4] + 1) + 'x', st[4] / 3], ['Nudge', nudTxt(st[6]), st[6] / NUD_MAX], ['Cond', COND_NAME[st[7]], st[7] / 7], [LOCK_NAME[lockT[ln()]], st[8] ? String(Math.round((st[8] - 1) / 126 * 100)) : 'OFF', st[8] / 127]];
     for (let i = 0; i < L.length; i++) cell((i % 4) * 32, 13 + ((i / 4) | 0) * 26, L[i][0], L[i][1], L[i][2], 32);
@@ -2168,7 +2168,8 @@ function drumCol(t, k) {                                  /* colour of drum soun
     return (n & 1) ? dimCol(col) : col;
 }
 function inboundActive() { return (typeof shadow_inbound_pad_midi_active === 'function') && shadow_inbound_pad_midi_active(); }
-function selectTrack(t) { drumHeldK = []; padHold = {}; growTrk.fill(false); bank = t >> 2; if (sel !== t) { for (let q = 0; q < NTRK; q++) if (topModes[q] === 3) { liveFxAllOff(); topModes[q] = topPrev[q] !== 3 ? topPrev[q] : 0; markEdited(); }      /* Live FX is a visit: another track = gone until you switch it on again */
+function selectTrack(t) { drumHeldK = []; padHold = {}; growTrk.fill(false); bank = t >> 2; if (sel !== t) { for (let q = 0; q < NTRK; q++) if (topModes[q] === 3) { liveFxAllOff(); topModes[q] = topPrev[q] !== 3 ? topPrev[q] : 0; markEdited(); }
+        let chg = false; for (let q = 0; q < NTRK; q++) if (topModes[q] === 4) { topModes[q] = 0; chg = true; } if (chg) { chordReconcile(); markEdited(); }      /* chord pads are a visit too: every synth track opens with its normal pads */      /* Live FX is a visit: another track = gone until you switch it on again */
         fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); if (view === 44 && !chordOn()) tabEnter(1); } needsRedraw = true; }
 function wipeSlot(d) {                                    /* a kit is handed to another track: back to the default kit */
     ensureCs(); const def = defaultPads();
@@ -2188,6 +2189,7 @@ function pushLanes(t, full) {                             /* send a drum track's
 function setKind(t, k) {                                  /* every track is a synth or a drum track (max 4 drum tracks, 16 sounds each) */
     k = k ? 1 : 0;
     if (kind[t] === k) { showToast('TRACK ' + p2(t + 1), k ? 'DRUM' : 'SYNTH', k); return; }
+    if (topModes[t] === 4) { topModes[t] = 0; chordReconcile(); }
     if (k === 1) {
         let n = 0; for (let i = 0; i < NTRK; i++) if (kind[i]) n++;
         if (n >= 4) { showToast('MAX 4 DRUM', 'TRACKS', 1); return; }
@@ -2433,7 +2435,7 @@ function onStep(i, on) {
         if (deleteHeld) { snap(ed[sel], L); steps[ed[sel]][L][s] = [0, 100, 0, 0]; qStep(ed[sel], L, s); markEdited(); return; }
         const ph = Object.keys(padHold); if (ph.length && heldStep < 0 && view !== 7) {      /* a pad is held: this step gets exactly its note (and how hard it was hit) */
             const h = padHold[ph[ph.length - 1]], c = ed[sel]; snap(c, h.lane); const st = steps[c][h.lane][s]; for (let q = st.length; q < 10; q++) st[q] = 0;
-            st[0] = 1; st[1] = clamp(h.vel, 1, 127); st[2] = h.semi; qStep(c, h.lane, s); markEdited(); showToast('STEP ' + (s + 1), kind[sel] ? 'SOUND SET' : (h.semi > 0 ? '+' : '') + h.semi + ' ST', 1); needsRedraw = true; return;
+            st[0] = 1; st[1] = clamp(h.vel, 1, 127); st[2] = h.semi; qStep(c, h.lane, s); markEdited(); if (!playing) launchClip(sel, ed[sel]); showToast('STEP ' + (s + 1), kind[sel] ? 'SOUND SET' : (h.semi > 0 ? '+' : '') + h.semi + ' ST', 1); needsRedraw = true; return;
         }
         if (heldStep >= 0 && heldStep !== s && !heldGrp.includes(s) && s < LL()) {
             /* a second step while one is held: (1) the first step lasts until here, like on the Move; (2) the step is also held with the first one, so as long as you keep both down the knobs edit both (probability ...) */
@@ -2446,7 +2448,7 @@ function onStep(i, on) {
         }
         snap(ed[sel], L); heldStep = s; heldEdited = false; heldGrp = [];
         const st = stepAt(s); heldWasOn = !!st[0];
-        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; if (!kind[sel] && lastSemi[sel] !== null && view === 0 && topModes[sel] !== 2) st[2] = lastSemi[sel]; qStep(ed[sel], L, s); markEdited(); if (!playing && view === 0) launchClip(sel, ed[sel]); }      /* first step set while stopped: playback starts */
+        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; if (!kind[sel] && lastSemi[sel] !== null && view === 0 && topModes[sel] !== 2) st[2] = lastSemi[sel]; qStep(ed[sel], L, s); markEdited(); if (!playing) launchClip(sel, ed[sel]); }      /* first step set while stopped: playback starts */
     } else if (heldGrp.includes(s)) { heldGrp.splice(heldGrp.indexOf(s), 1); needsRedraw = true;
     } else if (heldStep === s) {
         const L = ln(); heldGrp = [];
@@ -4370,7 +4372,7 @@ function drawParams() {
     titleBar(scope === 'pad' || view === 36 ? (p2(sel + 1) + ' ' + laneName() + (view === 36 && euPage >= 3 ? ' L' + (euPage - 2) : '')) : (view === 21 ? p2(sel + 1) + ' ' + (kind[sel] ? 'DRUM ' + (slot[sel] + 1) : 'SYNTH') : (view === 8 ? 'OPT' : (view === 44 ? 'FAVORITES' : 'MASTER'))), view === 8 ? 'CPU ' + cpuAvg + '%' : (view === 44 ? 'ALL PAGES' : VIEWS[view]));
     const ps = PAGE_STYLE[view] || 0;
     if (view === 2) drawFilterCurve();
-    if (view === 41 || view === 43) { const g = [0, 1, 2].map(b => { const k = items[b][0]; return (getVal(scopeOf(k), k) - 0.5) * 24; }); drawEqGraph(g, 2, (view === 43 && tabStrip && TAB_NEW) ? 18 : 11, 124, view === 43 ? ((tabStrip && TAB_NEW) ? 8 : 13) : 17, (hot.t > 0 && hot.v === view && hot.i < 3) ? hot.i : -1); }
+    if (view === 41 || view === 43) { const g = [0, 1, 2].map(b => { const k = items[b][0]; return (getVal(scopeOf(k), k) - 0.5) * 24; }); drawEqGraph(g, 2, (view === 43 && tabStrip && TAB_NEW) ? 18 : 11, 124, view === 43 ? ((tabStrip && TAB_NEW) ? 16 : 13) : 17, (hot.t > 0 && hot.v === view && hot.i < 3) ? hot.i : -1); }
     if (BLOCKS[pg2(view)] && !(view === 9 && FMI > 0 && false)) { drawBlocks(BLOCKS[pg2(view)], items); return; }
     for (let i = 0; i < items.length; i++) {
         let cw = items.length <= 2 ? 64 : (items.length === 3 || items.length === 5 || items.length === 6 ? 42 : 32), per = Math.floor(128 / cw);
@@ -4378,7 +4380,14 @@ function drawParams() {
         const v = getVal(scopeOf(items[i][0]), items[i][0]);
         const lab = itemLabel(view, i, Math.floor((cw - 6) / 6)), vs = fmtVal(items[i][0], v), fr = fracVal(items[i][0], v); labFull = String(tr(lab)); labW = cw - 3;
         if (view === 36 || view === 43 || view === 50) {         /* compact tiles (8 knobs) so the pattern / the EQ curve / the grains still fit */
-            const TN = tabStrip && TAB_NEW, cx = (i & 3) * 32, cy = (view === 43 ? (TN ? 27 : 26) : (TN ? 17 : 12)) + (i >> 2) * (TN ? (view === 50 ? 17 : 18) : 19), hotE = hot.t > 0 && hot.v === view && hot.i === i;
+            const TN = tabStrip && TAB_NEW;
+            if (view === 43 && TN) {         /* EQ: a bigger curve on top, small names and values below */
+                const ex = (i & 3) * 32, ey = 36 + (i >> 2) * 14;
+                txtS(ex + 2, ey, String(lab).substring(0, 7).toUpperCase(), 1); txtS(ex + 2, ey + 6, String(vs).substring(0, 7).toUpperCase(), 1);
+                const ew = Math.round(28 * clamp(fr, 0, 1)); fill_rect(ex + 2, ey + 12, 28, 1, 1); if (ew > 0) fill_rect(ex + 2, ey + 11, ew, 2, 1);
+                continue;
+            }
+            const cx = (i & 3) * 32, cy = (view === 43 ? (TN ? 27 : 26) : (TN ? 17 : 12)) + (i >> 2) * (TN ? (view === 50 ? 17 : 18) : 19), hotE = hot.t > 0 && hot.v === view && hot.i === i;
             const cc = 1;
             txt(cx + 3, cy + 1, fit(lab, 28), cc); txtB(cx + 3, cy + 9, fit(vs, 28), cc);
             const w = Math.round(28 * clamp(fr, 0, 1)); fill_rect(cx + 2, cy + 17, 28, 1, cc); if (w > 0) fill_rect(cx + 2, cy + 16, w, 2, cc);

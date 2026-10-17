@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.113.0 (17 October 2026)
+- Synth-Tracks zeigen immer das normale Pad-Layout (Akkord-Pads schalten beim Track-Wechsel/Typ-Wechsel ab)
+- Ein Step-Knopf startet im Stand sofort die Wiedergabe (jede Ansicht, auch mit gehaltenem Pad)
+- Step-Fenster (Vel/Prob/Gate/Ratch/Nudge/Cond) ohne Überlappung mit dem Kopf
+- EQ-Seite: größere Kurve, kleinere Parameterwerte
+
 ## 5.112.0 (17 October 2026)
 - LIVE FX mode: the bottom two pad rows no longer play drum sounds; they are 16 new live effects (HALF SPEED, DOUBLE SPEED, WOBBLE, FLANGER, RING MOD, AUTO PAN, TREMOLO, WAH SWEEP, BASS CUT, TELEPHONE, UNDERWATER, DISTORT, KILL, REPEAT 3/16, BRAKE, PUMP)
 
