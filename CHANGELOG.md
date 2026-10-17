@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.112.0 (17 October 2026)
+- LIVE FX mode: the bottom two pad rows no longer play drum sounds; they are 16 new live effects (HALF SPEED, DOUBLE SPEED, WOBBLE, FLANGER, RING MOD, AUTO PAN, TREMOLO, WAH SWEEP, BASS CUT, TELEPHONE, UNDERWATER, DISTORT, KILL, REPEAT 3/16, BRAKE, PUMP)
+
 ## 5.111.0 (17 October 2026)
 - CPU: sine oscillators/LFOs use a 2048-point table instead of sinf (82 places; output identical to 16 bit in the bench)
 

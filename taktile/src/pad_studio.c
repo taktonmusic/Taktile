@@ -868,7 +868,7 @@ static void lfx_proc(inst_t *s, float *Lp, float *Rp) {
     const float beat = 60.0f / s->bpm * s->sr;
     if (req != s->lf_mode && req > 0) {                                      /* a pad went down: remember the moment, the effect works on what was just played */
         s->lf_mode = req; s->lf_t = 0; s->lf_n = 0; s->lf_cap = s->lf_w; s->lf_rpos = 0.0f; s->lf_rate = 1.0f; s->lf_gate = 1.0f; s->lf_hc = 0;
-        s->lf_z[0][0] = s->lf_z[0][1] = s->lf_z[1][0] = s->lf_z[1][1] = 0.0f;
+        for (int c_ = 0; c_ < 2; c_++) for (int k_ = 0; k_ < 4; k_++) s->lf_z[c_][k_] = 0.0f;
         switch (req) {
             case 1: s->lf_len = (int)(beat); break;
             case 2: s->lf_len = (int)(beat * 0.5f); break;
@@ -878,6 +878,8 @@ static void lfx_proc(inst_t *s, float *Lp, float *Rp) {
             case 6: s->lf_len = (int)(beat / 3.0f); break;
             case 7: s->lf_len = (int)(beat * 0.5f); break;
             case 14: s->lf_len = (int)(0.07f * s->sr); break;
+            case 17: s->lf_len = (int)(beat * 0.5f); break;
+            case 29: s->lf_len = (int)(beat * 0.375f); break;
             default: s->lf_len = (int)beat; break;
         }
         if (s->lf_len < 64) s->lf_len = 64; if (s->lf_len > 60000) s->lf_len = 60000;
@@ -886,7 +888,7 @@ static void lfx_proc(inst_t *s, float *Lp, float *Rp) {
     const int on = req > 0 && mode > 0;
     const float tg = on ? 1.0f : 0.0f;
     s->lf_eng += (tg - s->lf_eng) * (on ? 0.012f : 0.006f);
-    const int capmode = (mode >= 1 && mode <= 7) || mode == 14;
+    const int capmode = (mode >= 1 && mode <= 7) || mode == 14 || mode == 16 || mode == 17 || mode == 29;
     if (!(capmode && on)) { s->lf_buf[0][s->lf_w] = in0; s->lf_buf[1][s->lf_w] = in1; s->lf_w = (s->lf_w + 1) & LF_MASK; }
     if (mode == 15 || s->lf_dact > 0) {                                       /* ECHO THROW: dotted-eighth echo, input only while the pad is down */
         const int d = (int)(beat * 0.75f) < 60000 ? (int)(beat * 0.75f) : 60000;
@@ -905,7 +907,7 @@ static void lfx_proc(inst_t *s, float *Lp, float *Rp) {
     if (mode == 0) { *Lp = o0; *Rp = o1; return; }
     const int t = s->lf_t++;
     float w0 = in0, w1 = in1;
-    if (mode >= 1 && mode <= 7) {
+    if ((mode >= 1 && mode <= 7) || mode == 29) {
         int len = s->lf_len;
         int ph;
         if (mode == 5) {                                                          /* ROLL: every repeat is 15 % shorter, down to 1/64 */
@@ -918,8 +920,8 @@ static void lfx_proc(inst_t *s, float *Lp, float *Rp) {
         float g = 1.0f; const int fd = len < 400 ? len / 4 : 96;
         if (ph < fd) g = (float)ph / (float)fd; else if (len - ph < fd) g = (float)(len - ph) / (float)fd;
         w0 = s->lf_buf[0][idx] * g; w1 = s->lf_buf[1][idx] * g;
-    } else if (mode == 8) {                                                       /* TAPE STOP: the playback slows down like a stopping reel */
-        float u = (float)t / (0.5f * s->sr); if (u > 1.0f) u = 1.0f;
+    } else if (mode == 8 || mode == 30) {                                         /* TAPE STOP (0.5 s) / BRAKE (0.15 s): the playback slows down like a stopping reel */
+        float u = (float)t / ((mode == 8 ? 0.5f : 0.15f) * s->sr); if (u > 1.0f) u = 1.0f;
         const float r = (1.0f - u) * (1.0f - u);
         s->lf_rpos += r;
         const float fp = (float)(s->lf_cap + LF_SIZE - 1) + s->lf_rpos;                 /* starts at "now", falls behind as the speed drops */
@@ -957,6 +959,46 @@ static void lfx_proc(inst_t *s, float *Lp, float *Rp) {
             ac0 += s->lf_buf[0][idx] * win * win; ac1 += s->lf_buf[1][idx] * win * win;
         }
         w0 = ac0; w1 = ac1;
+    } else if (mode == 16 || mode == 17) {                                        /* HALF SPEED (an octave down) / DOUBLE SPEED (an octave up): the last beat loops at another speed */
+        const int len = s->lf_len; const float rate = mode == 16 ? 0.5f : 2.0f;
+        const float ph = fmodf((float)t * rate, (float)len), fp = (float)(s->lf_cap + LF_SIZE - len) + ph;
+        const int i0 = (int)fp & LF_MASK, i1 = (i0 + 1) & LF_MASK; const float fr = fp - floorf(fp);
+        float g = 1.0f; const float fd = 160.0f; if (ph < fd) g = ph / fd; else if ((float)len - ph < fd) g = ((float)len - ph) / fd;
+        w0 = (s->lf_buf[0][i0] * (1.0f - fr) + s->lf_buf[0][i1] * fr) * g; w1 = (s->lf_buf[1][i0] * (1.0f - fr) + s->lf_buf[1][i1] * fr) * g;
+    } else if (mode == 18 || mode == 19) {                                        /* WOBBLE: tape wow (pitch sways) / FLANGER: a short sweeping delay mixed with the dry sound */
+        const float tt = (float)t * s->inv_sr;
+        const float d = mode == 18 ? (0.010f + 0.007f * sin2pi(4.5f * tt)) * s->sr : (0.0008f + 0.0030f * (0.5f + 0.5f * sin2pi(0.3f * tt))) * s->sr;
+        const float fp = (float)(s->lf_w + LF_SIZE - 1) - d;
+        const int i0 = (int)fp & LF_MASK, i1 = (i0 + 1) & LF_MASK; const float fr = fp - floorf(fp);
+        const float y0 = s->lf_buf[0][i0] * (1.0f - fr) + s->lf_buf[0][i1] * fr, y1 = s->lf_buf[1][i0] * (1.0f - fr) + s->lf_buf[1][i1] * fr;
+        if (mode == 18) { w0 = y0; w1 = y1; } else { w0 = 0.6f * (in0 + y0); w1 = 0.6f * (in1 + y1); }
+    } else if (mode == 20) {                                                      /* RING MOD: metallic, bell-like */
+        const float o = sin2pi(233.0f * (float)t * s->inv_sr); w0 = in0 * o * 1.3f; w1 = in1 * o * 1.3f;
+    } else if (mode == 21) {                                                      /* AUTO PAN: left <> right once per beat */
+        const float p = 0.5f + 0.5f * sin2pi((float)t / beat); w0 = in0 * 1.6f * p; w1 = in1 * 1.6f * (1.0f - p);
+    } else if (mode == 22) {                                                      /* TREMOLO: 1/16 notes */
+        const float g = 0.12f + 0.88f * (0.5f + 0.5f * sin2pi((float)t / (beat * 0.25f))); w0 = in0 * g; w1 = in1 * g;
+    } else if (mode == 23) {                                                      /* WAH SWEEP: a band-pass opens and closes once per two beats */
+        const float fc = 450.0f + 2300.0f * (0.5f + 0.5f * sin2pi((float)t / (beat * 2.0f)));
+        const float f = 2.0f * sinf(3.14159265f * fc * s->inv_sr); float in2[2] = { in0, in1 };
+        for (int c = 0; c < 2; c++) { float *z = s->lf_z[c]; z[0] += f * z[1]; const float hp = in2[c] - z[0] - 0.22f * z[1]; z[1] += f * hp; in2[c] = z[1] * 0.25f; }
+        w0 = in2[0]; w1 = in2[1];
+    } else if (mode == 24 || mode == 25 || mode == 26) {                          /* BASS CUT (high-pass 450 Hz) / TELEPHONE (500 - 3000 Hz) / UNDERWATER (low-pass 350 Hz) */
+        const float a1 = 1.0f - expf(-6.2831853f * (mode == 24 ? 450.0f : (mode == 25 ? 500.0f : 350.0f)) * s->inv_sr), a2 = 1.0f - expf(-6.2831853f * 3000.0f * s->inv_sr);
+        float in2[2] = { in0, in1 };
+        for (int c = 0; c < 2; c++) {
+            float *z = s->lf_z[c]; z[0] += a1 * (in2[c] - z[0]);
+            if (mode == 24) { z[1] += a1 * (z[0] - z[1]); in2[c] = in2[c] - z[1]; }
+            else if (mode == 25) { const float hp = in2[c] - z[0]; z[1] += a2 * (hp - z[1]); in2[c] = z[1] * 1.5f; }
+            else { z[1] += a1 * (z[0] - z[1]); z[2] += a1 * (z[1] - z[2]); in2[c] = z[2] * 1.6f; }
+        }
+        w0 = in2[0]; w1 = in2[1];
+    } else if (mode == 27) {                                                      /* DISTORT: heavy soft clipping */
+        w0 = tanhf(in0 * 7.0f) * 0.5f; w1 = tanhf(in1 * 7.0f) * 0.5f;
+    } else if (mode == 28) {                                                      /* KILL: everything goes silent while the pad is down */
+        w0 = w1 = 0.0f;
+    } else if (mode == 31) {                                                      /* PUMP: the level ducks on every beat and swells back */
+        const float ph2 = fmodf((float)t, beat) / beat, g = 0.1f + 0.9f * (1.0f - expf(-ph2 * 6.0f)); w0 = in0 * g; w1 = in1 * g;
     }
     if (!(fabsf(w0) < 8.0f) || !(fabsf(w1) < 8.0f)) { w0 = w1 = 0.0f; }
     const float e = s->lf_eng;
@@ -3002,7 +3044,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         s->rec_state = 0;
         return;
     }
-    if (strcmp(key, "lfx") == 0) { int r = atoi(val); s->lf_req = r < 0 ? 0 : (r > 15 ? 15 : r); return; }
+    if (strcmp(key, "lfx") == 0) { int r = atoi(val); s->lf_req = r < 0 ? 0 : (r > 31 ? 31 : r); return; }
     if (strcmp(key, "reprate") == 0) { int r = atoi(val); s->rep_idx = r < 0 ? 0 : (r > 15 ? 15 : r); return; }
     if (strcmp(key, "laysyn") == 0) { int v = atoi(val); s->lay_s = v < 0 ? 0 : (v > 5 ? 5 : v); return; }
     if (strcmp(key, "padoct") == 0) { int o = atoi(val); s->pad_oct = o < -36 ? -36 : (o > 36 ? 36 : o); return; }

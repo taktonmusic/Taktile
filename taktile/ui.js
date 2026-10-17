@@ -802,7 +802,7 @@ function pulseLow() { const p = playing ? (((gs - 1) % 4) + 4) % 4 : Math.floor(
 function padLedBase(i) {                                 /* LED colour of pad i (0..31) of the selected track */
     const dr = kind[sel], m = topModes[sel], tc = trkCol(sel), cc = i & 7, rr = i >> 3;
     if (m === 3 && fillPad(i)) { const fl = fillLanes(); return fl && fl[i & 7] ? ((i >> 3) ? rootCol(tc) : trackColor(pads[fl[i & 7]][0])) : 0; }
-    if (m === 3 && lfxPad(i) >= 0) { const n = lfxPad(i); return n < 7 ? tc : (n < 10 ? rootCol(tc) : 120); }
+    if (m === 3 && lfxPad(i) >= 0) { const n = lfxPad(i); return n < 7 ? tc : (n < 10 ? rootCol(tc) : (n < 16 ? 120 : (n < 18 || n > 28 ? tc : (n < 24 ? rootCol(tc) : 120)))); }
     if (dr && soundArea(cc)) {                                   /* drum track, left block: the 16 sounds (white = selected, colour = sound family) */
         const k = rr * 4 + (cc & 3);
         if (lmutes[laneOf(sel, k)]) return k === dsel[sel] ? 124 : dimCol(trackColor(pads[laneOf(sel, k)][0]));                   /* muted sound: dark (faint if selected) */
@@ -1350,14 +1350,16 @@ const SHIFT_OK = { 3: 1, 0: 1, 1: 1, 2: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 13: 1, 
 const topPrev = new Array(NTRK).fill(0);                     /* the pad mode before REPEAT / STEPS was switched on */
 /* ---- LIVE FX pads: hold a pad = effect on, let go = back to the old setting (synth: top 2 rows, drum: right block) ---- */
 const LFX = [['REPEAT 1/4', 1], ['REPEAT 1/8', 2], ['REPEAT 1/16', 3], ['REPEAT 1/32', 4], ['ROLL', 5], ['TRIPLET', 6], ['REVERSE', 7], ['TAPE STOP', 8],
-    ['GATE 1/8', 9], ['GATE 1/16', 10], ['LOW SWEEP', 11], ['HIGH SWEEP', 12], ['CRUSH', 13], ['FREEZE', 14], ['ECHO THROW', 15], ['REVERB WASH', 'rvb', 0.9]];     /* 0-14: master bus effects in the engine (hold = on), 15: reverb send of the track */
+    ['GATE 1/8', 9], ['GATE 1/16', 10], ['LOW SWEEP', 11], ['HIGH SWEEP', 12], ['CRUSH', 13], ['FREEZE', 14], ['ECHO THROW', 15], ['REVERB WASH', 'rvb', 0.9],
+    ['HALF SPEED', 16], ['DOUBLE SPEED', 17], ['WOBBLE', 18], ['FLANGER', 19], ['RING MOD', 20], ['AUTO PAN', 21], ['TREMOLO', 22], ['WAH SWEEP', 23],
+    ['BASS CUT', 24], ['TELEPHONE', 25], ['UNDERWATER', 26], ['DISTORT', 27], ['KILL', 28], ['REPEAT 3/16', 29], ['BRAKE', 30], ['PUMP', 31]];      /* 16-31: the bottom two rows (no more drum sounds there) */     /* 0-14: master bus effects in the engine (hold = on), 15: reverb send of the track */
 const lfxHeld = {}, lfxBase = {}; let lfxStack = [];
-function lfxPad(idx) { const rr = idx >> 3; return rr >= 2 ? (rr - 2) * 8 + (idx & 7) : -1; }      /* full screen on every track: the top two rows are the 16 effects, the bottom two rows the fills / rolls */
+function lfxPad(idx) { const rr = idx >> 3; return rr >= 2 ? (rr - 2) * 8 + (idx & 7) : 16 + rr * 8 + (idx & 7); }      /* full screen on every track: the top two rows are the 16 effects, the bottom two rows the fills / rolls */
 function lfxSet(L, k, v) { const b = L + k; if (!lfxBase[b]) lfxBase[b] = { old: pads[L][PI[k]], n: 0 }; lfxBase[b].n++; lfxBusy++; setLaneP(L, k, v); lfxBusy--; }
 /* FILL pads (Live FX mode on a synth track): the two bottom rows play drum sounds of the first drum track, sorted hats > snare/clap > perc > kick.
  * bottom row = single hits, row above = ROLL (held = repeats at the note repeat speed). On a drum track the 16 sound pads roll while held. */
 const fillHeld = {};
-function fillPad(idx) { return (idx >> 3) < 2; }
+function fillPad(idx) { return false; }      /* the bottom rows are live effects now, they do not play drum sounds any more */
 function fillLanes() {
     let t = kind[sel] ? sel : -1; if (t < 0) for (let q = 0; q < NTRK; q++) if (kind[q] && chosen[q]) { t = q; break; }      /* the fills always play the sounds of the first loaded drum track, whichever track is selected */
     if (t < 0) for (let q = 0; q < NTRK; q++) if (kind[q]) { t = q; break; }
@@ -1385,7 +1387,7 @@ function liveFxOn(idx, n) {
     const f = LFX[n], L = ln();
     if (f.length === 2) { lfxHeld[idx] = { m: f[1], n: n }; lfxStack.push(idx); lfxSend(); }
     else { lfxSet(L, f[1], f[2]); lfxHeld[idx] = { L: L, keys: [f[1]], n: n }; }
-    showToast('LIVE FX', f[0], n / 15); needsRedraw = true;
+    showToast('LIVE FX', f[0], n / 31); needsRedraw = true;
 }
 function liveFxOff(idx) {
     const h = lfxHeld[idx]; if (!h) return; delete lfxHeld[idx];
