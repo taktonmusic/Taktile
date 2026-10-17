@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.110.0 (17 October 2026)
+- New standard track header: big tile name + small track on top, all tiles as a row (PRE ENG MOD FLT FX BUS EUC MID), no mode label; pages re-fitted below it (preset, filter, EQ, grain, sample, euclid, MIDI)
+- Four new designs: NEON (white tiles), BLOCKS (thick bars), EMOJI (a face that gets happier), ROBOT (LED eyes); KNOBS design fits the new header
+
 ## 5.109.0 (17 October 2026)
 - ENGINE 2 page removed (noise, fold, chop, tremolo, auto-pan ... ): Jog click on the engine page now opens the sound browser; old projects load with those knobs at neutral values
 
