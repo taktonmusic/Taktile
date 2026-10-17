@@ -2808,6 +2808,12 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
     if (s->pads_off == 4 && msg[1] >= 68 && msg[1] <= 99) return;      /* LIVE FX: every pad belongs to the UI (effect pads on top, fill hits at the bottom) - no notes of the synth */
     if (msg[1] >= 68 && msg[1] <= 99) {                                 /* a Move pad: the same layout as the UI (MOVE rows 3 degrees apart, SEQ, OCT, CHR) */
         const int col = p & 7, row = p >> 3;
+        if (s->pads_off == 5) {                                          /* CHORD mode: left 4 columns = single notes (no MIDI FX), right 4 columns = the chords of the same degrees */
+            const int c4 = col & 3, w4 = 4;
+            p = s->lay_s >= 3 ? 32 + c4 + (s->lay_s == 3 ? 5 : (s->lay_s == 4 ? 4 : 8)) * row : (s->lay_s == 0 ? c4 + 3 * row : (s->lay_s == 1 ? row * w4 + c4 : c4 + 7 * row));
+            sel_pad(s, p, vel, col < 4 ? 2 : 0);
+            return;
+        }
         p = s->lay_s >= 3 ? 32 + col + (s->lay_s == 3 ? 5 : (s->lay_s == 4 ? 4 : 8)) * row : (s->lay_s == 0 ? col + 3 * row : (s->lay_s == 1 ? row * 8 + col : col + 7 * row));
     }
     if (s->pads_off == 1) { if (!vel) sel_pad(s, p, 0, 0); return; }     /* UI owns the pads (session, steps, menus) */

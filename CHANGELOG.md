@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.103.0 (17 October 2026)
+- CHORD mode on the Move pads: left four columns play single notes, right four columns play the chords (same degrees), also when the pads reach the engine directly
+
 ## 5.102.0 (17 October 2026)
 - New project: track 1 is now a Drum track (default kit) instead of a Synth
 - Switching tracks no longer leaves the Favorites / chord page open on a drum or non-chord track; the track opens on its first page

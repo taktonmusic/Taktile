@@ -4706,7 +4706,7 @@ globalThis.init = function () {
 };
 
 function syncPadsOff() {
-    const want = (menuOpen || askKind >= 0 || shiftHeld || view === 7 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : (topModes[sel] === 3 ? 4 : 0));
+    const want = (menuOpen || askKind >= 0 || shiftHeld || view === 7 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : (topModes[sel] === 3 ? 4 : (chordOn() ? 5 : 0)));
     if (want !== padsOffSent) { padsOffSent = want; dspSet('padsoff', String(want)); }
 }
 function hostSuspend() {                                   /* keep Taktile running in the background (the sequencer keeps playing while you browse Move) */
