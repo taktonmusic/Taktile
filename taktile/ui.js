@@ -157,7 +157,7 @@ const VIEW_ITEMS = {
     1: [['type','Type'],['tune','Tune'],['decay','Decay','Dcy'],['tone','Tone'],['drive','Drive','Drv'],['pan','Pan'],['poly','Voices','Poly'],['vol','Vol']],
     2: [['cut','LPCut','LPF'],['res','Reso'],['locut','HPCut','HPF'],['fenv','FltEnv','FEnv'],['fdec','FltDecay','FDec'],['fkey','KeyTrack','FKey'],['fmode','Mode'],['crush','Crush','Crsh']],
     3: [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']],       /* synth tracks; drum tracks add the kick rumble (viewItemsFix) */
-    38: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['dly','DlySend','DSnd'],['rvb','RvbSend','RSnd'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
+    38: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['dly','Delay','Del'],['rvb','Reverb','Rev'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
     46: [['dly_time','DlyTime','Time'],['dly_fb','DlyFdbk','Fdbk'],['dly_tone','DlyTone','Tone'],['dly_ret','DlyRet','Ret'],['rvb_size','RvbSize','Size'],['rvb_dark','RvbDark','Dark'],['rvb_mode','RvbType','Type'],['rvb_ret','RvbRet','Ret']],
     50: [['grn','Grain','Grn'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
     39: [['dly_mode','DlyType','Type'],['dly_wide','DlyWide','Wide'],['rvb_wide','RvbWide','Wide'],['rvb_low','RvbLow','Low']],

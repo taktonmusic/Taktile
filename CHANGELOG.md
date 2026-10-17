@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.116.0 (17 October 2026)
+- Track FX: Send-Knöpfe heißen jetzt DEL und REV (statt DSND/RSND)
+
 ## 5.115.0 (17 October 2026)
 - Bug: neues/geladenes Projekt löscht jetzt alle alten Noten in der Engine (Track 1 spielte einen Beat ohne Aufnahme)
 - Song-Seite: Hilfetext überlappt nicht mehr mit den Szenen-Kästchen
