@@ -727,6 +727,9 @@ typedef struct {
     float chb[NLANE][CH_SIZE]; int chw[NLANE]; float ch_ph[NLANE];
     float ph_z[NLANE][2][4], ph_fb[NLANE][2], ph_ph[NLANE];
     int   fx_act[NLANE], dr_act[NLANE];
+    /* activity lists (rebuilt every 16 samples or when a voice / arp / ratchet starts): the per-sample loops only visit what is really sounding */
+    int   act_dirty, vl_n, al_n, rl_n; short vl[NLANE + NGH], al[NLANE], rl[NLANE]; uint64_t fxm[2];
+    float bt_l[NLANE], bt_r[NLANE], bt_sd[NLANE], bt_sr[NLANE]; int bt_act[NLANE];
     int   tgen[NLANE];                         /* trigger counter per lane (MIDI effect layers follow it) */
     struct { int cnt, lane, semi, follow; float vel; } eq[32];   /* delayed notes: echo + strum */
     /* per-track insert effect (10 types): lfo phase, filter states, delay buffers, sample-hold */
@@ -1349,8 +1352,8 @@ static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
     case 12:                                                        /* FOLD */
         for (int k = 0; k < 24; k++) v->nx[k] = 0.0f; break;
     case 6: case 7: case 8: case 9: case 10:                        /* ANALOG / WAVETABLE / FM4 / ADDITIVE / PAD: phases start spread out so unison layers do not add up to a click */
-        for (int k = 0; k < 24; k++) v->nx[k] = 0.0f;
-        v->nx[20] = 0.0f; for (int k = 0; k < 8; k++) v->nx[k] = (float)((k * 37) % 16) / 16.0f;
+        for (int k = 0; k < 64; k++) v->nx[k] = 0.0f;                  /* nx[24..] hold values that are only recomputed every 16 samples (nx[63] counts down) */
+        for (int k = 0; k < 8; k++) v->nx[k] = (float)((k * 37) % 16) / 16.0f;
         break;
     default:                                                        /* MORPH */
         v->nx[0] = 0.0f; v->nx[1] = 0.37f; v->nx[2] = 0.71f; v->nx[3] = 0.0f; v->nx[4] = 0.0f; break;
@@ -1373,7 +1376,7 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         int gi = -1;
         for (int i = 0; i < NGH; i++) if (!s->vc[NLANE + i].active) { gi = i; break; }
         if (gi < 0) { gi = s->gnext; s->gnext = (s->gnext + 1) % NGH; }
-        s->vc[NLANE + gi] = *v; s->vown[NLANE + gi] = p;
+        s->vc[NLANE + gi] = *v; s->vown[NLANE + gi] = p; s->act_dirty = 1;
         if (!v->gk) s->vc[NLANE + gi].gate = 0;
     }
     if (p < NLANE) {                                          /* a kick (or any hit of a track whose Duck Src = On) ducks every track that has Duck > 0 */
@@ -1386,12 +1389,12 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         int gi = -1;
         for (int i = 0; i < NGH; i++) if (!s->vc[NLANE + i].active) { gi = i; break; }
         if (gi < 0) { gi = s->gnext; s->gnext = (s->gnext + 1) % NGH; }
-        s->vc[NLANE + gi] = *v; s->vown[NLANE + gi] = p;
+        s->vc[NLANE + gi] = *v; s->vown[NLANE + gi] = p; s->act_dirty = 1;
         s->vc[NLANE + gi].gate = 0; s->vc[NLANE + gi].fol = 0; s->vc[NLANE + gi].xfd = 1.0f;
     }
     memset(v, 0, sizeof(*v)); v->fenv = 1.0f;
     v->fkoff = s->pp[p][PP_FKEY] * 0.16f * log2f(fm > 0.05f ? fm : 0.05f);
-    v->active = 1; v->gate = 1; v->type = ty;
+    v->active = 1; v->gate = 1; v->type = ty; s->act_dirty = 1;
     v->vel = 0.25f + 0.75f * vel;
     { int w0 = (int)(s->pp[p][PP_WAVE] + 0.5f); v->sw = (w0 >= 1 && w0 <= 15) ? w0 : CHR[ty].wv; }   /* 0 = the sound's own oscillator */
     v->fm = fm; v->f0 = base * fm;
@@ -1445,7 +1448,7 @@ static void ghost_put(inst_t *s, int p, const vc_t *lay) {
     int gi = -1;
     for (int i = 0; i < NGH; i++) if (!s->vc[NLANE + i].active) { gi = i; break; }
     if (gi < 0) { gi = s->gnext; s->gnext = (s->gnext + 1) % NGH; }
-    s->vc[NLANE + gi] = *lay; s->vown[NLANE + gi] = p;
+    s->vc[NLANE + gi] = *lay; s->vown[NLANE + gi] = p; s->act_dirty = 1;
 }
 /* an extra note on the same sound: it plays in a ghost voice so the lane's own voice is left alone */
 static void trig_layer(inst_t *s, int p, float vel, int semi, int follow) {
@@ -1603,6 +1606,9 @@ static inline float blep(float t, float d) {
     return 0.0f;
 }
 /* ---------------- NEW ENGINES: one sample ---------------- */
+/* cheap sine for the oscillator banks: 2048-entry table with linear interpolation (error below -90 dB); the table is filled once at load */
+static float g_sintab[2049];
+static inline float fsin01(float ph) { const float x = ph * 2048.0f; const int i = (int)x; const float fr = x - (float)i; const float a = g_sintab[i & 2047]; return a + (g_sintab[(i & 2047) + 1] - a) * fr; }
 static float nx_render(inst_t *s, vc_t *v, int p) {
     const nx_t *n = &VAR4[v->type - T_V4]; const float *q = n->p; const ty_t *T = &TY[v->type]; const float dt = s->inv_sr;
     float x = 0.0f;
@@ -1840,17 +1846,26 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         const float *pq = s->pp[p]; const float f = v->f0;
         const float tilt = clampf(q[0] + pq[PP_DET] * 2.0f, 0.0f, 3.0f), oe = clampf(q[1] + pq[PP_SUB], 0.0f, 1.0f);
         const float str = q[2] + pq[PP_FKEY] * 0.02f, shim = clampf(q[3] + (pq[PP_FDEC] - 0.5f), 0.0f, 1.0f);
-        float o = 0.0f, norm = 0.0f;
-        for (int k = 1; k <= 10; k++) {
-            const float fk = f * (float)k * (1.0f + str * (float)(k * k - 1) * 0.05f);
-            if (fk > 0.45f * s->sr) break;
-            v->nx[11 + k] += fk * dt; if (v->nx[11 + k] >= 1.0f) v->nx[11 + k] -= 1.0f;
-            float a = 1.0f / powf((float)k, tilt);
-            if ((k & 1) == 0) a *= 1.0f - 0.9f * oe;                  /* odd / even: 1 = only odd partials (clarinet) */
-            a *= powf(v->env2 + 0.001f, shim * (float)(k - 1) * 0.35f);   /* high partials die first */
-            o += a * sinf(TWO_PI * v->nx[11 + k]); norm += 1.0f / powf((float)k, tilt);
+        float o = 0.0f;
+        if (v->nx[63] <= 0.0f) {                                    /* control rate (every 16 samples): partial increments, levels and the normalisation */
+            float norm = 0.0f; int kmax = 0;
+            for (int k = 1; k <= 10; k++) {
+                const float fk = f * (float)k * (1.0f + str * (float)(k * k - 1) * 0.05f);
+                if (fk > 0.45f * s->sr) break;
+                const float pk = 1.0f / powf((float)k, tilt);
+                float a = pk;
+                if ((k & 1) == 0) a *= 1.0f - 0.9f * oe;                  /* odd / even: 1 = only odd partials (clarinet) */
+                a *= powf(v->env2 + 0.001f, shim * (float)(k - 1) * 0.35f);   /* high partials die first */
+                v->nx[23 + k] = fk * dt; v->nx[33 + k] = a; norm += pk; kmax = k;
+            }
+            v->nx[44] = 1.0f / (0.4f + 0.6f * norm); v->nx[62] = (float)kmax; v->nx[63] = 16.0f;
         }
-        o *= 1.0f / (0.4f + 0.6f * norm);
+        v->nx[63] -= 1.0f;
+        for (int k = 1; k <= (int)v->nx[62]; k++) {
+            v->nx[11 + k] += v->nx[23 + k]; if (v->nx[11 + k] >= 1.0f) v->nx[11 + k] -= 1.0f;
+            o += v->nx[33 + k] * fsin01(v->nx[11 + k]);
+        }
+        o *= v->nx[44];
         if (q[4] > 0.0f) { v->nx[1] += q[5] * dt; WRAP(v->nx[1]); o *= 1.0f - q[4] * 0.5f * (1.0f - sinf(TWO_PI * v->nx[1])); }
         { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
@@ -1861,23 +1876,31 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
     case 10: {                                                      /* PAD / STRINGS: five detuned saws, slow motion in the detune, soft low-pass.
                                                                        p: spread (cents), motion rate, motion depth, pulse mix, body (low-pass Hz mult), -, -, -; knobs: Detune, Spread, PWM, Motion */
         const float *pq = s->pp[p]; const float f = v->f0;
-        const float sp = (q[0] + pq[PP_DET] * 30.0f) * (0.4f + 0.6f * clampf(q[6] + pq[PP_SUB], 0.0f, 1.0f) * 1.6f);
-        const float mo = clampf(q[2] + pq[PP_FDEC] - 0.5f, 0.0f, 1.0f);
         v->nx[9] += q[1] * dt; WRAP(v->nx[9]);
-        const float md = 1.0f + mo * 0.5f * sinf(TWO_PI * v->nx[9]);
-        float o = 0.0f;
-        static const float OFS[5] = { 0.0f, -1.0f, 1.0f, -0.5f, 0.5f };
-        for (int k = 0; k < 5; k++) {
-            const float fk = f * exp2f(OFS[k] * sp * md / 1200.0f);
-            v->nx[k] += fk * dt; if (v->nx[k] >= 1.0f) v->nx[k] -= 1.0f;
-            const float saw = 2.0f * v->nx[k] - 1.0f;
-            const float pul = v->nx[k] < clampf(0.5f + q[3] * 0.3f * sinf(TWO_PI * v->nx[9] * 0.5f + (float)k), 0.1f, 0.9f) ? 0.7f : -0.7f;
-            const float pm = clampf(q[3] + pq[PP_FKEY], 0.0f, 1.0f);
-            o += saw * (1.0f - pm) + pul * pm;
+        if (v->nx[63] <= 0.0f) {                                    /* control rate (every 16 samples): detune motion, pulse widths, filter coefficient */
+            const float sp = (q[0] + pq[PP_DET] * 30.0f) * (0.4f + 0.6f * clampf(q[6] + pq[PP_SUB], 0.0f, 1.0f) * 1.6f);
+            const float mo = clampf(q[2] + pq[PP_FDEC] - 0.5f, 0.0f, 1.0f);
+            const float md = 1.0f + mo * 0.5f * sinf(TWO_PI * v->nx[9]);
+            static const float OFS[5] = { 0.0f, -1.0f, 1.0f, -0.5f, 0.5f };
+            for (int k = 0; k < 5; k++) {
+                v->nx[24 + k] = f * exp2f(OFS[k] * sp * md / 1200.0f) * dt;
+                v->nx[29 + k] = clampf(0.5f + q[3] * 0.3f * sinf(TWO_PI * v->nx[9] * 0.5f + (float)k), 0.1f, 0.9f);
+            }
+            v->nx[34] = clampf(q[3] + pq[PP_FKEY], 0.0f, 1.0f);
+            { float fc = f * q[4]; if (fc > 14000.0f) fc = 14000.0f; if (fc < 80.0f) fc = 80.0f; const float xa = TWO_PI * fc * dt; v->nx[35] = xa / (1.0f + xa); }
+            v->nx[63] = 16.0f;
         }
+        v->nx[63] -= 1.0f;
+        float o = 0.0f;
+        { const float pm = v->nx[34];
+          for (int k = 0; k < 5; k++) {
+            v->nx[k] += v->nx[24 + k]; if (v->nx[k] >= 1.0f) v->nx[k] -= 1.0f;
+            const float saw = 2.0f * v->nx[k] - 1.0f;
+            const float pul = v->nx[k] < v->nx[29 + k] ? 0.7f : -0.7f;
+            o += saw * (1.0f - pm) + pul * pm;
+          } }
         o *= 0.2f;
-        { float fc = f * q[4]; if (fc > 14000.0f) fc = 14000.0f; if (fc < 80.0f) fc = 80.0f;
-          const float xa = TWO_PI * fc * dt, a = xa / (1.0f + xa); v->z1 += a * (o - v->z1); v->z2 += a * (v->z1 - v->z2); o = v->z2; }
+        { const float a = v->nx[35]; v->z1 += a * (o - v->z1); v->z2 += a * (v->z1 - v->z2); o = v->z2; }
         { const float at = 0.004f + pq[PP_ATT] * pq[PP_ATT] * 3.0f + T->att;
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
@@ -2426,7 +2449,7 @@ static void pad_on(inst_t *s, int p, int vel) {
     int arp = (int)(s->pp[p][PP_ARP] + 0.5f);
     a->held = 1; a->vel = v; a->base = 0; a->key = -1;
     if (arp > 0) {
-        a->on = 1; a->n = 0;
+        a->on = 1; a->n = 0; s->act_dirty = 1;
         trig(s, p, v, arp_offset(s, p, 0), 1);
         a->n = 1;
         a->cnt = arp_step_samples(s, p);
@@ -2496,7 +2519,7 @@ static void rt_fire(inst_t *s, int t) {
     if (!s->mute[lane_trk(s, t)]) {
         ar_t *ap = &s->ar[t];
         if (t < NTRK && s->rt_n[t] == 1 && (int)(s->pp[t][PP_ARP] + 0.5f) > 0) {      /* ARP on a sequenced step: it runs for the length of the note */
-            ap->on = 1; ap->n = 1; ap->base = s->rt_semi[t]; ap->key = -2; ap->vel = s->rt_vel[t]; ap->cnt = arp_step_samples(s, t);
+            s->act_dirty = 1; ap->on = 1; ap->n = 1; ap->base = s->rt_semi[t]; ap->key = -2; ap->vel = s->rt_vel[t]; ap->cnt = arp_step_samples(s, t);
             ap->life = (float)(s->rt_gate[t] > 64 ? s->rt_gate[t] : 64);
             trig(s, t, s->rt_vel[t], s->rt_semi[t] + arp_offset(s, t, 0), 1);
         } else {
@@ -2504,7 +2527,7 @@ static void rt_fire(inst_t *s, int t) {
             trig(s, t, s->rt_vel[t], s->rt_semi[t], 1);
         }
         { const int tk = lane_trk(s, t); if (s->mo_trk & (1 << tk)) mo_note(s, t, tk, s->rt_vel[t], s->rt_semi[t], s->rt_gate[t]); }
-        if (TY[s->vc[t].type].sus) s->gate_left[t] = s->rt_gate[t] > 0 ? s->rt_gate[t] : 1;
+        if (TY[s->vc[t].type].sus) { s->gate_left[t] = s->rt_gate[t] > 0 ? s->rt_gate[t] : 1; s->act_dirty = 1; }
     }
     s->rt_vel[t] *= 0.88f;
     if (--s->rt_n[t] > 0) s->rt_cnt[t] += s->rt_int[t];
@@ -2587,7 +2610,7 @@ static void seq_step(inst_t *s) {
             float gs_ = gi == 0 ? 0.8f * iv : GT[gi] * L;
             if (st[6] > 0) gs_ = (float)st[6] * L - 1.0f;      /* held-step length: lasts exactly until the chosen step */
             if (n > 1 && gs_ > 0.9f * iv) gs_ = 0.9f * iv;
-            s->rt_n[t] = n; s->rt_int[t] = iv; s->rt_semi[t] = semi; s->rt_vel[t] = hv; s->rt_gate[t] = (int)gs_;
+            s->act_dirty = 1; s->rt_n[t] = n; s->rt_int[t] = iv; s->rt_semi[t] = semi; s->rt_vel[t] = hv; s->rt_gate[t] = (int)gs_;
             s->rt_cnt[t] = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * L;      /* nudge: delay up to 70 % of a step in 2.5 % steps (older saves: 10 % steps) */
             if (sw_ph(s, s->gs) == 1 && s->pp[tk][PP_TSW] > 0.52f) s->rt_cnt[t] += (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * L;   /* per-track extra swing on the off-beat steps */
             if (s->rt_cnt[t] <= 0.0f) rt_fire(s, t);
@@ -2661,7 +2684,7 @@ static void sel_pad(inst_t *s, int k, int vel, int repeat) {
         int sm = note_pad_semi(s, k) + s->pad_oct;
         ar_t *ap = &s->ar[t];
         if (!repeat && (int)(s->pp[t][PP_ARP] + 0.5f) > 0) {               /* ARP: a held note pad steps through the scale at the Rate */
-            ap->on = 1; ap->n = 1; ap->base = sm; ap->key = kk; ap->vel = (float)vel / 127.0f; ap->cnt = arp_step_samples(s, t);
+            s->act_dirty = 1; ap->on = 1; ap->n = 1; ap->base = sm; ap->key = kk; ap->vel = (float)vel / 127.0f; ap->cnt = arp_step_samples(s, t);
             trig(s, t, (float)vel / 127.0f, sm + arp_offset(s, t, 0), 1);
         } else {
             if (ap->key >= 0) { ap->on = 0; ap->key = -1; }
@@ -3386,6 +3409,12 @@ static void eq_coef(float *c, int band, float gdb, float sr, float fx, float qx)
     }
     c[0] = b0 / a0; c[1] = b1 / a0; c[2] = b2 / a0; c[3] = a1 / a0; c[4] = a2 / a0;
 }
+static void act_rebuild(inst_t *s) {
+    int n = 0; for (int i = 0; i < NLANE + NGH; i++) if (s->vc[i].active) s->vl[n++] = (short)i; s->vl_n = n;
+    n = 0; for (int i = 0; i < NLANE; i++) if (s->ar[i].on) s->al[n++] = (short)i; s->al_n = n;
+    n = 0; for (int i = 0; i < NLANE; i++) if (s->rt_n[i] > 0 || s->gate_left[i] > 0) s->rl[n++] = (short)i; s->rl_n = n;
+    s->act_dirty = 0;
+}
 static void render_block_impl(void *instance, int16_t *out_lr, int frames);
 static void render_block(void *instance, int16_t *out_lr, int frames) {
     inst_t *s = (inst_t *)instance;
@@ -3433,8 +3462,9 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         s->clock++;
         float L = 0.0f, R = 0.0f;
         float rmb_in = 0.0f, rmd_in = 0.0f;
-        float tl[NLANE], tr[NLANE], tsd[NLANE], tsr[NLANE]; int tact[NLANE];      /* one bus per sound lane: a drum sound has its own effects, a synth track one set */
-        for (int t = 0; t < NLANE; t++) { tl[t] = tr[t] = tsd[t] = tsr[t] = 0.0f; tact[t] = 0; }
+        float *const tl = s->bt_l, *const tr = s->bt_r, *const tsd = s->bt_sd, *const tsr = s->bt_sr; int *const tact = s->bt_act;      /* one bus per sound lane: a drum sound has its own effects, a synth track one set (kept at zero between samples, only the busy ones are cleared again) */
+        uint64_t tmk[2] = { 0, 0 };
+        if (s->act_dirty || (n & 15) == 0) act_rebuild(s);
 
         /* count-in: one bar of clicks, then the sequencer starts */
         if (s->ci_left > 0) {
@@ -3447,7 +3477,9 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         if (s->playing) {
             if (s->tsamp >= s->next_time) seq_step(s);
             s->tsamp += 1.0;
-            for (int t = 0; t < NLANE; t++) {
+            if (s->act_dirty) act_rebuild(s);
+            for (int q_ = 0; q_ < s->rl_n; q_++) {
+                const int t = s->rl[q_];
                 if (s->rt_n[t] > 0 && (s->rt_cnt[t] -= 1.0f) <= 0.0f) rt_fire(s, t);
                 if (s->gate_left[t] > 0 && --s->gate_left[t] == 0) s->vc[t].gate = 0;
             }
@@ -3458,7 +3490,9 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             if (s->mo_trk) for (int i = 0; i < 64; i++) if (s->mo_q[i].cnt > 0 && --s->mo_q[i].cnt == 0) mo_send(0x8, s->mo_q[i].st, s->mo_q[i].d1, 0);
         }
         /* arps */
-        for (int p = 0; p < NLANE; p++) {
+        if (s->act_dirty) act_rebuild(s);
+        for (int q_ = 0; q_ < s->al_n; q_++) {
+            const int p = s->al[q_];
             ar_t *a = &s->ar[p];
             if (!a->on) continue;
             if (a->key == -2) { a->life -= 1.0f; if (a->life <= 0.0f) { a->on = 0; a->key = -1; continue; } }
@@ -3489,13 +3523,15 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             s->wob_ph += inc * 0.5f; if (s->wob_ph >= 1.0f) s->wob_ph -= 1.0f;
         }
         /* voices */
-        for (int vi = 0; vi < NLANE + NGH; vi++) {
+        if (s->act_dirty) act_rebuild(s);
+        for (int vq_ = 0; vq_ < s->vl_n; vq_++) {
+            const int vi = s->vl[vq_];
             vc_t *v = &s->vc[vi];
             if (!v->active) continue;
             const int p = vi < NLANE ? vi : s->vown[vi];
             if (vi >= NLANE && v->fol && (v->fgen != s->tgen[p] || !s->vc[p].gate)) { v->gate = 0; v->fol = 0; }   /* MIDI-effect layer ends with its note */
             const int gi = lane_trk(s, p);
-            tact[p] = 1;
+            tact[p] = 1; tmk[p >> 6] |= 1ull << (p & 63);
             float x = vc_render(s, v, p);
             if (v->type != T_SAMPLE) {      /* tail trim: no sound rings on for ever. Cap = 2 s x decay factor (Decay 50 % = 2 s, 0 = 0.7 s, 100 % = 6 s), then a quick fade */
                 const int sus = TY[v->type].sus;
@@ -3612,10 +3648,13 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             mtr[k] = 0.0f; dkg[k] = 1.0f;
             if (s->dk_env[k] > 0.0005f) { dkg[k] = 1.0f - s->pp[k][PP_DUCK] * s->dk_env[k]; s->dk_env[k] *= s->dk_c[k]; } else s->dk_env[k] = 0.0f;
         }
-        for (int t = 0; t < NLANE; t++) {
+        int blist[NLANE], nb = 0;
+        for (int w = 0; w < 2; w++) for (uint64_t bits = tmk[w] | s->fxm[w]; bits; bits &= bits - 1) blist[nb++] = w * 64 + __builtin_ctzll(bits);
+        for (int bq_ = 0; bq_ < nb; bq_++) {
+            const int t = blist[bq_];
             const float L0 = L, R0 = R;
-            const int tk = lane_trk(s, t);
             if (!tact[t] && s->fx_act[t] <= 0) continue;                  /* nothing sounding and no effect tail on this bus */
+            const int tk = lane_trk(s, t);
             if (dkg[tk] < 1.0f) { const float g = dkg[tk]; tl[t] *= g; tr[t] *= g; tsd[t] *= g; tsr[t] *= g; }
             mtr[tk] += fabsf(tl[t]) + fabsf(tr[t]);
             if (tact[t]) s->fx_act[t] = (int)(6.0f * s->sr);
@@ -3783,6 +3822,11 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             }
             if (q[PP_MONO] > 0.5f && q[PP_MONO] < 1.5f) { const float mm = 0.5f * ((L - L0) + (R - R0)); L = L0 + mm * s->pl[t]; R = R0 + mm * s->pr[t]; }      /* MONO: the sound stays in the middle, no stereo from effects */
             if (s->rec_src == tk) { rec_l += L - L0; rec_r += R - R0; }
+        }
+        for (int bq_ = 0; bq_ < nb; bq_++) {                          /* back to zero for the next sample; remember which buses still have an effect tail */
+            const int t = blist[bq_];
+            tl[t] = tr[t] = tsd[t] = tsr[t] = 0.0f; tact[t] = 0;
+            if (s->fx_act[t] > 0) s->fxm[t >> 6] |= 1ull << (t & 63); else s->fxm[t >> 6] &= ~(1ull << (t & 63));
         }
         for (int k = 0; k < NTRK; k++) s->meter[k] = mtr[k] > s->meter[k] ? mtr[k] : s->meter[k] * 0.9997f;
         if (rmb_in != 0.0f) s->rm_act = (int)(4.0f * s->sr);
@@ -4033,6 +4077,7 @@ static void init_chars(void) {
 plugin_api_v2_t *move_plugin_init_v2(const host_api_v1_t *host) {
     init_types();
     init_chars();
+    for (int i = 0; i <= 2048; i++) g_sintab[i] = sinf(6.283185307f * (float)i / 2048.0f);
     if (host) {
         if (host->sample_rate > 0) g_sr = host->sample_rate;
         g_get_beat = host->get_beat_position;

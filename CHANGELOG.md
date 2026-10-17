@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.95.0 (17 October 2026)
+- Less CPU, same sound: the engine now only visits the sounds, arps and effect buses that are really active instead of scanning all 80 lanes for every sample. Idle load is about 4x lower; the output of a sequenced song is bit-identical to 5.94.0
+- PAD and ADDITIVE engines are 2.5x to 5x cheaper per voice (oscillator settings are updated every 16 samples, sine table instead of sinf/powf per partial and sample); sound difference is below audibility (additive -87 dB, pad -56 dB)
+- Per-track effects stay as they are: measured, a track with delay, reverb, chorus, phaser and two insert effects costs only a few percent of the budget because idle effects are already skipped
+
 ## 5.94.0 (17 October 2026)
 - SYNTH tile is back to its full 8 knobs (Wave, Detune, Sub, Drive, LPCut, Reso, FltEnv, Voices; engines accordingly) as before 5.89.0
 - CHORD mode: a CHORD tile sits first and its 8 knobs control the chord options (Mode, Chord, Level, Layer FX + Amount + Param, Prob, VelBias); it opens by itself when the mode is switched on
