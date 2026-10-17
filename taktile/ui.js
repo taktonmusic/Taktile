@@ -91,7 +91,7 @@ const DRUM_LAYOUT = [
 const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
 const TAB_SYM = { 50: 'GRAIN', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SEND', 39: 'BUS', 27: 'MIDI', 36: 'EUCLID', 46: 'BUS' };
-const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX SENDS', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
+const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
 function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 46, 36, 27, 28]; if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
@@ -770,6 +770,7 @@ function padStepIdx(i) {                                  /* step number of a pa
     return (stepPage >> 1) * 32 + padStepOf(i);
 }
 let heldPad = -1;
+const lastSemi = new Array(16).fill(null);               /* the pitch of the last pad you played on each synth track: a step you switch on afterwards gets it too */
 function stepsPad(idx, vel) {                             /* STEPS mode: 32 pads = 32 steps; hold a pad + turn knobs 1-7 = edit that step */
     const s = padStepIdx(idx);
     if (s < 0 || s >= MAXSTEP) return;
@@ -1830,7 +1831,7 @@ const MENU_ITEMS = [
     ['Humanize', () => { const v = cycleMaster('m_hum', [0, 0.3, 0.6, 1]); showToast('HUMANIZE', String(Math.round(v * 100)), v); }],
     ['Launch quant', () => { const v = cycleMaster('m_qnt', [0.07, 0.21, 0.36, 0.5, 0.64, 0.79, 0.93]); showToast('LAUNCH', fmtVal('m_qnt', v), v); }],
     ['Tap tempo', () => tapTempo()],
-    ['Pad mode (layout/chord, drums: pitch/repeat/steps)', () => cycleTop(1)],
+    ['Pad mode (pitch/repeat/steps)', () => cycleTop(1)],
     ['Live FX pads on/off', () => { menuOpen = false; toggleTop(3); }],
     ['Chord pads on/off', () => { menuOpen = false; toggleTop(4); }],
     ['Device chain', () => { menuOpen = false; openDevices(); }],
@@ -2396,6 +2397,7 @@ function onPad(idx, on, vel) {
     if (m === 2) { if (on) stepsPad(idx, vel); else stepsPadUp(idx); return; }
     const dg = m === 4 ? degOf(idx & 3, idx >> 3, 4) : degOf(idx & 7, idx >> 3, 8);
     if (on && deleteHeld) { delNote(sel, notePadSemi(dg) + oct()); return; }
+    if (on) lastSemi[sel] = clamp(notePadSemi(dg) + oct(), -64, 63);
     if (on) padHold[idx] = { lane: sel, semi: clamp(notePadSemi(dg) + oct(), -64, 63), vel: fullVel ? 127 : Math.max(1, vel) }; else delete padHold[idx];
     if (on && heldStep < 0) { recHit(sel, notePadSemi(dg) + oct(), vel, idx); logHit(sel, notePadSemi(dg) + oct(), vel); }
     if (!on) recRelease(idx, sel);
@@ -2440,7 +2442,7 @@ function onStep(i, on) {
         }
         snap(ed[sel], L); heldStep = s; heldEdited = false; heldGrp = [];
         const st = stepAt(s); heldWasOn = !!st[0];
-        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; qStep(ed[sel], L, s); markEdited(); if (!playing && view === 0) launchClip(sel, ed[sel]); }      /* first step set while stopped: playback starts */
+        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; if (!kind[sel] && lastSemi[sel] !== null && view === 0 && topModes[sel] !== 2) st[2] = lastSemi[sel]; qStep(ed[sel], L, s); markEdited(); if (!playing && view === 0) launchClip(sel, ed[sel]); }      /* first step set while stopped: playback starts */
     } else if (heldGrp.includes(s)) { heldGrp.splice(heldGrp.indexOf(s), 1); needsRedraw = true;
     } else if (heldStep === s) {
         const L = ln(); heldGrp = [];
@@ -2498,7 +2500,7 @@ function selfTest() {                                       /* once after start:
     if (bad) { showToast('SELF TEST', bad, 0); toast.ticks = 120; }
 }
 let lastTab = new Array(NTRK).fill(0), prevTabView = 1;
-const TAB_SHORT = { 50: 'GRAIN', 43: 'EQ', 1: 'PRESET', 9: 'ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SENDS', 39: 'BUS 2', 46: 'FX BUS', 27: 'MIDI', 36: 'EUCLID' };
+const TAB_SHORT = { 50: 'GRAIN', 43: 'EQ', 1: 'PRESET', 9: 'ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'TRK FX', 39: 'BUS 2', 46: 'FX BUS', 27: 'MIDI', 36: 'EUCLID' };
 function drawTabs() {                                      /* header font: previous page | current page (white block) | next page */
     const tabs = trackTabs(), cur = Math.max(0, tabIndex(tabs));
     const nm = TAB_SHORT[tabs[cur]], num = String(cur + 1), nw = num.length * 4 + 3, pg = tabPg(tabs[cur]), pt = pg[0] + '/' + pg[1], pw = pt.length * 4 + 3, w = hfW(nm) + 8 + nw + pw, x = 64 - Math.floor(w / 2);
@@ -4905,7 +4907,7 @@ globalThis.onMidiMessageInternal = function (data) {
                 if (deleteHeld) { if (clrPend.t === t && clrPend.ticks > 0) { clrPend = { t: -1, ticks: 0 }; clearTrack(t); } else { clrPend = { t: t, ticks: 70 }; showToast('CLEAR TRACK ' + p2(t + 1) + '?', 'AGAIN = YES', 0); } }
                 else if (shiftHeld) { selectTrack(t); setKind(t, kind[t] ? 0 : 1); }
                 else if (view === 7 && !menuOpen && !loopHeld) { selectTrack(t); view = 0; navStack = []; padMenu = false; symOpen = -1; acc.fill(0); needsRedraw = true; showToast('TRACK ' + p2(t + 1), trkName(t), t / (NTRK - 1)); }      /* clip view: the track button opens that track */
-                else if (t === sel) cycleTop(1, true);
+                else if (t === sel) showToast('TRACK ' + p2(t + 1), trkName(t), t / (NTRK - 1));      /* the pad mode changes only with Shift + step 8 */
                 else { selectTrack(t); showToast('TRACK ' + p2(t + 1), trkName(t), t / (NTRK - 1)); }
             }
         }

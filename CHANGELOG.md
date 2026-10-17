@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.105.0 (17 October 2026)
+- Track button no longer changes the pad layout / mode: only Shift + step 8 does
+- A step switched on after playing a pad gets that pad's pitch (not only while the pad is held)
+- Page 'SENDS' renamed TRK FX (it holds the track's own effect + send knobs), clearer where you are
+
 ## 5.104.0 (17 October 2026)
 - Synth track: Shift + step 8 only switches note layout <> CHORD and no longer jumps to another page (no Favorites after leaving chord mode)
 - SENDS page: the two send knobs are now named DlySend / RvbSend (DSND / RSND), so it is clear what they control
