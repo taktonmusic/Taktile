@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.94.0 (17 October 2026)
+- SYNTH tile is back to its full 8 knobs (Wave, Detune, Sub, Drive, LPCut, Reso, FltEnv, Voices; engines accordingly) as before 5.89.0
+- CHORD mode: a CHORD tile sits first and its 8 knobs control the chord options (Mode, Chord, Level, Layer FX + Amount + Param, Prob, VelBias); it opens by itself when the mode is switched on
+- Undo / Redo show what was changed: the knob name (T03 LOWPASS CUTOFF, TEMPO, MASTER FILTER ...) in the toast and in the history
+
 ## 5.93.0 (17 October 2026)
 - Pad modes by track type: drum tracks walk PITCH > REPEAT > STEPS, synth tracks walk CHORD > STEPS. Note Repeat is for drum tracks only; with no mode on, the synth pads play normally
 

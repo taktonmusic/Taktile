@@ -90,10 +90,10 @@ const DRUM_LAYOUT = [
 const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
 const TAB_SYM = { 50: 'GRAIN', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'FX', 39: 'DELAY', 27: 'MIDI', 36: 'EUCLID', 46: 'TYPE' };
-const TAB_NAME = { 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX MIX', 39: 'FX MIX 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX TYPE' };
+const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX MIX', 39: 'FX MIX 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX TYPE' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; return syn ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 46, 36, 27, 28]; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 46, 36, 27, 28]; if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -190,7 +190,7 @@ const VIEW_ITEMS = {
     28: [['smp','File'],['sst','Start','Strt'],['sen','End'],['smd','Mode'],['tune','Tune'],['sgn','Gain'],['pan','Pan'],['vol','Vol']],
     21: [['kind','Kind'],['tvol','Volume','Vol'],['pmode','Pads'],['dsel','Sound','Snd'],['lay','Layout','Lay'],['tcol','Color','Col'],['tsw','Swing+','Swg+'],['pan','Pan']],
     47: [['snz','Noise'],['fatk','FltAtk','FAtk'],['sfld','Fold'],['schp','Chop'],['trem','Tremolo','Trem'],['trat','TremRate','TRt'],['apan','AutoPan','APan'],['vflt','VelFilt','VFlt']],
-    9: [['wave','Wave'],['det','Detune','Det'],['sub','Sub'],['drive','Drive','Drv']],
+    9: [['wave','Wave'],['det','Detune','Det'],['sub','Sub'],['drive','Drive','Drv'],['cut','LPCut','LPF'],['res','Reso','Res'],['fenv','FltEnv','FEnv'],['poly','Voices','Poly']],
 };
 /* home / fx / master hubs: tiles you pick with the jogwheel (turn = choose, click = open, Back = up one level) */
 const HUBS = {
@@ -1030,10 +1030,16 @@ function snap(p, l, g) {                                 /* l = lane; g = group 
     if (undoStack.length > 240) undoStack.shift();
 }
 function snapAll(p, t) { undoGroup++; for (const l of lanesOf(t)) snap(p, l, undoGroup); }
+const UNDO_LBL = { copy: 'COPY SOUND', rnd: 'RANDOM SOUND', chordmode: 'CHORD MODE', bpm: 'TEMPO', swing: 'SWING' };
+function undoLbl(kind, key) {                                 /* what the toast / history shows: the name of the knob that was turned */
+    if (kind === 'mute') return 'MUTE'; if (kind === 'auto') return 'AUTOMATION';
+    if (UNDO_LBL[key]) return UNDO_LBL[key];
+    try { const n = keyName(key); return String(LONG_NAME[key] || n[0] || key).toUpperCase(); } catch (e) { return String(key).toUpperCase(); }
+}
 function pSnap(kind, L, key) {                              /* undo for sounds, knobs, tempo and mutes: one knob turn = one step (same knob within 1.5 s is merged) */
     const now = Date.now(), id = kind + ':' + L + ':' + key, top = undoStack.length ? undoStack[undoStack.length - 1] : null;
     if (top && top.k && top.id === id && now - top.ts < 1500) { top.ts = now; return; }
-    const e = { k: kind, id: id, ts: now, L: L, t: kind === 'pad' ? L : 0, p: ed[sel], g: 0 };
+    const e = { k: kind, id: id, ts: now, L: L, t: kind === 'pad' ? L : 0, p: ed[sel], g: 0, lbl: undoLbl(kind, key) };
     if (kind === 'pad' && top && top.k === 'pad' && top.L !== L && now - top.ts < 300) { if (!top.g) top.g = ++undoGroup; e.g = top.g; top.ts = now; }       /* one gesture on several sounds (slice, chop, kit) = one step */
     if (kind === 'pad') e.v = pads[L].slice(); else if (kind === 'master') e.v = master.slice(); else if (kind === 'sys') e.v = [bpm, swing]; else if (kind === 'mute') e.v = [mutes.slice(), lmutes.slice()]; else if (kind === 'auto') e.v = JSON.stringify(AUTO);
     redoStack = []; undoStack.push(e); if (undoStack.length > 240) undoStack.shift();
@@ -1090,14 +1096,14 @@ function doRedo() {
     if (!e) { showToast('REDO', 'NOTHING', 0); return; }
     swapEntry(e, undoStack); miscLast = miscGet(); miscLastO = JSON.parse(miscLast);
     while (e.g && redoStack.length && redoStack[redoStack.length - 1].g === e.g) swapEntry(redoStack.pop(), undoStack);
-    showToast('REDO', e.k ? String(e.lbl || e.k).toUpperCase().substring(0, 18) : 'T' + p2(laneTrk(e.t) + 1) + ' C' + (e.p + 1), 1); markEdited();
+    showToast('REDO', e.k ? ((e.k === 'pad' ? 'T' + p2(laneTrk(e.t) + 1) + ' ' : '') + String(e.lbl || e.k).toUpperCase()).substring(0, 18) : 'T' + p2(laneTrk(e.t) + 1) + ' C' + (e.p + 1), 1); markEdited();
 }
 function doUndo() {
     const e = undoStack.pop();
     if (!e) { showToast('UNDO', 'NOTHING (STEPS)', 0); return; }
     swapEntry(e, redoStack); miscLast = miscGet(); miscLastO = JSON.parse(miscLast);
     while (e.g && undoStack.length && undoStack[undoStack.length - 1].g === e.g) swapEntry(undoStack.pop(), redoStack);
-    showToast('UNDO', e.k ? String(e.lbl || e.k).toUpperCase().substring(0, 18) : 'T' + p2(laneTrk(e.t) + 1) + ' C' + (e.p + 1), 1); markEdited();
+    showToast('UNDO', e.k ? ((e.k === 'pad' ? 'T' + p2(laneTrk(e.t) + 1) + ' ' : '') + String(e.lbl || e.k).toUpperCase()).substring(0, 18) : 'T' + p2(laneTrk(e.t) + 1) + ' C' + (e.p + 1), 1); markEdited();
 }
 let rndDens = 0.28, rndVar = 0.5, rndKey = 0, rndRat = 0;
 
@@ -1517,6 +1523,7 @@ function chordReconcile() {                                   /* switching the m
             if (m !== 2 && m !== 11) { chBak[t] = [a[PI.mfx], a[PI.mamt], a[PI.mprm]]; a[PI.mfx] = 2; a[PI.mamt] = 0.7; a[PI.mprm] = 0; } else chBak[t] = null;
         } else if (chBak[t]) { a[PI.mfx] = chBak[t][0]; a[PI.mamt] = chBak[t][1]; a[PI.mprm] = chBak[t][2]; chBak[t] = null; }
         qPad(t); markEdited(); needsRedraw = true;
+        if (t === sel && canTop()) { favBuild(); if (want) { tabEnter(44); showToast('CHORD OPTIONS', 'KNOBS = CHORD', 1); } else if (view === 44) tabEnter(1); }
     }
     if (favSig !== (chordOn() ? 1 : 0)) favBuild();
 }
@@ -4345,10 +4352,10 @@ function drawParams() {
 }
 const MOD_SYN = [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']];
 const MOD_DRM = [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['rmb','Rumble','Rmbl'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['rmt','RumbleTail','RTail']];
-const FILT_BASE = VIEW_ITEMS[2], P47_BASE = VIEW_ITEMS[47], SYN_PG = VIEW_ITEMS[9], FMI_PG = [['det','Ratio'],['sub','Index'],['fkey','Feedback','Fdbk'],['drive','Drive','Drv']];
+const FILT_BASE = VIEW_ITEMS[2], P47_BASE = VIEW_ITEMS[47], SYN_PG = VIEW_ITEMS[9], FMI_PG = [['det','Ratio'],['sub','Index'],['fkey','Feedback','Fdbk'],['drive','Drive','Drv'],['cut','LPCut','LPF'],['res','Reso','Res'],['fenv','FltEnv','FEnv'],['poly','Voices','Poly']];
 const FMI = TYPE_NAME.indexOf('FmInit');                       /* the plain 2-operator FM INIT sound: Ratio, Index, Feedback (+ Decay on the sound page) */
 const ENG_KN = { 6: ['Detune', 'Sub', 'Sync', 'Width'], 7: ['Position', 'Sweep', 'Warp', 'Detune'], 8: ['Index', 'Ratio', 'Feedback', 'Algo'], 9: ['Tilt', 'Odd/Even', 'Stretch', 'Shimmer'], 10: ['Detune', 'Spread', 'PWM', 'Motion'], 11: ['Bright', 'Pick', 'Damp', 'Excite'], 12: ['Fold', 'Sweep', 'Symmetry', 'Harmonics'] };
-const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0]], ['sub', ENG_KN[e][1]], ['fkey', ENG_KN[e][2]], ['fdec', ENG_KN[e][3]], ['drive', 'Drive', 'Drv']];
+const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0]], ['sub', ENG_KN[e][1]], ['fkey', ENG_KN[e][2]], ['fdec', ENG_KN[e][3]], ['drive', 'Drive', 'Drv'], ['cut', 'LPCut', 'LPF'], ['res', 'Reso', 'Res'], ['poly', 'Voices', 'Poly']];
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
 const PG47_ENG = VIEW_ITEMS[47], PG47_SYN = PG47_ENG.map(it => it[0] === 'schp' ? ['drive', 'Drive', 'Drv'] : it);
@@ -4360,10 +4367,6 @@ function viewItemsFix() {
     const t = kind[sel] ? 0 : Math.round(pads[sel][0]), e = nxEng(t);
     VIEW_ITEMS[1] = kind[sel] ? SND_DRM : SND_SYN;      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
     VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : SYN_PG);
-    { const taken = {}; if (!kind[sel]) for (const it of VIEW_ITEMS[9]) taken[it[0]] = 1;      /* a knob lives on one page only: where the engine page uses FltKey / FltDecay as its own knobs, the FILTER page offers FltAtk / VelFilt instead (and ENGINE 2 gives them up) */
-      const spare = [['fatk', 'FltAtk', 'FAtk'], ['vflt', 'VelFilt', 'VFlt']], used = {};
-      VIEW_ITEMS[2] = FILT_BASE.map(it => { if (taken[it[0]] && spare.length) { const s2 = spare.shift(); used[s2[0]] = 1; return s2; } return it; });
-      VIEW_ITEMS[47] = P47_BASE.filter(it => !used[it[0]]); }
 }
 
 /* ---- scope page: master output wave (triggered) and 8 band levels, polled from the DSP ---- */
