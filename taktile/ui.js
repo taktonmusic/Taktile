@@ -746,7 +746,7 @@ function clipAction(t, c) {
     if (shiftHeld) { dspSet('clip', t + ',-1'); clipsQ[t] = playing ? -1 : -2; if (!playing) clipsCur[t] = -1; showToast('TRACK ' + p2(t + 1), 'STOP', 0); needsRedraw = true; return; }
     launchClip(t, c);
 }
-const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS', 'LIVE FX', 'CHORD'];
+const TOP_NAMES = ['NOTE', 'REPEAT', 'STEPS', 'LIVE FX', 'CHORD'];
 let repAllowed = true;                                     /* off: Note Repeat is skipped when switching the pad mode */
 function nextTopMode(cur, d, trackBtn) {                              /* the Track button walks PITCH > REPEAT > STEPS (> CHORD on synth tracks); LIVE FX has its own switch */
     const ring = kind[sel] ? [0, 1, 2] : (trackBtn ? [0, 2] : [0, 4]);            /* drum tracks: PITCH > REPEAT > STEPS; synth tracks: Shift + step 8 = note layout <> CHORD, the Track button = note layout <> STEPS (never CHORD) */

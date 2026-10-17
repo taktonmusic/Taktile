@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.106.0 (17 October 2026)
+- Pad mode name PITCH is now NOTE (synth and drum tracks); synth tracks: NOTE <> CHORD
+
 ## 5.105.0 (17 October 2026)
 - Track button no longer changes the pad layout / mode: only Shift + step 8 does
 - A step switched on after playing a pad gets that pad's pitch (not only while the pad is held)
