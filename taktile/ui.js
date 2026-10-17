@@ -157,7 +157,7 @@ const VIEW_ITEMS = {
     1: [['type','Type'],['tune','Tune'],['decay','Decay','Dcy'],['tone','Tone'],['drive','Drive','Drv'],['pan','Pan'],['poly','Voices','Poly'],['vol','Vol']],
     2: [['cut','LPCut','LPF'],['res','Reso'],['locut','HPCut','HPF'],['fenv','FltEnv','FEnv'],['fdec','FltDecay','FDec'],['fkey','KeyTrack','FKey'],['fmode','Mode'],['crush','Crush','Crsh']],
     3: [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']],       /* synth tracks; drum tracks add the kick rumble (viewItemsFix) */
-    38: [['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
+    38: [['dly','DlySend','DSnd'],['rvb','RvbSend','RSnd'],['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
     46: [['dly_time','DlyTime','DTim'],['dly_fb','DlyFdbk','DFb'],['dly_mode','DlyType','DTyp'],['dly_tone','DlyTone','DTon'],['rvb_size','RvbSize','RSiz'],['rvb_dark','RvbDark','RDrk'],['rvb_mode','RvbType','RTyp'],['rvb_ret','RvbRet','RRet']],
     50: [['grn','Grain','Grn'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
     39: [['dly_ret','DlyRet','DRet'],['dly_wide','DlyWide','DWid'],['rvb_wide','RvbWide','RWid'],['rvb_low','RvbLow','RLow']],
@@ -1524,7 +1524,7 @@ function chordReconcile() {                                   /* switching the m
             if (m !== 2 && m !== 11) { chBak[t] = [a[PI.mfx], a[PI.mamt], a[PI.mprm]]; a[PI.mfx] = 2; a[PI.mamt] = 0.7; a[PI.mprm] = 0; } else chBak[t] = null;
         } else if (chBak[t]) { a[PI.mfx] = chBak[t][0]; a[PI.mamt] = chBak[t][1]; a[PI.mprm] = chBak[t][2]; chBak[t] = null; }
         qPad(t); markEdited(); needsRedraw = true;
-        if (t === sel && canTop()) { favBuild(); if (want) { tabEnter(44); showToast('CHORD OPTIONS', 'KNOBS = CHORD', 1); } else if (view === 44) tabEnter(1); }
+        if (t === sel) { favBuild(); if (want) showToast('CHORD MODE', 'LEFT = NOTES, RIGHT = CHORDS', 1); else if (view === 44) tabEnter(1); }      /* the page stays where it is: Shift + step 8 only switches the mode */
     }
     if (favSig !== (chordOn() ? 1 : 0)) favBuild();
 }

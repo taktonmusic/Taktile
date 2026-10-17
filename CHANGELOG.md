@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.104.0 (17 October 2026)
+- Synth track: Shift + step 8 only switches note layout <> CHORD and no longer jumps to another page (no Favorites after leaving chord mode)
+- SENDS page: the two send knobs are now named DlySend / RvbSend (DSND / RSND), so it is clear what they control
+
 ## 5.103.0 (17 October 2026)
 - CHORD mode on the Move pads: left four columns play single notes, right four columns play the chords (same degrees), also when the pads reach the engine directly
 
