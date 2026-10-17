@@ -364,7 +364,7 @@ function setLen(n, wholeTrack) {                           /* loop length: a dru
 function pageCount() { return Math.max(1, Math.ceil(LL() / 16)); }
 function qSeqT(p, t) { for (const l of lanesOf(t)) qSeq(p, l); }
 function qStep(p, t, s) { enqueue('st' + p + '_' + t + '_' + s, 'st', p + ',' + t + ',' + s + ',' + encStep(steps[p][t][s])); }
-function qEverything() {
+function qEverything(wipe) {
     for (let l = 0; l < NLANE; l++) if (lmutes[l] || lmSent[l]) { enqueue('lmute' + l, 'lmute', l + ',' + lmutes[l]); lmSent[l] = lmutes[l]; }
     qMaster(); qTransport(); qLay(); enqueue('reprate', 'reprate', String(repRate));
     if (moClk || moMask) enqueue('midiout', 'midiout', moStr());
@@ -375,7 +375,7 @@ function qEverything() {
     for (const l of al) qLockT(l);
     for (let t = 0; t < NTRK; t++) for (let c = 0; c < NPAT; c++) if (fol[t][c] !== folSent[t][c]) qFol(t, c);
     for (let c = 0; c < NPAT; c++) if (sceneQ[c]) enqueue('sq' + c, 'sceneq', c + ',' + sceneQ[c]);
-    for (let p = 0; p < NPAT; p++) for (const l of al) if (laneHas(p, l)) qSeq(p, l);
+    for (let p = 0; p < NPAT; p++) for (const l of al) if (wipe || laneHas(p, l)) qSeq(p, l);      /* wipe (new / loaded project): empty lanes are sent too, so no note of the old project stays in the engine */
 }
 function flushQueue(n) { for (let i = 0; i < n && queue.length; i++) { const q = queue.shift(); dspSet(q[1], q[2]); } }
 
@@ -3656,7 +3656,7 @@ function newProject() {                                    /* empty project: one
     euKL.fill(4); euRL.fill(0); euV = 100; for (let i = 0; i < NLANE; i++) euP[i] = euDef();
     pads = defaultPads(); steps = newSteps(); csnd = null; undoStack = []; redoStack = []; miscLast = null; fillChg = []; tcolO.fill(0); lockT.fill(0); for (const r of fol) r.fill(0);
     ensureCs(); for (let tt = 0; tt < NTRK; tt++) applyClipSound(tt, ed[tt]); firstDrum();
-    queue = []; qEverything(); initialPush = 100; sel = 0; stepPage = 0; heldStep = -1; heldPad = -1; navStack = []; view = 0; askKind = -1;
+    queue = []; qEverything(true); initialPush = 100; sel = 0; stepPage = 0; heldStep = -1; heldPad = -1; navStack = []; view = 0; askKind = -1;
     markEdited(); saveState(); showToast('NEW PROJECT', 'TRACK 1 = DRUM', 1); needsRedraw = true;
 }
 const BAK_IDX = '/data/UserData/schwung/taktile-backup.idx', BAK_N = 6;
@@ -3678,7 +3678,7 @@ function applyStateText(t, msg) {
     if (playing) { dspSet('play', '0'); playing = false; gs = 0; }
     AUTO = {}; autoLast = {}; fillChg = [];
     loadState(); ensureCs(); for (let tt = 0; tt < NTRK; tt++) applyClipSound(tt, ed[tt]);
-    queue = []; qEverything(); initialPush = 100; sel = 0; stepPage = 0; heldStep = -1; heldPad = -1; navStack = []; view = 0;
+    queue = []; qEverything(true); initialPush = 100; sel = 0; stepPage = 0; heldStep = -1; heldPad = -1; navStack = []; view = 0;
     showToast(msg, 'DONE', 1); needsRedraw = true;
 }
 function projLoad() {
@@ -3690,7 +3690,7 @@ function projLoad() {
     if (playing) { dspSet('play', '0'); playing = false; gs = 0; }
     AUTO = {}; autoLast = {};
     loadState(); ensureCs(); for (let tt = 0; tt < NTRK; tt++) applyClipSound(tt, ed[tt]);
-    queue = []; qEverything(); initialPush = 100; sel = 0; stepPage = 0; heldStep = -1; heldPad = -1; navStack = []; view = 0;
+    queue = []; qEverything(true); initialPush = 100; sel = 0; stepPage = 0; heldStep = -1; heldPad = -1; navStack = []; view = 0;
     { let nt = 0; for (let t = 0; t < NTRK; t++) { for (const l of lanesOf(t)) { let h = false; for (let p = 0; p < NPAT && !h; p++) if (laneHas(p, l)) h = true; if (h) { nt++; break; } } } showToast('LOADED ' + (projNames[projSlot] || ('PROJECT ' + (projSlot + 1))), bpm + ' BPM  ' + nt + ' TRACKS', 1); } needsRedraw = true;
 }
 /* ---- euclid page (per sound) ---- */
@@ -4332,7 +4332,7 @@ function drawSong() {
         if (e[5] && 122 - 3 - tw(bs) - 40 > 8) txt(38, y + 1, fit(SONG_TAG[e[5]], 122 - 3 - tw(bs) - 42), c);
         txt(122 - 3 - tw(bs), y + 1, bs, c);
     }
-    if (songBlank && L === 1) { txt(2, 26, 'STEP 1-8 = ADD SCENE', 1); txt(2, 36, 'STEP 9-14 = BARS', 1); txt(2, 46, 'PLAY = START SONG', 1); }
+    if (songBlank && L === 1) { txt(2, 23, 'STEP 1-8 = ADD SCENE', 1); txt(2, 31, 'STEP 9-14 = BARS', 1); txt(2, 39, 'PLAY = START SONG', 1); }
     if (L > rows) { const h = Math.max(4, Math.round(36 * rows / L)), y = 12 + Math.round(36 * (st / L)); fill_rect(125, 12, 1, 36, 1); fill_rect(124, y, 3, h, 1); }
     { const cur = songList[songSlot] ? songList[songSlot][0] : -1;           /* every scene you built: filled = has notes, frame = empty, thick frame = the selected step's scene (steps 1-8 add it) */
       for (let c = 0; c < 8; c++) { const x = 1 + c * 15, has = sceneHas(c); if (has) fill_rect(x, 49, 13, 7, 1); else draw_rect(x, 49, 13, 7, 1); txtS(x + 5, 50, String(c + 1), has ? 0 : 1); if (c === cur) draw_rect(x - 1, 48, 15, 9, 1); } }

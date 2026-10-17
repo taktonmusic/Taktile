@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.115.0 (17 October 2026)
+- Bug: neues/geladenes Projekt löscht jetzt alle alten Noten in der Engine (Track 1 spielte einen Beat ohne Aufnahme)
+- Song-Seite: Hilfetext überlappt nicht mehr mit den Szenen-Kästchen
+
 ## 5.114.0 (17 October 2026)
 - Preset-Seite im Engine-Design: keine alten Kästen mehr, Preset- und Wave-Name als normale Kachel
 - Alle Kacheln sehen in jedem Design gleich aus wie auf der Engine-Seite (kleiner Name, fetter Wert, Balken)
