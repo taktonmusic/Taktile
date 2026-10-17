@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.111.0 (17 October 2026)
+- CPU: sine oscillators/LFOs use a 2048-point table instead of sinf (82 places; output identical to 16 bit in the bench)
+
 ## 5.110.0 (17 October 2026)
 - New standard track header: big tile name + small track on top, all tiles as a row (PRE ENG MOD FLT FX BUS EUC MID), no mode label; pages re-fitted below it (preset, filter, EQ, grain, sample, euclid, MIDI)
 - Four new designs: NEON (white tiles), BLOCKS (thick bars), EMOJI (a face that gets happier), ROBOT (LED eyes); KNOBS design fits the new header

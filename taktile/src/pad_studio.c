@@ -64,6 +64,9 @@ __asm__(".symver powf,powf@GLIBC_2.17");
 #define GRN_G      16             /* grains that can sound at once */
 #define GRN_SLOTS  4              /* sounds that can use the granulator at the same time */
 #define TWO_PI     6.28318530717958647692f
+static float g_sintab[2049];
+static inline float sin2pi_raw(float ph) { const float x = ph * 2048.0f; const int i = (int)x; const float fr = x - (float)i; const float a = g_sintab[i & 2047]; return a + (g_sintab[(i & 2047) + 1] - a) * fr; }
+static inline float sin2pi(float ph) { ph -= floorf(ph); return sin2pi_raw(ph); }      /* sin(2*pi*ph) from a 2048-point table (error about 1e-6), any phase: negative or above 1 too */
 #define DLY_SIZE   32768          /* per track */
 #define CH_SIZE    2048
 #define SB_SIZE    8192           /* stutter / reverse capture buffer per track */
@@ -990,7 +993,7 @@ static void xfx_proc(inst_t *s, xs_t *X, float (*sbuf)[SB_SIZE], int xt, float a
                         }
                         for (int c = 0; c < 2; c++) {
                             float ph = X->xph + 0.25f * (float)c; if (ph >= 1.0f) ph -= 1.0f;
-                            float d = xt == 3 ? (0.0005f + (0.5f + 0.5f * sinf(TWO_PI * ph)) * 0.0035f) * s->sr : 22.0f + pa * 400.0f;
+                            float d = xt == 3 ? (0.0005f + (0.5f + 0.5f * sin2pi(ph)) * 0.0035f) * s->sr : 22.0f + pa * 400.0f;
                             if (d > (float)(XB_SIZE - 4)) d = (float)(XB_SIZE - 4);
                             float pos = (float)w - d; if (pos < 0.0f) pos += (float)XB_SIZE;
                             int i0 = (int)pos; float fr = pos - (float)i0; i0 &= (XB_SIZE - 1); int i1 = (i0 + 1) & (XB_SIZE - 1);
@@ -1005,16 +1008,16 @@ static void xfx_proc(inst_t *s, xs_t *X, float (*sbuf)[SB_SIZE], int xt, float a
                         if (xt == 4) {
                             for (int c = 0; c < 2; c++) {
                                 float ph = X->xph + 0.5f * pb * (float)c; if (ph >= 1.0f) ph -= 1.0f;
-                                out2[c] = in2[c] * (1.0f - am * (0.5f + 0.5f * sinf(TWO_PI * ph)));
+                                out2[c] = in2[c] * (1.0f - am * (0.5f + 0.5f * sin2pi(ph)));
                             }
                         } else {
-                            float lfo = tanhf(sinf(TWO_PI * X->xph) * (1.0f + pb * 8.0f)) * am;
+                            float lfo = tanhf(sin2pi(X->xph) * (1.0f + pb * 8.0f)) * am;
                             out2[0] = in2[0] * (1.0f - (lfo > 0.0f ? lfo : 0.0f));
                             out2[1] = in2[1] * (1.0f + (lfo < 0.0f ? lfo : 0.0f));
                         }
                     } else if (xt == 7) {                                       /* AUTO-WAH (state variable band-pass) */
                         X->xph += (0.2f + pa * pa * 6.0f) * s->inv_sr; if (X->xph >= 1.0f) X->xph -= 1.0f;
-                        const float fc = 300.0f + 2400.0f * (0.5f + 0.5f * sinf(TWO_PI * X->xph));
+                        const float fc = 300.0f + 2400.0f * (0.5f + 0.5f * sin2pi(X->xph));
                         const float f = 2.0f * sinf(3.14159f * fc * s->inv_sr), qd = 1.0f - pb * 0.9f;
                         for (int c = 0; c < 2; c++) {
                             float *st = &z[c * 4];
@@ -1598,24 +1601,24 @@ static inline float wf(float ph, int w) {
     switch (w) {
     case 2:  return ph < 0.5f ? 1.0f : -1.0f;
     case 3:  return ph < 0.5f ? 4.0f * ph - 1.0f : 3.0f - 4.0f * ph;
-    case 4:  return sinf(TWO_PI * ph);
+    case 4:  return sin2pi(ph);
     case 5:  return ph < 0.25f ? 1.0f : -1.0f;
     case 6:  return ph < 0.125f ? 1.0f : -1.0f;
     case 7:  return 1.0f - 2.0f * ph;
-    case 8:  return 2.0f * fabsf(sinf(TWO_PI * ph)) - 1.0f;
-    case 9:  return (sinf(TWO_PI * ph) + 0.6f * sinf(TWO_PI * 2.0f * ph) + 0.35f * sinf(TWO_PI * 4.0f * ph)) * 0.6f;
-    case 10: return (sinf(TWO_PI * ph) + 0.33f * sinf(TWO_PI * 3.0f * ph) + 0.2f * sinf(TWO_PI * 5.0f * ph)) * 0.75f;
-    case 11: { float x = 1.9f * sinf(TWO_PI * ph); if (x > 1.0f) x = 2.0f - x; if (x < -1.0f) x = -2.0f - x; return x; }
+    case 8:  return 2.0f * fabsf(sin2pi(ph)) - 1.0f;
+    case 9:  return (sin2pi(ph) + 0.6f * sinf(TWO_PI * 2.0f * ph) + 0.35f * sinf(TWO_PI * 4.0f * ph)) * 0.6f;
+    case 10: return (sin2pi(ph) + 0.33f * sinf(TWO_PI * 3.0f * ph) + 0.2f * sinf(TWO_PI * 5.0f * ph)) * 0.75f;
+    case 11: { float x = 1.9f * sin2pi(ph); if (x > 1.0f) x = 2.0f - x; if (x < -1.0f) x = -2.0f - x; return x; }
     case 12: return floorf(ph * 5.0f) * 0.5f - 1.0f;
     case 13: return floorf((4.0f * fabsf(ph - 0.5f) - 1.0f) * 3.5f + 0.5f) * (1.0f / 3.5f);
-    case 14: return (sinf(TWO_PI * ph) * 0.5f + sinf(TWO_PI * 3.0f * ph + 1.0f) * 0.5f + sinf(TWO_PI * 5.0f * ph + 2.0f) * 0.4f) * 0.8f;
+    case 14: return (sin2pi(ph) * 0.5f + sinf(TWO_PI * 3.0f * ph + 1.0f) * 0.5f + sinf(TWO_PI * 5.0f * ph + 2.0f) * 0.4f) * 0.8f;
     case 15: { float q = ph * 2.5f; q -= floorf(q); return 2.0f * q - 1.0f; }
     default: return 2.0f * ph - 1.0f;
     }
 }
 #define WRAP(x) do { if ((x) >= 1.0f) (x) -= 1.0f; } while (0)
 
-static inline float bsin(const vc_t *v) { return v->sw >= 100 ? wt_at(v->ph, v->sw - 100) : sinf(TWO_PI * v->ph); }      /* body oscillator: sine, or the preset's own wavetable */
+static inline float bsin(const vc_t *v) { return v->sw >= 100 ? wt_at(v->ph, v->sw - 100) : sin2pi(v->ph); }      /* body oscillator: sine, or the preset's own wavetable */
 
 
 /* polyBLEP: removes the aliasing step of saw / square edges */
@@ -1626,7 +1629,6 @@ static inline float blep(float t, float d) {
 }
 /* ---------------- NEW ENGINES: one sample ---------------- */
 /* cheap sine for the oscillator banks: 2048-entry table with linear interpolation (error below -90 dB); the table is filled once at load */
-static float g_sintab[2049];
 static inline float fsin01(float ph) { const float x = ph * 2048.0f; const int i = (int)x; const float fr = x - (float)i; const float a = g_sintab[i & 2047]; return a + (g_sintab[(i & 2047) + 1] - a) * fr; }
 static float nx_render(inst_t *s, vc_t *v, int p) {
     const nx_t *n = &VAR4[v->type - T_V4]; const float *q = n->p; const ty_t *T = &TY[v->type]; const float dt = s->inv_sr;
@@ -1640,7 +1642,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             const float y = v->nx[16 + k] * v->nx[k] + v->nx[24 + k] * v->nx[8 + k] + e * v->nx[32 + k];
             v->nx[8 + k] = v->nx[k]; v->nx[k] = y; x += y;
         }
-        if (q[6] > 0.0f) { v->nx[45] += q[7] * dt; if (v->nx[45] >= 1.0f) v->nx[45] -= 1.0f; x *= 1.0f - q[6] * 0.5f * (1.0f - sinf(TWO_PI * v->nx[45])); }
+        if (q[6] > 0.0f) { v->nx[45] += q[7] * dt; if (v->nx[45] >= 1.0f) v->nx[45] -= 1.0f; x *= 1.0f - q[6] * 0.5f * (1.0f - sin2pi(v->nx[45])); }
         v->env *= v->c1; if (v->env < 1e-3f) v->active = 0;
         break; }
     case 1: {                                                       /* FM: carrier, two modulators, feedback, three algorithms */
@@ -1654,21 +1656,21 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             const float *pq = s->pp[p];
             const float rat = 0.5f * powf(16.0f, pq[PP_DET]), idx = pq[PP_SUB] * 8.0f, fbk = pq[PP_FKEY] * 1.2f;
             v->ph2 += f * (rat - q[0]) * dt; WRAP(v->ph2); if (v->ph2 < 0.0f) v->ph2 += 1.0f;
-            const float sb = sinf(TWO_PI * v->ph2 + fbk * v->nx[2]); v->nx[2] = sb;
-            out = sinf(TWO_PI * v->ph + sb * idx * ie * vs);
+            const float sb = sin2pi(v->ph2 + (fbk * v->nx[2]) * 0.15915494f); v->nx[2] = sb;
+            out = sin2pi(v->ph + (sb * idx * ie * vs) * 0.15915494f);
         } else if (algo < 0.5f) {                                   /* C -> B -> A */
-            const float mc = sinf(TWO_PI * v->ph3) * q[3] * ie * vs;
-            const float sb = sinf(TWO_PI * v->ph2 + mc + q[4] * v->nx[2]); v->nx[2] = sb;
-            out = sinf(TWO_PI * v->ph + sb * q[1] * ie * vs);
+            const float mc = sin2pi(v->ph3) * q[3] * ie * vs;
+            const float sb = sin2pi(v->ph2 + (mc + q[4] * v->nx[2]) * 0.15915494f); v->nx[2] = sb;
+            out = sin2pi(v->ph + (sb * q[1] * ie * vs) * 0.15915494f);
         } else if (algo < 1.5f) {                                   /* B + C -> A (C follows the amplitude) */
-            const float sb = sinf(TWO_PI * v->ph2 + q[4] * v->nx[2]); v->nx[2] = sb;
-            const float sc = sinf(TWO_PI * v->ph3);
-            out = sinf(TWO_PI * v->ph + sb * q[1] * ie * vs + sc * q[3] * (0.3f + 0.7f * v->env) * vs);
+            const float sb = sin2pi(v->ph2 + (q[4] * v->nx[2]) * 0.15915494f); v->nx[2] = sb;
+            const float sc = sin2pi(v->ph3);
+            out = sin2pi(v->ph + (sb * q[1] * ie * vs + sc * q[3] * (0.3f + 0.7f * v->env) * vs) * 0.15915494f);
         } else {                                                    /* two FM pairs side by side */
-            const float sb = sinf(TWO_PI * v->ph2 + q[4] * v->nx[2]); v->nx[2] = sb;
-            out = 0.65f * sinf(TWO_PI * v->ph + sb * q[1] * ie * vs) + 0.35f * sinf(TWO_PI * v->ph3 + sb * q[3] * ie * vs);
+            const float sb = sin2pi(v->ph2 + (q[4] * v->nx[2]) * 0.15915494f); v->nx[2] = sb;
+            out = 0.65f * sin2pi(v->ph + (sb * q[1] * ie * vs) * 0.15915494f) + 0.35f * sin2pi(v->ph3 + (sb * q[3] * ie * vs) * 0.15915494f);
         }
-        if (q[6] > 0.0f) { v->nx[3] += f * 0.5f * dt; if (v->nx[3] >= 1.0f) v->nx[3] -= 1.0f; out += q[6] * sinf(TWO_PI * v->nx[3]); }
+        if (q[6] > 0.0f) { v->nx[3] += f * 0.5f * dt; if (v->nx[3] >= 1.0f) v->nx[3] -= 1.0f; out += q[6] * sin2pi(v->nx[3]); }
         if (T->sus) {
             const float at = T->att > 0.0005f ? T->att : 0.0005f;
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
@@ -1678,7 +1680,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         break; }
     case 2: {                                                       /* VOCAL: glottal pulse through three formant filters */
         v->nx[8] += q[5] * dt; if (v->nx[8] >= 1.0f) v->nx[8] -= 1.0f;
-        const float vib = 1.0f + q[4] * sinf(TWO_PI * v->nx[8]) * (v->t > 0.25f ? 1.0f : v->t * 4.0f);
+        const float vib = 1.0f + q[4] * sin2pi(v->nx[8]) * (v->t > 0.25f ? 1.0f : v->t * 4.0f);
         v->ph += v->f0 * vib * dt; WRAP(v->ph);
         float g = v->ph < 0.45f ? 0.5f * (1.0f - cosf(TWO_PI * v->ph / 0.45f)) - 0.225f : -0.225f;
         float src = g * 3.0f; src = src * (1.0f - q[3]) + (2.0f * v->ph - 1.0f) * 0.6f * q[3];
@@ -1712,7 +1714,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         }
         v->nx[3] *= v->nx[4];
         float vm = 1.0f;
-        if (q[3] > 0.0f && v->t > q[4]) { v->nx[5] += 6.0f * dt; if (v->nx[5] >= 1.0f) v->nx[5] -= 1.0f; vm += q[3] * sinf(TWO_PI * v->nx[5]); }
+        if (q[3] > 0.0f && v->t > q[4]) { v->nx[5] += 6.0f * dt; if (v->nx[5] >= 1.0f) v->nx[5] -= 1.0f; vm += q[3] * sin2pi(v->nx[5]); }
         const float f = v->f0 * ratio * v->nx[3] * vm;
         float o;
         const int hold = (int)(q[9] + 0.5f);
@@ -1745,11 +1747,11 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         switch (kd) {
         case 0: case 4: {                                           /* KICK / TOM: sine with a falling pitch + a click */
             v->ph += f * sw * dt; WRAP(v->ph);
-            out = sinf(TWO_PI * v->ph) * v->env + nz * expf(-t / 0.0015f) * q[4] * 0.6f + hp * v->env2 * q[3];
+            out = sin2pi(v->ph) * v->env + nz * expf(-t / 0.0015f) * q[4] * 0.6f + hp * v->env2 * q[3];
             break; }
         case 1: {                                                   /* SNARE: two tuned shells + filtered noise */
             v->ph += f * sw * dt; WRAP(v->ph); v->ph2 += f * 1.68f * sw * dt; WRAP(v->ph2);
-            out = (0.62f * sinf(TWO_PI * v->ph) + 0.38f * sinf(TWO_PI * v->ph2)) * v->env * (1.0f - 0.5f * q[3]) + hp * v->env2 * q[3] * 1.6f + nz * expf(-t / 0.002f) * q[4] * 0.4f;
+            out = (0.62f * sin2pi(v->ph) + 0.38f * sin2pi(v->ph2)) * v->env * (1.0f - 0.5f * q[3]) + hp * v->env2 * q[3] * 1.6f + nz * expf(-t / 0.002f) * q[4] * 0.4f;
             break; }
         case 2: {                                                   /* HAT: six detuned squares (the 808 recipe) + noise, high-passed */
             static const float R[6] = { 1.0f, 1.483f, 1.8f, 2.546f, 2.63f, 3.9f };
@@ -1765,7 +1767,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             break; }
         case 5: {                                                   /* RIM / CLAVE: two stiff sines + a click */
             v->ph += f * dt; WRAP(v->ph); v->ph2 += f * 2.42f * dt; WRAP(v->ph2);
-            out = (0.7f * sinf(TWO_PI * v->ph) + 0.4f * sinf(TWO_PI * v->ph2)) * v->env + nz * expf(-t / 0.001f) * q[4] * 0.5f;
+            out = (0.7f * sin2pi(v->ph) + 0.4f * sin2pi(v->ph2)) * v->env + nz * expf(-t / 0.001f) * q[4] * 0.5f;
             break; }
         default: {                                                  /* METAL / COWBELL: two squares through a low-pass */
             v->ph += f * dt; WRAP(v->ph); v->ph2 += f * 1.4983f * dt; WRAP(v->ph2);
@@ -1794,7 +1796,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             case 0: (res) = 2.0f * (ph) - 1.0f - blep((ph), (d)); break; \
             case 1: (res) = ((ph) < pw ? 1.0f : -1.0f) + blep((ph), (d)) - blep(fmodf((ph) + 1.0f - pw, 1.0f), (d)); break; \
             case 2: (res) = 4.0f * fabsf((ph) - 0.5f) - 1.0f; break; \
-            default: (res) = sinf(TWO_PI * (ph)); break; } } while (0)
+            default: (res) = sin2pi((ph)); break; } } while (0)
         ANA_OSC(a, v->ph, da, q[0]);
         ANA_OSC(b, v->ph2, db * (1.0f + sy), q[1]);
         v->nx[9] += 0.5f * da; if (v->nx[9] >= 1.0f) v->nx[9] -= 1.0f;
@@ -1817,14 +1819,14 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         const float warp = clampf(q[4] + pq[PP_FKEY], 0.0f, 1.0f);
         const float dn = q[5] + (pq[PP_FDEC] - 0.5f) * 30.0f;
         v->ph += f * dt; WRAP(v->ph);
-        float pa = v->ph; if (warp > 0.0f) { pa = v->ph + warp * 0.5f * sinf(TWO_PI * v->ph) / TWO_PI * 2.0f; pa -= floorf(pa); }
+        float pa = v->ph; if (warp > 0.0f) { pa = v->ph + warp * 0.5f * sin2pi(v->ph) / TWO_PI * 2.0f; pa -= floorf(pa); }
         float o = (1.0f - fr) * wt_at(pa, ta) + fr * wt_at(pa, tb);
         if (fabsf(dn) > 0.5f) {
             const float k = exp2f(dn / 1200.0f);
             v->nx[0] += f * k * dt; WRAP(v->nx[0]); v->nx[1] += f / k * dt; WRAP(v->nx[1]);
             o = o * 0.5f + 0.25f * ((1.0f - fr) * wt_at(v->nx[0], ta) + fr * wt_at(v->nx[0], tb) + (1.0f - fr) * wt_at(v->nx[1], ta) + fr * wt_at(v->nx[1], tb));
         }
-        if (q[6] > 0.0f) { v->nx[2] += f * 0.5f * dt; WRAP(v->nx[2]); o += q[6] * sinf(TWO_PI * v->nx[2]); }
+        if (q[6] > 0.0f) { v->nx[2] += f * 0.5f * dt; WRAP(v->nx[2]); o += q[6] * sin2pi(v->nx[2]); }
         { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
@@ -1842,17 +1844,17 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         v->ph2 += f * q[0] * rs * dt; WRAP(v->ph2);
         v->ph3 += f * q[1] * rs * dt; WRAP(v->ph3);
         v->nx[0] += f * q[2] * rs * dt; WRAP(v->nx[0]);
-        const float s4 = sinf(TWO_PI * v->nx[0] + fbk * v->nx[3]); v->nx[3] = s4;
+        const float s4 = sin2pi(v->nx[0] + (fbk * v->nx[3]) * 0.15915494f); v->nx[3] = s4;
         float out;
         switch (al) {
-        case 0: { const float s3 = sinf(TWO_PI * v->ph3 + s4 * ix * ie * vs), s2 = sinf(TWO_PI * v->ph2 + s3 * ix * ie * vs);
-                  out = sinf(TWO_PI * v->ph + s2 * ix * ie * vs); break; }                       /* 4 > 3 > 2 > 1 */
-        case 1: { const float s3 = sinf(TWO_PI * v->ph3), s2 = sinf(TWO_PI * v->ph2 + (s3 + s4) * 0.7f * ix * ie * vs);
-                  out = sinf(TWO_PI * v->ph + s2 * ix * ie * vs); break; }                       /* (4 + 3) > 2 > 1 */
-        case 2: { const float s3 = sinf(TWO_PI * v->ph3 + s4 * ix * ie * vs), s2 = sinf(TWO_PI * v->ph2);
-                  out = sinf(TWO_PI * v->ph + (s2 + s3) * 0.7f * ix * ie * vs); break; }         /* 4 > 3, (3 + 2) > 1 */
-        default: { const float s3 = sinf(TWO_PI * v->ph3 + s4 * ix * ie * vs), s2 = sinf(TWO_PI * v->ph2 + s4 * ix * ie * vs * 0.6f);
-                   out = 0.5f * sinf(TWO_PI * v->ph + s2 * ix * ie * vs) + 0.35f * s3; break; }  /* two stacks side by side */
+        case 0: { const float s3 = sin2pi(v->ph3 + (s4 * ix * ie * vs) * 0.15915494f), s2 = sin2pi(v->ph2 + (s3 * ix * ie * vs) * 0.15915494f);
+                  out = sin2pi(v->ph + (s2 * ix * ie * vs) * 0.15915494f); break; }                       /* 4 > 3 > 2 > 1 */
+        case 1: { const float s3 = sin2pi(v->ph3), s2 = sin2pi(v->ph2 + ((s3 + s4) * 0.7f * ix * ie * vs) * 0.15915494f);
+                  out = sin2pi(v->ph + (s2 * ix * ie * vs) * 0.15915494f); break; }                       /* (4 + 3) > 2 > 1 */
+        case 2: { const float s3 = sin2pi(v->ph3 + (s4 * ix * ie * vs) * 0.15915494f), s2 = sin2pi(v->ph2);
+                  out = sin2pi(v->ph + ((s2 + s3) * 0.7f * ix * ie * vs) * 0.15915494f); break; }         /* 4 > 3, (3 + 2) > 1 */
+        default: { const float s3 = sin2pi(v->ph3 + (s4 * ix * ie * vs) * 0.15915494f), s2 = sin2pi(v->ph2 + (s4 * ix * ie * vs * 0.6f) * 0.15915494f);
+                   out = 0.5f * sin2pi(v->ph + (s2 * ix * ie * vs) * 0.15915494f) + 0.35f * s3; break; }  /* two stacks side by side */
         }
         { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
@@ -1885,7 +1887,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             o += v->nx[33 + k] * fsin01(v->nx[11 + k]);
         }
         o *= v->nx[44];
-        if (q[4] > 0.0f) { v->nx[1] += q[5] * dt; WRAP(v->nx[1]); o *= 1.0f - q[4] * 0.5f * (1.0f - sinf(TWO_PI * v->nx[1])); }
+        if (q[4] > 0.0f) { v->nx[1] += q[5] * dt; WRAP(v->nx[1]); o *= 1.0f - q[4] * 0.5f * (1.0f - sin2pi(v->nx[1])); }
         { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
@@ -1907,7 +1909,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
                 if ((k & 1) == 0) a *= ev;
                 if (fk > 0.45f * s->sr) a = 0.0f;
                 if (k <= 4) {                                       /* detuned pair */
-                    const float d = sp * (0.45f + 0.12f * (float)k) * (1.0f + mo * 0.5f * sinf(TWO_PI * (v->nx[12] + 0.19f * (float)k))) / 1200.0f;
+                    const float d = sp * (0.45f + 0.12f * (float)k) * (1.0f + mo * 0.5f * sin2pi((v->nx[12] + 0.19f * (float)k))) / 1200.0f;
                     v->nx[16 + 2 * (k - 1)] = fk * exp2f(d) * dt;  v->nx[28 + 2 * (k - 1)] = a * 0.5f;
                     v->nx[17 + 2 * (k - 1)] = fk * exp2f(-d) * dt; v->nx[29 + 2 * (k - 1)] = a * 0.5f;
                 } else { v->nx[19 + k] = fk * dt; v->nx[31 + k] = a; }      /* the single partials 5..8 are oscillators 8..11 */
@@ -1942,12 +1944,12 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         const float fold = q[1] + pq[PP_DET] * 5.0f, sw = q[2] + pq[PP_SUB] * 4.0f, bias = q[3] + pq[PP_FKEY] * 0.6f;
         const float fmA = clampf(q[5] + (pq[PP_FDEC] - 0.5f), 0.0f, 2.0f);
         v->ph += f * dt; WRAP(v->ph); v->ph2 += f * q[6] * dt; WRAP(v->ph2);
-        float o = q[0] > 0.5f ? 4.0f * fabsf(v->ph - 0.5f) - 1.0f : sinf(TWO_PI * v->ph);
-        o += fmA * 0.5f * sinf(TWO_PI * v->ph2);
+        float o = q[0] > 0.5f ? 4.0f * fabsf(v->ph - 0.5f) - 1.0f : sin2pi(v->ph);
+        o += fmA * 0.5f * sin2pi(v->ph2);
         const float u = (o + bias) * (1.0f + fold + sw * v->env2);
         float y = sinf(u * 1.5707963f);
         v->nx[9] += f * 0.5f * dt; WRAP(v->nx[9]);
-        y += q[4] * sinf(TWO_PI * v->nx[9]);
+        y += q[4] * sin2pi(v->nx[9]);
         v->nx[10] += 0.002f * (y - v->nx[10]); y -= v->nx[10];            /* DC blocker (the bias leaves an offset) */
         { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
@@ -1975,7 +1977,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         case 0: {                                                   /* BASS DRUM: head thump with a short pitch drop, beater click, shell knock */
             const float sw = 1.0f + q[2] * expf(-t / 0.032f);
             v->ph += f * sw * dt; WRAP(v->ph);
-            float th = sinf(TWO_PI * v->ph) * v->env;
+            float th = sin2pi(v->ph) * v->env;
             if (q[6] > 0.0f) th = fast_tanh(th * (1.0f + q[6] * 0.01f)) / (0.5f + 0.5f * fast_tanh(1.0f + q[6] * 0.01f));
             out = th * 0.85f + hpn * expf(-t / 0.0025f) * q[4] * 0.5f + v->nx[50] * expf(-t / 0.022f) * q[3] * 1.4f + body * q[5] * 0.5f;
             break; }
@@ -1986,7 +1988,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         case 2: {                                                   /* TOM: fundamental with a falling pitch + the head modes */
             const float sw = 1.0f + q[2] * expf(-t / 0.04f);
             v->ph += f * sw * dt; WRAP(v->ph);
-            out = sinf(TWO_PI * v->ph) * v->env * 0.8f + body * q[5] * 0.9f + hpn * expf(-t / 0.002f) * q[4] * 0.4f;
+            out = sin2pi(v->ph) * v->env * 0.8f + body * q[5] * 0.9f + hpn * expf(-t / 0.002f) * q[4] * 0.4f;
             break; }
         case 3: {                                                   /* HI-HAT: metal rings + sizzle */
             out = body * 0.5f + bn * v->env2 * q[3] * 1.3f;
@@ -2021,7 +2023,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         if (u > 1.3f) { v->active = 0; break; }
         v->nx[7] *= (u < 1.0f ? v->nx[8] : 1.0f); v->nx[9] *= (u < 1.0f ? v->nx[10] : 1.0f);
         v->ph += v->nx[7] * dt; WRAP(v->ph);
-        const float tone = fast_tanh(sinf(TWO_PI * v->ph) * 1.6f) * 0.8f;
+        const float tone = fast_tanh(sin2pi(v->ph) * 1.6f) * 0.8f;
         const float nz = noise(s);
         const float g = tanf(3.14159265f * clampf(v->nx[9], 20.0f, 0.45f * s->sr) * dt), k2 = 2.0f - 1.94f * clampf(q[5], 0.0f, 1.0f);
         const float a1 = 1.0f / (1.0f + g * (g + k2)), a2 = g * a1, a3 = g * a2;
@@ -2040,7 +2042,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
     default: {                                                      /* MORPH: two real wavetables crossfaded over time */
         const float f = v->f0;
         v->nx[3] += q[4] * dt; if (v->nx[3] >= 1.0f) v->nx[3] -= 1.0f;
-        float m = q[3] + (q[2] - q[3]) * v->env2 + q[5] * sinf(TWO_PI * v->nx[3]); m = clampf(m, 0.0f, 1.0f);
+        float m = q[3] + (q[2] - q[3]) * v->env2 + q[5] * sin2pi(v->nx[3]); m = clampf(m, 0.0f, 1.0f);
         const int ta = (int)q[0], tb = (int)q[1];
         v->ph += f * dt; WRAP(v->ph);
         float osc = (1.0f - m) * wt_at(v->ph, ta) + m * wt_at(v->ph, tb);
@@ -2049,7 +2051,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             v->nx[1] += f * (1.0f - q[6]) * dt; if (v->nx[1] >= 1.0f) v->nx[1] -= 1.0f;
             osc = osc * 0.5f + 0.25f * ((1.0f - m) * wt_at(v->nx[0], ta) + m * wt_at(v->nx[0], tb) + (1.0f - m) * wt_at(v->nx[1], ta) + m * wt_at(v->nx[1], tb));
         }
-        if (q[9] > 0.0f) { v->nx[2] += f * 0.5f * dt; if (v->nx[2] >= 1.0f) v->nx[2] -= 1.0f; osc += q[9] * sinf(TWO_PI * v->nx[2]); }
+        if (q[9] > 0.0f) { v->nx[2] += f * 0.5f * dt; if (v->nx[2] >= 1.0f) v->nx[2] -= 1.0f; osc += q[9] * sin2pi(v->nx[2]); }
         float fc = f * q[7] * (1.0f + q[8] * v->env2 * 4.0f); if (fc > 16000.0f) fc = 16000.0f; if (fc < 100.0f) fc = 100.0f;
         const float xx = TWO_PI * fc * dt, a = xx / (1.0f + xx);
         v->z1 += a * (osc - v->z1); v->z2 += a * (v->z1 - v->z2);
@@ -2105,7 +2107,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float f = v->f0 + 140.0f * fm * v->pe;
         v->pe *= v->pek;
         v->ph += f * dt; WRAP(v->ph);
-        float body = sinf(TWO_PI * v->ph) * v->env;
+        float body = sin2pi(v->ph) * v->env;
         float nz = noise(s);
         v->z1 += s->a_snr_hp * (nz - v->z1);
         x = body * 0.9f + (nz - v->z1) * v->env2 * 0.8f;
@@ -2117,7 +2119,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         v->ph2 += 480.0f * fm * dt;  WRAP(v->ph2);
         float nz = noise(s);
         v->z1 += s->a_rim_hp * (nz - v->z1);
-        x = (sinf(TWO_PI * v->ph) * 0.5f + sinf(TWO_PI * v->ph2) * 0.4f) * v->env + (nz - v->z1) * v->env2 * 0.6f;
+        x = (sin2pi(v->ph) * 0.5f + sin2pi(v->ph2) * 0.4f) * v->env + (nz - v->z1) * v->env2 * 0.6f;
         v->env *= v->c1; v->env2 *= v->c2;
         if (v->env < 1e-3f) v->active = 0;
         break; }
@@ -2150,7 +2152,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float m = metal(v, 0.7f * fm, dt) + noise(s) * 0.08f;
         v->z1 += s->a_crash_hp * (m - v->z1); m -= v->z1;
         v->ph += 3150.0f * fm * dt; WRAP(v->ph);
-        x = m * v->env * 0.9f + sinf(TWO_PI * v->ph) * v->env2 * 0.25f;
+        x = m * v->env * 0.9f + sin2pi(v->ph) * v->env2 * 0.25f;
         v->env *= v->c1; v->env2 *= v->c2;
         if (v->env < 1e-3f) v->active = 0;
         break; }
@@ -2183,7 +2185,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
     case T_PERC: {
         v->ph  += v->f0 * dt;        WRAP(v->ph);
         v->ph2 += v->f0 * 1.41f * dt; WRAP(v->ph2);
-        x = sinf(TWO_PI * v->ph + 3.0f * v->env2 * sinf(TWO_PI * v->ph2)) * v->env;
+        x = sin2pi(v->ph + (3.0f * v->env2 * sin2pi(v->ph2)) * 0.15915494f) * v->env;
         v->env *= v->c1; v->env2 *= v->c2;
         if (v->env < 1e-3f) v->active = 0;
         break; }
@@ -2191,7 +2193,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float f = v->f0 + 4800.0f * fm * v->pe;
         v->pe *= v->c2;
         v->ph += f * dt; WRAP(v->ph);
-        x = sinf(TWO_PI * v->ph) * v->env;
+        x = sin2pi(v->ph) * v->env;
         v->env *= v->c1;
         if (v->env < 1e-3f) v->active = 0;
         break; }
@@ -2219,7 +2221,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float xx = TWO_PI * fc * dt, a = xx / (1.0f + xx);
         v->z1 += a * (saw - v->z1);
         v->z2 += a * (v->z1 - v->z2);
-        x = (v->z2 * 0.7f + sinf(TWO_PI * v->ph) * 0.6f) * v->env;
+        x = (v->z2 * 0.7f + sin2pi(v->ph) * 0.6f) * v->env;
         v->env *= v->c1; v->env2 *= v->c2;
         if (v->env < 1e-3f) v->active = 0;
         break; }
@@ -2295,7 +2297,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
     case T_BELL: {
         v->ph  += v->f0 * dt;        WRAP(v->ph);
         v->ph2 += v->f0 * 3.5f * dt; WRAP(v->ph2);
-        x = sinf(TWO_PI * v->ph + 4.0f * v->env2 * sinf(TWO_PI * v->ph2)) * v->env;
+        x = sin2pi(v->ph + (4.0f * v->env2 * sin2pi(v->ph2)) * 0.15915494f) * v->env;
         v->env *= v->c1; v->env2 *= v->c2;
         if (v->env < 1e-3f) v->active = 0;
         break; }
@@ -2313,7 +2315,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         v->pe *= v->pek;
         v->ph += f * dt; WRAP(v->ph);
         v->z1 += 0.25f * (noise(s) - v->z1);
-        x = sinf(TWO_PI * v->ph) * v->env * 0.9f + v->z1 * v->env2 * 1.5f;
+        x = sin2pi(v->ph) * v->env * 0.9f + v->z1 * v->env2 * 1.5f;
         v->env *= v->c1; v->env2 *= v->c2;
         if (v->env < 1e-3f) v->active = 0;
         break; }
@@ -2325,7 +2327,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
             v->ph  += f * (1.0f + d) * dt; WRAP(v->ph);
             v->ph2 += f * (1.0f - d) * dt; WRAP(v->ph2);
             v->ph3 += f * 0.5f * dt;       WRAP(v->ph3);
-            osc = (wf(v->ph, v->sw) + wf(v->ph2, v->sw)) * 0.5f + sinf(TWO_PI * v->ph3) * v->ssub;
+            osc = (wf(v->ph, v->sw) + wf(v->ph2, v->sw)) * 0.5f + sin2pi(v->ph3) * v->ssub;
             float fc = (b == T_SBASS ? 180.0f + 3200.0f * v->env2 * v->env2 : 6500.0f);
             float xx = TWO_PI * fc * dt, a = xx / (1.0f + xx);
             v->z1 += a * (osc - v->z1); v->z2 += a * (v->z1 - v->z2);
@@ -2343,7 +2345,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
             }
             osc *= (1.0f / 3.5f);
             v->ph3 += f * 0.5f * dt; WRAP(v->ph3);
-            osc += sinf(TWO_PI * v->ph3) * v->ssub;
+            osc += sin2pi(v->ph3) * v->ssub;
             float fc = (b == T_SSTRINGS) ? 2600.0f : 7500.0f;
             float xx = TWO_PI * fc * dt, a = xx / (1.0f + xx);
             v->z1 += a * (osc - v->z1); v->z2 += a * (v->z1 - v->z2);
@@ -2354,8 +2356,8 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
             v->ph  += f * dt;          WRAP(v->ph);
             v->ph2 += f * ratio * dt;  WRAP(v->ph2);
             v->ph3 += f * 0.5f * dt;   WRAP(v->ph3);
-            if (v->sw >= 100) { float pp_ = v->ph + idx * 0.15915f * sinf(TWO_PI * v->ph2); pp_ -= floorf(pp_); osc = wt_at(pp_, v->sw - 100) * 1.2f + sinf(TWO_PI * v->ph3) * v->ssub; }
-            else osc = sinf(TWO_PI * v->ph + idx * sinf(TWO_PI * v->ph2)) + sinf(TWO_PI * v->ph3) * v->ssub;
+            if (v->sw >= 100) { float pp_ = v->ph + idx * 0.15915f * sin2pi(v->ph2); pp_ -= floorf(pp_); osc = wt_at(pp_, v->sw - 100) * 1.2f + sin2pi(v->ph3) * v->ssub; }
+            else osc = sin2pi(v->ph + (idx * sin2pi(v->ph2)) * 0.15915494f) + sin2pi(v->ph3) * v->ssub;
             osc *= 0.7f;
         } else {                                      /* organ: drawbars 16' 8' 4' 2 2/3' */
             v->ph  += f * dt;        WRAP(v->ph);
@@ -2363,8 +2365,8 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
             v->ph3 += f * 3.0f * dt; WRAP(v->ph3);
             v->z3  += f * 0.5f * dt; WRAP(v->z3);
             v->z4  += f * 4.0f * dt; WRAP(v->z4);
-            osc = (v->sw >= 100 ? wt_at(v->ph, v->sw - 100) : sinf(TWO_PI * v->ph)) * 0.7f + sinf(TWO_PI * v->ph2) * 0.5f + sinf(TWO_PI * v->ph3) * (0.2f + d * 8.0f)
-                + sinf(TWO_PI * v->z3) * v->ssub * 1.4f + sinf(TWO_PI * v->z4) * 0.25f;
+            osc = (v->sw >= 100 ? wt_at(v->ph, v->sw - 100) : sin2pi(v->ph)) * 0.7f + sin2pi(v->ph2) * 0.5f + sin2pi(v->ph3) * (0.2f + d * 8.0f)
+                + sin2pi(v->z3) * v->ssub * 1.4f + sin2pi(v->z4) * 0.25f;
             osc *= 0.55f;
         }
         if (T->sus) {
@@ -3499,7 +3501,7 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
             float dl_l = (float)dlen, dl_r = (float)dlen;
             if (dm == 1) {
                 s->dly_ph += 0.7f * s->inv_sr; if (s->dly_ph >= 1.0f) s->dly_ph -= 1.0f;
-                const float wob = (0.0007f * sinf(TWO_PI * s->dly_ph) + 0.00025f * sinf(TWO_PI * 7.3f * s->dly_ph)) * s->sr;
+                const float wob = (0.0007f * sin2pi(s->dly_ph) + 0.00025f * sinf(TWO_PI * 7.3f * s->dly_ph)) * s->sr;
                 dl_l += wob; dl_r += wob * 0.8f;
             } else dl_r *= 0.75f;
             if (dl_l < 8.0f) dl_l = 8.0f; if (dl_r < 8.0f) dl_r = 8.0f;
@@ -3786,7 +3788,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 if (q2[PP_TREM] > 0.01f || q2[PP_APAN] > 0.01f) {
                     v->trp += (0.5f + q2[PP_TRAT] * q2[PP_TRAT] * 14.5f) * s->inv_sr; if (v->trp >= 1.0f) v->trp -= 1.0f;
                     if (q2[PP_TREM] > 0.01f) x *= 1.0f - q2[PP_TREM] * (0.5f - 0.5f * cosf(TWO_PI * v->trp));
-                    if (q2[PP_APAN] > 0.01f) { const float lf = sinf(TWO_PI * v->trp); pgl *= 1.0f - q2[PP_APAN] * 0.5f * (1.0f + lf); pgr *= 1.0f - q2[PP_APAN] * 0.5f * (1.0f - lf); }
+                    if (q2[PP_APAN] > 0.01f) { const float lf = sin2pi(v->trp); pgl *= 1.0f - q2[PP_APAN] * 0.5f * (1.0f + lf); pgr *= 1.0f - q2[PP_APAN] * 0.5f * (1.0f - lf); }
                 }
             }
             x *= v->vel * s->gain[p] * s->tg[gi] * ch->gn;
