@@ -70,6 +70,8 @@ __asm__(".symver powf,powf@GLIBC_2.17");
 #define DLY_MASK   (DLY_SIZE - 1)
 #define RV_SIZE    4096
 #define RV_MASK    (RV_SIZE - 1)
+#define DT_SIZE    8192
+#define DT_MASK    (DT_SIZE - 1)
 #define NLINES     4
 #define NTRK       16
 #define NPAT       8
@@ -201,19 +203,19 @@ static const float RATE_SPB[4]   = { 2.0f, 4.0f, 6.0f, 8.0f };
 static const float RPT_SPB[16]   = { 0.5f, 0.6667f, 1.0f, 1.3333f, 1.5f, 2.0f, 2.6667f, 3.0f, 4.0f, 5.3333f, 6.0f, 8.0f, 12.0f, 16.0f, 24.0f, 32.0f };   /* note repeat rates: steps per beat, slow to fast */
 static const char *KEY_NAME[12]  = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 static const char *SCALE_NAME[3] = { "Minor", "Phryg", "Major" };
-static const char *DLYT_NAME[4]  = { "1/8", "3/16", "1/4", "1/16" };
-static const float DLYT_BEATS[4] = { 0.5f, 0.75f, 1.0f, 0.25f };
 static const char *DT_NAME[5]  = { "1/16", "1/8", "3/16", "1/4", "1/2" };
+static const char *DMODE_NAME[3] = { "PING", "TAPE", "DUB" };
+static const char *RMODE_NAME[3] = { "HALL", "ECHO", "SHIM" };
 static const float DT_BEATS[5] = { 0.25f, 0.5f, 0.75f, 1.0f, 2.0f };
 static const int   SCALE_TBL[3][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 } };
 
 /* ---------------- global parameters ---------------- */
-enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_N };
+enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_N };
 static const pd_t GD[G_N] = {
     { "m_vol",    "Volume", 0, 0.80f },
     { "key",      "Key",    12, 5.0f },
     { "scale",    "Scale",  3, 0.0f },
-    { "dly_time", "D Time", 4, 1.0f },
+    { "dly_time", "D Time", 5, 1.0f },
     { "dly_fb",   "D Fdbk", 0, 0.40f },
     { "dly_ret",  "D Ret",  0, 0.50f },
     { "rvb_size", "R Size", 0, 0.60f },
@@ -231,6 +233,12 @@ static const pd_t GD[G_N] = {
     { "m_eqh",    "EQ High",0, 0.50f },
     { "m_lim",    "Limiter",0, 0.00f },
     { "m_chp",    "Comp HP",0, 0.00f },
+    { "dly_mode", "D Type", 3, 0.0f },
+    { "dly_tone", "D Tone", 0, 0.50f },
+    { "dly_wide", "D Wide", 0, 0.50f },
+    { "rvb_mode", "R Type", 3, 0.0f },
+    { "rvb_wide", "R Wide", 0, 0.50f },
+    { "rvb_low",  "R Low",  0, 0.00f },
 };
 
 /* ---------------- sound types ---------------- */
@@ -714,19 +722,19 @@ typedef struct {
     uint32_t pend_vouch_t; int has_vouch;
 
     /* effects */
-    /* per-track effects: delay + reverb (sends), chorus + phaser (inserts) */
-    float dlL[NLANE][DLY_SIZE], dlR[NLANE][DLY_SIZE];
-    int   dw[NLANE];
-    float dly_z[NLANE][2], dly_hp[NLANE][2], dly_ph[NLANE];
-    float shb[NLANE][SH_SIZE]; float sh_ph[NLANE]; int shw[NLANE];
-    float rv[NLANE][NLINES][RV_SIZE];
-    float rv_z[NLANE][NLINES];
-    int   rw[NLANE];
-    int   rv_len[NLANE][NLINES];
-    float rv_g[NLANE][NLINES], rv_a[NLANE];
-    float chb[NLANE][CH_SIZE]; int chw[NLANE]; float ch_ph[NLANE];
-    float ph_z[NLANE][2][4], ph_fb[NLANE][2], ph_ph[NLANE];
-    int   fx_act[NLANE], dr_act[NLANE];
+    /* shared effects bus: ONE delay + ONE reverb for the whole mix; every track feeds them with its send amounts */
+    float dlL[DLY_SIZE], dlR[DLY_SIZE];
+    int   dw;
+    float dly_z[2], dly_hp[2], dly_ph;
+    float shb[SH_SIZE]; float sh_ph; int shw;
+    float rv[NLINES][RV_SIZE];
+    float rv_z[NLINES];
+    int   rw;
+    int   rv_len[NLINES];
+    float rv_g[NLINES], rv_a;
+    float rlc_z[2];
+    float dt_buf[12][DT_SIZE]; int dt_w, dt_len[26]; float dt_bw, dt_zl, dt_zr, dt_lfo, dt_dec;     /* Dattorro plate */
+    int   fx_act[NLANE], dr_act;
     /* activity lists (rebuilt every 16 samples or when a voice / arp / ratchet starts): the per-sample loops only visit what is really sounding */
     int   act_dirty, vl_n, al_n, rl_n; short vl[NLANE + NGH], al[NLANE], rl[NLANE]; uint64_t fxm[2];
     float bt_l[NLANE], bt_r[NLANE], bt_sd[NLANE], bt_sr[NLANE]; int bt_act[NLANE];
@@ -748,7 +756,7 @@ typedef struct {
     float bpm, swing;
     float pump_ph, wob_ph;
     float mf_z[2][2], mf_a, comp_env; int mf_mode;
-    float rlc_z[NLANE][2]; float eq_c[NLANE][3][5], eq_z[NLANE][3][2][2], eq_g[NLANE][3], eq_p[NLANE][4], eq_og[NLANE], eq_ogp[NLANE]; int eq_on[NLANE];       /* per-sound 3-band EQ (low shelf, peak, high shelf) */
+    float eq_c[NLANE][3][5], eq_z[NLANE][3][2][2], eq_g[NLANE][3], eq_p[NLANE][4], eq_og[NLANE], eq_ogp[NLANE]; int eq_on[NLANE];       /* per-sound 3-band EQ (low shelf, peak, high shelf) */
     float rm_buf[4][4096], rm_lp, rm_env, rm_hp; int rm_w, rm_act;       /* kick rumble bus: dark comb reverb, ducked by the kicks */
     float eq_lo[2], eq_hi[2], lim_g;                              /* master EQ band splitters + limiter gain */
     float met_env, met_ph, met_f, met_amp;
@@ -1145,19 +1153,6 @@ static void update_pad(inst_t *s, int p) {
         float dtau = 0.03f + q[PP_DUCKR] * q[PP_DUCKR] * 0.55f;
         s->dk_c[p] = expf(-1.0f / (dtau * s->sr));
     }
-    {                                                          /* this sound's / track's own reverb */
-        float rt60 = 0.5f * powf(12.0f, q[PP_RSIZE]);
-        static const int BASE_H[NLINES] = { 1033, 1327, 1759, 2143 }, BASE_E[NLINES] = { 1999, 2713, 3331, 3989 };
-        const int *BASE = ((int)(q[PP_RMODE] + 0.5f) == 1) ? BASE_E : BASE_H;
-        for (int i = 0; i < NLINES; i++) {
-            int d = (int)((float)BASE[i] * s->sr / 44100.0f + 0.5f);
-            if (d > RV_SIZE - 2) d = RV_SIZE - 2;
-            if (d < 8) d = 8;
-            s->rv_len[p][i] = d;
-            s->rv_g[p][i] = powf(10.0f, -3.0f * (float)d / (s->sr * rt60));
-        }
-        s->rv_a[p] = onepole_a(6000.0f * powf(0.05f, q[PP_RDARK]), s->sr);
-    }
 }
 
 static void update_global(inst_t *s) {
@@ -1171,6 +1166,24 @@ static void update_global(inst_t *s) {
         else s->mf_mode = 0;
     }
     s->root_hz = 32.7032f * powf(2.0f, (float)key / 12.0f);
+    {                                                          /* the shared reverb: size = decay time, dark = damping */
+        const float rt60 = 0.5f * powf(12.0f, s->g[G_RVSIZE]);
+        static const int BASE_H[NLINES] = { 1033, 1327, 1759, 2143 }, BASE_E[NLINES] = { 1999, 2713, 3331, 3989 };
+        const int *BASE = ((int)(s->g[G_RMODE] + 0.5f) == 1) ? BASE_E : BASE_H;
+        for (int i = 0; i < NLINES; i++) {
+            int d = (int)((float)BASE[i] * sr / 44100.0f + 0.5f);
+            if (d > RV_SIZE - 2) d = RV_SIZE - 2;
+            if (d < 8) d = 8;
+            s->rv_len[i] = d;
+            s->rv_g[i] = powf(10.0f, -3.0f * (float)d / (sr * rt60));
+        }
+        s->rv_a = onepole_a(6000.0f * powf(0.05f, s->g[G_RVDARK]), sr);
+        float dec = powf(10.0f, -1.05f / rt60); if (dec > 0.93f) dec = 0.93f;
+        s->dt_dec = dec;
+        static const int DL[26] = { 142, 107, 379, 277, 672, 4453, 1800, 3720, 908, 4217, 2656, 3163, 266, 2974, 1913, 1996, 1990, 187, 1066, 353, 3627, 1228, 2673, 2111, 335, 121 };
+        const float k = sr / 29761.0f;
+        for (int i = 0; i < 26; i++) { int d = (int)((float)DL[i] * k + 0.5f); if (d > DT_SIZE - 40) d = DT_SIZE - 40; s->dt_len[i] = d; }
+    }
 }
 
 static void init_static(inst_t *s) {
@@ -1354,6 +1367,7 @@ static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
     case 6: case 7: case 8: case 9: case 10:                        /* ANALOG / WAVETABLE / FM4 / ADDITIVE / PAD: phases start spread out so unison layers do not add up to a click */
         for (int k = 0; k < 64; k++) v->nx[k] = 0.0f;                  /* nx[24..] hold values that are only recomputed every 16 samples (nx[63] counts down) */
         for (int k = 0; k < 8; k++) v->nx[k] = (float)((k * 37) % 16) / 16.0f;
+        if (n->eng == 10) for (int k = 8; k < 12; k++) v->nx[k] = (float)((k * 37) % 16) / 16.0f;
         break;
     default:                                                        /* MORPH */
         v->nx[0] = 0.0f; v->nx[1] = 0.37f; v->nx[2] = 0.71f; v->nx[3] = 0.0f; v->nx[4] = 0.0f; break;
@@ -1873,39 +1887,39 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         v->env2 *= v->c2;
         x = o * v->env * 0.75f;
         break; }
-    case 10: {                                                      /* PAD / STRINGS: five detuned saws, slow motion in the detune, soft low-pass.
-                                                                       p: spread (cents), motion rate, motion depth, pulse mix, body (low-pass Hz mult), -, -, -; knobs: Detune, Spread, PWM, Motion */
+    case 10: {                                                      /* PAD / STRINGS - additive: 8 harmonics, the lowest four doubled into a slowly drifting detuned pair (that beating is the lush part).
+                                                                       Harmonic levels follow a saw (1/k) with a soft roll-off at "body" x the note; "PWM" thins the even harmonics (pulse colour).
+                                                                       p: spread (cents), motion rate, motion depth, pulse mix, body (roll-off in harmonics), -, width; knobs: Detune, Spread, PWM, Motion */
         const float *pq = s->pp[p]; const float f = v->f0;
-        v->nx[9] += q[1] * dt; WRAP(v->nx[9]);
-        if (v->nx[63] <= 0.0f) {                                    /* control rate (every 16 samples): detune motion, pulse widths, filter coefficient */
+        v->nx[12] += q[1] * dt; WRAP(v->nx[12]);
+        if (v->nx[63] <= 0.0f) {                                    /* control rate (every 16 samples): partial increments and levels */
             const float sp = (q[0] + pq[PP_DET] * 30.0f) * (0.4f + 0.6f * clampf(q[6] + pq[PP_SUB], 0.0f, 1.0f) * 1.6f);
             const float mo = clampf(q[2] + pq[PP_FDEC] - 0.5f, 0.0f, 1.0f);
-            const float md = 1.0f + mo * 0.5f * sinf(TWO_PI * v->nx[9]);
-            static const float OFS[5] = { 0.0f, -1.0f, 1.0f, -0.5f, 0.5f };
-            for (int k = 0; k < 5; k++) {
-                v->nx[24 + k] = f * exp2f(OFS[k] * sp * md / 1200.0f) * dt;
-                v->nx[29 + k] = clampf(0.5f + q[3] * 0.3f * sinf(TWO_PI * v->nx[9] * 0.5f + (float)k), 0.1f, 0.9f);
+            const float pm = clampf(q[3] + pq[PP_FKEY], 0.0f, 1.0f), br = fmaxf(q[4], 0.5f), ev = 1.0f - 0.85f * pm;
+            for (int k = 1; k <= 8; k++) {
+                const float fk = f * (float)k, x = (float)k / br;
+                float a = 0.637f * (1.0f - 0.45f * pm) / ((float)k * (1.0f + x * x));
+                if ((k & 1) == 0) a *= ev;
+                if (fk > 0.45f * s->sr) a = 0.0f;
+                if (k <= 4) {                                       /* detuned pair */
+                    const float d = sp * (0.45f + 0.12f * (float)k) * (1.0f + mo * 0.5f * sinf(TWO_PI * (v->nx[12] + 0.19f * (float)k))) / 1200.0f;
+                    v->nx[16 + 2 * (k - 1)] = fk * exp2f(d) * dt;  v->nx[28 + 2 * (k - 1)] = a * 0.5f;
+                    v->nx[17 + 2 * (k - 1)] = fk * exp2f(-d) * dt; v->nx[29 + 2 * (k - 1)] = a * 0.5f;
+                } else { v->nx[19 + k] = fk * dt; v->nx[31 + k] = a; }      /* the single partials 5..8 are oscillators 8..11 */
             }
-            v->nx[34] = clampf(q[3] + pq[PP_FKEY], 0.0f, 1.0f);
-            { float fc = f * q[4]; if (fc > 14000.0f) fc = 14000.0f; if (fc < 80.0f) fc = 80.0f; const float xa = TWO_PI * fc * dt; v->nx[35] = xa / (1.0f + xa); }
             v->nx[63] = 16.0f;
         }
         v->nx[63] -= 1.0f;
         float o = 0.0f;
-        { const float pm = v->nx[34];
-          for (int k = 0; k < 5; k++) {
-            v->nx[k] += v->nx[24 + k]; if (v->nx[k] >= 1.0f) v->nx[k] -= 1.0f;
-            const float saw = 2.0f * v->nx[k] - 1.0f;
-            const float pul = v->nx[k] < v->nx[29 + k] ? 0.7f : -0.7f;
-            o += saw * (1.0f - pm) + pul * pm;
-          } }
-        o *= 0.2f;
-        { const float a = v->nx[35]; v->z1 += a * (o - v->z1); v->z2 += a * (v->z1 - v->z2); o = v->z2; }
+        for (int i = 0; i < 12; i++) {
+            v->nx[i] += v->nx[16 + i]; if (v->nx[i] >= 1.0f) v->nx[i] -= 1.0f;
+            o += v->nx[28 + i] * fsin01(v->nx[i]);
+        }
         { const float at = 0.004f + pq[PP_ATT] * pq[PP_ATT] * 3.0f + T->att;
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
-        x = o * v->env * 1.5f;
+        x = o * v->env * 0.85f;
         break; }
     case 11: {                                                      /* STRING: delay line + loop filter + all-pass tuning. knobs: Bright, Pick, Damp, Excite */
         const float *pq = s->pp[p]; const int n = v->ksn; if (n < 4) { v->active = 0; break; }
@@ -3148,7 +3162,9 @@ static void set_param(void *instance, const char *key, const char *val) {
         float v;
         if (k == G_KEY)        { int e = enum_index(val, KEY_NAME, 12);   if (e < 0) return; v = (float)e; }
         else if (k == G_SCALE) { int e = enum_index(val, SCALE_NAME, 3);  if (e < 0) return; v = (float)e; }
-        else if (k == G_DLYT)  { int e = enum_index(val, DLYT_NAME, 4);   if (e < 0) return; v = (float)e; }
+        else if (k == G_DLYT)  { int e = enum_index(val, DT_NAME, 5);   if (e < 0) return; v = (float)e; }
+        else if (k == G_DMODE) { int e = enum_index(val, DMODE_NAME, 3); if (e < 0) return; v = (float)e; }
+        else if (k == G_RMODE) { int e = enum_index(val, RMODE_NAME, 3); if (e < 0) return; v = (float)e; }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         s->g[k] = v;
         update_global(s);
@@ -3176,7 +3192,7 @@ static const char *const *opts_of_pad(int k) {
     return k == PP_TYPE ? TYPE_NAME : (k == PP_ARP ? ARP_NAME : (k == PP_WAVE ? WAVE_NAME : (k == PP_POLY ? POLY_NAME : (k == PP_DTIME ? DT_NAME : RATE_NAME))));
 }
 static const char *const *opts_of_global(int k) {
-    return k == G_KEY ? KEY_NAME : (k == G_SCALE ? SCALE_NAME : DLYT_NAME);
+    return k == G_KEY ? KEY_NAME : (k == G_SCALE ? SCALE_NAME : (k == G_DLYT ? DT_NAME : (k == G_DMODE ? DMODE_NAME : RMODE_NAME)));
 }
 static void jparam(jb_t *j, const pd_t *d, const char *const *opts, int first) {
     if (d->enum_n > 0) {
@@ -3439,19 +3455,157 @@ static void render_block(void *instance, int16_t *out_lr, int frames) {
     s->cpu_avg += 0.05f * (load - s->cpu_avg);
     s->cpu_peak = load > s->cpu_peak ? load : s->cpu_peak * 0.9995f;
 }
+
+/* ---- the shared effects bus ---- */
+static void bus_clear(inst_t *s) {
+    memset(s->dlL, 0, sizeof s->dlL); memset(s->dlR, 0, sizeof s->dlR); memset(s->rv, 0, sizeof s->rv); memset(s->rv_z, 0, sizeof s->rv_z);
+    memset(s->shb, 0, sizeof s->shb); memset(s->dt_buf, 0, sizeof s->dt_buf);
+    s->dly_z[0] = s->dly_z[1] = s->dly_hp[0] = s->dly_hp[1] = 0.0f; s->rlc_z[0] = s->rlc_z[1] = 0.0f;
+    s->dt_bw = s->dt_zl = s->dt_zr = 0.0f;
+}
+static inline float dt_rd(const inst_t *s, int b, int off) { return s->dt_buf[b][(s->dt_w - off) & DT_MASK]; }
+static inline float dt_rdf(const inst_t *s, int b, float off) {
+    float pos = (float)s->dt_w - off; int i = (int)floorf(pos); const float f = pos - (float)i;
+    return s->dt_buf[b][i & DT_MASK] * (1.0f - f) + s->dt_buf[b][(i + 1) & DT_MASK] * f;
+}
+/* delay: 0 PING-PONG, 1 TAPE (wow + flutter, dark, saturated), 2 DUB (dotted right side, band-limited feedback); reverb: 0 HALL (Dattorro plate), 1 ECHO (4 separate lines), 2 SHIMMER (FDN + octave-up feedback) */
+static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, float *outR) {
+    const float *g = s->g;
+    float oL = 0.0f, oR = 0.0f;
+    {
+        const float dfb = g[G_DLYFB] * 0.9f, dtn = g[G_DTN];
+        const int dm = (int)(g[G_DMODE] + 0.5f);
+        float yl, yr;
+        if (dm == 0) {
+            int rp = (s->dw - dlen) & DLY_MASK;
+            yl = s->dlL[rp]; yr = s->dlR[rp];
+            { const float ta = fminf(1.0f, s->a_dly * (0.2f + 1.6f * dtn));
+              s->dly_z[0] += ta * (yl - s->dly_z[0]);
+              s->dly_z[1] += ta * (yr - s->dly_z[1]); }
+            s->dlL[s->dw] = sd + s->dly_z[1] * dfb;
+            s->dlR[s->dw] = s->dly_z[0] * dfb;
+        } else {
+            float dl_l = (float)dlen, dl_r = (float)dlen;
+            if (dm == 1) {
+                s->dly_ph += 0.7f * s->inv_sr; if (s->dly_ph >= 1.0f) s->dly_ph -= 1.0f;
+                const float wob = (0.0007f * sinf(TWO_PI * s->dly_ph) + 0.00025f * sinf(TWO_PI * 7.3f * s->dly_ph)) * s->sr;
+                dl_l += wob; dl_r += wob * 0.8f;
+            } else dl_r *= 0.75f;
+            if (dl_l < 8.0f) dl_l = 8.0f; if (dl_r < 8.0f) dl_r = 8.0f;
+            float pl = (float)s->dw - dl_l, pr = (float)s->dw - dl_r;
+            int il = (int)floorf(pl), ir = (int)floorf(pr); const float fl = pl - (float)il, fr_ = pr - (float)ir;
+            yl = s->dlL[il & DLY_MASK] * (1.0f - fl) + s->dlL[(il + 1) & DLY_MASK] * fl;
+            yr = s->dlR[ir & DLY_MASK] * (1.0f - fr_) + s->dlR[(ir + 1) & DLY_MASK] * fr_;
+            const float aa = fminf(1.0f, (dm == 1 ? s->a_dly * 0.45f : s->a_dly * 0.8f) * (0.2f + 1.6f * dtn));
+            s->dly_z[0] += aa * (yl - s->dly_z[0]);
+            s->dly_z[1] += aa * (yr - s->dly_z[1]);
+            float fa = s->dly_z[0], fb = s->dly_z[1];
+            if (dm == 2) {
+                s->dly_hp[0] += 0.02f * (fa - s->dly_hp[0]); fa -= s->dly_hp[0];
+                s->dly_hp[1] += 0.02f * (fb - s->dly_hp[1]); fb -= s->dly_hp[1];
+            }
+            fa = fast_tanh(fa * 1.4f) * 0.714f; fb = fast_tanh(fb * 1.4f) * 0.714f;
+            s->dlL[s->dw] = sd + fb * dfb;
+            s->dlR[s->dw] = fa * dfb;
+        }
+        s->dw = (s->dw + 1) & DLY_MASK;
+        { const float wd = g[G_DWD] * 2.0f, md = 0.5f * (yl + yr), sdd = 0.5f * (yl - yr); yl = md + sdd * wd; yr = md - sdd * wd; }
+        const float dret = g[G_DLYRET] * 1.2f;
+        oL += yl * dret; oR += yr * dret;
+    }
+    {
+        const int rm = (int)(g[G_RMODE] + 0.5f);
+        const float rret = g[G_RVRET] * 1.6f;
+        float rl, rr2;
+        if (rm == 0) {
+            const int *Ln = s->dt_len;
+            float x = s->dt_bw += 0.75f * (sr_in * 0.5f - s->dt_bw);
+            for (int i = 0; i < 4; i++) {
+                const float gg = i < 2 ? 0.75f : 0.625f;
+                const float v = dt_rd(s, i, Ln[i]), u = x - gg * v;
+                s->dt_buf[i][s->dt_w] = u; x = v + gg * u;
+            }
+            const float fbL = dt_rd(s, 11, Ln[11]), fbR = dt_rd(s, 7, Ln[7]);
+            s->dt_lfo += 0.8f * s->inv_sr; if (s->dt_lfo >= 1.0f) s->dt_lfo -= 1.0f;
+            const float md = 7.0f * s->sr * (1.0f / 29761.0f);
+            const float dec = s->dt_dec, g2 = fminf(0.5f, fmaxf(0.25f, dec + 0.15f));
+            { /* left half */
+                const float v = dt_rdf(s, 4, (float)Ln[4] + md * sinf(TWO_PI * s->dt_lfo)), u = (x + fbL) - 0.7f * v;
+                s->dt_buf[4][s->dt_w] = u; const float y = v + 0.7f * u;
+                const float d1 = dt_rd(s, 5, Ln[5]); s->dt_buf[5][s->dt_w] = y;
+                s->dt_zl += s->rv_a * (d1 - s->dt_zl);
+                const float z = s->dt_zl * dec, v2 = dt_rd(s, 6, Ln[6]), u2 = z - g2 * v2;
+                s->dt_buf[6][s->dt_w] = u2; s->dt_buf[7][s->dt_w] = v2 + g2 * u2 + 1e-20f;
+            }
+            { /* right half */
+                const float v = dt_rdf(s, 8, (float)Ln[8] + md * sinf(TWO_PI * (s->dt_lfo + 0.25f))), u = (x + fbR) - 0.7f * v;
+                s->dt_buf[8][s->dt_w] = u; const float y = v + 0.7f * u;
+                const float d1 = dt_rd(s, 9, Ln[9]); s->dt_buf[9][s->dt_w] = y;
+                s->dt_zr += s->rv_a * (d1 - s->dt_zr);
+                const float z = s->dt_zr * dec, v2 = dt_rd(s, 10, Ln[10]), u2 = z - g2 * v2;
+                s->dt_buf[10][s->dt_w] = u2; s->dt_buf[11][s->dt_w] = v2 + g2 * u2 - 1e-20f;
+            }
+            rl = dt_rd(s, 9, Ln[12]) + dt_rd(s, 9, Ln[13]) - dt_rd(s, 10, Ln[14]) + dt_rd(s, 11, Ln[15]) - dt_rd(s, 5, Ln[16]) - dt_rd(s, 6, Ln[17]) - dt_rd(s, 7, Ln[18]);
+            rr2 = dt_rd(s, 5, Ln[19]) + dt_rd(s, 5, Ln[20]) - dt_rd(s, 6, Ln[21]) + dt_rd(s, 7, Ln[22]) - dt_rd(s, 9, Ln[23]) - dt_rd(s, 10, Ln[24]) - dt_rd(s, 11, Ln[25]);
+            s->dt_w = (s->dt_w + 1) & DT_MASK;
+            if (!(fabsf(rl) < 16.0f) || !(fabsf(rr2) < 16.0f)) { memset(s->dt_buf, 0, sizeof s->dt_buf); s->dt_zl = s->dt_zr = s->dt_bw = 0.0f; rl = rr2 = 0.0f; }
+            rl *= 0.6f * rret; rr2 *= 0.6f * rret;
+        } else {
+            float o[NLINES];
+            for (int i = 0; i < NLINES; i++) {
+                int rr = (s->rw - s->rv_len[i]) & RV_MASK;
+                float y = s->rv[i][rr];
+                s->rv_z[i] += s->rv_a * (y - s->rv_z[i]);
+                o[i] = s->rv_z[i] * s->rv_g[i];
+            }
+            float in = sr_in, shv = 0.0f;
+            if (rm == 2) {
+                const float m = 0.25f * (o[0] + o[1] + o[2] + o[3]);
+                s->shb[s->shw] = m;
+                s->sh_ph += 1.0f / 1024.0f; if (s->sh_ph >= 1.0f) s->sh_ph -= 1.0f;
+                for (int k = 0; k < 2; k++) {
+                    float ph = s->sh_ph + 0.5f * (float)k; if (ph >= 1.0f) ph -= 1.0f;
+                    const float d = 8.0f + 1024.0f * (1.0f - ph), w = sinf(3.14159265f * ph);
+                    float pp_ = (float)s->shw - d; if (pp_ < 0.0f) pp_ += (float)SH_SIZE;
+                    const int i0 = (int)pp_ & (SH_SIZE - 1), i1 = (i0 + 1) & (SH_SIZE - 1); const float f = pp_ - floorf(pp_);
+                    shv += (s->shb[i0] * (1.0f - f) + s->shb[i1] * f) * w * w;
+                }
+                s->shw = (s->shw + 1) & (SH_SIZE - 1);
+                if (!(fabsf(shv) < 8.0f)) { shv = 0.0f; memset(s->shb, 0, sizeof s->shb); }
+                in += fast_tanh(shv) * 0.14f;
+            }
+            if (rm == 1) {
+                s->rv[0][s->rw] = o[0] * 0.92f + in + 1e-20f;
+                s->rv[1][s->rw] = o[1] * 0.92f + in * 0.8f - 1e-20f;
+                s->rv[2][s->rw] = o[2] * 0.92f + in * 0.6f + 1e-20f;
+                s->rv[3][s->rw] = o[3] * 0.92f + in * 0.4f - 1e-20f;
+            } else {
+                float h0 = 0.5f * (o[0] + o[1] + o[2] + o[3]);
+                float h1 = 0.5f * (o[0] - o[1] + o[2] - o[3]);
+                float h2 = 0.5f * (o[0] + o[1] - o[2] - o[3]);
+                float h3 = 0.5f * (o[0] - o[1] - o[2] + o[3]);
+                s->rv[0][s->rw] = h0 + in + 1e-20f;
+                s->rv[1][s->rw] = h1 + in - 1e-20f;
+                s->rv[2][s->rw] = h2 + in + 1e-20f;
+                s->rv[3][s->rw] = h3 + in - 1e-20f;
+            }
+            s->rw = (s->rw + 1) & RV_MASK;
+            rl = (o[0] - o[2]) * 0.7f * rret + shv * 0.35f * rret; rr2 = (o[1] - o[3]) * 0.7f * rret + shv * 0.35f * rret;
+        }
+        { const float wd = g[G_RWD] * 2.0f, md = 0.5f * (rl + rr2), sdd = 0.5f * (rl - rr2); rl = md + sdd * wd; rr2 = md - sdd * wd; }
+        if (g[G_RLC] > 0.01f) { const float ca = 0.002f + g[G_RLC] * g[G_RLC] * 0.12f; s->rlc_z[0] += ca * (rl - s->rlc_z[0]); s->rlc_z[1] += ca * (rr2 - s->rlc_z[1]); rl -= s->rlc_z[0]; rr2 -= s->rlc_z[1]; }
+        oL += rl; oR += rr2;
+    }
+    *outL = oL; *outR = oR;
+}
 static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
     inst_t *s = (inst_t *)instance;
 
-    /* per-track delay times for this block */
-    int dlen_t[NLANE];
-    for (int t = 0; t < NLANE; t++) {
-        int di = (int)(s->pp[t][PP_DTIME] + 0.5f); if (di < 0) di = 0; if (di > 4) di = 4;
-        int dl = (int)(DT_BEATS[di] * 60.0f / s->bpm * s->sr);
-        if (dl < 64) dl = 64; if (dl > DLY_SIZE - 2) dl = DLY_SIZE - 2;
-        dlen_t[t] = dl;
-    }
-    const float dret = s->g[G_DLYRET] * 1.2f;
-    const float rret = s->g[G_RVRET] * 1.6f;
+    /* shared delay time for this block */
+    int dlen_g;
+    { int di = (int)(s->g[G_DLYT] + 0.5f); if (di < 0) di = 0; if (di > 4) di = 4;
+      dlen_g = (int)(DT_BEATS[di] * 60.0f / s->bpm * s->sr);
+      if (dlen_g < 64) dlen_g = 64; if (dlen_g > DLY_SIZE - 2) dlen_g = DLY_SIZE - 2; }
     const float mvol = s->g[G_VOL] * s->g[G_VOL] / 0.64f * 0.6f;
 #define RM_GAIN 1.9f
     float rm_fb = 0.8f; const float rm_alp = 1.0f - expf(-6.2831853f * 130.0f * s->inv_sr);
@@ -3648,6 +3802,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             mtr[k] = 0.0f; dkg[k] = 1.0f;
             if (s->dk_env[k] > 0.0005f) { dkg[k] = 1.0f - s->pp[k][PP_DUCK] * s->dk_env[k]; s->dk_env[k] *= s->dk_c[k]; } else s->dk_env[k] = 0.0f;
         }
+        float sds = 0.0f, srs = 0.0f;                                 /* summed delay / reverb sends of all buses */
         int blist[NLANE], nb = 0;
         for (int w = 0; w < 2; w++) for (uint64_t bits = tmk[w] | s->fxm[w]; bits; bits &= bits - 1) blist[nb++] = w * 64 + __builtin_ctzll(bits);
         for (int bq_ = 0; bq_ < nb; bq_++) {
@@ -3656,45 +3811,13 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             if (!tact[t] && s->fx_act[t] <= 0) continue;                  /* nothing sounding and no effect tail on this bus */
             const int tk = lane_trk(s, t);
             if (dkg[tk] < 1.0f) { const float g = dkg[tk]; tl[t] *= g; tr[t] *= g; tsd[t] *= g; tsr[t] *= g; }
+            sds += tsd[t]; srs += tsr[t];
             mtr[tk] += fabsf(tl[t]) + fabsf(tr[t]);
             if (tact[t]) s->fx_act[t] = (int)(6.0f * s->sr);
             if (s->fx_act[t] <= 0) { L += tl[t]; R += tr[t]; if (s->rec_src == tk) { rec_l += tl[t]; rec_r += tr[t]; } continue; }
             s->fx_act[t]--;
             const float *q = s->pp[t];
             float l = tl[t], r_ = tr[t];
-            if (q[PP_CHOR] > 0.01f) {                                  /* chorus */
-                float m = q[PP_CHOR];
-                s->ch_ph[t] += (0.2f + q[PP_CHRT] * 2.8f) * s->inv_sr; if (s->ch_ph[t] >= 1.0f) s->ch_ph[t] -= 1.0f;
-                s->chb[t][s->chw[t]] = 0.5f * (l + r_);
-                float d0 = 0.012f * s->sr, dp = (0.002f + q[PP_CHDP] * 0.008f) * s->sr;
-                float dL = d0 + dp * sinf(TWO_PI * s->ch_ph[t]);
-                float ph2 = s->ch_ph[t] + 0.5f; if (ph2 >= 1.0f) ph2 -= 1.0f;
-                float dR = d0 + dp * sinf(TWO_PI * ph2);
-                float tp[2] = { 0, 0 }; float dd[2] = { dL, dR };
-                for (int c = 0; c < 2; c++) {
-                    float pos = (float)s->chw[t] - dd[c]; if (pos < 0.0f) pos += (float)CH_SIZE;
-                    int i0 = (int)pos; float fr = pos - (float)i0; i0 &= (CH_SIZE - 1); int i1 = (i0 + 1) & (CH_SIZE - 1);
-                    tp[c] = s->chb[t][i0] * (1.0f - fr) + s->chb[t][i1] * fr;
-                }
-                s->chw[t] = (s->chw[t] + 1) & (CH_SIZE - 1);
-                l = l * (1.0f - 0.5f * m) + tp[0] * m * 0.9f;
-                r_ = r_ * (1.0f - 0.5f * m) + tp[1] * m * 0.9f;
-            }
-            if (q[PP_PHAS] > 0.01f) {                                  /* phaser: 4 all-pass stages per side */
-                float m = q[PP_PHAS], fbk = q[PP_PHFB] * 0.8f;
-                s->ph_ph[t] += (0.1f + q[PP_PHRT] * 1.9f) * s->inv_sr; if (s->ph_ph[t] >= 1.0f) s->ph_ph[t] -= 1.0f;
-                float in2[2] = { l, r_ };
-                for (int c = 0; c < 2; c++) {
-                    float ph = s->ph_ph[t] + 0.25f * (float)c; if (ph >= 1.0f) ph -= 1.0f;
-                    float a_ = -0.75f + 1.3f * (0.5f + 0.5f * sinf(TWO_PI * ph));
-                    float x = in2[c] + s->ph_fb[t][c] * fbk, y = x;
-                    for (int k = 0; k < 4; k++) { float o = a_ * y + s->ph_z[t][c][k]; s->ph_z[t][c][k] = y - a_ * o; y = o; }
-                    if (!(fabsf(y) < 8.0f)) { y = 0.0f; for (int k = 0; k < 4; k++) s->ph_z[t][c][k] = 0.0f; }
-                    s->ph_fb[t][c] = y;
-                    in2[c] = in2[c] * (1.0f - 0.5f * m) + y * 0.5f * m;
-                }
-                l = in2[0]; r_ = in2[1];
-            }
             {   /* audio effect chain: slot 1, then slot 2 */
                 xfx_proc(s, &s->xs[0][t], s->sbuf[t], (int)(q[PP_XFX] + 0.5f), q[PP_XMIX], q[PP_XRT], q[PP_XDP], &l, &r_);
                 xfx_proc(s, &s->xs[1][t], NULL, (int)(q[PP_X2FX] + 0.5f), q[PP_X2MIX], q[PP_X2RT], q[PP_X2DP], &l, &r_);
@@ -3725,101 +3848,6 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             if (q[PP_MONO] > 1.5f) { const float mm = 0.5f * (l + r_); l = mm * s->pl[t]; r_ = mm * s->pr[t]; }      /* DRY: only the dry sound is mono, the reverb / delay returns stay stereo */
             L += l; R += r_;
 
-            if (tsd[t] != 0.0f || tsr[t] != 0.0f) s->dr_act[t] = (int)(6.0f * s->sr);     /* delay + reverb only run while this bus sends to them (and for their tail) */
-            if (s->dr_act[t] > 0) {
-                if (--s->dr_act[t] == 0) {
-                    memset(s->dlL[t], 0, sizeof s->dlL[t]); memset(s->dlR[t], 0, sizeof s->dlR[t]); memset(s->rv[t], 0, sizeof s->rv[t]);
-                    memset(s->rv_z[t], 0, sizeof s->rv_z[t]); s->dly_z[t][0] = s->dly_z[t][1] = 0.0f; memset(s->shb[t], 0, sizeof s->shb[t]); s->dly_hp[t][0] = s->dly_hp[t][1] = 0.0f;
-                }
-            /* delay: 0 PING-PONG, 1 TAPE (wow + flutter, dark, saturated), 2 DUB (dotted right side, band-limited feedback) */
-            {
-                const float dfb = q[PP_DFB] * 0.9f;
-                const int dm = (int)(q[PP_DMODE] + 0.5f);
-                float yl, yr;
-                if (dm == 0) {
-                    int rp = (s->dw[t] - dlen_t[t]) & DLY_MASK;
-                    yl = s->dlL[t][rp]; yr = s->dlR[t][rp];
-                    { const float ta = fminf(1.0f, s->a_dly * (0.2f + 1.6f * q[PP_DTN]));
-                    s->dly_z[t][0] += ta * (yl - s->dly_z[t][0]);
-                    s->dly_z[t][1] += ta * (yr - s->dly_z[t][1]); }
-                    s->dlL[t][s->dw[t]] = tsd[t] + s->dly_z[t][1] * dfb;
-                    s->dlR[t][s->dw[t]] = s->dly_z[t][0] * dfb;
-                } else {
-                    float dl_l = (float)dlen_t[t], dl_r = (float)dlen_t[t];
-                    if (dm == 1) {
-                        s->dly_ph[t] += 0.7f * s->inv_sr; if (s->dly_ph[t] >= 1.0f) s->dly_ph[t] -= 1.0f;
-                        const float wob = (0.0007f * sinf(TWO_PI * s->dly_ph[t]) + 0.00025f * sinf(TWO_PI * 7.3f * s->dly_ph[t])) * s->sr;
-                        dl_l += wob; dl_r += wob * 0.8f;
-                    } else dl_r *= 0.75f;
-                    if (dl_l < 8.0f) dl_l = 8.0f; if (dl_r < 8.0f) dl_r = 8.0f;
-                    float pl = (float)s->dw[t] - dl_l, pr = (float)s->dw[t] - dl_r;
-                    int il = (int)floorf(pl), ir = (int)floorf(pr); const float fl = pl - (float)il, fr_ = pr - (float)ir;
-                    yl = s->dlL[t][il & DLY_MASK] * (1.0f - fl) + s->dlL[t][(il + 1) & DLY_MASK] * fl;
-                    yr = s->dlR[t][ir & DLY_MASK] * (1.0f - fr_) + s->dlR[t][(ir + 1) & DLY_MASK] * fr_;
-                    const float aa = fminf(1.0f, (dm == 1 ? s->a_dly * 0.45f : s->a_dly * 0.8f) * (0.2f + 1.6f * q[PP_DTN]));
-                    s->dly_z[t][0] += aa * (yl - s->dly_z[t][0]);
-                    s->dly_z[t][1] += aa * (yr - s->dly_z[t][1]);
-                    float fa = s->dly_z[t][0], fb = s->dly_z[t][1];
-                    if (dm == 2) {                       /* high-pass the repeats: they thin out while they fade */
-                        s->dly_hp[t][0] += 0.02f * (fa - s->dly_hp[t][0]); fa -= s->dly_hp[t][0];
-                        s->dly_hp[t][1] += 0.02f * (fb - s->dly_hp[t][1]); fb -= s->dly_hp[t][1];
-                    }
-                    fa = fast_tanh(fa * 1.4f) * 0.714f; fb = fast_tanh(fb * 1.4f) * 0.714f;
-                    s->dlL[t][s->dw[t]] = tsd[t] + fb * dfb;
-                    s->dlR[t][s->dw[t]] = fa * dfb;
-                }
-                s->dw[t] = (s->dw[t] + 1) & DLY_MASK;
-                { const float wd = q[PP_DWD] * 2.0f, md = 0.5f * (yl + yr), sd = 0.5f * (yl - yr); yl = md + sd * wd; yr = md - sd * wd; }      /* width: 0 = mono, 1 = normal, 2 = wide */
-                L += yl * dret; R += yr * dret;
-            }
-            /* reverb: 4-line FDN. 0 HALL (Hadamard mixing), 1 ECHO (no mixing, long separate lines = distinct repeats), 2 SHIMMER (hall + octave-up feedback) */
-            {
-                const int rm = (int)(q[PP_RMODE] + 0.5f);
-                float o[NLINES];
-                for (int i = 0; i < NLINES; i++) {
-                    int rr = (s->rw[t] - s->rv_len[t][i]) & RV_MASK;
-                    float y = s->rv[t][i][rr];
-                    s->rv_z[t][i] += s->rv_a[t] * (y - s->rv_z[t][i]);
-                    o[i] = s->rv_z[t][i] * s->rv_g[t][i];
-                }
-                float in = tsr[t], shv = 0.0f;
-                if (rm == 2) {
-                    const float m = 0.25f * (o[0] + o[1] + o[2] + o[3]);
-                    s->shb[t][s->shw[t]] = m;
-                    s->sh_ph[t] += 1.0f / 1024.0f; if (s->sh_ph[t] >= 1.0f) s->sh_ph[t] -= 1.0f;
-                    for (int k = 0; k < 2; k++) {
-                        float ph = s->sh_ph[t] + 0.5f * (float)k; if (ph >= 1.0f) ph -= 1.0f;
-                        const float d = 8.0f + 1024.0f * (1.0f - ph), w = sinf(3.14159265f * ph);
-                        float pp_ = (float)s->shw[t] - d; if (pp_ < 0.0f) pp_ += (float)SH_SIZE;
-                        const int i0 = (int)pp_ & (SH_SIZE - 1), i1 = (i0 + 1) & (SH_SIZE - 1); const float f = pp_ - floorf(pp_);
-                        shv += (s->shb[t][i0] * (1.0f - f) + s->shb[t][i1] * f) * w * w;
-                    }
-                    s->shw[t] = (s->shw[t] + 1) & (SH_SIZE - 1);
-                    if (!(fabsf(shv) < 8.0f)) { shv = 0.0f; memset(s->shb[t], 0, sizeof s->shb[t]); }
-                    in += fast_tanh(shv) * 0.14f;
-                }
-                if (rm == 1) {
-                    s->rv[t][0][s->rw[t]] = o[0] * 0.92f + in + 1e-20f;
-                    s->rv[t][1][s->rw[t]] = o[1] * 0.92f + in * 0.8f - 1e-20f;
-                    s->rv[t][2][s->rw[t]] = o[2] * 0.92f + in * 0.6f + 1e-20f;
-                    s->rv[t][3][s->rw[t]] = o[3] * 0.92f + in * 0.4f - 1e-20f;
-                } else {
-                    float h0 = 0.5f * (o[0] + o[1] + o[2] + o[3]);
-                    float h1 = 0.5f * (o[0] - o[1] + o[2] - o[3]);
-                    float h2 = 0.5f * (o[0] + o[1] - o[2] - o[3]);
-                    float h3 = 0.5f * (o[0] - o[1] - o[2] + o[3]);
-                    s->rv[t][0][s->rw[t]] = h0 + in + 1e-20f;
-                    s->rv[t][1][s->rw[t]] = h1 + in - 1e-20f;
-                    s->rv[t][2][s->rw[t]] = h2 + in + 1e-20f;
-                    s->rv[t][3][s->rw[t]] = h3 + in - 1e-20f;
-                }
-                s->rw[t] = (s->rw[t] + 1) & RV_MASK;
-                float rl = (o[0] - o[2]) * 0.7f * rret + shv * 0.35f * rret, rr2 = (o[1] - o[3]) * 0.7f * rret + shv * 0.35f * rret;
-                { const float wd = q[PP_RWD] * 2.0f, md = 0.5f * (rl + rr2), sd = 0.5f * (rl - rr2); rl = md + sd * wd; rr2 = md - sd * wd; }
-                if (q[PP_RLC] > 0.01f) { const float ca = 0.002f + q[PP_RLC] * q[PP_RLC] * 0.12f; s->rlc_z[t][0] += ca * (rl - s->rlc_z[t][0]); s->rlc_z[t][1] += ca * (rr2 - s->rlc_z[t][1]); rl -= s->rlc_z[t][0]; rr2 -= s->rlc_z[t][1]; }
-                L += rl; R += rr2;
-            }
-            }
             if (q[PP_MONO] > 0.5f && q[PP_MONO] < 1.5f) { const float mm = 0.5f * ((L - L0) + (R - R0)); L = L0 + mm * s->pl[t]; R = R0 + mm * s->pr[t]; }      /* MONO: the sound stays in the middle, no stereo from effects */
             if (s->rec_src == tk) { rec_l += L - L0; rec_r += R - R0; }
         }
@@ -3827,6 +3855,11 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             const int t = blist[bq_];
             tl[t] = tr[t] = tsd[t] = tsr[t] = 0.0f; tact[t] = 0;
             if (s->fx_act[t] > 0) s->fxm[t >> 6] |= 1ull << (t & 63); else s->fxm[t >> 6] &= ~(1ull << (t & 63));
+        }
+        if (sds != 0.0f || srs != 0.0f) s->dr_act = (int)(6.0f * s->sr);        /* the shared delay + reverb run only while something is sent to them (and for their tail) */
+        if (s->dr_act > 0) {
+            if (--s->dr_act == 0) bus_clear(s);
+            else { float yl_, yr_; bus_fx(s, sds, srs, dlen_g, &yl_, &yr_); L += yl_; R += yr_; }
         }
         for (int k = 0; k < NTRK; k++) s->meter[k] = mtr[k] > s->meter[k] ? mtr[k] : s->meter[k] * 0.9997f;
         if (rmb_in != 0.0f) s->rm_act = (int)(4.0f * s->sr);
@@ -3895,9 +3928,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         }
         if (!(fabsf(L) < 16.0f) || !(fabsf(R) < 16.0f)) {            /* NaN / runaway: wipe the feedback buffers */
             L = 0.0f; R = 0.0f;
-            memset(s->dlL, 0, sizeof s->dlL); memset(s->dlR, 0, sizeof s->dlR);
-            memset(s->rv, 0, sizeof s->rv); memset(s->rv_z, 0, sizeof s->rv_z);
-            memset(s->chb, 0, sizeof s->chb); memset(s->ph_z, 0, sizeof s->ph_z); memset(s->ph_fb, 0, sizeof s->ph_fb);
+            bus_clear(s);
             s->mf_z[0][0] = s->mf_z[0][1] = s->mf_z[1][0] = s->mf_z[1][1] = 0.0f; s->comp_env = 0.0f; s->lim_g = 1.0f; s->eq_lo[0] = s->eq_lo[1] = s->eq_hi[0] = s->eq_hi[1] = 0.0f;
         }
         {   /* master EQ (3 bands: <250 Hz, 250-3.5k, >3.5k; +-12 dB) */

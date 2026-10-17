@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.96.0 (17 October 2026)
+- One shared delay and reverb bus for all tracks: each track only sends into it (Dly / Rvb), the per-track delay and reverb are gone - far less CPU, no more crackling with 3-4 tracks
+- New FX BUS tile: delay time, feedback, type, tone, return and reverb size, darkness, type, return, widths, low cut now apply to every track
+- Reverb HALL is now a Dattorro plate reverb (ECHO and SHIM kept)
+- Chorus and phaser removed
+- PAD engine rebuilt as additive synthesis: 8 harmonics, the lowest four doubled into a drifting detuned pair, new Hollow knob instead of PWM
+- Knob names shortened so every tile label uses the same text size
+
 ## 5.95.0 (17 October 2026)
 - Less CPU, same sound: the engine now only visits the sounds, arps and effect buses that are really active instead of scanning all 80 lanes for every sample. Idle load is about 4x lower; the output of a sequenced song is bit-identical to 5.94.0
 - PAD and ADDITIVE engines are 2.5x to 5x cheaper per voice (oscillator settings are updated every 16 samples, sine table instead of sinf/powf per partial and sample); sound difference is below audibility (additive -87 dB, pad -56 dB)
