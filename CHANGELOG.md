@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.119.0 (17 October 2026)
+- Beim Drehen steht der Parameter-Name oben rechts (statt Track) – der Kachel-Name links bleibt
+
 ## 5.118.0 (17 October 2026)
 - Beim Drehen eines Knopfs steht oben links sein voller Parameter-Name statt des Kachel-Namens (danach wieder der Kachel-Name)
 

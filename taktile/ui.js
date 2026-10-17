@@ -2487,9 +2487,9 @@ const TAB_NEW = true, TAB_Y = 17, TAB_RH = 23;                /* new track heade
 const TAB_3 = { 1: 'PRE', 9: 'ENG', 3: 'MOD', 2: 'FLT', 38: 'FX', 46: 'BUS', 36: 'EUC', 27: 'MID', 28: 'SMP', 44: 'CHD' };
 function drawTabsNew() {
     const tabs = trackTabs(), cur = Math.max(0, tabIndex(tabs));
-    const who = (sel + 1) + ' ' + (kind[sel] ? 'DRUM' : 'SYNTH');
+    let who = (sel + 1) + ' ' + (kind[sel] ? 'DRUM' : 'SYNTH');
+    if (hot.t > 0 && hot.v === view && VIEW_ITEMS[pg2(view)] && VIEW_ITEMS[pg2(view)][hot.i]) who = String(tr(itemLabel(view, hot.i, 99))).toUpperCase().substring(0, 13);      /* while a knob is turned: its parameter name top right instead of the track */
     let nm = String(tabPageName(tabs[cur])).toUpperCase(); if (tabs[cur] === 1) nm = 'PRESET';
-    if (hot.t > 0 && hot.v === view && VIEW_ITEMS[pg2(view)] && VIEW_ITEMS[pg2(view)][hot.i]) nm = String(tr(itemLabel(view, hot.i, 99))).toUpperCase();      /* while a knob is turned: its parameter name instead of the tile name */
     const pg = tabPg(tabs[cur]), two = pg[1] > 1;
     fill_rect(0, 0, 128, 9, 1); txtS(126 - who.length * 4, 2, who, 0);
     txtH(2, 1, hfFit(nm, 120 - who.length * 4 - (two ? 18 : 0)), 0);
