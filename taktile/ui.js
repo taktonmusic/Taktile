@@ -2859,10 +2859,10 @@ function cell(x, y, label, value, f, cw) {
 /* ---- page looks: every kind of page has its own style so they are not all alike ---- */
 const BLOCKS = { 9: [['ENGINE', 4], ['FILTER + VOICES', 4]], 47: [['TONE SHAPE', 4], ['MOVEMENT', 4]], 3: [['RING + PUMP', 4], ['DUCK', 4]], 38: [['INSERT / THIS TRACK', 4], ['SENDS + OUTPUT', 4]], 46: [['DELAY / ALL TRACKS', 4], ['REVERB / ALL TRACKS', 4]], 39: [['DELAY / ALL TRACKS', 2], ['REVERB / ALL TRACKS', 2]] };      /* hardware-style pages: named blocks of four knobs, like OSC / FILTER / ENV on a real synth */
 function engTile(x, y, cw, lab, vs, fr, hotE) {               /* the tile of the ENGINE page: small name, bold value, bar */
-    const c = hotE ? 0 : 1, bw = cw - 4; if (hotE) fill_rect(x, y - 1, cw - 1, 19, 1);
+    const c = 1, bw = cw - 4;      /* the tile you are turning is not filled white any more: its bar is just a little thicker */
     txtS(x + 2, y, String(tr(lab)).substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c);
     if (tw(vs) > cw - 4) txtS(x + 2, y + 7, vs.substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c); else txtB(x + 2, y + 6, vs, c);
-    fill_rect(x + 2, y + 15, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(x + 2, y + 14, w, 2, c);
+    fill_rect(x + 2, y + 15, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(x + 2, y + (hotE ? 13 : 14), w, hotE ? 4 : 2, c);
 }
 function drawBlocks(bl, items) {
     let i0 = 0;
@@ -2872,10 +2872,9 @@ function drawBlocks(bl, items) {
         for (let k = 0; k < n; k++) {
             const i = i0 + k, it = items[i]; if (!it) continue;
             const v = getVal(scopeOf(it[0]), it[0]), vs = fmtVal(it[0], v), fr = fracVal(it[0], v), hotE = hot.t > 0 && hot.v === view && hot.i === i;
-            const cx = k * cw, y = y0 + 6, c = hotE ? 0 : 1, bw = cw - 4, lab = String(tr(itemLabel(view, i, Math.floor((cw - 6) / 6))));
-            if (hotE) fill_rect(cx, y - 1, cw - 1, 19, 1);
+            const cx = k * cw, y = y0 + 6, c = 1, bw = cw - 4, lab = String(tr(itemLabel(view, i, Math.floor((cw - 6) / 6))));
             txtS(cx + 2, y, lab.substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c); txtB(cx + 2, y + 6, fit(vs, cw - 4), c);
-            fill_rect(cx + 2, y + 15, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 2, y + 14, w, 2, c);
+            fill_rect(cx + 2, y + 15, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 2, y + (hotE ? 13 : 14), w, hotE ? 4 : 2, c);
         }
         i0 += n;
     }

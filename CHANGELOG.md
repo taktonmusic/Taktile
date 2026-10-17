@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.117.0 (17 October 2026)
+- Kacheln werden beim Drehen/Wechseln nicht mehr weiß hinterlegt (nur der Balken wird kräftiger)
+
 ## 5.116.0 (17 October 2026)
 - Track FX: Send-Knöpfe heißen jetzt DEL und REV (statt DSND/RSND)
 
