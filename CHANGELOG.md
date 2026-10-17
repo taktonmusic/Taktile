@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.118.0 (17 October 2026)
+- Beim Drehen eines Knopfs steht oben links sein voller Parameter-Name statt des Kachel-Namens (danach wieder der Kachel-Name)
+
 ## 5.117.0 (17 October 2026)
 - Kacheln werden beim Drehen/Wechseln nicht mehr weiß hinterlegt (nur der Balken wird kräftiger)
 
