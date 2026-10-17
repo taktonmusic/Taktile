@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.100.0 (17 October 2026)
+- Synth tracks: Shift + Step 8 now switches between your note layout and CHORD (steps stay on step 12 and on the Track button)
+- The Track button never enters CHORD any more: on synth tracks it toggles note layout and STEPS
+
 ## 5.99.0 (17 October 2026)
 - FX BUS pages are labelled as shared by all tracks (header no longer shows the track number)
 

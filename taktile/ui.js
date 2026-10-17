@@ -746,16 +746,16 @@ function clipAction(t, c) {
 }
 const TOP_NAMES = ['PITCH', 'REPEAT', 'STEPS', 'LIVE FX', 'CHORD'];
 let repAllowed = true;                                     /* off: Note Repeat is skipped when switching the pad mode */
-function nextTopMode(cur, d) {                              /* the Track button walks PITCH > REPEAT > STEPS (> CHORD on synth tracks); LIVE FX has its own switch */
-    const ring = kind[sel] ? [0, 1, 2] : [4, 2];            /* drum tracks: PITCH > REPEAT > STEPS; synth tracks: CHORD > STEPS (plain playing is what you get when both are off) */
+function nextTopMode(cur, d, trackBtn) {                              /* the Track button walks PITCH > REPEAT > STEPS (> CHORD on synth tracks); LIVE FX has its own switch */
+    const ring = kind[sel] ? [0, 1, 2] : (trackBtn ? [0, 2] : [0, 4]);            /* drum tracks: PITCH > REPEAT > STEPS; synth tracks: Shift + step 8 = note layout <> CHORD, the Track button = note layout <> STEPS (never CHORD) */
     let i = ring.indexOf(cur); if (i < 0) return d > 0 ? ring[0] : ring[ring.length - 1];
     for (let n = 0; n < ring.length; n++) { i = (i + d + ring.length) % ring.length; if (ring[i] !== 1 || repAllowed) return ring[i]; }
     return 0;
 }      /* the Track button only walks PITCH > REPEAT > STEPS; LIVE FX has its own switch (menu) */
 function canTop() { return !(menuOpen || fb || askKind >= 0 || exitDlg >= 0 || view === 7 || view === 31 || view === 20 || isHub(view) || SYM_VIEW_SET[view]); }      /* pad modes only change on the track's own screens, never in clips / song / menus */
-function cycleTop(d) {
+function cycleTop(d, trackBtn) {
     if (!canTop()) { showToast('PAD MODE', 'OPEN THE TRACK FIRST', 0); return; }
-    liveFxAllOff(); topModes[sel] = nextTopMode(topModes[sel], d);
+    liveFxAllOff(); topModes[sel] = nextTopMode(topModes[sel], d, trackBtn);
     showToast('TRACK ' + p2(sel + 1) + ' PADS', TOP_NAMES[topModes[sel]], topModes[sel] / 4); if (topModes[sel] === 4) chordReconcile(); markEdited(); needsRedraw = true;
 }
 let layS = 0, layD = 0;                                    /* pad layouts: synth 0 MOVE (in key, rows 3 degrees apart) 1 SEQ 2 OCT 3 CHR (chromatic, rows a fourth apart); drum 0 sounds left 1 sounds right */
@@ -1828,7 +1828,7 @@ const MENU_ITEMS = [
     ['Humanize', () => { const v = cycleMaster('m_hum', [0, 0.3, 0.6, 1]); showToast('HUMANIZE', String(Math.round(v * 100)), v); }],
     ['Launch quant', () => { const v = cycleMaster('m_qnt', [0.07, 0.21, 0.36, 0.5, 0.64, 0.79, 0.93]); showToast('LAUNCH', fmtVal('m_qnt', v), v); }],
     ['Tap tempo', () => tapTempo()],
-    ['Pad mode (pitch/repeat/steps)', () => cycleTop(1)],
+    ['Pad mode (layout/chord, drums: pitch/repeat/steps)', () => cycleTop(1)],
     ['Live FX pads on/off', () => { menuOpen = false; toggleTop(3); }],
     ['Chord pads on/off', () => { menuOpen = false; toggleTop(4); }],
     ['Device chain', () => { menuOpen = false; openDevices(); }],
@@ -4900,7 +4900,7 @@ globalThis.onMidiMessageInternal = function (data) {
                 if (deleteHeld) { if (clrPend.t === t && clrPend.ticks > 0) { clrPend = { t: -1, ticks: 0 }; clearTrack(t); } else { clrPend = { t: t, ticks: 70 }; showToast('CLEAR TRACK ' + p2(t + 1) + '?', 'AGAIN = YES', 0); } }
                 else if (shiftHeld) { selectTrack(t); setKind(t, kind[t] ? 0 : 1); }
                 else if (view === 7 && !menuOpen && !loopHeld) { selectTrack(t); view = 0; navStack = []; padMenu = false; symOpen = -1; acc.fill(0); needsRedraw = true; showToast('TRACK ' + p2(t + 1), trkName(t), t / (NTRK - 1)); }      /* clip view: the track button opens that track */
-                else if (t === sel) cycleTop(1);
+                else if (t === sel) cycleTop(1, true);
                 else { selectTrack(t); showToast('TRACK ' + p2(t + 1), trkName(t), t / (NTRK - 1)); }
             }
         }
