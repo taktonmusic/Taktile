@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.107.0 (17 October 2026)
+- MIDI FX page: Key and Scale now sit where Swing+ was (4th and 7th knob); VelBias moved to MIDI FX 2
+
 ## 5.106.0 (17 October 2026)
 - Pad mode name PITCH is now NOTE (synth and drum tracks); synth tracks: NOTE <> CHORD
 
