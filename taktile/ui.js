@@ -157,10 +157,10 @@ const VIEW_ITEMS = {
     1: [['type','Type'],['tune','Tune'],['decay','Decay','Dcy'],['tone','Tone'],['drive','Drive','Drv'],['pan','Pan'],['poly','Voices','Poly'],['vol','Vol']],
     2: [['cut','LPCut','LPF'],['res','Reso'],['locut','HPCut','HPF'],['fenv','FltEnv','FEnv'],['fdec','FltDecay','FDec'],['fkey','KeyTrack','FKey'],['fmode','Mode'],['crush','Crush','Crsh']],
     3: [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']],       /* synth tracks; drum tracks add the kick rumble (viewItemsFix) */
-    38: [['dly','DlySend','DSnd'],['rvb','RvbSend','RSnd'],['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
-    46: [['dly_time','DlyTime','DTim'],['dly_fb','DlyFdbk','DFb'],['dly_mode','DlyType','DTyp'],['dly_tone','DlyTone','DTon'],['rvb_size','RvbSize','RSiz'],['rvb_dark','RvbDark','RDrk'],['rvb_mode','RvbType','RTyp'],['rvb_ret','RvbRet','RRet']],
+    38: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['dly','DlySend','DSnd'],['rvb','RvbSend','RSnd'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
+    46: [['dly_time','DlyTime','Time'],['dly_fb','DlyFdbk','Fdbk'],['dly_tone','DlyTone','Tone'],['dly_ret','DlyRet','Ret'],['rvb_size','RvbSize','Size'],['rvb_dark','RvbDark','Dark'],['rvb_mode','RvbType','Type'],['rvb_ret','RvbRet','Ret']],
     50: [['grn','Grain','Grn'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
-    39: [['dly_ret','DlyRet','DRet'],['dly_wide','DlyWide','DWid'],['rvb_wide','RvbWide','RWid'],['rvb_low','RvbLow','RLow']],
+    39: [['dly_mode','DlyType','Type'],['dly_wide','DlyWide','Wide'],['rvb_wide','RvbWide','Wide'],['rvb_low','RvbLow','Low']],
     41: [['m_eql','Low'],['m_eqm','Mid'],['m_eqh','High'],['m_lim','Limiter','Lim'],['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_comp','Comp']],
     4: [['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_wid','Width','Wid'],['m_comp','Comp'],['dly_ret','DlyRet','DRet'],['rvb_ret','RvbRet','RRet'],['m_lim','Limiter','Lim']],
     5: [['dly','Send'],['dly_time','Time'],['dly_fb','Fdbk'],['dly_mode','Type'],['dly_tone','Tone'],['dly_wide','Wide'],['dly_ret','Return','Ret']],
@@ -2811,6 +2811,23 @@ function cell(x, y, label, value, f, cw) {
     if (w > 0) fill_rect(x + 3, y + 19, w, 3, 1);
 }
 /* ---- page looks: every kind of page has its own style so they are not all alike ---- */
+const BLOCKS = { 9: [['ENGINE', 4], ['FILTER + VOICES', 4]], 47: [['TONE SHAPE', 4], ['MOVEMENT', 4]], 3: [['RING + PUMP', 4], ['DUCK', 4]], 38: [['INSERT / THIS TRACK', 4], ['SENDS + OUTPUT', 4]], 46: [['DELAY / ALL TRACKS', 4], ['REVERB / ALL TRACKS', 4]], 39: [['DELAY / ALL TRACKS', 2], ['REVERB / ALL TRACKS', 2]] };      /* hardware-style pages: named blocks of four knobs, like OSC / FILTER / ENV on a real synth */
+function drawBlocks(bl, items) {
+    let i0 = 0;
+    for (let b = 0; b < bl.length; b++) {
+        const y0 = 12 + b * 25, n = bl[b][1], cw = n === 2 ? 64 : 32;
+        txtS(1, y0, bl[b][0], 1); fill_rect(bl[b][0].length * 4 + 5, y0 + 2, 126 - (bl[b][0].length * 4 + 5), 1, 1);
+        for (let k = 0; k < n; k++) {
+            const i = i0 + k, it = items[i]; if (!it) continue;
+            const v = getVal(scopeOf(it[0]), it[0]), vs = fmtVal(it[0], v), fr = fracVal(it[0], v), hotE = hot.t > 0 && hot.v === view && hot.i === i;
+            const cx = k * cw, y = y0 + 6, c = hotE ? 0 : 1, bw = cw - 4, lab = String(tr(itemLabel(view, i, Math.floor((cw - 6) / 6))));
+            if (hotE) fill_rect(cx, y - 1, cw - 1, 19, 1);
+            txtS(cx + 2, y, lab.substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c); txtB(cx + 2, y + 6, fit(vs, cw - 4), c);
+            fill_rect(cx + 2, y + 16, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 2, y + 15, w, 3, c);
+        }
+        i0 += n;
+    }
+}
 const PAGE_STYLE = { 41: 3, 43: 3 };   /* 0 outline (default), 1 inverted tile, 2 list, 3 vertical fader, 4 thick bar */
 function cellSmall(x, y, label, value, f, cw, hot) {          /* MIDI FX: small complete names above the value */
     const iw = cw - 4, c = hot ? 0 : 1; if (hot) fill_rect(x + 1, y, cw - 2, 24, 1);
@@ -4309,6 +4326,7 @@ function drawParams() {
     const ps = PAGE_STYLE[view] || 0;
     if (view === 2) drawFilterCurve();
     if (view === 41 || view === 43) { const g = [0, 1, 2].map(b => { const k = items[b][0]; return (getVal(scopeOf(k), k) - 0.5) * 24; }); drawEqGraph(g, 2, 11, 124, view === 43 ? 13 : 17, (hot.t > 0 && hot.v === view && hot.i < 3) ? hot.i : -1); }
+    if (BLOCKS[pg2(view)] && !(view === 9 && FMI > 0 && false)) { drawBlocks(BLOCKS[pg2(view)], items); return; }
     for (let i = 0; i < items.length; i++) {
         let cw = items.length <= 2 ? 64 : (items.length === 3 || items.length === 5 || items.length === 6 ? 42 : 32), per = Math.floor(128 / cw);
         let x = (i % per) * cw, y = 13 + ((i / per) | 0) * 26, rh = 0;

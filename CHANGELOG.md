@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.108.0 (17 October 2026)
+- Hardware-style pages: named blocks of four knobs (ENGINE / FILTER + VOICES, TONE SHAPE / MOVEMENT, RING + PUMP / DUCK, INSERT / THIS TRACK + SENDS + OUTPUT, DELAY / ALL TRACKS + REVERB / ALL TRACKS)
+- FX BUS pages regrouped: delay knobs together, reverb knobs together; type and width moved to page 2
+
 ## 5.107.0 (17 October 2026)
 - MIDI FX page: Key and Scale now sit where Swing+ was (4th and 7th knob); VelBias moved to MIDI FX 2
 
