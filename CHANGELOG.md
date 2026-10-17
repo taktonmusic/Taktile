@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.114.0 (17 October 2026)
+- Preset-Seite im Engine-Design: keine alten Kästen mehr, Preset- und Wave-Name als normale Kachel
+- Alle Kacheln sehen in jedem Design gleich aus wie auf der Engine-Seite (kleiner Name, fetter Wert, Balken)
+
 ## 5.113.0 (17 October 2026)
 - Synth-Tracks zeigen immer das normale Pad-Layout (Akkord-Pads schalten beim Track-Wechsel/Typ-Wechsel ab)
 - Ein Step-Knopf startet im Stand sofort die Wiedergabe (jede Ansicht, auch mit gehaltenem Pad)

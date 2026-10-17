@@ -2858,6 +2858,12 @@ function cell(x, y, label, value, f, cw) {
 }
 /* ---- page looks: every kind of page has its own style so they are not all alike ---- */
 const BLOCKS = { 9: [['ENGINE', 4], ['FILTER + VOICES', 4]], 47: [['TONE SHAPE', 4], ['MOVEMENT', 4]], 3: [['RING + PUMP', 4], ['DUCK', 4]], 38: [['INSERT / THIS TRACK', 4], ['SENDS + OUTPUT', 4]], 46: [['DELAY / ALL TRACKS', 4], ['REVERB / ALL TRACKS', 4]], 39: [['DELAY / ALL TRACKS', 2], ['REVERB / ALL TRACKS', 2]] };      /* hardware-style pages: named blocks of four knobs, like OSC / FILTER / ENV on a real synth */
+function engTile(x, y, cw, lab, vs, fr, hotE) {               /* the tile of the ENGINE page: small name, bold value, bar */
+    const c = hotE ? 0 : 1, bw = cw - 4; if (hotE) fill_rect(x, y - 1, cw - 1, 19, 1);
+    txtS(x + 2, y, String(tr(lab)).substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c);
+    if (tw(vs) > cw - 4) txtS(x + 2, y + 7, vs.substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c); else txtB(x + 2, y + 6, vs, c);
+    fill_rect(x + 2, y + 15, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(x + 2, y + 14, w, 2, c);
+}
 function drawBlocks(bl, items) {
     let i0 = 0;
     for (let b = 0; b < bl.length; b++) {
@@ -4395,6 +4401,10 @@ function drawParams() {
         }
         if (view === 2) { const TN = tabStrip && TAB_NEW, cx = (i & 3) * 32 + 1, cy = (TN ? 27 : 25) + (i >> 2) * (TN ? 18 : 20); txt(cx + 1, cy, fit(lab, 30), 1); txtB(cx + 1, cy + 9, fit(vs, 30), 1); fill_rect(cx + 1, cy + 18, 28, 1, 1); const w = Math.round(28 * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 1, cy + 17, w, 2, 1); continue; }
         const isHot = hot.t > 0 && hot.v === view && hot.i === i;
+        if (tabStrip && TAB_NEW && cw >= 32 && ps !== 2 && ps !== 3) {       /* one tile look for every page and every theme: the one of the ENGINE page */
+            const nm = view === 1 && items[i][0] === 'type' ? (TYPE_NAME[Math.round(v)] || vs) : (view === 1 && items[i][0] === 'wave' ? (ENUMS.wave[Math.round(v)] || vs) : vs);
+            engTile(x, y + 2, cw, lab, String(nm), fr, isHot); continue;
+        }
         if (view === 1 && items[i][0] === 'wave' && cw >= 32) { drawPresetBox(x, y, cw, (ENUMS.wave[Math.round(v)] || vs)); continue; }
         { const si = (ps !== 3 && cw >= 32) ? selInfo(items[i][0], v) : null; if (si) { cellSel(x, y, lab, vs, si[0], si[1], cw, isHot, false); continue; } }
                 if (view === 1 && items[i][0] === 'type' && cw >= 32) { drawPresetBox(x, y, cw, TYPE_NAME[Math.round(v)] || vs); continue; }
