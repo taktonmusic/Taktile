@@ -4294,8 +4294,10 @@ function drawGrains() {                                    /* left = a while ago
     fill_rect(126, y0 + 1, 1, h - 2, 1);
     if (big) fill_rect(125, yc, 3, 1, 1);
 }
+const BUS_TITLE = { 46: ['FX BUS', 'ALL TRACKS'], 39: ['FX BUS 2', 'ALL TRACKS'] };      /* shared by every track: the header must not say TRACK 03 */
 function drawParams() {
     const items = VIEW_ITEMS[pg2(view)], scope = padView(view) ? 'pad' : 'master';
+    if (BUS_TITLE[view]) titleBar(BUS_TITLE[view][0], BUS_TITLE[view][1]); else
     titleBar(scope === 'pad' || view === 36 ? (p2(sel + 1) + ' ' + laneName() + (view === 36 && euPage >= 3 ? ' L' + (euPage - 2) : '')) : (view === 21 ? p2(sel + 1) + ' ' + (kind[sel] ? 'DRUM ' + (slot[sel] + 1) : 'SYNTH') : (view === 8 ? 'OPT' : (view === 44 ? 'FAVORITES' : 'MASTER'))), view === 8 ? 'CPU ' + cpuAvg + '%' : (view === 44 ? 'ALL PAGES' : VIEWS[view]));
     const ps = PAGE_STYLE[view] || 0;
     if (view === 2) drawFilterCurve();

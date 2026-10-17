@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.99.0 (17 October 2026)
+- FX BUS pages are labelled as shared by all tracks (header no longer shows the track number)
+
 ## 5.98.0 (17 October 2026)
 - GRAIN is called GRAIN again (BEADS name removed)
 - MULTI and MIDI FX tiles: every parameter now has a readable name in the normal letters, also while the effect is OFF (no more dashes)
