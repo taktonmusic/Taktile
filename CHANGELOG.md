@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.101.0 (17 October 2026)
+- Synth tracks no longer show the drum knob row in the sequencer view: they get TUN ATK DCY TON CUT RES PAN VOL (attack instead of drive)
+- Drum tracks: Shift + step 8 walks note layout > note repeat > step sequencer; synth tracks: Shift + step 8 = note layout <> chord
+
 ## 5.100.0 (17 October 2026)
 - Synth tracks: Shift + Step 8 now switches between your note layout and CHORD (steps stay on step 12 and on the Track button)
 - The Track button never enters CHORD any more: on synth tracks it toggles note layout and STEPS

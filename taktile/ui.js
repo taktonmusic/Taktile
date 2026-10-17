@@ -682,12 +682,14 @@ function editParam(scope, key, delta, idx) {
 }
 
 /* sequencer-view knobs */
-const SEQ_SND = ['tune', 'decay', 'tone', 'drive', 'cut', 'res', 'pan', 'vol'];
-const SEQ_SHORT = ['TUN', 'DCY', 'TON', 'DRV', 'CUT', 'RES', 'PAN', 'VOL'];
+const SEQ_DRM = ['tune', 'decay', 'tone', 'drive', 'cut', 'res', 'pan', 'vol'], SEQ_DRM_S = ['TUN', 'DCY', 'TON', 'DRV', 'CUT', 'RES', 'PAN', 'VOL'];
+const SEQ_SYN = ['tune', 'att', 'decay', 'tone', 'cut', 'res', 'pan', 'vol'], SEQ_SYN_S = ['TUN', 'ATK', 'DCY', 'TON', 'CUT', 'RES', 'PAN', 'VOL'];      /* synth tracks get their own knob row (attack instead of drive), drum tracks keep theirs */
+function seqSnd() { return kind[sel] ? SEQ_DRM : SEQ_SYN; }
+function seqShort() { return kind[sel] ? SEQ_DRM_S : SEQ_SYN_S; }
 function seqKnob(i, delta) {
     if (delta === 0) return;
     const big = shiftHeld ? 5 : 1;
-    if (!shiftHeld || i > 3) { const k = SEQ_SND[i], r = editParam('pad', k, delta, i); if (r) showToast(k.toUpperCase(), fmtVal(k, r.v), fracVal(k, r.v)); markEdited(); return; }
+    if (!shiftHeld || i > 3) { const k = seqSnd()[i], r = editParam('pad', k, delta, i); if (r) showToast(k.toUpperCase(), fmtVal(k, r.v), fracVal(k, r.v)); markEdited(); return; }
     switch (i) {
     case 0: pSnap('sys', 0, 'bpm'); bpm = clamp(bpm + delta * big, 40, 240); enqueue('bpm', 'bpm', String(bpm)); break;
     case 1: pSnap('sys', 0, 'swing'); swing = clamp(swing + delta, 0, 25); enqueue('swing', 'swing', (0.5 + swing / 100).toFixed(3)); break;
@@ -1866,7 +1868,7 @@ function knobTouch(i) {
     if (menuOpen) return;
     if (view === 0 && heldStep < 0) {
         if (shiftHeld && i < 4) { const L = [['BPM', String(bpm), (bpm - 40) / 200], ['SWING', String(50 + swing), swing / 25], ['LEN', String(LL()), LL() / MAXSTEP], ['CLIP', String(ed[sel] + 1), ed[sel] / 7]]; showToast(L[i][0], L[i][1], L[i][2]); return; }
-        const k = SEQ_SND[i], v = pads[ln()][PI[k]]; showToast((LONG_NAME[k] || k).toUpperCase(), fmtVal(k, v), fracVal(k, v)); return;
+        const k = seqSnd()[i], v = pads[ln()][PI[k]]; showToast((LONG_NAME[k] || k).toUpperCase(), fmtVal(k, v), fracVal(k, v)); return;
     }
     if (view === 7) { const t = bank * 4 + (i & 3), k = i >= 4 ? 'pan' : 'vol', tvv = k === 'pan' ? pads[t][PI.pan] : getTV(t); showToast(k === 'pan' ? 'PAN' : 'VOLUME', kind[t] && k === 'pan' ? 'PER SOUND' : fmtVal(k, tvv), tvv); return; }
     const items = VIEW_ITEMS[itemsView()]; if (!items || i >= items.length) return;
@@ -4068,8 +4070,8 @@ function drawSeq() {
         txt(0, 53, copyHeld ? (stepClip ? 'PRESS TARGET STEPS' : 'THEN PRESS TARGET') : (deleteHeld ? 'STEP = CLEAR IT' : 'STEP = LOOP END'), 1);
     } else if (!shiftHeld) {
         for (let i = 0; i < 8; i++) {
-            const k = SEQ_SND[i], v = pads[ln()][PI[k]], cx = i * 16 + 1;
-            txtS(cx, 41, SEQ_SHORT[i], 1); txtS(cx, 49, fit(fmtVal(k, v), 15).toUpperCase(), 1);
+            const k = seqSnd()[i], v = pads[ln()][PI[k]], cx = i * 16 + 1;
+            txtS(cx, 41, seqShort()[i], 1); txtS(cx, 49, fit(fmtVal(k, v), 15).toUpperCase(), 1);
             fill_rect(cx, 58, 14, 1, 1); const w = Math.round(14 * clamp(fracVal(k, v), 0, 1)); if (w > 0) fill_rect(cx, 57, w, 3, 1);
         }
     } else {
@@ -4573,7 +4575,7 @@ function knobUse() {                                       /* which of the 8 kno
 const KNOB_RAMP = [123, 119, 118, 120];                   /* dim grey ... white: the lights under the knobs get brighter with the value */
 function knobLevels() {                                    /* value 0..1 of each knob on this page (null = no value to show) */
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb || heldStep >= 0 || loopHeld) return null;
-    if (view === 0) return SEQ_SND.map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
+    if (view === 0) return seqSnd().map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
     const items = VIEW_ITEMS[itemsView()];
     if (!items) return null;
     const out = [];
