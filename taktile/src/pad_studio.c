@@ -60,7 +60,8 @@ __asm__(".symver powf,powf@GLIBC_2.17");
 #define NLANE      80                 /* sound lanes: 0-15 = tracks, 16-79 = four drum kits x 16 sounds */
 #define PAD_BASE   36
 #define MAX_INST   2
-#define GRN_SZ     32768          /* granulator history per sound (0.74 s) */
+#define GRN_SZ     131072         /* BEADS granulator history per sound (3 s: room for long grains) */
+#define GRN_G      16             /* grains that can sound at once */
 #define GRN_SLOTS  4              /* sounds that can use the granulator at the same time */
 #define TWO_PI     6.28318530717958647692f
 #define DLY_SIZE   32768          /* per track */
@@ -772,18 +773,18 @@ typedef struct {
     int   rep_idx, rp_on[REP_N], rp_t[REP_N], rp_k[REP_N], rp_rate[REP_N], rp_ramp[REP_N]; float rp_semi[REP_N], rp_vel[REP_N], rp_cnt[REP_N], rp_cap[REP_N];   /* note repeat */
 
     float lf_buf[2][131072]; float lf_dl[2][65536]; float lf_z[2][4], lf_eng, lf_rpos, lf_rate, lf_gate, lf_hold[2], lf_lvl;       /* LIVE FX on the master bus: one pad = one performance effect */
-    struct { float buf[2][GRN_SZ], pos[8], inc[8], pl[8], pr[8]; int w, tim, age[8], len[8], back[8], lane; unsigned rng; float lpl, lpr; } gr[GRN_SLOTS]; int gr_slot[NLANE];     /* granulator: a few shared slots, a sound that uses it takes one */
+    struct { float buf[2][GRN_SZ], pos[GRN_G], inc[GRN_G], pl[GRN_G], pr[GRN_G]; int w, tim, age[GRN_G], len[GRN_G], back[GRN_G], lane; unsigned rng; float lpl, lpr; } gr[GRN_SLOTS]; int gr_slot[NLANE];     /* granulator: a few shared slots, a sound that uses it takes one */
     int   lf_w, lf_req, lf_mode, lf_t, lf_cap, lf_len, lf_n, lf_dw, lf_dact, lf_hc;
     int   in_use;
 } inst_t;
 /* LIVE FX (master bus, held pad = effect on, release = fade back):
  * 1-4 REPEAT 1/4 1/8 1/16 1/32   5 ROLL (repeats get shorter)   6 TRIPLET   7 REVERSE   8 TAPE STOP   9-10 GATE 1/8 1/16
  * 11 LOW SWEEP   12 HIGH SWEEP   13 CRUSH   14 FREEZE   15 ECHO THROW (the tail rings on after release) */
-/* GRANULATOR per sound: windowed grains read from the last 0.7 s of the sound. Size = grain length, Spread = how far back in time, Pitch = random octave / fifth grains.
+/* BEADS granular per sound: windowed grains read from the last 3 s of the sound (short AND long grains). Size = grain length, Spread = how far back in time, Pitch = random octave / fifth grains.
  * Only GRN_SLOTS sounds can use it at once (a slot is taken while Grain > 0 and given back when it is turned down). */
 static int gran_slot(inst_t *s, int t, float mix) {
     int sl = s->gr_slot[t] - 1;
-    if (mix < 0.01f) { if (sl >= 0) { s->gr_slot[t] = 0; for (int g = 0; g < 8; g++) s->gr[sl].age[g] = s->gr[sl].len[g]; } return -1; }
+    if (mix < 0.01f) { if (sl >= 0) { s->gr_slot[t] = 0; for (int g = 0; g < GRN_G; g++) s->gr[sl].age[g] = s->gr[sl].len[g]; } return -1; }
     if (sl >= 0) return sl;
     for (int k = 0; k < GRN_SLOTS; k++) {
         int used = 0; for (int q = 0; q < NLANE; q++) if (s->gr_slot[q] == k + 1) used = 1;
@@ -813,10 +814,13 @@ static void gran_proc(inst_t *s, int t, const float *q, float *Lp, float *Rp) {
     const int w = G->w;
     if (q[PP_GFZ] < 0.5f) { G->buf[0][w] = *Lp; G->buf[1][w] = *Rp; G->w = (w + 1) & (GRN_SZ - 1); }      /* Freeze: the buffer stops listening, the grains keep looping what it holds */
     if (!G->rng) G->rng = 2463534242u + (unsigned)t * 977u;
-    const int glen = (int)((0.02f + q[PP_GSZ] * q[PP_GSZ] * 0.30f) * s->sr);
+    /* BEADS: Size is exponential, 4 ms (micro grains, a buzzing cloud) up to 1.2 s (long grains, a smeared time-stretch); Density = overlap, with a little random timing */
+    const int glen = (int)(0.004f * powf(300.0f, q[PP_GSZ] < 0.0f ? 0.0f : (q[PP_GSZ] > 1.0f ? 1.0f : q[PP_GSZ])) * s->sr);
+    const float ov = 1.0f + q[PP_GDN] * 7.0f;
     if (--G->tim <= 0) {
-        G->tim = (int)((float)glen / (1.0f + q[PP_GDN] * 5.0f)) + 1;
-        for (int g = 0; g < 8; g++) if (G->age[g] >= G->len[g]) {
+        G->rng ^= G->rng << 13; G->rng ^= G->rng >> 17; G->rng ^= G->rng << 5;
+        G->tim = (int)((float)glen / ov * (0.75f + 0.5f * (float)(G->rng & 1023) / 1023.0f)) + 1;
+        for (int g = 0; g < GRN_G; g++) if (G->age[g] >= G->len[g]) {
             G->rng ^= G->rng << 13; G->rng ^= G->rng >> 17; G->rng ^= G->rng << 5;
             const float r1 = (float)(G->rng & 1023) / 1023.0f;
             G->rng ^= G->rng << 13; G->rng ^= G->rng >> 17; G->rng ^= G->rng << 5;
@@ -838,7 +842,7 @@ static void gran_proc(inst_t *s, int t, const float *q, float *Lp, float *Rp) {
     if (!g_win_ok) gwin_init();
     const float wm = (q[PP_GTN] < 0.0f ? 0.0f : (q[PP_GTN] > 1.0f ? 1.0f : q[PP_GTN])) * 4.0f; int wi = (int)wm; if (wi > 3) wi = 3; const int wj = wi + 1; const float wf = wm - (float)wi;      /* Window: morphs between the five shapes */
     float gl = 0.0f, gr = 0.0f;
-    for (int g = 0; g < 8; g++) {
+    for (int g = 0; g < GRN_G; g++) {
         if (G->age[g] >= G->len[g]) continue;
         const float ph = (float)G->age[g] / (float)G->len[g], pk = ph * 256.0f; const int pi_ = (int)pk; const float pf = pk - (float)pi_;
         const float wa = g_win[wi][pi_] * (1.0f - pf) + g_win[wi][pi_ + 1] * pf, wb = g_win[wj][pi_] * (1.0f - pf) + g_win[wj][pi_ + 1] * pf, w2 = wa * (1.0f - wf) + wb * wf;
@@ -849,7 +853,8 @@ static void gran_proc(inst_t *s, int t, const float *q, float *Lp, float *Rp) {
         G->age[g]++;
     }
     if (!(fabsf(gl) < 8.0f) || !(fabsf(gr) < 8.0f)) { gl = gr = 0.0f; memset(G->buf, 0, sizeof G->buf); }
-    *Lp = *Lp * (1.0f - 0.55f * mix) + gl * 0.95f * mix; *Rp = *Rp * (1.0f - 0.55f * mix) + gr * 0.95f * mix;
+    const float nrm = 1.4f / sqrtf(ov + 0.4f);                       /* dense clouds do not get louder */
+    *Lp = *Lp * (1.0f - 0.55f * mix) + gl * 0.95f * nrm * mix; *Rp = *Rp * (1.0f - 0.55f * mix) + gr * 0.95f * nrm * mix;
 }
 #define LF_SIZE 131072
 #define LF_MASK (LF_SIZE - 1)
@@ -3354,9 +3359,9 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
             int lv = (int)(sqrtf(pk) * 15.0f); if (lv > 15) lv = 15; tmp[n++] = "0123456789abcdef"[lv];
         }
         tmp[n++] = '|';
-        for (int g = 0; g < 8; g++) if (s->gr[sl].age[g] < s->gr[sl].len[g]) {
+        for (int g = 0; g < GRN_G && n < 240; g++) if (s->gr[sl].age[g] < s->gr[sl].len[g]) {
             int back = (s->gr[sl].w - (int)s->gr[sl].pos[g] + GRN_SZ) & (GRN_SZ - 1);
-            n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%d,%d,%d,%d,%d;", back * 99 / GRN_SZ, s->gr[sl].len[g] * 99 / (int)(0.32f * s->sr), (int)(s->gr[sl].inc[g] * 4.0f), s->gr[sl].age[g] * 99 / s->gr[sl].len[g], (int)(s->gr[sl].pr[g] / (s->gr[sl].pl[g] + s->gr[sl].pr[g]) * 9.0f));
+            n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%d,%d,%d,%d,%d;", back * 99 / GRN_SZ, s->gr[sl].len[g] * 99 / (int)(1.3f * s->sr), (int)(s->gr[sl].inc[g] * 4.0f), s->gr[sl].age[g] * 99 / s->gr[sl].len[g], (int)(s->gr[sl].pr[g] / (s->gr[sl].pl[g] + s->gr[sl].pr[g]) * 9.0f));
         }
         if (buf_len <= n) return -1;
         tmp[n] = 0; memcpy(buf, tmp, (size_t)n + 1); return n;

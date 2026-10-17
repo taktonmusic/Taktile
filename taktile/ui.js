@@ -90,8 +90,8 @@ const DRUM_LAYOUT = [
 ];
 const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
-const TAB_SYM = { 50: 'GRAIN', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SEND', 39: 'BUS', 27: 'MIDI', 36: 'EUCLID', 46: 'BUS' };
-const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX SENDS', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
+const TAB_SYM = { 50: 'BEADS', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SEND', 39: 'BUS', 27: 'MIDI', 36: 'EUCLID', 46: 'BUS' };
+const TAB_NAME = { 44: 'CHORD', 50: 'BEADS GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX SENDS', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
 function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 46, 36, 27, 28]; if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
@@ -159,7 +159,7 @@ const VIEW_ITEMS = {
     3: [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']],       /* synth tracks; drum tracks add the kick rumble (viewItemsFix) */
     38: [['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
     46: [['dly_time','DlyTime','DTim'],['dly_fb','DlyFdbk','DFb'],['dly_mode','DlyType','DTyp'],['dly_tone','DlyTone','DTon'],['rvb_size','RvbSize','RSiz'],['rvb_dark','RvbDark','RDrk'],['rvb_mode','RvbType','RTyp'],['rvb_ret','RvbRet','RRet']],
-    50: [['grn','Grain','Grn'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
+    50: [['grn','Beads','Bds'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
     39: [['dly_ret','DlyRet','DRet'],['dly_wide','DlyWide','DWid'],['rvb_wide','RvbWide','RWid'],['rvb_low','RvbLow','RLow']],
     41: [['m_eql','Low'],['m_eqm','Mid'],['m_eqh','High'],['m_lim','Limiter','Lim'],['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_comp','Comp']],
     4: [['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_wid','Width','Wid'],['m_comp','Comp'],['dly_ret','DlyRet','DRet'],['rvb_ret','RvbRet','RRet'],['m_lim','Limiter','Lim']],
@@ -506,7 +506,7 @@ function fmtVal(key, v) {
     if (key === 'scs') return ['AUTO', 'ALL', 'OFF'][Math.round(v * 2)];
     if (key === 'm_eql' || key === 'm_eqm' || key === 'm_eqh' || key === 'eql' || key === 'eqm' || key === 'eqh') { const d = Math.round((v - 0.5) * 24); return (d > 0 ? '+' : '') + d + 'dB'; }
     if (key === 'tsw') return v < 0.52 ? 'OFF' : '+' + Math.round((v - 0.5) * 2 * 25) + '%';
-    if (key === 'gsz') return Math.round((0.02 + v * v * 0.30) * 1000) + 'ms';
+    if (key === 'gsz') { const ms = 4 * Math.pow(300, v); return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(1) + 's'; }
     if (key === 'grn') return v < 0.01 ? 'OFF' : Math.round(v * 100) + '%';
     if (key === 'm_chp') return v < 0.02 ? 'OFF' : String(Math.round(40 + 360 * v));
     if (key === 'favo') return favOnly ? 'ON' : 'OFF';
@@ -879,7 +879,7 @@ const HELP = {
     38: ['FX SENDS: Delay + Reverb', 'Send, Effekt, Output', 'Jog klick: Grain'],
     39: ['FX BUS 2: Return,', 'Breite, Low Cut', 'fuer alle Spuren'],
     46: ['FX BUS: ein Delay und', 'ein Reverb fuer alle', 'Spuren (Sends)', 'Jog klick: Seite 2'],
-    50: ['Granulator: Grain = Mix', 'Size, Spread, Pitch, Density', 'Reverse, Freeze, Window', 'Bild unten: Grains live'],
+    50: ['BEADS: Beads = Mix', 'Size 4ms-1.2s kurz/lang, Dens', 'Reverse, Freeze, Window', 'Bild unten: Grains live'],
     16: ['SOUND = Track-Seiten', 'EDIT = Aktionen', 'MORE = Projekt, Song'],
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
@@ -913,7 +913,7 @@ const HELP_EN = {
     38: ['FX SENDS: Delay + Reverb', 'send, effect, output', 'Jog click: Grain'],
     39: ['FX BUS 2: returns,', 'width, low cut', 'shared by all tracks'],
     46: ['FX BUS: one delay and', 'one reverb for all', 'tracks (sends)', 'Jog click: page 2'],
-    50: ['Granulator: Grain = mix', 'Size, Spread, Pitch, Density', 'Reverse, Freeze, Window', 'Picture below: live grains'],
+    50: ['BEADS: Beads = mix', 'Size 4ms-1.2s short/long, Dens', 'Reverse, Freeze, Window', 'Picture below: live grains'],
     16: ['SOUND = track pages', 'EDIT = actions', 'MORE = project, song'],
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
@@ -2477,7 +2477,7 @@ const GW = { MIDI: 19, FX: 18, SAMPLE: 18, EUCLID: 17, DELAY: 16 };
 function lastTabId() { return trackTabs().indexOf(9) >= 0 ? 9 : 28; }      /* SYNTH ENGINE (second tab of a synth track) or SAMPLE (last tab of the others) */
 const TAB_PARENT = { 43: 2, 50: 38, 39: 46, 47: 9, 49: 27 };      /* second pages belong to a tab: EQ > FILTER, GRAIN > FX, FX BUS 2 > FX BUS */
 function tabIndex(tabs) { return tabs.indexOf(view === 9 ? lastTabId() : (view === 38 && fxPage ? 46 : (TAB_PARENT[view] || view))); }
-function tabPageName(t) { return view === 43 ? 'EQ' : (view === 50 ? 'GRAIN' : (view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
+function tabPageName(t) { return view === 43 ? 'EQ' : (view === 50 ? 'BEADS' : (view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
 function tabPageNum() { return (view === 43 || view === 50 || (view === 38 && fxPage) || (view === 9 && synPage) || (view === 27 && fxPage)) ? '.2' : ''; }
 let synPage = 0, fxPage = 0;
 function tabPg(t) {                                        /* [page, pages] inside the current tile, always shown: tile name top left, page top right */
@@ -2496,7 +2496,7 @@ function selfTest() {                                       /* once after start:
     if (bad) { showToast('SELF TEST', bad, 0); toast.ticks = 120; }
 }
 let lastTab = new Array(NTRK).fill(0), prevTabView = 1;
-const TAB_SHORT = { 50: 'GRAIN', 43: 'EQ', 1: 'PRESET', 9: 'ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SENDS', 39: 'BUS 2', 46: 'FX BUS', 27: 'MIDI', 36: 'EUCLID' };
+const TAB_SHORT = { 50: 'BEADS', 43: 'EQ', 1: 'PRESET', 9: 'ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SENDS', 39: 'BUS 2', 46: 'FX BUS', 27: 'MIDI', 36: 'EUCLID' };
 function drawTabs() {                                      /* header font: previous page | current page (white block) | next page */
     const tabs = trackTabs(), cur = Math.max(0, tabIndex(tabs));
     const nm = TAB_SHORT[tabs[cur]], num = String(cur + 1), nw = num.length * 4 + 3, pg = tabPg(tabs[cur]), pt = pg[0] + '/' + pg[1], pw = pt.length * 4 + 3, w = hfW(nm) + 8 + nw + pw, x = 64 - Math.floor(w / 2);
@@ -4271,7 +4271,7 @@ function gWin(ph, v) { const m = clamp(v, 0, 1) * 4, i = Math.min(3, Math.floor(
 function drawGrains() {                                    /* left = a while ago, right = now: the sound's level as a soft mirrored wave, every grain drawn with the real WINDOW shape (width = size, height = pitch) */
     const y0 = 49, h = 15, yc = y0 + 7, on = pads[ln()][PI.grn] >= 0.01, frz = pads[ln()][PI.gfz] > 0.5, wv = pads[ln()][PI.gtn];
     draw_rect(0, y0, 128, h, 1);
-    if (!on) { txtS(28, y0 + 5, 'GRAIN OFF  TURN KNOB 1', 1); return; }
+    if (!on) { txtS(28, y0 + 5, 'BEADS OFF  TURN KNOB 1', 1); return; }
     if (frz) { txtS(3, y0 + 2, 'FRZ', 1); for (let x = 2; x < 126; x += 4) set_pixel(x, yc, 1); }
     for (let k = 0; k < 32 && k < grEnv.length; k++) {                       /* history: thin mirrored bars, rounded to a wave */
         const a = parseInt(grEnv[k], 16) / 15 || 0, hh = Math.round(a * 5), x = 3 + Math.round(k * 3.75);

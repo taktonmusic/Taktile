@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.97.0 (17 October 2026)
+- Granulator replaced by a BEADS-style granular effect: grain size from 4 ms (short) to 1.2 s (long), 3 s history, up to 16 grains, random grain timing, dense clouds stay level
+- GRAIN page renamed BEADS
+
 ## 5.96.0 (17 October 2026)
 - One shared delay and reverb bus for all tracks: each track only sends into it (Dly / Rvb), the per-track delay and reverb are gone - far less CPU, no more crackling with 3-4 tracks
 - New FX BUS tile: delay time, feedback, type, tone, return and reverb size, darkness, type, return, widths, low cut now apply to every track
