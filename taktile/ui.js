@@ -90,8 +90,8 @@ const DRUM_LAYOUT = [
 ];
 const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
-const TAB_SYM = { 50: 'BEADS', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SEND', 39: 'BUS', 27: 'MIDI', 36: 'EUCLID', 46: 'BUS' };
-const TAB_NAME = { 44: 'CHORD', 50: 'BEADS GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX SENDS', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
+const TAB_SYM = { 50: 'GRAIN', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SEND', 39: 'BUS', 27: 'MIDI', 36: 'EUCLID', 46: 'BUS' };
+const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'FX SENDS', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
 function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 46, 36, 27, 28]; if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
@@ -159,7 +159,7 @@ const VIEW_ITEMS = {
     3: [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']],       /* synth tracks; drum tracks add the kick rumble (viewItemsFix) */
     38: [['dly','Delay','Dly'],['rvb','Reverb','Rvb'],['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
     46: [['dly_time','DlyTime','DTim'],['dly_fb','DlyFdbk','DFb'],['dly_mode','DlyType','DTyp'],['dly_tone','DlyTone','DTon'],['rvb_size','RvbSize','RSiz'],['rvb_dark','RvbDark','RDrk'],['rvb_mode','RvbType','RTyp'],['rvb_ret','RvbRet','RRet']],
-    50: [['grn','Beads','Bds'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
+    50: [['grn','Grain','Grn'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
     39: [['dly_ret','DlyRet','DRet'],['dly_wide','DlyWide','DWid'],['rvb_wide','RvbWide','RWid'],['rvb_low','RvbLow','RLow']],
     41: [['m_eql','Low'],['m_eqm','Mid'],['m_eqh','High'],['m_lim','Limiter','Lim'],['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_comp','Comp']],
     4: [['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_wid','Width','Wid'],['m_comp','Comp'],['dly_ret','DlyRet','DRet'],['rvb_ret','RvbRet','RRet'],['m_lim','Limiter','Lim']],
@@ -879,7 +879,7 @@ const HELP = {
     38: ['FX SENDS: Delay + Reverb', 'Send, Effekt, Output', 'Jog klick: Grain'],
     39: ['FX BUS 2: Return,', 'Breite, Low Cut', 'fuer alle Spuren'],
     46: ['FX BUS: ein Delay und', 'ein Reverb fuer alle', 'Spuren (Sends)', 'Jog klick: Seite 2'],
-    50: ['BEADS: Beads = Mix', 'Size 4ms-1.2s kurz/lang, Dens', 'Reverse, Freeze, Window', 'Bild unten: Grains live'],
+    50: ['Granulator: Grain = Mix', 'Size 4ms-1.2s kurz/lang, Dens', 'Reverse, Freeze, Window', 'Bild unten: Grains live'],
     16: ['SOUND = Track-Seiten', 'EDIT = Aktionen', 'MORE = Projekt, Song'],
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
@@ -913,7 +913,7 @@ const HELP_EN = {
     38: ['FX SENDS: Delay + Reverb', 'send, effect, output', 'Jog click: Grain'],
     39: ['FX BUS 2: returns,', 'width, low cut', 'shared by all tracks'],
     46: ['FX BUS: one delay and', 'one reverb for all', 'tracks (sends)', 'Jog click: page 2'],
-    50: ['BEADS: Beads = mix', 'Size 4ms-1.2s short/long, Dens', 'Reverse, Freeze, Window', 'Picture below: live grains'],
+    50: ['Granulator: Grain = mix', 'Size 4ms-1.2s short/long, Dens', 'Reverse, Freeze, Window', 'Picture below: live grains'],
     16: ['SOUND = track pages', 'EDIT = actions', 'MORE = project, song'],
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
@@ -2477,7 +2477,7 @@ const GW = { MIDI: 19, FX: 18, SAMPLE: 18, EUCLID: 17, DELAY: 16 };
 function lastTabId() { return trackTabs().indexOf(9) >= 0 ? 9 : 28; }      /* SYNTH ENGINE (second tab of a synth track) or SAMPLE (last tab of the others) */
 const TAB_PARENT = { 43: 2, 50: 38, 39: 46, 47: 9, 49: 27 };      /* second pages belong to a tab: EQ > FILTER, GRAIN > FX, FX BUS 2 > FX BUS */
 function tabIndex(tabs) { return tabs.indexOf(view === 9 ? lastTabId() : (view === 38 && fxPage ? 46 : (TAB_PARENT[view] || view))); }
-function tabPageName(t) { return view === 43 ? 'EQ' : (view === 50 ? 'BEADS' : (view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
+function tabPageName(t) { return view === 43 ? 'EQ' : (view === 50 ? 'GRAIN' : (view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
 function tabPageNum() { return (view === 43 || view === 50 || (view === 38 && fxPage) || (view === 9 && synPage) || (view === 27 && fxPage)) ? '.2' : ''; }
 let synPage = 0, fxPage = 0;
 function tabPg(t) {                                        /* [page, pages] inside the current tile, always shown: tile name top left, page top right */
@@ -2496,7 +2496,7 @@ function selfTest() {                                       /* once after start:
     if (bad) { showToast('SELF TEST', bad, 0); toast.ticks = 120; }
 }
 let lastTab = new Array(NTRK).fill(0), prevTabView = 1;
-const TAB_SHORT = { 50: 'BEADS', 43: 'EQ', 1: 'PRESET', 9: 'ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SENDS', 39: 'BUS 2', 46: 'FX BUS', 27: 'MIDI', 36: 'EUCLID' };
+const TAB_SHORT = { 50: 'GRAIN', 43: 'EQ', 1: 'PRESET', 9: 'ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SENDS', 39: 'BUS 2', 46: 'FX BUS', 27: 'MIDI', 36: 'EUCLID' };
 function drawTabs() {                                      /* header font: previous page | current page (white block) | next page */
     const tabs = trackTabs(), cur = Math.max(0, tabIndex(tabs));
     const nm = TAB_SHORT[tabs[cur]], num = String(cur + 1), nw = num.length * 4 + 3, pg = tabPg(tabs[cur]), pt = pg[0] + '/' + pg[1], pw = pt.length * 4 + 3, w = hfW(nm) + 8 + nw + pw, x = 64 - Math.floor(w / 2);
@@ -4149,16 +4149,17 @@ function hubBack() {                                       /* one level up; from
     if (navStack.length) view = navStack.pop(); else { view = hubReturn; symOpen = -1; }
     acc.fill(0); needsRedraw = true;
 }
+const SHORTL = { Depth: 'Dpth', Shape: 'Shp', Pitch: 'Ptch', Level: 'Lvl', Layers: 'Lyrs', Chord: 'Chrd', Speed: 'Spd', Feedbk: 'Fdbk', Space: 'Spc', Range: 'Rng', Chance: 'Chnc', Amount: 'Amt', Target: 'Trgt', Octave: 'Oct', Semis: 'Semi', Voicing: 'Voic', Effect: 'FX', Param: 'Prm', VelBias: 'VelB', ArpRate: 'Rate' };      /* names on the effect tiles: always the normal letters */
 const XL = [null, ['Mix', 'Div', 'Hold'], ['Mix', 'Div', 'Hold'], ['Mix', 'Rate', 'Fdbk'], ['Depth', 'Rate', 'Wide'], ['Depth', 'Rate', 'Shape'], ['Mix', 'Pitch', 'Fdbk'], ['Mix', 'Rate', 'Reso'], ['Depth', 'Div', 'Soft'], ['Rate', 'Bits', 'Mix'], ['Reso', 'Pos', '-']];
 const ML = [null, ['Level', 'Layers'], ['Level', 'Chord'], ['Level', 'Rate'], ['Level', 'Speed'], ['Feedbk', 'Space'], ['Range', 'Chance'], ['Range', 'Chance'], ['Amount', 'Target'], ['Level', 'Octave'], ['Level', 'Semis'], ['Level', 'Voicing']];
 const CHORD_NAME = ['MAJ', 'MIN', 'SUS2', 'SUS4', '7', 'MIN7', 'MAJ7', 'DIM'], OCT_NAME = ['-1', '+1', '+/-1', '+1+2'], ARP_RATE = ['1/16', '1/8', '1/32'], DIA_NAME = ['TRIAD', '7TH', '9TH', 'OPEN'];
 function itemLabel(v, i, nn) {                                 /* MULTI / MIDI pages: labels follow the chosen effect */
     const it = VIEW_ITEMS[pg2(v)][i];
-    if (v === 27 && i > 0 && i < 3) { const t = Math.round(pads[ln()][fxPage ? PI.m2fx : PI.mfx]); return (ML[t] && ML[t][i - 1]) || '-'; }
-    if (v === 27) return i === 0 ? (it[2] || it[1]) : it[1];
+    if (v === 27 && i > 0 && i < 3) { const t = Math.round(pads[ln()][fxPage ? PI.m2fx : PI.mfx]), n = (ML[t] && ML[t][i - 1]) || ['Amt', 'Prm'][i - 1]; return SHORTL[n] || n; }
+    if (v === 27) { const n = i === 0 ? (it[2] || it[1]) : (it[2] || it[1]); return SHORTL[n] || n; }
     if (v !== 24 || i === 0 || i > 3) return String(it[1]).length <= (nn || 7) ? it[1] : (it[2] || it[1]);
-    const t = Math.round(pads[ln()][PI.xfx]);
-    return (XL[t] && XL[t][i - 1]) || '-';
+    const t = Math.round(pads[ln()][PI.xfx]), n = (XL[t] && XL[t][i - 1]) || ['Amt', 'Rate', 'Dpth'][i - 1] || '-';
+    return SHORTL[n] || n;
 }
 let gSc = 1, gX0 = 0, gY0 = 0, gMeas = null, GMC = {};
 function glyphBox(n) { if (GMC[n]) return GMC[n]; gMeas = { a: 999, b: -999 }; drawGlyph(n, 0, 0, 1); const r = [gMeas.a, gMeas.b]; gMeas = null; GMC[n] = r; return r; }
@@ -4271,7 +4272,7 @@ function gWin(ph, v) { const m = clamp(v, 0, 1) * 4, i = Math.min(3, Math.floor(
 function drawGrains() {                                    /* left = a while ago, right = now: the sound's level as a soft mirrored wave, every grain drawn with the real WINDOW shape (width = size, height = pitch) */
     const y0 = 49, h = 15, yc = y0 + 7, on = pads[ln()][PI.grn] >= 0.01, frz = pads[ln()][PI.gfz] > 0.5, wv = pads[ln()][PI.gtn];
     draw_rect(0, y0, 128, h, 1);
-    if (!on) { txtS(28, y0 + 5, 'BEADS OFF  TURN KNOB 1', 1); return; }
+    if (!on) { txtS(28, y0 + 5, 'GRAIN OFF  TURN KNOB 1', 1); return; }
     if (frz) { txtS(3, y0 + 2, 'FRZ', 1); for (let x = 2; x < 126; x += 4) set_pixel(x, yc, 1); }
     for (let k = 0; k < 32 && k < grEnv.length; k++) {                       /* history: thin mirrored bars, rounded to a wave */
         const a = parseInt(grEnv[k], 16) / 15 || 0, hh = Math.round(a * 5), x = 3 + Math.round(k * 3.75);
@@ -4314,9 +4315,8 @@ function drawParams() {
         if (view === 2) { const cx = (i & 3) * 32 + 1, cy = 25 + (i >> 2) * 20; txt(cx + 1, cy, fit(lab, 30), 1); txtB(cx + 1, cy + 9, fit(vs, 30), 1); fill_rect(cx + 1, cy + 18, 28, 1, 1); const w = Math.round(28 * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 1, cy + 17, w, 2, 1); continue; }
         const isHot = hot.t > 0 && hot.v === view && hot.i === i;
         if (view === 1 && items[i][0] === 'wave' && cw >= 32) { drawPresetBox(x, y, cw, (ENUMS.wave[Math.round(v)] || vs)); continue; }
-        { const si = (ps !== 3 && cw >= 32) ? selInfo(items[i][0], v) : null; if (si) { cellSel(x, y, lab, vs, si[0], si[1], cw, isHot, view === 27 || view === 24); continue; } }
-        if (view === 27 || view === 24) { cellSmall(x, y, lab, vs, fr, cw, isHot); continue; }
-        if (view === 1 && items[i][0] === 'type' && cw >= 32) { drawPresetBox(x, y, cw, TYPE_NAME[Math.round(v)] || vs); continue; }
+        { const si = (ps !== 3 && cw >= 32) ? selInfo(items[i][0], v) : null; if (si) { cellSel(x, y, lab, vs, si[0], si[1], cw, isHot, false); continue; } }
+                if (view === 1 && items[i][0] === 'type' && cw >= 32) { drawPresetBox(x, y, cw, TYPE_NAME[Math.round(v)] || vs); continue; }
         if (uiMin && cw >= 32 && (ps === 0 || ps === 1 || ps === 4) && view !== 24 && view !== 27) { themedCell(x, y, lab, vs, fr, cw, isHot, items[i][0]); continue; }
         if (ps === 2) { const n = items.length; per = n > 4 ? 2 : 1; cw = 128 / per; rh = Math.min(15, Math.floor(50 / Math.ceil(n / per))); x = (i % per) * cw; y = 14 + ((i / per) | 0) * rh; cellList(x, y, lab, vs, fr, cw, rh, isHot); }
         else if (ps === 1) { if (isHot) cell(x, y, lab, vs, fr, cw); else cellInv(x, y, lab, vs, fr, cw); }

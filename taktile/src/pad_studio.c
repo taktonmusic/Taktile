@@ -735,7 +735,7 @@ typedef struct {
     float rv_g[NLINES], rv_a;
     float rlc_z[2];
     float dt_buf[12][DT_SIZE]; int dt_w, dt_len[26]; float dt_bw, dt_zl, dt_zr, dt_lfo, dt_dec;     /* Dattorro plate */
-    int   fx_act[NLANE], dr_act;
+    int   fx_act[NLANE], dr_act, dr_quiet;
     /* activity lists (rebuilt every 16 samples or when a voice / arp / ratchet starts): the per-sample loops only visit what is really sounding */
     int   act_dirty, vl_n, al_n, rl_n; short vl[NLANE + NGH], al[NLANE], rl[NLANE]; uint64_t fxm[2];
     float bt_l[NLANE], bt_r[NLANE], bt_sd[NLANE], bt_sr[NLANE]; int bt_act[NLANE];
@@ -3535,7 +3535,7 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
             const float md = 7.0f * s->sr * (1.0f / 29761.0f);
             const float dec = s->dt_dec, g2 = fminf(0.5f, fmaxf(0.25f, dec + 0.15f));
             { /* left half */
-                const float v = dt_rdf(s, 4, (float)Ln[4] + md * sinf(TWO_PI * s->dt_lfo)), u = (x + fbL) - 0.7f * v;
+                const float v = dt_rdf(s, 4, (float)Ln[4] + md * fsin01(s->dt_lfo)), u = (x + fbL) - 0.7f * v;
                 s->dt_buf[4][s->dt_w] = u; const float y = v + 0.7f * u;
                 const float d1 = dt_rd(s, 5, Ln[5]); s->dt_buf[5][s->dt_w] = y;
                 s->dt_zl += s->rv_a * (d1 - s->dt_zl);
@@ -3543,7 +3543,7 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
                 s->dt_buf[6][s->dt_w] = u2; s->dt_buf[7][s->dt_w] = v2 + g2 * u2 + 1e-20f;
             }
             { /* right half */
-                const float v = dt_rdf(s, 8, (float)Ln[8] + md * sinf(TWO_PI * (s->dt_lfo + 0.25f))), u = (x + fbR) - 0.7f * v;
+                const float v = dt_rdf(s, 8, (float)Ln[8] + md * fsin01(s->dt_lfo + 0.25f >= 1.0f ? s->dt_lfo - 0.75f : s->dt_lfo + 0.25f)), u = (x + fbR) - 0.7f * v;
                 s->dt_buf[8][s->dt_w] = u; const float y = v + 0.7f * u;
                 const float d1 = dt_rd(s, 9, Ln[9]); s->dt_buf[9][s->dt_w] = y;
                 s->dt_zr += s->rv_a * (d1 - s->dt_zr);
@@ -3864,7 +3864,11 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         if (sds != 0.0f || srs != 0.0f) s->dr_act = (int)(6.0f * s->sr);        /* the shared delay + reverb run only while something is sent to them (and for their tail) */
         if (s->dr_act > 0) {
             if (--s->dr_act == 0) bus_clear(s);
-            else { float yl_, yr_; bus_fx(s, sds, srs, dlen_g, &yl_, &yr_); L += yl_; R += yr_; }
+            else {
+                float yl_, yr_; bus_fx(s, sds, srs, dlen_g, &yl_, &yr_); L += yl_; R += yr_;
+                if (sds == 0.0f && srs == 0.0f && fabsf(yl_) + fabsf(yr_) < 2e-6f) { if (++s->dr_quiet > 8192 && (int)(s->g[G_RMODE] + 0.5f) != 2) { s->dr_act = 1; } }      /* the tail has died away: stop early */
+                else s->dr_quiet = 0;
+            }
         }
         for (int k = 0; k < NTRK; k++) s->meter[k] = mtr[k] > s->meter[k] ? mtr[k] : s->meter[k] * 0.9997f;
         if (rmb_in != 0.0f) s->rm_act = (int)(4.0f * s->sr);

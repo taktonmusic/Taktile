@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.98.0 (17 October 2026)
+- GRAIN is called GRAIN again (BEADS name removed)
+- MULTI and MIDI FX tiles: every parameter now has a readable name in the normal letters, also while the effect is OFF (no more dashes)
+- Shared reverb/delay bus stops early when the tail has died away (saves CPU), cheaper plate modulation
+
 ## 5.97.0 (17 October 2026)
 - Granulator replaced by a BEADS-style granular effect: grain size from 4 ms (short) to 1.2 s (long), 3 s history, up to 16 grains, random grain timing, dense clouds stay level
 - GRAIN page renamed BEADS
