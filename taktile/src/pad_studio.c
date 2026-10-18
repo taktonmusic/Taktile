@@ -207,13 +207,13 @@ static const char *RATE_NAME[4]  = { "1/8", "1/16", "1/16T", "1/32" };
 static const float RATE_SPB[4]   = { 2.0f, 4.0f, 6.0f, 8.0f };
 static const float RPT_SPB[16]   = { 0.5f, 0.6667f, 1.0f, 1.3333f, 1.5f, 2.0f, 2.6667f, 3.0f, 4.0f, 5.3333f, 6.0f, 8.0f, 12.0f, 16.0f, 24.0f, 32.0f };   /* note repeat rates: steps per beat, slow to fast */
 static const char *KEY_NAME[12]  = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-#define NSC 12
-static const char *SCALE_NAME[NSC] = { "Minor", "Phryg", "Major", "Dorian", "Lydian", "Mixol", "Locr", "HarmMin", "MelMin", "PhrDom", "DblHarm", "HungMin" };
+#define NSC 28
+static const char *SCALE_NAME[NSC] = { "Minor", "Phryg", "Major", "Dorian", "Lydian", "Mixol", "Locr", "HarmMin", "MelMin", "PhrDom", "DblHarm", "HungMin", "PentMaj", "PentMin", "Blues", "MajBlue", "Hirajo", "InSen", "Iwato", "Egypt", "Whole", "DimWH", "DimHW", "BebopD", "NeapMin", "LydDom", "Altered", "Persian" };
 static const char *DT_NAME[5]  = { "1/16", "1/8", "3/16", "1/4", "1/2" };
 static const char *DMODE_NAME[3] = { "PING", "TAPE", "DUB" };
 static const char *RMODE_NAME[3] = { "HALL", "ECHO", "SHIM" };
 static const float DT_BEATS[5] = { 0.25f, 0.5f, 0.75f, 1.0f, 2.0f };
-static const int   SCALE_TBL[NSC][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 } };
+static const int   SCALE_TBL[NSC][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 } , { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 5, 7, 12, 17, 19 }, { 0, 5, 6, 12, 17, 18 }, { 0, 5, 7, 12, 17, 19 }, { 0, 4, 8, 12, 16, 20 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 6, 12, 15, 18 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 6, 12, 16, 18 }, { 0, 4, 6, 12, 16, 18 } };
 
 /* ---------------- global parameters ---------------- */
 enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_N };
@@ -1575,7 +1575,8 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
 }
 
 /* ---------------- MIDI effects (per track, 10 types) ---------------- */
-static const int MS7[NSC][7] = { { 0, 2, 3, 5, 7, 8, 10 }, { 0, 1, 3, 5, 7, 8, 10 }, { 0, 2, 4, 5, 7, 9, 11 }, { 0, 2, 3, 5, 7, 9, 10 }, { 0, 2, 4, 6, 7, 9, 11 }, { 0, 2, 4, 5, 7, 9, 10 }, { 0, 1, 3, 5, 6, 8, 10 }, { 0, 2, 3, 5, 7, 8, 11 }, { 0, 2, 3, 5, 7, 9, 11 }, { 0, 1, 4, 5, 7, 8, 10 }, { 0, 1, 4, 5, 7, 8, 11 }, { 0, 2, 3, 6, 7, 8, 11 } };
+static const int MSN[NSC] = { 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 5, 5, 6, 6, 5, 5, 5, 5, 6, 8, 8, 8, 7, 7, 7, 7 };      /* notes per scale (5 .. 8) */
+static const int MS7[NSC][8] = { { 0, 2, 3, 5, 7, 8, 10, 0 }, { 0, 1, 3, 5, 7, 8, 10, 0 }, { 0, 2, 4, 5, 7, 9, 11, 0 }, { 0, 2, 3, 5, 7, 9, 10, 0 }, { 0, 2, 4, 6, 7, 9, 11, 0 }, { 0, 2, 4, 5, 7, 9, 10, 0 }, { 0, 1, 3, 5, 6, 8, 10, 0 }, { 0, 2, 3, 5, 7, 8, 11, 0 }, { 0, 2, 3, 5, 7, 9, 11, 0 }, { 0, 1, 4, 5, 7, 8, 10, 0 }, { 0, 1, 4, 5, 7, 8, 11, 0 }, { 0, 2, 3, 6, 7, 8, 11, 0 }, { 0, 2, 4, 7, 9, 0, 0, 0 }, { 0, 3, 5, 7, 10, 0, 0, 0 }, { 0, 3, 5, 6, 7, 10, 0, 0 }, { 0, 2, 3, 4, 7, 9, 0, 0 }, { 0, 2, 3, 7, 8, 0, 0, 0 }, { 0, 1, 5, 7, 10, 0, 0, 0 }, { 0, 1, 5, 6, 10, 0, 0, 0 }, { 0, 2, 5, 7, 10, 0, 0, 0 }, { 0, 2, 4, 6, 8, 10, 0, 0 }, { 0, 2, 3, 5, 6, 8, 9, 11 }, { 0, 1, 3, 4, 6, 7, 9, 10 }, { 0, 2, 4, 5, 7, 9, 10, 11 }, { 0, 1, 3, 5, 7, 8, 11, 0 }, { 0, 2, 4, 6, 7, 9, 10, 0 }, { 0, 1, 3, 4, 6, 8, 10, 0 }, { 0, 1, 4, 5, 6, 8, 11, 0 } };
 static void ghost_put(inst_t *s, int p, const vc_t *lay) {
     int gi = -1;
     for (int i = 0; i < NGH; i++) if (!s->vc[NLANE + i].active) { gi = i; break; }
@@ -1648,7 +1649,7 @@ static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      
         s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
         if (pr < 0.5f && (float)((s->rng >> 8) & 0xFFFF) / 65536.0f >= pr * 2.0f) { EMIT(vel, arp_semi, 1); break; }          /* Param = chance that the pitch is changed */
         int r = (int)((s->rng >> 4) % (unsigned)(2 + (int)(am * 12.0f)));
-        int deg = MS7[sc][r % 7] + 12 * (r / 7);
+        int deg = MS7[sc][r % MSN[sc]] + 12 * (r / MSN[sc]);
         if (s->rng & 0x8000u) deg = -deg;
         EMIT(vel, arp_semi + deg, 1); break; }
     case 7: {                                                    /* RANDOM VELOCITY */
@@ -1660,18 +1661,18 @@ static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      
     case 9: {                                                    /* SCALE: snap every note to the current key / scale */
         const int ks = 5 - (int)(s->g[G_KEY] + 0.5f), as = arp_semi + ks;      /* the scale starts at the KEY (the sounds' own root is F) */
         int o = as >= 0 ? as / 12 : -((-as + 11) / 12), r = as - o * 12, best = 0, bd = 99;
-        for (int k = 0; k < 8; k++) { int dv = k < 7 ? MS7[sc][k] : 12, dd = dv > r ? dv - r : r - dv; if (dd < bd) { bd = dd; best = dv; } }
+        for (int k = 0; k <= MSN[sc]; k++) { int dv = k < MSN[sc] ? MS7[sc][k] : 12, dd = dv > r ? dv - r : r - dv; if (dd < bd) { bd = dd; best = dv; } }
         EMIT(vel * (0.35f + 0.65f * am) / 0.805f > 1.0f ? 1.0f : vel * (0.35f + 0.65f * am) / 0.805f, o * 12 + best - ks + 12 * (int)((pr - 0.5f) * 4.0f + (pr >= 0.5f ? 0.5f : -0.5f)), 1); break; }      /* Amount = level, Param = octave shift */
     case 11: {                                                   /* DIATONIC CHORD: the chord that belongs to this scale degree (Amount = level, Param = triad / 7th / 9th / open) */
         const int ks = 5 - (int)(s->g[G_KEY] + 0.5f), as = arp_semi + ks;
         int o = as >= 0 ? as / 12 : -((-as + 11) / 12), r = as - o * 12, deg = 0, bd = 99;
-        for (int k = 0; k < 7; k++) { int dd = MS7[sc][k] > r ? MS7[sc][k] - r : r - MS7[sc][k]; if (dd < bd) { bd = dd; deg = k; } }
+        for (int k = 0; k < MSN[sc]; k++) { int dd = MS7[sc][k] > r ? MS7[sc][k] - r : r - MS7[sc][k]; if (dd < bd) { bd = dd; deg = k; } }
         const int base = o * 12 - ks, n = pr < 0.25f ? 3 : (pr < 0.5f ? 4 : (pr < 0.75f ? 5 : 3));
         const int step[5] = { 0, 2, 4, 6, 8 };
         g_fxk = k0 * (n >= 5 ? 0.38f : (n == 4 ? 0.42f : 0.50f));
         EMIT(vel, base + MS7[sc][deg], 1);
         for (int k = 1; k < n; k++) {
-            const int g = deg + step[k]; int semi = base + MS7[sc][g % 7] + 12 * (g / 7);
+            const int g = deg + step[k]; int semi = base + MS7[sc][g % MSN[sc]] + 12 * (g / MSN[sc]);
             if (pr >= 0.75f && k == 1) semi += 12;                 /* open voicing: the third an octave up */
             trig_layer(s, p, lv, semi, 1);
         }
@@ -2610,13 +2611,12 @@ static void pad_off(inst_t *s, int p) {
 }
 
 /* ---------------- sequencer ---------------- */
-static const int SCALE7[NSC][7] = { { 0, 2, 3, 5, 7, 8, 10 }, { 0, 1, 3, 5, 7, 8, 10 }, { 0, 2, 4, 5, 7, 9, 11 }, { 0, 2, 3, 5, 7, 9, 10 }, { 0, 2, 4, 6, 7, 9, 11 }, { 0, 2, 4, 5, 7, 9, 10 }, { 0, 1, 3, 5, 6, 8, 10 }, { 0, 2, 3, 5, 7, 8, 11 }, { 0, 2, 3, 5, 7, 9, 11 }, { 0, 1, 4, 5, 7, 8, 10 }, { 0, 1, 4, 5, 7, 8, 11 }, { 0, 2, 3, 6, 7, 8, 11 } };
 static inline int prob_idx(int b) { return (b & 0x80) ? (b & 0x1F) : ((((b & 7) << 1) | ((b >> 3) & 1)) << 1); }       /* 32 levels (3.1 % each); older saves stored 8 or 16 levels */
 
 static int note_pad_semi(inst_t *s, int d) {          /* d = 0..31 scale degree; 32..95 = chromatic semitone (d-32) */
     if (d >= 32) return d - 32 - 12;
     int sc = (int)(s->g[G_SCALE] + 0.5f) % NSC;
-    return 12 * (d / 7) + SCALE7[sc][d % 7] - 12;
+    return 12 * (d / MSN[sc]) + MS7[sc][d % MSN[sc]] - 12;
 }
 
 /* a clip becomes the active clip of track t: switch to the sound stored for it (volume + pan stay track-wide) */

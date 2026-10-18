@@ -59,7 +59,7 @@ const ENUMS = {
     arp: ['Off','Up','Down','UpDn','Rand','Roll'],
     rate: ['1/8','1/16','1/16T','1/32'],
     key: ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],
-    scale: ['Minor','Phryg','Major','Dorian','Lydian','Mixol','Locr','HarmMin','MelMin','PhrDom','DblHarm','HungMin'],
+    scale: ['Minor','Phryg','Major','Dorian','Lydian','Mixol','Locr','HarmMin','MelMin','PhrDom','DblHarm','HungMin','PentMaj','PentMin','Blues','MajBlue','Hirajo','InSen','Iwato','Egypt','Whole','DimWH','DimHW','BebopD','NeapMin','LydDom','Altered','Persian'],
     dly_time: ['1/16','1/8','3/16','1/4','1/2'],
 };
 ENUMS.dln = ['AUTO', '1/16', '1/8', '1/4', '1/2', '1 BAR', '2 BARS']; ENUMS.dmd = ['WHOLE', 'WORD', 'LETTER'];      /* speech: fit the text to a length, say all of it or one word per note */
@@ -71,7 +71,7 @@ const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_
 const PI = {}; PK.forEach((k, i) => PI[k] = i);
 const FAV_MAP = { dtime: 'dly_time', dfb: 'dly_fb', rsize: 'rvb_size', rdark: 'rvb_dark', dmode: 'dly_mode', rmode: 'rvb_mode', dtn: 'dly_tone', dwd: 'dly_wide', rwd: 'rvb_wide', rlc: 'rvb_low', chor: 'dly', phas: 'rvb', chrt: 'dly_time', chdp: 'dly_fb', phrt: 'rvb_size', phfb: 'rvb_dark' };     /* favourites saved before the shared FX bus */
 const MI = {}; MK.forEach((k, i) => MI[k] = i);
-const SCALE7 = [[0,2,3,5,7,8,10],[0,1,3,5,7,8,10],[0,2,4,5,7,9,11],[0,2,3,5,7,9,10],[0,2,4,6,7,9,11],[0,2,4,5,7,9,10],[0,1,3,5,6,8,10],[0,2,3,5,7,8,11],[0,2,3,5,7,9,11],[0,1,4,5,7,8,10],[0,1,4,5,7,8,11],[0,2,3,6,7,8,11]];
+const SCALE7 = [[0,2,3,5,7,8,10],[0,1,3,5,7,8,10],[0,2,4,5,7,9,11],[0,2,3,5,7,9,10],[0,2,4,6,7,9,11],[0,2,4,5,7,9,10],[0,1,3,5,6,8,10],[0,2,3,5,7,8,11],[0,2,3,5,7,9,11],[0,1,4,5,7,8,10],[0,1,4,5,7,8,11],[0,2,3,6,7,8,11],[0,2,4,7,9],[0,3,5,7,10],[0,3,5,6,7,10],[0,2,3,4,7,9],[0,2,3,7,8],[0,1,5,7,10],[0,1,5,6,10],[0,2,5,7,10],[0,2,4,6,8,10],[0,2,3,5,6,8,9,11],[0,1,3,4,6,7,9,10],[0,2,4,5,7,9,10,11],[0,1,3,5,7,8,11],[0,2,4,6,7,9,10],[0,1,3,4,6,8,10],[0,1,4,5,6,8,11]];
 const NSC = SCALE7.length;
 const PROB_PCT = Array.from({ length: 32 }, (_, i) => Math.round(100 - i * 100 / 32));   /* 32 levels */
 const NUD_MAX = 28;                                                       /* nudge 0..28 = 0..70 % of a step in 2.5 % steps */
@@ -782,7 +782,8 @@ function cycleTop(d, trackBtn) {
 let layS = 0, layD = 0;                                    /* pad layouts: synth 0 MOVE (in key, rows 3 degrees apart) 1 SEQ 2 OCT 3 CHR (chromatic, rows a fourth apart); drum 0 sounds left 1 sounds right */
 const LAYS_NAME = ['KEY', 'SEQ', 'OCT', '4THS', '3RDS', 'ROW8'], LAYD_NAME = ['SND L', 'SND R'];
 function soundArea(cc) { return (layD === 0) === (cc < 4); }
-function degOf(col, row, w) { return layS >= 3 ? 32 + col + [5, 4, 8][layS - 3] * row : layS === 0 ? col + 3 * row : (layS === 1 ? row * w + col : col + 7 * row); }
+function sN() { return SCALE7[Math.round(master[2]) % NSC].length; }                       /* notes per octave of the chosen scale (5 .. 8) */
+function degOf(col, row, w) { return layS >= 3 ? 32 + col + [5, 4, 8][layS - 3] * row : layS === 0 ? col + 3 * row : (layS === 1 ? row * w + col : col + sN() * row); }
 function padStepOf(i) { return (3 - (i >> 3)) * 8 + (i & 7); }       /* step 1 = top left ... step 32 = bottom right */
 function padStepIdx(i) {                                  /* step number of a pad in STEPS mode (drum track: right 4x4 block = 16 steps), -1 = no step pad */
     if (kind[sel]) { const c = i & 7; return soundArea(c) ? -1 : stepPage * 16 + (3 - (i >> 3)) * 4 + (c & 3); }
@@ -839,7 +840,7 @@ function padLedBase(i) {                                 /* LED colour of pad i 
         return steps[ed[sel]][ln()][si][0] ? tc : 96;
     }
     if (m === 4 && !dr) {                                  /* CHORD pads: left 4 x 4 = single notes, right 4 x 4 = the chords of the same notes (other colour, tonic white) */
-        const j4 = degOf(cc & 3, rr, 4), chd = cc >= 4, root = j4 >= 32 ? (j4 - 32) % 12 === 0 : j4 % 7 === 0;
+        const j4 = degOf(cc & 3, rr, 4), chd = cc >= 4, root = j4 >= 32 ? (j4 - 32) % 12 === 0 : j4 % sN() === 0;
         if (j4 >= 32 && !root && SCALE7[Math.round(master[2]) % NSC].indexOf((j4 - 32) % 12) < 0) return 124;
         return chd ? (root ? 120 : usedCol(tc)) : (root ? rootCol(tc) : tc);
     }
@@ -849,7 +850,7 @@ function padLedBase(i) {                                 /* LED colour of pad i 
         if (pc === 0) return m === 1 ? 120 : rootCol(tc);
         return SCALE7[Math.round(master[2]) % NSC].indexOf(pc) >= 0 ? tc : (m === 1 ? dimCol(tc) : 124);
     }
-    if (j % 7 === 0) return m === 1 ? 120 : rootCol(tc);   /* PITCH: tonic in the darker shade of the track colour, the rest full colour; REPEAT: tonic white */
+    if (j % sN() === 0) return m === 1 ? 120 : rootCol(tc);   /* PITCH: tonic in the darker shade of the track colour, the rest full colour; REPEAT: tonic white */
     return tc;
 }
 
@@ -1536,7 +1537,8 @@ function keyName(k) {
     return KEYNAME[k] || [k, k];
 }
 /* CHORD pads (synth tracks): the pads play chords through the track's MIDI effect, and while this mode is on the favorite knobs become the chord options */
-const CH_PG = [['mfx', 'Chord Mode', 'Mode'], ['mprm', 'Chord', 'Chrd'], ['mamt', 'Level', 'Lvl'], ['m2fx', 'Layer FX', 'Lyr'], ['m2amt', 'Layer Amt', 'LAmt'], ['m2prm', 'Layer Prm', 'LPrm'], ['mch', 'Prob'], ['mvb', 'VelBias', 'VelB']];
+const CH_PG = [['mfx', 'Chord Mode', 'Mode'], ['mprm', 'Chord', 'Chrd'], ['mamt', 'Level', 'Lvl'], ['key', 'Key'], ['scale', 'Scale', 'Scl'], ['m2fx', 'Layer FX', 'Lyr'], ['m2amt', 'Layer Amt', 'LAmt'], ['m2prm', 'Layer Prm', 'LPrm']];
+let chPrev = 1;
 let chBak = new Array(16).fill(null), chOn = new Array(16).fill(0), favSig = 0;
 function chordOn() { return !kind[sel] && topModes[sel] === 4; }
 function chordReconcile() {                                   /* switching the mode on sets the track's MIDI effect to CHORD (the old one is remembered), switching it off brings the old one back */
@@ -1552,7 +1554,11 @@ function chordReconcile() {                                   /* switching the m
             if (m !== 2 && m !== 11) { chBak[t] = [a[PI.mfx], a[PI.mamt], a[PI.mprm]]; a[PI.mfx] = 2; a[PI.mamt] = 0.7; a[PI.mprm] = 0; } else chBak[t] = null;
         } else if (chBak[t]) { a[PI.mfx] = chBak[t][0]; a[PI.mamt] = chBak[t][1]; a[PI.mprm] = chBak[t][2]; chBak[t] = null; }
         qPad(t); markEdited(); needsRedraw = true;
-        if (t === sel) { favBuild(); if (want) showToast('CHORD MODE', 'LEFT = NOTES, RIGHT = CHORDS', 1); else if (view === 44) tabEnter(1); }      /* the page stays where it is: Shift + step 8 only switches the mode */
+        if (t === sel) {      /* the screen follows the mode: the CHORD page opens, and when the mode ends the screen goes back to where it was */
+            favBuild();
+            if (want) { if (view !== 44) chPrev = view; tabEnter(44); showToast('CHORD MODE', 'LEFT = NOTES, RIGHT = CHORDS', 1); }
+            else if (view === 44) { if (isTab(chPrev) && chPrev !== 44) tabEnter(chPrev); else { view = (chPrev === 44 || isHub(chPrev) || chPrev === 7 || chPrev === 31) ? 0 : chPrev; acc.fill(0); needsRedraw = true; } }
+        }
     }
     if (favSig !== (chordOn() ? 1 : 0)) favBuild();
 }
@@ -2242,7 +2248,7 @@ function setKind(t, k) {                                  /* every track is a sy
     if (t === sel) syncSel();
     showToast('TRACK ' + p2(t + 1), k ? 'DRUM' : 'SYNTH', k); markEdited();
 }
-function notePadSemi(d) { if (d >= 32) return d - 44; return 12 * ((d / 7) | 0) + SCALE7[Math.round(master[2]) % NSC][d % 7] - 12; }
+function notePadSemi(d) { if (d >= 32) return d - 44; const A = SCALE7[Math.round(master[2]) % NSC], n = A.length; return 12 * ((d / n) | 0) + A[d % n] - 12; }
 
 function copyTrack(src, dst) {                              /* (unused helper, synth tracks only) */
     pads[dst] = pads[src].slice(); qPad(dst);
