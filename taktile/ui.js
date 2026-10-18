@@ -51,7 +51,7 @@ const ENUMS = {
     wave: ['Auto','Saw','Square','Tri','Sine','Pulse','Pulse12','RampDn','HalfSin','Organ','Hollow','Fold','Stair','Digi','Vowel','Sync'],
     poly: ['Mono','Poly'],
     mfx: ['OFF','OCTV','CHRD','ARP','STRM','ECHO','RNDP','RNDV','COMP','SCAL','TRNS','DIAT'],
-    xfx: ['OFF','STUT','REV','FLNG','TREM','APAN','COMB','WAH','GATE','LOFI','DJ','GRAN','DLAY','RVRB'],      /* GRAN (11) is only kept so that old projects still show it: the granulator has its own page */
+    xfx: ['OFF','STUT','REV','FLNG','TREM','APAN','COMB','WAH','GATE','LOFI','DJ','-','DLAY','RVRB'],      /* 11 was the granulator: removed, old projects show it as off */
     dmode: ['PING','TAPE','DUB'],
     rmode: ['HALL','ECHO','SHIM'],
     mono: ['STEREO','MONO','DRY'],
@@ -88,10 +88,10 @@ const INIT_DRUMS = 'DKick808 DKickHse DSnr909 DClap DHatCl DHatOp DRim DTomMid D
 const DRUM_LAYOUT = INIT_DRUMS.map(n => [Math.max(0, TYPE_NAME.indexOf(n)), .5, .5, 0, 1, 0, 0]);
 const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
-const TAB_SYM = { 50: 'GRAIN', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SEND', 39: 'BUS', 27: 'MIDI', 36: 'EUCLID', 46: 'BUS' };
-const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
+const TAB_SYM = { 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SEND', 39: 'BUS', 27: 'MIDI', 36: 'EUCLID', 46: 'BUS' };
+const TAB_NAME = { 44: 'CHORD', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
-function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
+function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36; }
 const DRM_ENG_RE = /^D(Kick|Snr|Hat|Clap|Tom|Rim|Clave|Cow|Metal)/;
 function isDrmEng(t) { return DRM_ENG_RE.test(TYPE_NAME[Math.round(t)] || ''); }      /* the drum-synth engine: only these drum sounds have an ENGINE tab */
 function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : (isDrmEng(pads[ln()][0]) ? [1, 9, 3, 2, 38, 36, 27, 28] : [1, 3, 2, 38, 36, 27, 28]); if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
@@ -152,7 +152,7 @@ function jogFirst(dl) {
         const v2 = getVal(scopeOf(key), key); curveKey = key; showToast(fullLabel(view, 0, items).toUpperCase(), fmtVal(key, v2), fracVal(key, v2)); if (toast) toast.nm = 1;
     }
 }
-function padView(v) { return v === 50 || v === 43 || v === 30 || v === 38 || v === 39 || v === 46 || v === 36 || (v >= 1 && v <= 3) || v === 5 || v === 6 || v === 9 || v === 14 || v === 19 || v === 24 || v === 26 || v === 27; }
+function padView(v) { return v === 43 || v === 30 || v === 38 || v === 39 || v === 46 || v === 36 || (v >= 1 && v <= 3) || v === 5 || v === 6 || v === 9 || v === 14 || v === 19 || v === 24 || v === 26 || v === 27; }
 function isHub(v) { return v >= 16 && v <= 18; }
 /* every parameter lives on exactly ONE page */
 const VIEW_ITEMS = {
@@ -161,7 +161,6 @@ const VIEW_ITEMS = {
     3: [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']],       /* synth tracks; drum tracks add the kick rumble (viewItemsFix) */
     38: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['dly','Delay','Delay'],['rvb','Reverb','Reverb'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
     46: [['dly_time','DlyTime','Time'],['dly_fb','DlyFdbk','Fdbk'],['dly_tone','DlyTone','Tone'],['dly_ret','DlyRet','Ret'],['rvb_size','RvbSize','Size'],['rvb_dark','RvbDark','Dark'],['rvb_mode','RvbType','Type'],['rvb_ret','RvbRet','Ret']],
-    50: [['grn','Grain','Grn'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
     39: [['dly_mode','DlyType','Type'],['dly_wide','DlyWide','Wide'],['rvb_wide','RvbWide','Wide'],['rvb_low','RvbLow','Low']],
     41: [['m_eql','Low'],['m_eqm','Mid'],['m_eqh','High'],['m_lim','Limiter','Lim'],['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_comp','Comp']],
     4: [['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_wid','Width','Wid'],['m_comp','Comp'],['dly_ret','DlyRet','DRet'],['rvb_ret','RvbRet','RRet'],['m_lim','Limiter','Lim']],
@@ -400,7 +399,7 @@ let freshState = false;
 const ENG2_KEYS = ['snz', 'fatk', 'sfld', 'schp', 'trem', 'trat', 'apan', 'vflt'];
 const SUS_T = new Set([19,22,25,26,57,58,59,64,65,66,67,73,75,77,78,80,81,82,85,86,89,90,91,92,94,95,163,164,165,166,176,177,178,179,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,215,216,217,218,223,224,225,226,227,232,233,234,235,236,237,238,239,313,314,315,322,323,324,333,334,335,336,337,338,339,340,344,345,346,347,348,349,350,352,353,356,357,538,539,540,541,542,543,544,545,564,565,566,567,568,569,570,571,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,644,645,646,647,648,649,650,651,652,653,654,655,656,657,668,669,670,671,672,673,674,675,676,677,686,687,688,689,690,691,692,693,694,695,696,697,698,699,700,701,702,703,704,705,706,707,708,709,710,711,712,713,714,715,732,733,734,735,736,737,738,739,772,773,774,775,776,777,778,779,780,781,782,783,784,785,786,787,788,789,790,791,792,793,794,795,796,797,798,799,800,801,802,803,804,805,806,807,808,809,810,811,812,813,814,815,816,817,818,819,820,821,822,823,824,825,880,881,882,883,884,885,886,887,888,889,890,891,892,893,894,895,896,897,898,899,900,901,902,903,904,905,906,907,908,909,910,911,912,913,914,915,916,917,918,919,920,921,922,923,924,925,926,927,928,929,930,931,932,933,934,935,958,959,960,961,962,963,964,965,966,967,968,969,992,993,994,995,996,997,998,999,1000,1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1012,1013,1119,1120,1130,1131,1132,1133,1134,1135,1136,1137,1138,1144,1145,1146,1147,1148,1149,1150,1151,1152,1153,1154,1155,1156,1157,1158,1159,1160,1161,1162,1163,1164,1165,1166,1167,1168,1169,1170,1180,1181,1182,1183,1184,1185,1186,1187,1188,1189,1190,1191,1192,1193,1194,1195,1196,1197,1198,1199,1200,1201,1202,1252,1253,1254,1255,1256,1257,1258,1259,1260,1263,1264,1265,1266,1267,1268,1269,1270,1271,1272,1273,1275,1276,1277,1278,1283,1285,1286,1288,1291,1292,1293,1296,1297,1298,1299,1300,1302,1303,1304,1305,1306,1307,1308,1309,1310,1311,1312,1313,1314,1327,1328,1329,1331,1333,1335,1337,1338]);      /* sustained engines (pads, strings, leads ...) */
 let attMig = false;      /* projects from before 5.125: the Attack knob now means the same time on every engine (0 = instant everywhere) and the Decay knob now shapes held pads / strings like FM, so the old default 0.12 becomes 0 and sustained sounds get Decay at the top (= they keep holding, as before) */
-function neutEng2(a, l) { if (l >= NTRK) { a[PI.dly] = 0; a[PI.rvb] = 0; } for (const k of ENG2_KEYS) if (PI[k] !== undefined) a[PI[k]] = defOf(PI[k]); if (attMig && l < NTRK) { if (a[PI.att] <= 0.13) a[PI.att] = 0; if (SUS_T.has(Math.round(a[0]))) a[PI.decay] = 1; } return a; }      /* the ENGINE 2 page (noise, fold, chop, tremolo, auto-pan ...) is gone: old projects load with those knobs at their neutral values */
+function neutEng2(a, l) { a[PI.grn] = 0; if (Math.round(a[PI.xfx]) === 11) a[PI.xfx] = 0; if (Math.round(a[PI.x2fx]) === 11) a[PI.x2fx] = 0; if (l >= NTRK) { a[PI.dly] = 0; a[PI.rvb] = 0; } for (const k of ENG2_KEYS) if (PI[k] !== undefined) a[PI[k]] = defOf(PI[k]); if (attMig && l < NTRK) { if (a[PI.att] <= 0.13) a[PI.att] = 0; if (SUS_T.has(Math.round(a[0]))) a[PI.decay] = 1; } return a; }      /* the ENGINE 2 page (noise, fold, chop, tremolo, auto-pan ...) is gone: old projects load with those knobs at their neutral values */
 function loadState() {
     miscLast = null; pads = defaultPads(); steps = newSteps();
     try {
@@ -901,7 +900,6 @@ const HELP = {
     38: ['FX SENDS: Delay + Reverb', 'Send, Effekt, Output', 'Jog klick: Grain'],
     39: ['FX BUS 2: Return,', 'Breite, Low Cut', 'fuer alle Spuren'],
     46: ['FX BUS: ein Delay und', 'ein Reverb fuer alle', 'Spuren (Sends)', 'Jog klick: Seite 2'],
-    50: ['Granulator: Grain = Mix', 'Size 4ms-1.2s kurz/lang, Dens', 'Reverse, Freeze, Window', 'Bild unten: Grains live'],
     16: ['SOUND = Track-Seiten', 'EDIT = Aktionen', 'MORE = Projekt, Song'],
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
@@ -935,7 +933,6 @@ const HELP_EN = {
     38: ['FX SENDS: Delay + Reverb', 'send, effect, output', 'Jog click: Grain'],
     39: ['FX BUS 2: returns,', 'width, low cut', 'shared by all tracks'],
     46: ['FX BUS: one delay and', 'one reverb for all', 'tracks (sends)', 'Jog click: page 2'],
-    50: ['Granulator: Grain = mix', 'Size 4ms-1.2s short/long, Dens', 'Reverse, Freeze, Window', 'Picture below: live grains'],
     16: ['SOUND = track pages', 'EDIT = actions', 'MORE = project, song'],
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
@@ -1998,7 +1995,7 @@ function findRebuild() {                                   /* FIND: all entries 
 }
 function findStep(d) { const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; let i = findCh ? A.indexOf(findCh) : -1; i = clamp(i + (d > 0 ? 1 : -1), -1, 25); findCh = i < 0 ? '' : A[i]; findRebuild(); menuSub = 0; needsRedraw = true; }
 function menuCtxGroup(v) {                                 /* the menu opens at the group that fits the page you came from */
-    const SOUNDV = [1, 2, 3, 9, 27, 28, 30, 38, 39, 46, 50];
+    const SOUNDV = [1, 2, 3, 9, 27, 28, 30, 38, 39, 46];
     const nm = v === 0 ? 'EDIT CLIP' : (SOUNDV.indexOf(v) >= 0 ? 'SOUND' : 'QUICK');
     return Math.max(0, MENU_GROUPS.findIndex(g => g[0] === nm));
 }
@@ -2541,10 +2538,10 @@ function drawTabsNew() {
 }
 const GW = { MIDI: 19, FX: 18, SAMPLE: 18, EUCLID: 17, DELAY: 16 };
 function lastTabId() { return trackTabs().indexOf(9) >= 0 ? 9 : 28; }      /* SYNTH ENGINE (second tab of a synth track) or SAMPLE (last tab of the others) */
-const TAB_PARENT = { 43: 2, 50: 38, 39: 46, 47: 9, 49: 27 };      /* second pages belong to a tab: EQ > FILTER, GRAIN > FX, FX BUS 2 > FX BUS */
+const TAB_PARENT = { 43: 2, 39: 46, 47: 9, 49: 27 };      /* second pages belong to a tab: EQ > FILTER, GRAIN > FX, FX BUS 2 > FX BUS */
 function tabIndex(tabs) { return tabs.indexOf(view === 9 ? lastTabId() : (view === 38 && fxPage ? 46 : (TAB_PARENT[view] || view))); }
-function tabPageName(t) { return view === 43 ? 'EQ' : (view === 50 ? 'GRAIN' : (view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
-function tabPageNum() { return (view === 43 || view === 50 || (view === 38 && fxPage) || (view === 9 && synPage) || (view === 27 && fxPage)) ? '.2' : ''; }
+function tabPageName(t) { return view === 43 ? 'EQ' : ((view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
+function tabPageNum() { return (view === 43 || (view === 38 && fxPage) || (view === 9 && synPage) || (view === 27 && fxPage)) ? '.2' : ''; }
 let synPage = 0, fxPage = 0;
 function tabPg(t) {                                        /* [page, pages] inside the current tile, always shown: tile name top left, page top right */
     if (t === 36) return [euPage + 1, EU_NPG];
@@ -2562,7 +2559,7 @@ function selfTest() {                                       /* once after start:
     if (bad) { showToast('SELF TEST', bad, 0); toast.ticks = 120; }
 }
 let lastTab = new Array(NTRK).fill(0), prevTabView = 1;
-const TAB_SHORT = { 50: 'GRAIN', 43: 'EQ', 1: 'PRESET', 9: 'ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'TRK FX', 39: 'BUS 2', 46: 'FX BUS', 27: 'MIDI', 36: 'EUCLID' };
+const TAB_SHORT = { 43: 'EQ', 1: 'PRESET', 9: 'ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'TRK FX', 39: 'BUS 2', 46: 'FX BUS', 27: 'MIDI', 36: 'EUCLID' };
 function drawTabs() {                                      /* header font: previous page | current page (white block) | next page */
     const tabs = trackTabs(), cur = Math.max(0, tabIndex(tabs));
     const nm = TAB_SHORT[tabs[cur]], num = String(cur + 1), nw = num.length * 4 + 3, pg = tabPg(tabs[cur]), pt = pg[0] + '/' + pg[1], pw = pt.length * 4 + 3, w = hfW(nm) + 8 + nw + pw, x = 64 - Math.floor(w / 2);
@@ -3411,7 +3408,7 @@ function fbTree() {
     /* the same start for every track, like the question for a new track: SYNTHS | DRUMS | SOUNDS, each opens its list; picking the other kind switches the track */
     return { n: 'BROWSE', kids: [sounds, drums, insts].concat(my, fxK, smp) };
 }
-const FX_LABEL = { x2fx: null, m2fx: null, xfx: ['NONE', 'STUTTER', 'REVERSE', 'FLANGER', 'TREMOLO', 'AUTO PAN', 'COMB', 'WAH', 'GATE', 'LO-FI', 'DJ FILTER', 'GRANULATOR', 'DELAY', 'REVERB'], mfx: ['NONE', 'OCTAVER', 'CHORD', 'ARPEGGIO', 'STRUM', 'NOTE ECHO', 'RANDOM PITCH', 'RANDOM VEL', 'COMPRESS', 'SCALE', 'TRANSPOSE', 'DIATONIC CHORD'] };
+const FX_LABEL = { x2fx: null, m2fx: null, xfx: ['NONE', 'STUTTER', 'REVERSE', 'FLANGER', 'TREMOLO', 'AUTO PAN', 'COMB', 'WAH', 'GATE', 'LO-FI', 'DJ FILTER', 'NONE', 'DELAY', 'REVERB'], mfx: ['NONE', 'OCTAVER', 'CHORD', 'ARPEGGIO', 'STRUM', 'NOTE ECHO', 'RANDOM PITCH', 'RANDOM VEL', 'COMPRESS', 'SCALE', 'TRANSPOSE', 'DIATONIC CHORD'] };
 FX_LABEL.x2fx = FX_LABEL.xfx; FX_LABEL.m2fx = FX_LABEL.mfx;
 const FX_AMT = { xfx: 'xmix', x2fx: 'x2mix', mfx: 'mamt', m2fx: 'm2amt' }, FX_AMT_DEF = { xfx: 0.5, x2fx: 0.5, mfx: 0.7, m2fx: 0.7 };
 function fbItems(node) {
@@ -4458,7 +4455,7 @@ function drawParams() {
         let x = (i % per) * cw, y = (tabStrip && TAB_NEW ? TAB_Y : 13) + ((i / per) | 0) * (tabStrip && TAB_NEW ? TAB_RH : 26), rh = 0;
         const v = getVal(scopeOf(items[i][0]), items[i][0]);
         const lab = itemLabel(view, i, Math.floor((cw - 6) / 6)), vs = fmtVal(items[i][0], v), fr = fracVal(items[i][0], v); labFull = String(tr(lab)); labW = cw - 3;
-        if (view === 36 || view === 43 || view === 50) {         /* compact tiles (8 knobs) so the pattern / the EQ curve / the grains still fit */
+        if (view === 36 || view === 43) {         /* compact tiles (8 knobs) so the pattern / the EQ curve / the grains still fit */
             const TN = tabStrip && TAB_NEW;
             if (view === 43 && TN) {         /* EQ: a bigger curve on top, small names and values below */
                 const ex = (i & 3) * 32, ey = 36 + (i >> 2) * 14;
@@ -4466,7 +4463,7 @@ function drawParams() {
                 const ew = Math.round(28 * clamp(fr, 0, 1)); fill_rect(ex + 2, ey + 12, 28, 1, 1); if (ew > 0) fill_rect(ex + 2, ey + 11, ew, 2, 1);
                 continue;
             }
-            const cx = (i & 3) * 32, cy = (view === 43 ? (TN ? 27 : 26) : (TN ? 17 : 12)) + (i >> 2) * (TN ? (view === 50 ? 17 : 18) : 19), hotE = hot.t > 0 && hot.v === view && hot.i === i;
+            const cx = (i & 3) * 32, cy = (view === 43 ? (TN ? 27 : 26) : (TN ? 17 : 12)) + (i >> 2) * (TN ? 18 : 19), hotE = hot.t > 0 && hot.v === view && hot.i === i;
             const cc = 1;
             txt(cx + 3, cy + 1, fit(lab, 28), cc); txtB(cx + 3, cy + 9, fit(vs, 28), cc);
             const w = Math.round(28 * clamp(fr, 0, 1)); fill_rect(cx + 2, cy + 17, 28, 1, cc); if (w > 0) fill_rect(cx + 2, cy + 16, w, 2, cc);
@@ -4503,7 +4500,6 @@ function drawParams() {
         for (let p = 0; p < EU_NPG; p++) { if (p === euPage) fill_rect(102 + p * 4, 50, 3, 3, 1); else draw_rect(102 + p * 4, 50, 3, 3, 1); }
         
     }
-    if (view === 50) drawGrains();
     if (view === 33 && rsState === 2) { draw_rect(1, 44, 126, 6, 1); const w = Math.round(122 * rsPct / 100); if (w > 0) fill_rect(3, 46, w, 2, 1); }
     if (view === 8 && lastErr) { fill_rect(0, 38, 128, 26, 0); txt(1, 41, 'ERR ' + errCount, 1); txt(1, 50, lastErr.substring(0, 21), 1); txt(1, 58, lastErr.substring(21, 42), 1); }
 }
@@ -4908,7 +4904,6 @@ globalThis.tick = function () {
     if (!bootTick) { bootTick = true; crumb('tick1'); }
     ticksSinceEdit++;
     if ((ticksSinceEdit & 7) === 0) { miscCheck(); chordReconcile(); }
-    if (view === 50 && !menuOpen && pads[ln()][PI.grn] >= 0.01 && (ticksSinceEdit % 5) === 0) { grainPoll(); needsRedraw = true; }
     if (backTicks > 0) backTicks--;
     if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
     if (clrPend.ticks > 0) clrPend.ticks--;
@@ -5163,12 +5158,11 @@ globalThis.onMidiMessageInternal = function (data) {
         if (d2 > 0 && view === 20 && !menuOpen && !padMenu && !shiftHeld) { mixMode = (mixMode + 1) % 3; needsRedraw = true; showToast('MIX', ['VOLUME', 'DELAY SEND', 'REVERB SEND'][mixMode], mixMode / 2); return; }
         if (d2 > 0 && (view === 0 || view === 1) && !menuOpen && !padMenu && !shiftHeld && askKind < 0 && !fb) { fbOpen(); acc.fill(0); needsRedraw = true; return; }   /* jog click on SEQ/SOUND = preset browser (HOME: Shift + step 3) */
         if (false) { acc.fill(0); showToast(String(synPage + 1), '', 0); toast.ticks = 40; needsRedraw = true; return; }
-        if (d2 > 0 && (view === 38 || view === 27 || view === 2 || view === 43 || view === 46 || view === 50) && !menuOpen && !padMenu && !shiftHeld) {      /* second / third page of FX (TIME, TYPE) and of FILTER (EQ) */
+        if (d2 > 0 && (view === 38 || view === 27 || view === 2 || view === 43 || view === 46) && !menuOpen && !padMenu && !shiftHeld) {      /* second / third page of FX (TIME, TYPE) and of FILTER (EQ) */
             let pg;
             if (view === 2) { view = 43; pg = 2; }
             else if (view === 43) { view = 2; pg = 1; }
-            else if (view === 38 && !fxPage) { view = 50; pg = 2; }
-            else if (view === 50) { view = 38; fxPage = 0; pg = 1; }
+            else if (view === 38 && !fxPage) return;      /* TRACK FX has no second page any more */
             else if (view === 46) { view = 38; fxPage = 1; pg = 2; }
             else if (view === 38) { view = 46; fxPage = 0; pg = 1; }
             else { fxPage ^= 1; pg = fxPage + 1; }

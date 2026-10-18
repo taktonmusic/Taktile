@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.135.0 (18 October 2026)
+- Granulator removed again: the GRAIN page and its tiles are gone (old projects load with it switched off)
+
 ## 5.134.0 (18 October 2026)
 - Pads: a note recorded live no longer sounds a second time right after you let go
 - X (Delete) button: its release is never lost any more, so it does not stay stuck
