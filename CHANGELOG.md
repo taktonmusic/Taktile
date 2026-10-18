@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.144.0 (18 October 2026)
+- Tape is now clearly audible: Tape adds real saturation with more head-bump warmth, Wow bends the pitch like a worn cassette (about 10 cents at full), Hiss unchanged
+
 ## 5.143.0 (18 October 2026)
 - MIDI effects no longer crackle: OCTAVE, CHORD and DIATONIC CHORD now share the level between their notes, so stacked notes no longer overload the output
 
