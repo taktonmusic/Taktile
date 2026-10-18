@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.136.0 (18 October 2026)
+- Granulator is back exactly as before (GRAIN page with all its tiles, GRAN insert effect)
+
 ## 5.135.0 (18 October 2026)
 - Granulator removed again: the GRAIN page and its tiles are gone (old projects load with it switched off)
 
