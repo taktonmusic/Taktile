@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.149.0 (18 October 2026)
+- Chord mode now has two pages: page 1 Mode, Chord, Level, Track Key, Track Scale; page 2 (jog click) Layer FX, Layer Amt, Layer Prm, Prob, VelBias. Chord mode works on synth tracks only
+- Track Key / Track Scale tiles are labelled TKey / TScl so they cannot be mixed up with the master Key / Scale
+- Fixed drawings outside the display (slider mark, long tab names)
+- Removed unused code (old Shift + step 1 song jump, unused helper functions and variables)
+- Manuals updated (chord page, track key/scale, 28 scales, tape, take start, song via menu)
+
 ## 5.148.0 (18 October 2026)
 - KEY and SCALE are now per track (Chord page and MIDI FX page): each track can have its own key and scale; 'Mstr' (default) follows the master Key / Scale, so old projects sound the same; pads, chord pads, scale quantise, MIDI effects and the arp use the track's values
 

@@ -415,7 +415,6 @@ static const float CHGAIN[T_COUNT] = {
 static uint32_t ch_rng(uint32_t *s) { *s ^= *s << 13; *s ^= *s >> 17; *s ^= *s << 5; return *s; }
 static float ch_f(uint32_t *s) { return (float)(ch_rng(s) & 0xFFFFFF) / 16777216.0f; }
 static float ch_r(uint32_t *s, float lo, float hi) { return lo + (hi - lo) * ch_f(s); }
-static float ch_p(uint32_t *s, float p, float lo, float hi) { return ch_f(s) < p ? ch_r(s, lo, hi) : 0.0f; }   /* with probability p a value in lo..hi, else 0 */
 /* ONE attack for every engine: the Attack knob alone sets the time (0 = instant, 1 = 2 s), the same on a plucked FM bell and on a pad. Only drum sounds keep the preset's own attack. */
 static inline float att_unified(float a) { return 0.0005f + a * a * 2.0f; }
 static inline float att_time(int p, float a, float tatt, float base, float k2) {
@@ -1456,7 +1455,7 @@ static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
                                                                        tone, drop, noise, click, body, noise Hz, extra, set / jingles, hat flag */
         const int kd = (int)(q[0] + 0.5f); const float tau = n->tau1 * dm;
         for (int k = 0; k < 64; k++) v->nx[k] = 0.0f;
-        int set = -1, skip0 = 0; float tilt = 0.4f + q[5] * 1.2f, stretch = 0.0f, asc = 1.0f, burst = 2.5f;
+        int set = -1, skip0 = 0; float tilt = 0.4f + q[5] * 1.2f, asc = 1.0f, burst = 2.5f;
         switch (kd) {
         case 0: set = 8; skip0 = 1; burst = 1.0f; break;
         case 1: set = 0; burst = 2.5f; tilt = 0.5f + q[5]; break;
@@ -2974,10 +2973,6 @@ static int enum_index(const char *val, const char *const *names, int n) {
     return -1;
 }
 
-static const char *const *enum_names(int kind) {
-    (void)kind; return NULL;
-}
-
 static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
     for (int k = 0; k < PP_N; k++) {
         if (strcmp(name, PD[k].key) != 0) continue;
@@ -3085,7 +3080,6 @@ static void midi_export(inst_t *s, const char *val) {
 
 static void set_param(void *instance, const char *key, const char *val) {
     inst_t *s = (inst_t *)instance;
-    (void)enum_names;
     if (!s || !key || !val) return;
     int p; const char *nm;
     if (parse_pad_key(key, &p, &nm)) { set_pad_param(s, p, nm, val); return; }
@@ -3351,89 +3345,6 @@ static void set_param(void *instance, const char *key, const char *val) {
         if (k == G_KEY) for (int i = 0; i < NLANE; i++) update_pad(s, i);
         return;
     }
-}
-
-/* ---- JSON ---- */
-typedef struct { char *buf; int cap, off, err; } jb_t;
-static void jp(jb_t *j, const char *fmt, ...) {
-    if (j->err) return;
-    va_list ap; va_start(ap, fmt);
-    int n = vsnprintf(j->buf + j->off, (size_t)(j->cap - j->off), fmt, ap);
-    va_end(ap);
-    if (n < 0 || n >= j->cap - j->off) { j->err = 1; return; }
-    j->off += n;
-}
-static void jopts(jb_t *j, const char *const *names, int n) {
-    jp(j, "[");
-    for (int i = 0; i < n; i++) jp(j, "%s\"%s\"", i ? "," : "", names[i]);
-    jp(j, "]");
-}
-static const char *const *opts_of_pad(int k) {
-    return k == PP_TYPE ? TYPE_NAME : (k == PP_ARP ? ARP_NAME : (k == PP_WAVE ? WAVE_NAME : (k == PP_POLY ? POLY_NAME : (k == PP_DTIME ? DT_NAME : RATE_NAME))));
-}
-static const char *const *opts_of_global(int k) {
-    return k == G_KEY ? KEY_NAME : (k == G_SCALE ? SCALE_NAME : (k == G_DLYT ? DT_NAME : (k == G_DMODE ? DMODE_NAME : RMODE_NAME)));
-}
-static void jparam(jb_t *j, const pd_t *d, const char *const *opts, int first) {
-    if (d->enum_n > 0) {
-        jp(j, "%s{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"enum\",\"options\":", first ? "" : ",", d->key, d->name);
-        jopts(j, opts, d->enum_n);
-        jp(j, ",\"default\":%d}", (int)d->def);
-    } else {
-        jp(j, "%s{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01,\"default\":%.2f}",
-           first ? "" : ",", d->key, d->name, (double)d->def);
-    }
-}
-static void jchild(jb_t *j, const char *name, const int *keys, int nkeys, const int *knobs, int nknobs) {
-    jp(j, "\"%s\":{\"name\":\"%s\",\"child_count\":32,\"child_label\":\"Pad\",\"child_key_template\":\"p{index}_{key}\","
-          "\"child_index_base\":1,\"child_index_digits\":2,\"child_index_param\":\"focused_pad\","
-          "\"child_press_param\":\"live_press\",\"child_note_base\":36,\"child_copy_keys\":[",
-       name, name[0] == 'p' ? "Pad Sound" : "Arp & Pan");
-    for (int i = 0; i < PP_N; i++) jp(j, "%s\"%s\"", i ? "," : "", PD[i].key);
-    jp(j, "],\"params\":[");
-    for (int i = 0; i < nkeys; i++) jparam(j, &PD[keys[i]], opts_of_pad(keys[i]), i == 0);
-    jp(j, "],\"knobs\":[");
-    for (int i = 0; i < nknobs; i++) jp(j, "%s\"%s\"", i ? "," : "", PD[knobs[i]].key);
-    jp(j, "]}");
-}
-
-static char g_hier[8192];
-static int  g_hier_len = 0;
-static char g_chain[4096];
-static int  g_chain_len = 0;
-
-static void build_json(void) {
-    {
-        jb_t j = { g_hier, (int)sizeof g_hier, 0, 0 };
-        static const int sound_keys[] = { PP_TYPE, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_VOL, PP_DLY, PP_RVB };
-        static const int arp_keys[]   = { PP_ARP, PP_RATE, PP_PAN };
-        jp(&j, "{\"pad_layout\":\"drums\",\"levels\":{"
-               "\"root\":{\"name\":\"Pad Studio\",\"params\":["
-               "{\"level\":\"pads\",\"label\":\"Pad Sound\"},"
-               "{\"level\":\"arp\",\"label\":\"Arp & Pan\"},"
-               "{\"level\":\"master\",\"label\":\"Master FX\"}],\"knobs\":[]},");
-        jchild(&j, "pads", sound_keys, 8, sound_keys, 8);
-        jp(&j, ",");
-        jchild(&j, "arp", arp_keys, 3, arp_keys, 3);
-        jp(&j, ",\"master\":{\"name\":\"Master FX\",\"params\":[");
-        for (int i = 0; i < G_N; i++) jparam(&j, &GD[i], opts_of_global(i), i == 0);
-        jp(&j, "],\"knobs\":[\"m_vol\",\"key\",\"scale\",\"dly_time\",\"dly_fb\",\"dly_ret\",\"rvb_size\",\"rvb_ret\"]}");
-        jp(&j, "}}");
-        g_hier_len = j.err ? -1 : j.off;
-    }
-    {
-        jb_t j = { g_chain, (int)sizeof g_chain, 0, 0 };
-        jp(&j, "[");
-        for (int i = 0; i < G_N; i++) jparam(&j, &GD[i], opts_of_global(i), i == 0);
-        jp(&j, ",{\"key\":\"focused_pad\",\"name\":\"Pad\",\"type\":\"int\",\"min\":1,\"max\":32,\"default\":1}]");
-        g_chain_len = j.err ? -1 : j.off;
-    }
-}
-
-static int copy_out(const char *src, int n, char *buf, int buf_len) {
-    if (n < 0 || n >= buf_len) return -1;
-    memcpy(buf, src, (size_t)n); buf[n] = '\0';
-    return n;
 }
 
 static int get_param(void *instance, const char *key, char *buf, int buf_len) {
