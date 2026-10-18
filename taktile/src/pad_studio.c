@@ -85,7 +85,7 @@ static inline float sin2pi(float ph) { ph -= floorf(ph); return sin2pi_raw(ph); 
 #include "variants_n.h"
 #include "variants3_n.h"
 #include "variants4_n.h"
-enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_N };
+enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_DSW, PP_DST, PP_DNZ, PP_DCK, PP_N };
 #define NGH 24                       /* ghost voices: released tails of retriggered notes in POLY mode */
 
 enum {
@@ -183,6 +183,7 @@ static const pd_t PD[PP_N] = {
     { "eqlf", "EQ LowF", 0, 0.5f }, { "eqmf", "EQ MidF", 0, 0.5f }, { "eqhf", "EQ HighF", 0, 0.5f }, { "eqq", "EQ Q", 0, 0.5f }, { "eqo", "EQ Out", 0, 0.5f }, { "pcv", "PumpCrv", 0, 0.0f }, { "rfq", "RingFrq", 0, 0.0f },
     { "dtn", "D Tone", 0, 0.5f }, { "dwd", "D Width", 0, 0.5f }, { "rwd", "R Width", 0, 0.5f }, { "rlc", "R LowCut", 0, 0.0f },
     { "gdn", "GrDens", 0, 0.4f }, { "grv", "GrRev", 0, 0.0f }, { "gfz", "GrFreeze", 0, 0.0f }, { "gtn", "GrTone", 0, 1.0f },
+    { "dsw", "DrmSweep", 0, 0.5f }, { "dst", "DrmSwpTime", 0, 0.5f }, { "dnz", "DrmNoise", 0, 0.5f }, { "dck", "DrmClick", 0, 0.5f },      /* drum synth engine knobs, 0.5 = the sound as designed */
 };
 
 static const char *TYPE_NAME[T_COUNT] = {
@@ -1794,7 +1795,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         if (q[5] > 0.5f) { const float L = (float)((1 << (int)(q[5] + 0.5f)) - 1) * 0.5f; x = floorf(x * L + 0.5f) / L; }
         break; }
     case 5: {                                                       /* DRUM SYNTH: kick, snare, hat, clap, tom, rim, metal -- p: kind, sweep, sweep ms, noise mix, click, drive, noise HP Hz, band Hz */
-        const float *pq5 = s->pp[p]; const float qsw = q[1] + pq5[PP_DET] * 6.0f, qst = q[2] * (1.0f + pq5[PP_SUB] * 3.0f), qnm = clampf(q[3] + pq5[PP_FKEY], 0.0f, 1.0f), qck = clampf(q[4] + (pq5[PP_FDEC] - 0.5f), 0.0f, 1.0f);      /* the engine knobs: Sweep, Sweep time, Noise, Click (Click: 50 = the sound as designed) */
+        const float *pq5 = s->pp[p]; const float qsw = fmaxf(0.0f, q[1] + (pq5[PP_DSW] - 0.5f) * 12.0f), qst = q[2] * exp2f((pq5[PP_DST] - 0.5f) * 3.0f), qnm = clampf(q[3] + (pq5[PP_DNZ] - 0.5f), 0.0f, 1.0f), qck = clampf(q[4] + (pq5[PP_DCK] - 0.5f) * 1.4f, 0.0f, 1.0f);      /* the engine knobs: Sweep, Sweep time, Noise, Click (50 = the sound as designed) */
         const int kd = (int)(q[0] + 0.5f); const float t = v->t, f = v->f0;
         const float nz = noise(s);
         { const float xa = TWO_PI * (q[6] > 20.0f ? q[6] : 20.0f) * dt; v->nx[4] += (xa / (1.0f + xa)) * (nz - v->nx[4]); }
@@ -1804,7 +1805,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         switch (kd) {
         case 0: case 4: {                                           /* KICK / TOM: sine with a falling pitch + a click */
             v->ph += f * sw * dt; WRAP(v->ph);
-            out = sin2pi(v->ph) * v->env + nz * expf(-t / 0.0015f) * qck * 0.6f + hp * (v->env2 * q[3] + pq5[PP_FKEY] * 0.5f * v->env * expf(-t / 0.03f));      /* Noise on a kick / tom adds a short breath on top of the body */
+            out = sin2pi(v->ph) * v->env + nz * expf(-t / 0.0015f) * qck * 0.6f + hp * (v->env2 * q[3] + fmaxf(0.0f, pq5[PP_DNZ] - 0.5f) * 1.6f * v->env * expf(-t / 0.03f));      /* Noise on a kick / tom adds a short breath on top of the body */
             break; }
         case 1: {                                                   /* SNARE: two tuned shells + filtered noise */
             v->ph += f * sw * dt; WRAP(v->ph); v->ph2 += f * 1.68f * sw * dt; WRAP(v->ph2);

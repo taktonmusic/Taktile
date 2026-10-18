@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.127.0 (18 October 2026)
+- Drum synth ENGINE tab has its own four knobs (Sweep, Sweep time, Noise, Click), no longer shared with the filter page; all start at 50 = the sound as designed
+- Sweep, Noise and Click are much more audible on kicks and toms
+
 ## 5.126.0 (18 October 2026)
 - New drum tracks start with the INIT drum kit: pure synth drums (808 kick, 909 snare, clap, hats, toms, rim, cowbell), no preset needed
 - Drum synth sounds get an ENGINE tab: Sweep, Sweep time, Noise, Click + Drive and filter, edit them like a synth sound

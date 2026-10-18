@@ -63,8 +63,8 @@ const ENUMS = {
     dly_time: ['1/16','1/8','3/16','1/4','1/2'],
 };
 ENUMS.m2fx = ENUMS.mfx; ENUMS.x2fx = ENUMS.xfx; ENUMS.dly_mode = ENUMS.dmode; ENUMS.rvb_mode = ENUMS.rmode;
-const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn'];
-const PDEF = { 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
+const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn','dsw','dst','dnz','dck'];
+const PDEF = { 105: 0.5, 106: 0.5, 107: 0.5, 108: 0.5, 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
 const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low'];
 const PI = {}; PK.forEach((k, i) => PI[k] = i);
@@ -137,7 +137,8 @@ function browseSound(dl) {                                 /* jog: presets insid
     }
     brw = { c: c, l: l, i: Math.max(0, l.indexOf(nt)) }; brwTicks = 55; needsRedraw = true;
     if (nt === cur) return;
-    pads[L][0] = nt; if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); storeCs(L);
+    pads[L][0] = nt; if (isDrmEng(nt)) { for (let i = 105; i < 109; i++) pads[L][i] = 0.5; qPad(L); }      /* a new drum-synth sound starts with its engine knobs as designed */
+    if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); storeCs(L);
     markEdited(); needsRedraw = true;
 }
 function jogFirst(dl) {
@@ -3117,7 +3118,7 @@ const KIT_FILE = '/data/UserData/schwung/taktile-kits.json';
 let kitSlot = 0, kits = null;
 function kitsLoad() { if (kits) return; kits = {}; try { const t = host_read_file(KIT_FILE); if (t) { const o = JSON.parse(t); if (o && typeof o === 'object') kits = o; } } catch (e) { kits = {}; } }
 function kitsSave() { try { host_write_file(KIT_FILE, JSON.stringify(kits)); } catch (e) { /* ignore */ } }
-function soundIdx(i) { return i < 24 || (i >= 41 && i <= 44) || (i >= 47 && i < 61); }
+function soundIdx(i) { return i < 24 || (i >= 41 && i <= 44) || (i >= 47 && i < 61) || i >= 105; }
 const FACTORY = [
     ['TECHNO', 'KckTch1 RumbKick SnrTch1 ClpDry1 HatCl01 HatOp01 RimTk1 TomSet1 ShkGrv1 CrsCym1 RdeCym1 TomSet2 ZapSet1 FMPerc1 CowSet1 GlchX01'.split(' ')],
     ['HOUSE', 'KckHse1 Kick707 SnrSnap ClpRoom1 HatCl05 HatOp05 RimWood TomMid ShakeMed CrsCym3 RdeCym3 TomFloor CngSet1 BngSet1 CowSet2 FMclick'.split(' ')],
@@ -3237,6 +3238,7 @@ function kitLoad() {
     for (let j = 0; j < ls.length && j < k.r.length; j++) {
         const row = k.r[j]; if (!Array.isArray(row)) continue;
         for (let i = 0; i < PK.length && i < row.length; i++) if (soundIdx(i)) pads[ls[j]][i] = clamp(Number(row[i]) || 0, 0, i === 0 ? TYPE_NAME.length : 12);
+        for (let i = 105; i < 109; i++) pads[ls[j]][i] = 0.5;         /* the drum-engine knobs start as designed */
         qPad(ls[j]); flushPad(ls[j]);                                 /* the whole kit reaches the engine at once, not 3 pads per tick */
     }
     markEdited(); showToast('KIT ' + kitName(kitSlot), 'LOADED', 1); needsRedraw = true;
@@ -4453,7 +4455,7 @@ const FILT_BASE = VIEW_ITEMS[2], P47_BASE = VIEW_ITEMS[47], SYN_PG = VIEW_ITEMS[
 const FMI = TYPE_NAME.indexOf('FmInit');                       /* the plain 2-operator FM INIT sound: Ratio, Index, Feedback (+ Decay on the sound page) */
 const ENG_KN = { 6: ['Detune', 'Sub', 'Sync', 'Width'], 7: ['Position', 'Sweep', 'Warp', 'Detune'], 8: ['Index', 'Ratio', 'Feedback', 'Algo'], 9: ['Tilt', 'Odd/Even', 'Stretch', 'Shimmer'], 10: ['Detune', 'Spread', 'Hollow', 'Motion'], 11: ['Bright', 'Pick', 'Damp', 'Excite'], 12: ['Fold', 'Sweep', 'Symmetry', 'Harmonics'] };
 const ENG_ABBR = { Detune: 'Det', Position: 'Pos', Sweep: 'Swp', Width: 'Wid', Feedback: 'Fdbk', 'Odd/Even': 'O/E', Stretch: 'Strc', Shimmer: 'Shim', Spread: 'Sprd', Hollow: 'Holo', Motion: 'Mot', Bright: 'Brt', Excite: 'Exc', Symmetry: 'Sym', Harmonics: 'Harm', Index: 'Idx', Ratio: 'Rat' };      /* every knob name fits its tile in the normal letters */
-const DRM_PG = [['det','Sweep','Swp'],['sub','SweepTime','SwpT'],['fkey','Noise','Nse'],['fdec','Click','Clk'],['drive','Drive','Drv'],['cut','LPCut','LPF'],['res','Reso','Res'],['locut','HPCut','HPF']];
+const DRM_PG = [['dsw','Sweep','Swp'],['dst','SweepTime','SwpT'],['dnz','Noise','Nse'],['dck','Click','Clk'],['drive','Drive','Drv'],['cut','LPCut','LPF'],['res','Reso','Res'],['locut','HPCut','HPF']];
 const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0], ENG_ABBR[ENG_KN[e][0]]], ['sub', ENG_KN[e][1], ENG_ABBR[ENG_KN[e][1]]], ['fkey', ENG_KN[e][2], ENG_ABBR[ENG_KN[e][2]]], ['fdec', ENG_KN[e][3], ENG_ABBR[ENG_KN[e][3]]], ['drive', 'Drive', 'Drv'], ['cut', 'LPCut', 'LPF'], ['res', 'Reso', 'Res'], ['poly', 'Voices', 'Poly']];
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
