@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.122.0 (18 October 2026)
+- Aufnahme in leeren Clip: Bei Drum-Tracks wuchs die Loop-Länge nicht mit (jeder Drum-Sound blieb bei 16 Steps) – jetzt wachsen Track und alle Drum-Sounds gemeinsam in 16er-Schritten und bleiben synchron
+- Beim zweiten Druck auf Record wird die Länge auf volle 16er-Takte aufgerundet (16, 32, 48 …) für alle Sounds des Tracks
+
 ## 5.121.0 (18 October 2026)
 - Drum-Tracks haben keinen Zugriff mehr auf den gemeinsamen Delay/Reverb: keine Sends, kein FX-BUS-Tab; stattdessen zwei eigene Insert-Effekte pro Drum-Sound (INSERT 1 + INSERT 2)
 - Synth-Tracks behalten Sends (DEL/REV) und die FX-BUS-Seiten mit allen Delay-/Reverb-Einstellungen

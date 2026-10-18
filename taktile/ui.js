@@ -2244,7 +2244,7 @@ function recStopLen() {                                   /* Rec pressed the sec
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
         const el = Math.max(0.01, gpos - growG0[t]), n = clamp(Math.ceil(el / 16) * 16, 16, MAXSTEP);
-        if (lens[t] !== n) { reMap(t, lens[t], n); lens[t] = n; enqueue('len' + t, 'len', t + ',' + n); }
+        growSet(t, n);
         showToast('REC LENGTH', n + ' STEPS', n / MAXSTEP);
     }
 }
@@ -2274,10 +2274,17 @@ function reMap(t, oldLen, n) {                           /* a clip that changes 
         if (ch) qSeq(c, l);
     }
 }
+function growSet(t, n) {                                   /* a clip recorded from empty changes length: the track AND every drum sound that follows it change together, so all sounds stay in sync */
+    const old = lens[t]; n = clamp(n, 1, MAXSTEP); if (n === old) return false;
+    reMap(t, old, n); lens[t] = n; enqueue('len' + t, 'len', t + ',' + n);
+    for (const l of lanesOf(t)) if (llen[l] && llen[l] === old) { llen[l] = n; enqueue('llen' + l, 'llen', l + ',' + n); }
+    return true;
+}
 function growLoop(lane, n) {
     const t = laneTrk(lane); n = clamp(n, 1, MAXSTEP);
-    if (kind[t] && llen[lane]) { llen[lane] = n; enqueue('llen' + lane, 'llen', lane + ',' + n); }
-    else { if (growTrk[t] && !(kind[t] && llen[lane])) reMap(t, lens[t], n); lens[t] = n; enqueue('len' + t, 'len', t + ',' + n); }
+    if (growTrk[t]) growSet(t, n);
+    else if (kind[t] && llen[lane]) { llen[lane] = n; enqueue('llen' + lane, 'llen', lane + ',' + n); }
+    else { lens[t] = n; enqueue('len' + t, 'len', t + ',' + n); }
     showToast('LOOP GROWS', n + ' STEPS', n / MAXSTEP);
 }
 let recSnap = {}, recGrp = 0, recLastT = 0;
@@ -2320,7 +2327,7 @@ function recordHit(lane, semi, vel) {
     const a = r.split(','), g = parseInt(a[1]) || 0, fr = parseInt(a[3]) || 0;
     let len = effLen(lane);
     if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; { const g1 = g - 1, l1 = Math.max(1, len); growG0[track] = g1 - (((g1 % l1) + l1) % l1); } }
-    if (growTrk[track] && len < MAXSTEP && gs - 1 >= len && ((g % len) + len) % len >= len - 2) {      /* from the second pass on, a hit in the last two steps means: keep going */ growLoop(lane, len < 16 ? 16 : len * 2); len = effLen(lane); }
+    if (growTrk[track] && len < MAXSTEP && gs - 1 >= len && ((g % len) + len) % len >= len - 2) {      /* from the second pass on, a hit in the last two steps means: keep going */ growLoop(lane, len + 16); len = effLen(lane); }
     const pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw);      /* the hit's exact position, snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
     let tS = Math.floor(pSn + 1e-6), tN = Math.round((pSn - tS) / 0.025); if (tN > NUD_MAX) { tS++; tN = 0; }
     const target = ((tS % len) + len) % len;
