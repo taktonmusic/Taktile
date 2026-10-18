@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.168.0 (18 October 2026)
+- Browser: Pfeiltasten links/rechts wechseln die Kategorie (in Ordnerlisten: links = zurueck, rechts = oeffnen); lange Kategorienamen laufen in der linken Spalte durch
+
 ## 5.167.0 (18 October 2026)
 - Browser: geteilte Ansicht (Option B3): links die Kategorien, rechts die Sounds; Regler 3 schaltet zwischen SPLIT und TABS
 

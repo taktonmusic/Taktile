@@ -3662,7 +3662,7 @@ function drawFB() {
     const sib = fbSiblings(), grid = !!top.node.kits, split = !!(sib && !grid && fbSplit), y0 = (sib && !split) ? 17 : 13, lw0 = grid ? 10 : 17, listW = grid ? 66 : 124, lx = split ? 35 : 0;
     if (split) {                                           /* split view: the categories as a column on the left (the open one filled), Shift + jog = next */
         const n = sib.list.length, f0 = clamp(sib.idx - 1, 0, Math.max(0, n - 4));
-        for (let q = 0; q < 4; q++) { const k = f0 + q, y = y0 + q * 10; if (k >= n) continue; const on = k === sib.idx, nm = String(sib.list[k].n).substring(0, 7); if (on) fill_rect(0, y, 33, 10, 1); txtS(2, y + 3, nm, on ? 0 : 1); }
+        for (let q = 0; q < 4; q++) { const k = f0 + q, y = y0 + q * 10; if (k >= n) continue; const on = k === sib.idx, nm = on ? mq(String(sib.list[k].n), 7) : String(sib.list[k].n).substring(0, 7); if (on) fill_rect(0, y, 33, 10, 1); txtS(2, y + 3, nm, on ? 0 : 1); }
         fill_rect(33, y0, 1, 40, 1);
     } else if (sib) {                                      /* tabs: one box per category, the open one filled (Shift + jog = next) */
         const n = sib.list.length, w = clamp(Math.floor(116 / n) - 2, 2, 12), x0 = Math.floor((128 - n * (w + 2)) / 2);
@@ -3693,7 +3693,7 @@ function drawFB() {
     else { fill_rect(66, y0, 1, 40, 0); }
     const it0 = its[top.i], act = !it0 ? '' : (it0.kid ? 'CLICK=OPEN' : (top.node.kits ? 'CLICK=LOAD' : 'CLICK=KEEP'));      /* bottom line: position, what the keys do */
     txtS(2, 58, (top.i + 1) + '/' + its.length, 1);
-    if (sib && !split) txtS(34, 58, 'SH+TURN=CAT', 1); else if (split) txtS(34, 58, 'SH+TURN=CAT', 1);
+    if (sib) txtS(44, 58, '<> CAT', 1);
     txtS(126 - act.length * 4, 58, act, 1);
 }
 /* ---- projects: 32 slots, each a full copy of the state ---- */
@@ -5172,6 +5172,10 @@ globalThis.onMidiMessageInternal = function (data) {
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
         if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
         if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbSetPrev(dl > 0); return; }
+        if (type === 0xB0 && (d1 === CC.LEFT || d1 === CC.RIGHT)) {      /* arrows: left / right = previous / next category; in a folder list left = one level up, right = open */
+            if (d2 > 0) { const rt = d1 === CC.RIGHT; if (fbSiblings()) fbCat(rt ? 1 : -1); else if (rt) { const tp = fb.st[fb.st.length - 1], it = fbItems(tp.node)[tp.i]; if (it && it.kid) fbClick(); } else fbBack(); }
+            return;
+        }
         if (type === 0xB0 && d1 === CC.KNOB1 + 2) { const dl = decodeDelta(d2); if (dl && fbSiblings() && !fb.st[fb.st.length - 1].node.kits) { fbSplit = dl > 0; showToast('BROWSER LAYOUT', fbSplit ? 'SPLIT' : 'TABS', fbSplit ? 1 : 0); needsRedraw = true; } return; }      /* knob 3: split view / tabs */
         if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = decodeDelta(d2); if (dl) { fbVol = clamp(Math.round((fbVol + (dl > 0 ? 0.05 : -0.05)) * 100) / 100, 0.1, 1); showToast('PREVIEW VOLUME', Math.round(fbVol * 100) + '%', fbVol); needsRedraw = true; } return; }      /* knob 2: preview volume */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
