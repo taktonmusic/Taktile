@@ -59,12 +59,14 @@ const ENUMS = {
     arp: ['Off','Up','Down','UpDn','Rand','Roll'],
     rate: ['1/8','1/16','1/16T','1/32'],
     key: ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],
+    tkey: ['Mstr','C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],
+    tscl: ['Mstr','Minor','Phryg','Major','Dorian','Lydian','Mixol','Locr','HarmMin','MelMin','PhrDom','DblHarm','HungMin','PentMaj','PentMin','Blues','MajBlue','Hirajo','InSen','Iwato','Egypt','Whole','DimWH','DimHW','BebopD','NeapMin','LydDom','Altered','Persian'],
     scale: ['Minor','Phryg','Major','Dorian','Lydian','Mixol','Locr','HarmMin','MelMin','PhrDom','DblHarm','HungMin','PentMaj','PentMin','Blues','MajBlue','Hirajo','InSen','Iwato','Egypt','Whole','DimWH','DimHW','BebopD','NeapMin','LydDom','Altered','Persian'],
     dly_time: ['1/16','1/8','3/16','1/4','1/2'],
 };
 ENUMS.dln = ['AUTO', '1/16', '1/8', '1/4', '1/2', '1 BAR', '2 BARS']; ENUMS.dmd = ['WHOLE', 'WORD', 'LETTER'];      /* speech: fit the text to a length, say all of it or one word per note */
 ENUMS.m2fx = ENUMS.mfx; ENUMS.x2fx = ENUMS.xfx; ENUMS.dly_mode = ENUMS.dmode; ENUMS.rvb_mode = ENUMS.rmode;
-const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn','dsw','dst','dnz','dck','dln','dmd','dlt'];
+const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn','dsw','dst','dnz','dck','dln','dmd','dlt','tkey','tscl'];
 const PDEF = { 105: 0.5, 106: 0.5, 107: 0.5, 108: 0.5, 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
 const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low','m_tape','m_hiss','m_wow'];
@@ -173,7 +175,7 @@ const VIEW_ITEMS = {
     15: [['qgrid','Grid'],['qstr','Strength','Str'],['rqoff','RecSnap','Snap'],['m_qnt','Launch','Lnch'],['lay','Layout','Lay'],['key','Key'],['scale','Scale','Scl']],
     24: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth']],
     49: [['m2fx','MIDI FX 2','FX'],['m2amt','Amount','Amt'],['m2prm','Param','Prm'],['trn','Transp','Xpos'],['mvb','VelBias','VelB'],['vhm','VelHum','VHum'],['vmn','VelMin','VMin'],['vmx','VelMax','VMax']],
-    27: [['mfx','MIDI FX','Effect'],['mamt','Amount','Amt'],['mprm','Param','Prm'],['key','Key'],['arp','Arp'],['rate','ArpRate','Rate'],['scale','Scale','Scl'],['mch','Prob']],
+    27: [['mfx','MIDI FX','Effect'],['mamt','Amount','Amt'],['mprm','Param','Prm'],['tkey','Key'],['arp','Arp'],['rate','ArpRate','Rate'],['tscl','Scale','Scl'],['mch','Prob']],
     25: [['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ'],['m_qnt','Launch','Lnch'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met']],
     26: [['rrate','Rate'],['repmode','Repeat','Rep'],['fullvel','FullVel','FVel'],['rqoff','RecSnap','Snap'],['qscale','ScaleQ','ScQ'],['bpm','BPM'],['swing','Swing','Swg']],
     22: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
@@ -220,7 +222,7 @@ function lanesOf(t) { if (!kind[t]) return [t]; const a = []; for (let k = 0; k 
 function laneOf(t, k) { return kind[t] ? NTRK + slot[t] * 16 + k : t; }
 function ln() { return kind[sel] ? NTRK + slot[sel] * 16 + dsel[sel] : sel; }                  /* the lane (sound + steps) being edited */
 function laneTrk(l) { if (l < NTRK) return l; const d = (l - NTRK) >> 4; for (let t = 0; t < NTRK; t++) if (kind[t] && slot[t] === d) return t; for (let t = 0; t < NTRK; t++) if (slot[t] === d) return t; return 0; }
-function keyLane(k) { return (PI[k] === 45 || PI[k] === 46 || PI[k] === 51 || PI[k] === 52) ? sel : ln(); }                                         /* effects belong to the track, sounds to the lane */
+function keyLane(k) { return (k === 'tkey' || k === 'tscl' || PI[k] === 45 || PI[k] === 46 || PI[k] === 51 || PI[k] === 52) ? sel : ln(); }                                         /* effects belong to the track, sounds to the lane */
 function laneName() { return kind[sel] ? 'D' + (dsel[sel] + 1) + ' ' + TYPE_NAME[Math.round(pads[ln()][0])] : TYPE_NAME[Math.round(pads[sel][0])]; }
 function trkName(t) { return kind[t] ? 'DRUM ' + (slot[t] + 1) : 'SYNTH'; }
 function getTV(t) { return kind[t] ? tv[t] : pads[t][PI.vol]; }
@@ -782,7 +784,9 @@ function cycleTop(d, trackBtn) {
 let layS = 0, layD = 0;                                    /* pad layouts: synth 0 MOVE (in key, rows 3 degrees apart) 1 SEQ 2 OCT 3 CHR (chromatic, rows a fourth apart); drum 0 sounds left 1 sounds right */
 const LAYS_NAME = ['KEY', 'SEQ', 'OCT', '4THS', '3RDS', 'ROW8'], LAYD_NAME = ['SND L', 'SND R'];
 function soundArea(cc) { return (layD === 0) === (cc < 4); }
-function sN() { return SCALE7[Math.round(master[2]) % NSC].length; }                       /* notes per octave of the chosen scale (5 .. 8) */
+function effScale(t) { const v = Math.round(pads[t === undefined ? sel : t][PI.tscl]); return (v > 0 && v <= NSC ? v - 1 : Math.round(master[2])) % NSC; }      /* the track's own Scale (Mstr = follow the master) */
+function effKey(t) { const v = Math.round(pads[t === undefined ? sel : t][PI.tkey]); return v > 0 && v <= 12 ? v - 1 : clamp(Math.round(master[1]), 0, 11); }
+function sN() { return SCALE7[effScale()].length; }                       /* notes per octave of the chosen scale (5 .. 8) */
 function degOf(col, row, w) { return layS >= 3 ? 32 + col + [5, 4, 8][layS - 3] * row : layS === 0 ? col + 3 * row : (layS === 1 ? row * w + col : col + sN() * row); }
 function padStepOf(i) { return (3 - (i >> 3)) * 8 + (i & 7); }       /* step 1 = top left ... step 32 = bottom right */
 function padStepIdx(i) {                                  /* step number of a pad in STEPS mode (drum track: right 4x4 block = 16 steps), -1 = no step pad */
@@ -841,14 +845,14 @@ function padLedBase(i) {                                 /* LED colour of pad i 
     }
     if (m === 4 && !dr) {                                  /* CHORD pads: left 4 x 4 = single notes, right 4 x 4 = the chords of the same notes (other colour, tonic white) */
         const j4 = degOf(cc & 3, rr, 4), chd = cc >= 4, pc4 = (((j4 - 32 + keyShift()) % 12) + 12) % 12, root = j4 >= 32 ? pc4 === 0 : j4 % sN() === 0;
-        if (j4 >= 32 && !root && SCALE7[Math.round(master[2]) % NSC].indexOf(pc4) < 0) return 124;
+        if (j4 >= 32 && !root && SCALE7[effScale()].indexOf(pc4) < 0) return 124;
         return chd ? (root ? 120 : usedCol(tc)) : (root ? rootCol(tc) : tc);
     }
     const j = dr ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8);
     if (j >= 32) {                                         /* chromatic: root bright, scale notes normal, others dim */
         const pc = (((j - 32 + keyShift()) % 12) + 12) % 12;
         if (pc === 0) return m === 1 ? 120 : rootCol(tc);
-        return SCALE7[Math.round(master[2]) % NSC].indexOf(pc) >= 0 ? tc : (m === 1 ? dimCol(tc) : 124);
+        return SCALE7[effScale()].indexOf(pc) >= 0 ? tc : (m === 1 ? dimCol(tc) : 124);
     }
     if (j % sN() === 0) return m === 1 ? 120 : rootCol(tc);   /* PITCH: tonic in the darker shade of the track colour, the rest full colour; REPEAT: tonic white */
     return tc;
@@ -1268,7 +1272,7 @@ function opTimeQ() {                                        /* move every note o
 }
 function opScaleQ() {                                      /* snap every note of the clip to the current key + scale */
     if (kind[sel]) { showToast('SCALE Q', 'SYNTH TRACKS ONLY', 0); return; }
-    const c = ed[sel], L = ln(), set = SCALE7[Math.round(master[MI.scale]) % NSC].concat([12]); let n = 0;
+    const c = ed[sel], L = ln(), set = SCALE7[effScale()].concat([12]); let n = 0;
     snap(c, L);
     for (let s = 0; s < LL(); s++) {
         const st = steps[c][L][s]; if (!st[0]) continue;
@@ -1276,7 +1280,7 @@ function opScaleQ() {                                      /* snap every note of
         for (const d of set) { const dd = Math.abs(d - r); if (dd < bd) { bd = dd; best = d; } }
         const ns = clamp(o * 12 + best + ks, -64, 63); if (ns !== st[2]) { st[2] = ns; n++; }
     }
-    clipOpDone('SCALE Q', 1); showToast('SCALE Q ' + ENUMS.scale[Math.round(master[MI.scale]) % NSC].toUpperCase(), n ? n + ' NOTES MOVED' : 'ALL NOTES FIT', n ? 1 : 0.5);
+    clipOpDone('SCALE Q', 1); showToast('SCALE Q ' + ENUMS.scale[effScale()].toUpperCase(), n ? n + ' NOTES MOVED' : 'ALL NOTES FIT', n ? 1 : 0.5);
 }
 function opHalf() { const c = ed[sel], L = ln(), n = LL(); if (n < 2) return; snap(c, L); if (llen[L]) { llen[L] = n >> 1; enqueue('llen' + L, 'llen', L + ',' + llen[L]); } else lens[sel] = n >> 1; clipOpDone('HALF /2'); }
 function opProb(mode) {                                   /* probability of all notes of the clip: 0 random, 1 curve (on-beats sure, off-beats lower), 2 everything 100% */
@@ -1537,7 +1541,7 @@ function keyName(k) {
     return KEYNAME[k] || [k, k];
 }
 /* CHORD pads (synth tracks): the pads play chords through the track's MIDI effect, and while this mode is on the favorite knobs become the chord options */
-const CH_PG = [['mfx', 'Chord Mode', 'Mode'], ['mprm', 'Chord', 'Chrd'], ['mamt', 'Level', 'Lvl'], ['key', 'Key'], ['scale', 'Scale', 'Scl'], ['m2fx', 'Layer FX', 'Lyr'], ['m2amt', 'Layer Amt', 'LAmt'], ['m2prm', 'Layer Prm', 'LPrm']];
+const CH_PG = [['mfx', 'Chord Mode', 'Mode'], ['mprm', 'Chord', 'Chrd'], ['mamt', 'Level', 'Lvl'], ['tkey', 'Key'], ['tscl', 'Scale', 'Scl'], ['m2fx', 'Layer FX', 'Lyr'], ['m2amt', 'Layer Amt', 'LAmt'], ['m2prm', 'Layer Prm', 'LPrm']];
 let chPrev = 1;
 let chBak = new Array(16).fill(null), chOn = new Array(16).fill(0), favSig = 0;
 function chordOn() { return !kind[sel] && topModes[sel] === 4; }
@@ -2248,8 +2252,8 @@ function setKind(t, k) {                                  /* every track is a sy
     if (t === sel) syncSel();
     showToast('TRACK ' + p2(t + 1), k ? 'DRUM' : 'SYNTH', k); markEdited();
 }
-function keyShift() { return clamp(Math.round(master[1]), 0, 11) - 5; }                 /* the KEY moves the pads: the sounds' own root is F (key 5), every other key shifts the pads up or down */
-function notePadSemi(d) { if (d >= 32) return d - 44 + keyShift(); const A = SCALE7[Math.round(master[2]) % NSC], n = A.length; return 12 * ((d / n) | 0) + A[d % n] - 12 + keyShift(); }
+function keyShift() { return effKey() - 5; }                 /* the KEY moves the pads: the sounds' own root is F (key 5), every other key shifts the pads up or down */
+function notePadSemi(d) { if (d >= 32) return d - 44 + keyShift(); const A = SCALE7[effScale()], n = A.length; return 12 * ((d / n) | 0) + A[d % n] - 12 + keyShift(); }
 
 function copyTrack(src, dst) {                              /* (unused helper, synth tracks only) */
     pads[dst] = pads[src].slice(); qPad(dst);
@@ -2385,7 +2389,7 @@ function drumPad(idx, on, vel) {                          /* drum track: left 4x
             if (deleteHeld) {
                 const c = ed[sel]; snap(c, l); let had = false; for (let s = 0; s < MAXSTEP; s++) { if (steps[c][l][s][0]) had = true; steps[c][l][s] = [0, 100, 0, 0]; }
                 if (had) { qSeq(c, l); showToast('SOUND ' + (k + 1), 'STEPS CLEARED', 0); }
-                else { const d = defaultPads()[l]; for (let i = 0; i < PK.length; i++) if (i !== PI.vol && i !== PI.pan) pads[l][i] = d[i]; qPad(l); showToast('SOUND ' + (k + 1), 'RESET', 0); }
+                else { const d = defaultPads()[l]; for (let i = 0; i < PK.length; i++) if (i !== PI.vol && i !== PI.pan && i !== PI.tkey && i !== PI.tscl) pads[l][i] = d[i]; qPad(l); showToast('SOUND ' + (k + 1), 'RESET', 0); }
                 markEdited(); return;
             }
             const v = fullVel ? 127 : Math.max(1, vel);
@@ -3147,7 +3151,7 @@ const KIT_FILE = '/data/UserData/schwung/taktile-kits.json';
 let kitSlot = 0, kits = null;
 function kitsLoad() { if (kits) return; kits = {}; try { const t = host_read_file(KIT_FILE); if (t) { const o = JSON.parse(t); if (o && typeof o === 'object') kits = o; } } catch (e) { kits = {}; } }
 function kitsSave() { try { host_write_file(KIT_FILE, JSON.stringify(kits)); } catch (e) { /* ignore */ } }
-function soundIdx(i) { return i < 24 || (i >= 41 && i <= 44) || (i >= 47 && i < 61) || i >= 105; }
+function soundIdx(i) { return i < 24 || (i >= 41 && i <= 44) || (i >= 47 && i < 61) || (i >= 105 && i < PI.tkey); }      /* the track's own Key / Scale are not part of a sound */
 const FACTORY = [
     ['TECHNO', 'KckTch1 RumbKick SnrTch1 ClpDry1 HatCl01 HatOp01 RimTk1 TomSet1 ShkGrv1 CrsCym1 RdeCym1 TomSet2 ZapSet1 FMPerc1 CowSet1 GlchX01'.split(' ')],
     ['HOUSE', 'KckHse1 Kick707 SnrSnap ClpRoom1 HatCl05 HatOp05 RimWood TomMid ShakeMed CrsCym3 RdeCym3 TomFloor CngSet1 BngSet1 CowSet2 FMclick'.split(' ')],
@@ -3510,7 +3514,7 @@ function fbApply() {
 }
 function initSound(L) {                                    /* every sound parameter back to its default (volume, pan and type stay) */
     const d = defaultPads()[L]; if (!d) return;
-    for (let i = 0; i < PK.length; i++) if (i !== PI.vol && i !== PI.pan && i !== 0) pads[L][i] = d[i];
+    for (let i = 0; i < PK.length; i++) if (i !== PI.vol && i !== PI.pan && i !== 0 && i !== PI.tkey && i !== PI.tscl) pads[L][i] = d[i];
     pads[L][PI.dly] = 0; pads[L][PI.rvb] = 0;                  /* an INIT sound is dry: no delay or reverb send (set them per track / per drum pad on the FX tile) */
     qPad(L);
 }

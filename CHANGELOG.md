@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.148.0 (18 October 2026)
+- KEY and SCALE are now per track (Chord page and MIDI FX page): each track can have its own key and scale; 'Mstr' (default) follows the master Key / Scale, so old projects sound the same; pads, chord pads, scale quantise, MIDI effects and the arp use the track's values
+
 ## 5.147.0 (18 October 2026)
 - KEY now really moves the pads: changing the key (e.g. C to D) shifts the notes of the pads and of the chord pads, in the sound and in the sequencer; Scale Quantise follows the key too (default key F = unchanged)
 

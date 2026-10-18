@@ -85,7 +85,7 @@ static inline float sin2pi(float ph) { ph -= floorf(ph); return sin2pi_raw(ph); 
 #include "variants_n.h"
 #include "variants3_n.h"
 #include "variants4_n.h"
-enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_DSW, PP_DST, PP_DNZ, PP_DCK, PP_DLN, PP_DMD, PP_DLT, PP_N };
+enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_DSW, PP_DST, PP_DNZ, PP_DCK, PP_DLN, PP_DMD, PP_DLT, PP_TKEY, PP_TSCL, PP_N };
 #define NGH 24                       /* ghost voices: released tails of retriggered notes in POLY mode */
 
 enum {
@@ -183,7 +183,7 @@ static const pd_t PD[PP_N] = {
     { "eqlf", "EQ LowF", 0, 0.5f }, { "eqmf", "EQ MidF", 0, 0.5f }, { "eqhf", "EQ HighF", 0, 0.5f }, { "eqq", "EQ Q", 0, 0.5f }, { "eqo", "EQ Out", 0, 0.5f }, { "pcv", "PumpCrv", 0, 0.0f }, { "rfq", "RingFrq", 0, 0.0f },
     { "dtn", "D Tone", 0, 0.5f }, { "dwd", "D Width", 0, 0.5f }, { "rwd", "R Width", 0, 0.5f }, { "rlc", "R LowCut", 0, 0.0f },
     { "gdn", "GrDens", 0, 0.4f }, { "grv", "GrRev", 0, 0.0f }, { "gfz", "GrFreeze", 0, 0.0f }, { "gtn", "GrTone", 0, 1.0f },
-    { "dsw", "DrmSweep", 0, 0.5f }, { "dst", "DrmSwpTime", 0, 0.5f }, { "dnz", "DrmNoise", 0, 0.5f }, { "dck", "DrmClick", 0, 0.5f }, { "dln", "SpkLength", 0, 0.0f }, { "dmd", "SpkPlay", 0, 0.0f }, { "dlt", "SpkLetter", 0, 0.0f },      /* drum synth engine knobs, 0.5 = the sound as designed */
+    { "dsw", "DrmSweep", 0, 0.5f }, { "dst", "DrmSwpTime", 0, 0.5f }, { "dnz", "DrmNoise", 0, 0.5f }, { "dck", "DrmClick", 0, 0.5f }, { "dln", "SpkLength", 0, 0.0f }, { "dmd", "SpkPlay", 0, 0.0f }, { "dlt", "SpkLetter", 0, 0.0f }, { "tkey", "TrkKey", 0, 0.0f }, { "tscl", "TrkScale", 0, 0.0f },      /* drum synth engine knobs, 0.5 = the sound as designed */
 };
 
 static const char *TYPE_NAME[T_COUNT] = {
@@ -1345,6 +1345,15 @@ static inline int lane_trk(const inst_t *s, int l) {
     int t = s->dtrk[(l - NTRK) >> 4];
     return t < 0 ? 0 : t;
 }
+/* KEY and SCALE belong to the track (0 = follow the master Key / Scale) */
+static inline int eff_key(const inst_t *s, int p) {
+    const int t = (p >= 0 && p < NLANE) ? lane_trk(s, p) : 0, v = (int)(s->pp[t][PP_TKEY] + 0.5f);
+    return v > 0 && v <= 12 ? v - 1 : (int)(s->g[G_KEY] + 0.5f);
+}
+static inline int eff_scale(const inst_t *s, int p) {
+    const int t = (p >= 0 && p < NLANE) ? lane_trk(s, p) : 0, v = (int)(s->pp[t][PP_TSCL] + 0.5f);
+    return (v > 0 && v <= NSC ? v - 1 : (int)(s->g[G_SCALE] + 0.5f)) % NSC;
+}
 static inline int lane_on(const inst_t *s, int l) {
     if (l < NTRK) return !s->isdrum[l];
     return s->dtrk[(l - NTRK) >> 4] >= 0;
@@ -1566,7 +1575,7 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
     v->c1 = T->tau1 > 0.0f ? expf(-1.0f / (T->tau1 * dm * s->sr)) : 0.0f;
     v->c2 = T->tau2 > 0.0f ? expf(-1.0f / (T->tau2 * dm * s->sr)) : 0.0f;
     v->pek = T->pet > 0.0f ? expf(-1.0f / (T->pet * s->sr)) : 0.0f;
-    v->third = powf(2.0f, (float)SCALE_TBL[(int)(s->g[G_SCALE] + 0.5f) % NSC][1] / 12.0f);
+    v->third = powf(2.0f, (float)SCALE_TBL[eff_scale(s, p)][1] / 12.0f);
     if (BASE_T[ty] >= T_E_MODAL) nx_init(s, v, p, ty);
     if (BASE_T[ty] == T_HATCL || (BASE_T[ty] == T_E_AC && ac_hat(ty) == 1)) {                         /* choke every open hat */
         for (int i = 0; i < NLANE; i++)
@@ -1603,7 +1612,7 @@ static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      
     const int mf = (int)(s->pp[p][slot == 2 ? PP_M2FX : PP_MFX] + 0.5f);
     if (mf <= 0 || mf > 11) { if (slot == 1) trig_fx(s, p, vel, arp_semi, 2); else trig_raw(s, p, vel, arp_semi, 1); return; }
     const float am = s->pp[p][slot == 2 ? PP_M2AMT : PP_MAMT], pr = s->pp[p][slot == 2 ? PP_M2PRM : PP_MPRM];
-    const int sc = (int)(s->g[G_SCALE] + 0.5f) % NSC;
+    const int sc = eff_scale(s, p);
     const float lv = vel * (0.35f + 0.65f * am);
     const float L16 = s->sr * 60.0f / s->bpm / 4.0f;
     static const int CHD[8][4] = { {0,4,7,-99}, {0,3,7,-99}, {0,2,7,-99}, {0,5,7,-99}, {0,4,7,10}, {0,3,7,10}, {0,4,7,11}, {0,3,6,9} };
@@ -1659,12 +1668,12 @@ static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      
         EMIT(clampf(vel * (1.0f - am * 0.85f * rr), 0.05f, 1.0f), arp_semi, 1); break; }
     case 8: EMIT(clampf(vel + ((0.2f + 1.3f * pr > 1.0f ? 1.0f : 0.2f + 1.3f * pr) - vel) * am, 0.05f, 1.0f), arp_semi, 1); break;   /* Param = target velocity (default 0.85) */   /* VELOCITY COMPRESSOR */
     case 9: {                                                    /* SCALE: snap every note to the current key / scale */
-        const int ks = 5 - (int)(s->g[G_KEY] + 0.5f), as = arp_semi + ks;      /* the scale starts at the KEY (the sounds' own root is F) */
+        const int ks = 5 - eff_key(s, p), as = arp_semi + ks;      /* the scale starts at the KEY (the sounds' own root is F) */
         int o = as >= 0 ? as / 12 : -((-as + 11) / 12), r = as - o * 12, best = 0, bd = 99;
         for (int k = 0; k <= MSN[sc]; k++) { int dv = k < MSN[sc] ? MS7[sc][k] : 12, dd = dv > r ? dv - r : r - dv; if (dd < bd) { bd = dd; best = dv; } }
         EMIT(vel * (0.35f + 0.65f * am) / 0.805f > 1.0f ? 1.0f : vel * (0.35f + 0.65f * am) / 0.805f, o * 12 + best - ks + 12 * (int)((pr - 0.5f) * 4.0f + (pr >= 0.5f ? 0.5f : -0.5f)), 1); break; }      /* Amount = level, Param = octave shift */
     case 11: {                                                   /* DIATONIC CHORD: the chord that belongs to this scale degree (Amount = level, Param = triad / 7th / 9th / open) */
-        const int ks = 5 - (int)(s->g[G_KEY] + 0.5f), as = arp_semi + ks;
+        const int ks = 5 - eff_key(s, p), as = arp_semi + ks;
         int o = as >= 0 ? as / 12 : -((-as + 11) / 12), r = as - o * 12, deg = 0, bd = 99;
         for (int k = 0; k < MSN[sc]; k++) { int dd = MS7[sc][k] > r ? MS7[sc][k] - r : r - MS7[sc][k]; if (dd < bd) { bd = dd; deg = k; } }
         const int base = o * 12 - ks, n = pr < 0.25f ? 3 : (pr < 0.5f ? 4 : (pr < 0.75f ? 5 : 3));
@@ -2570,7 +2579,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
 /* ---------------- arp ---------------- */
 static int arp_offset(inst_t *s, int p, int n) {
     int arp = (int)(s->pp[p][PP_ARP] + 0.5f);
-    const int *tb = SCALE_TBL[(int)(s->g[G_SCALE] + 0.5f) % NSC];
+    const int *tb = SCALE_TBL[eff_scale(s, p)];
     switch (arp) {
     case 1: return tb[n % 6];
     case 2: return tb[5 - (n % 6)];
@@ -2613,10 +2622,10 @@ static void pad_off(inst_t *s, int p) {
 /* ---------------- sequencer ---------------- */
 static inline int prob_idx(int b) { return (b & 0x80) ? (b & 0x1F) : ((((b & 7) << 1) | ((b >> 3) & 1)) << 1); }       /* 32 levels (3.1 % each); older saves stored 8 or 16 levels */
 
-static int note_pad_semi(inst_t *s, int d) {          /* d = 0..31 scale degree; 32..95 = chromatic semitone (d-32) */
-    const int ksh = (int)(s->g[G_KEY] + 0.5f) - 5;       /* the KEY moves the pads (the sounds' own root is F = key 5) */
+static int note_pad_semi(inst_t *s, int t, int d) {          /* d = 0..31 scale degree; 32..95 = chromatic semitone (d-32) */
+    const int ksh = eff_key(s, t) - 5;       /* the KEY moves the pads (the sounds' own root is F = key 5) */
     if (d >= 32) return d - 32 - 12 + ksh;
-    int sc = (int)(s->g[G_SCALE] + 0.5f) % NSC;
+    int sc = eff_scale(s, t);
     return 12 * (d / MSN[sc]) + MS7[sc][d % MSN[sc]] - 12 + ksh;
 }
 
@@ -2803,7 +2812,7 @@ static void pad_event(inst_t *s, int idx, int vel) {
     if (vel > 0) {
         int t = s->sel_track;
         s->np_trk[k] = t;
-        trig(s, t, (float)vel / 127.0f, note_pad_semi(s, k) + s->pad_oct, 1);
+        trig(s, t, (float)vel / 127.0f, note_pad_semi(s, t, k) + s->pad_oct, 1);
         s->ar[t].held = 1;
     } else {
         int t = s->np_trk[k];
@@ -2830,7 +2839,7 @@ static void sel_pad(inst_t *s, int k, int vel, int repeat) {
     if (vel > 0) {
         int t = s->sel_track; if (t < 0 || t >= NLANE) t = 0;
         s->np_trk[kk] = t;
-        int sm = note_pad_semi(s, k) + s->pad_oct;
+        int sm = note_pad_semi(s, t, k) + s->pad_oct;
         ar_t *ap = &s->ar[t];
         if (!repeat && (int)(s->pp[t][PP_ARP] + 0.5f) > 0) {               /* ARP: a held note pad steps through the scale at the Rate */
             s->act_dirty = 1; ap->on = 1; ap->n = 1; ap->base = sm; ap->key = kk; ap->vel = (float)vel / 127.0f; ap->cnt = arp_step_samples(s, t);
@@ -2982,6 +2991,8 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
         else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX)  { v = clampf((float)atof(val), 0.0f, (k == PP_XFX || k == PP_X2FX) ? 13.0f : 11.0f); }
         else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DMD) { v = clampf((float)atof(val), 0.0f, 2.0f); }
         else if (k == PP_DLN) { v = clampf((float)atof(val), 0.0f, 6.0f); }
+        else if (k == PP_TKEY) { v = clampf((float)atof(val), 0.0f, 12.0f); }
+        else if (k == PP_TSCL) { v = clampf((float)atof(val), 0.0f, (float)NSC); }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         s->pp[p][k] = v;
         if (s->plk_t[p] == k) s->plk_b[p] = v;
@@ -3260,7 +3271,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         int l = atoi(val); const char *c = strchr(val, ','); if (!c || l < 0 || l >= NLANE) return;
         int k = atoi(c + 1);
         if (s->plk_t[l] > 0) { s->pp[l][s->plk_t[l]] = s->plk_b[l]; update_pad(s, l); }       /* put the old target back to its base value */
-        if (k < 1 || k >= PP_N || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX || k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DLN || k == PP_DMD) k = 0;
+        if (k < 1 || k >= PP_N || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX || k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DLN || k == PP_DMD || k == PP_TKEY || k == PP_TSCL) k = 0;
         s->plk_t[l] = (uint8_t)k; if (k) s->plk_b[l] = s->pp[l][k];
         return;
     }
@@ -3290,6 +3301,8 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, (k == PP_XFX || k == PP_X2FX) ? 13.0f : 11.0f);
             else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DMD) v = clampf(v, 0.0f, 2.0f);
             else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
+            else if (k == PP_TKEY) v = clampf(v, 0.0f, 12.0f);
+            else if (k == PP_TSCL) v = clampf(v, 0.0f, (float)NSC);
             else v = clampf(v, 0.0f, 1.0f);
             s->cpp[c][t][k] = v;
             q = (*end == ',') ? end + 1 : end;
@@ -3313,6 +3326,8 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, (k == PP_XFX || k == PP_X2FX) ? 13.0f : 11.0f);
             else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DMD) v = clampf(v, 0.0f, 2.0f);
             else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
+            else if (k == PP_TKEY) v = clampf(v, 0.0f, 12.0f);
+            else if (k == PP_TSCL) v = clampf(v, 0.0f, (float)NSC);
             else v = clampf(v, 0.0f, 1.0f);
             s->pp[n - 1][k] = v;
             q = (*end == ',') ? end + 1 : end;
