@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.166.0 (18 October 2026)
+- Granulator-Seite wie im Bild: grosse Puffer-Anzeige (Wellenform, Lese-Rahmen, Grain-Striche) und die 8 Werte als Text mit Balken darunter statt der Kacheln
+
 ## 5.165.0 (18 October 2026)
 - Browser: Regler 2 = Vorschau-Lautstaerke (10-100 %, Standard 70 %, Anzeige oben rechts, leuchtet mit der Staerke); Design-Themes entfernt: es gibt nur noch das bisherige Standard-Design
 

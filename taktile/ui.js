@@ -4497,26 +4497,42 @@ function grainPoll() {                                     /* live picture of th
 }
 const GWIN = [ph => Math.min(1, Math.min(ph, 1 - ph) * 12), ph => 2 * Math.min(ph, 1 - ph), ph => Math.sin(Math.PI * ph), ph => Math.exp(-20 * (ph - 0.5) * (ph - 0.5)), ph => { const s = Math.sin(Math.PI * ph); return s * s; }];
 function gWin(ph, v) { const m = clamp(v, 0, 1) * 4, i = Math.min(3, Math.floor(m)), f = m - i; return GWIN[i](ph) * (1 - f) + GWIN[i + 1](ph) * f; }
-function drawGrains() {                                    /* BUFFER VIEW: the sound's last seconds as a mirrored wave (left = old, right = now), the grains' reading area (SPREAD) as a bracket, every grain as a tick where it reads, with a bar for its length (backwards = bar to the left) */
-    const TN = tabStrip && TAB_NEW, y0 = TN ? 52 : 49, h = TN ? 12 : 15, on = pads[ln()][PI.grn] >= 0.01, frz = pads[ln()][PI.gfz] > 0.5, sp = clamp(pads[ln()][PI.gsp], 0, 1);
-    draw_rect(0, y0, 128, h, 1);
-    if (!on) { txtS(28, y0 + 5, 'GRAIN OFF  TURN KNOB 1', 1); return; }
-    const wz = h - 6, yc = y0 + 1 + (wz >> 1), mh = (wz >> 1) - (wz % 2 ? 0 : 1), xl = 2, xr = 124, W = xr - xl;      /* wave zone, centre line, half height */
-    const lev = k => (k >= 0 && k < 32 && k < grEnv.length) ? (parseInt(grEnv[k], 16) / 15 || 0) : 0;
-    for (let x = xl; x <= xr; x++) {                                          /* the wave: the 32 history levels, smoothly joined */
-        const f = (x - xl) * 31 / W, k = Math.floor(f), a = lev(k) * (1 - (f - k)) + lev(Math.min(31, k + 1)) * (f - k), hh = Math.round(Math.sqrt(a) * mh);
-        if (hh > 0) fill_rect(x, yc - hh, 1, hh * 2 + 1, 1); else set_pixel(x, yc, 1);
-    }
-    const xw = clamp(Math.round(xr - Math.max(0.04, sp) * W), xl, xr - 3), y1 = y0 + 1, y2 = y0 + wz;      /* the reading area: a bracket around the newest part (width = Spread) */
-    fill_rect(xw, y1, 1, y2 - y1 + 1, 1); fill_rect(xr + 1, y1, 1, y2 - y1 + 1, 1);
-    for (let x = xw; x <= xr + 1; x += 2) { set_pixel(x, y1, 1); set_pixel(x, y2, 1); }
-    if (frz) { txtS(3, y0 + h - 6, 'FRZ', 1); for (let x = xl; x <= xr; x += 4) set_pixel(x, yc, 1); }
-    const ty = y0 + h - 2;                                                    /* tick row */
-    for (let k = 0; k < grains.length; k++) {
-        const g = grains[k], x = clamp(Math.round(xr - g[0] * W / 99), xl, xr), rv = g[2] < 0, tl = g[3] < 35 ? 4 : 2, bl = clamp(Math.round(1 + g[1] * 0.12), 1, 14);
-        fill_rect(x, ty - tl + 1, 1, tl, 1);                                  /* tick: tall = a fresh grain, short = an old one */
-        const bx = rv ? Math.max(xl, x - bl) : x, bw = rv ? x - bx + 1 : Math.min(xr + 1 - x, bl) + 1;
-        fill_rect(bx, ty, Math.max(1, bw), 1, 1);                              /* length of the grain */
+const GR_SHORT = { grn: 'GRN', gsz: 'SIZ', gsp: 'SPR', gpi: 'PIT', gdn: 'DNS', grv: 'REV', gfz: 'FRZ', gtn: 'WIN' };
+function drawGrains() {                                    /* GRAIN PAGE: a big buffer picture (the sound's last seconds as a mirrored wave, left = old, right = now; the grains' reading area = Spread as a framed window; every grain a tick where it reads, with a bar for its length) and the 8 values written under it, each with its own little bar */
+    const TN = tabStrip && TAB_NEW, y0 = TN ? 17 : 12, bh = 41 - y0, on = pads[ln()][PI.grn] >= 0.01, frz = pads[ln()][PI.gfz] > 0.5, sp = clamp(pads[ln()][PI.gsp], 0, 1);
+    draw_rect(0, y0, 128, bh, 1);
+    const yc = y0 + (bh >> 1), mh = (bh >> 1) - 3, xl = 2, xr = 124, W = xr - xl;
+    if (on) {
+        const lev = k => (k >= 0 && k < 32 && k < grEnv.length) ? (parseInt(grEnv[k], 16) / 15 || 0) : 0;
+        for (let x = xl; x <= xr; x++) {                                       /* the wave: the 32 history levels, smoothly joined */
+            const f = (x - xl) * 31 / W, k = Math.floor(f), a = lev(k) * (1 - (f - k)) + lev(Math.min(31, k + 1)) * (f - k), hh = Math.round(Math.sqrt(a) * mh);
+            if (hh > 0) fill_rect(x, yc - hh, 1, hh * 2 + 1, 1); else set_pixel(x, yc, 1);
+        }
+        const xw = clamp(Math.round(xr - Math.max(0.04, sp) * W), xl, xr - 5);       /* the reading area: a double frame around the newest part (width = Spread) */
+        fill_rect(xw + 1, y0 + 2, xr - xw - 1, bh - 4, 0);
+        draw_rect(xw, y0 + 1, xr - xw + 2, bh - 2, 1); draw_rect(xw + 1, y0 + 2, xr - xw, bh - 4, 1);
+        for (let x = xw + 3; x < xr; x++) { const f = (x - xl) * 31 / W, k = Math.floor(f), a = lev(k) * (1 - (f - k)) + lev(Math.min(31, k + 1)) * (f - k), hh = Math.round(Math.sqrt(a) * (mh - 2)); set_pixel(x, yc - hh, 1); set_pixel(x, yc + hh, 1); if (hh > 1 && (x & 1)) fill_rect(x, yc - hh, 1, hh * 2 + 1, 1); }      // inside the window the wave is drawn lighter (outline + hatching), so the frame stands out
+        if (frz) { for (let x = xl; x <= xr; x += 4) set_pixel(x, yc, 1); fill_rect(3, y0 + 2, 15, 7, 0); txtS(4, y0 + 3, 'FRZ', 1); }
+        const ty = y0 + bh + 5;                                                // tick row under the picture
+        for (let k = 0; k < grains.length; k++) {
+            const g = grains[k], x = clamp(Math.round(xr - g[0] * W / 99), xl, xr), rv = g[2] < 0, tl = g[3] < 35 ? 4 : 2, bl = clamp(Math.round(1 + g[1] * 0.12), 1, 14);
+            fill_rect(x, ty - tl + 1, 1, tl, 1);                                   // tick: tall = a fresh grain, short = an old one
+            const bx = rv ? Math.max(xl, x - bl) : x, bw = rv ? x - bx + 1 : Math.min(xr + 1 - x, bl) + 1;
+            fill_rect(bx, ty, Math.max(1, bw), 1, 1);                              // the length of the grain (backwards = to the left)
+        }
+    } else txtS(24, yc - 2, 'GRAIN OFF  TURN KNOB 1', 1);
+    const items = VIEW_ITEMS[50];
+    for (let r = 0; r < 2; r++) {                                                  // the 8 values in two rows: label + value, each with a thin bar for the knob position; the columns are as wide as their text
+        const row = [];
+        for (let q = 0; q < 4; q++) { const i = r * 4 + q, k = items[i][0], v = getVal(scopeOf(k), k); row.push({ i, s: (GR_SHORT[k] || k.toUpperCase()).substring(0, 3) + ' ' + String(fmtVal(k, v)).replace(/\s/g, '').substring(0, 4).toUpperCase(), fr: clamp(fracVal(k, v), 0, 1) }); }
+        const tw = row.reduce((s, c) => s + c.s.length * 4, 0), gap = Math.max(2, Math.floor((124 - tw) / 4)); let cx = 2; const ry = 49 + r * 8;
+        for (const c of row) {
+            const w = c.s.length * 4, hotE = hot.t > 0 && hot.v === 50 && hot.i === c.i;
+            txtS(cx, ry, c.s, 1);
+            for (let x = 0; x < w; x += 2) set_pixel(cx + x, ry + 6, 1);              // dotted line = the whole range
+            const fw = Math.round(w * c.fr); if (fw > 0) fill_rect(cx, ry + (hotE ? 5 : 6), fw, hotE ? 2 : 1, 1);
+            cx += w + gap;
+        }
     }
 }
 const BUS_TITLE = { 46: ['FX BUS', 'ALL TRACKS'], 39: ['FX BUS 2', 'ALL TRACKS'] };      /* shared by every track: the header must not say TRACK 03 */
@@ -4533,7 +4549,8 @@ function drawParams() {
         let x = (i % per) * cw, y = (tabStrip && TAB_NEW ? TAB_Y : 13) + ((i / per) | 0) * (tabStrip && TAB_NEW ? TAB_RH : 26), rh = 0;
         const v = getVal(scopeOf(items[i][0]), items[i][0]);
         const lab = itemLabel(view, i, Math.floor((cw - 6) / 6)), vs = fmtVal(items[i][0], v), fr = fracVal(items[i][0], v); labFull = String(tr(lab)); labW = cw - 3;
-        if (view === 36 || view === 43 || view === 50) {         /* compact tiles (8 knobs) so the pattern / the EQ curve / the grains still fit */
+        if (view === 50) continue;                                     /* the grain page writes its 8 values itself (drawGrains) */
+        if (view === 36 || view === 43) {         /* compact tiles (8 knobs) so the pattern / the EQ curve / the grains still fit */
             const TN = tabStrip && TAB_NEW;
             if (view === 43 && TN) {         /* EQ: a bigger curve on top, small names and values below */
                 const ex = (i & 3) * 32, ey = 36 + (i >> 2) * 14;
