@@ -95,7 +95,7 @@ const TAB_SYM = { 50: 'GRAIN', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2
 const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 46, 36, 27, 28]; if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 36, 27, 28]; if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -258,7 +258,7 @@ function laneHas(p, l) { return !!steps[p][l] && steps[p][l].some(s => s[0]); }
 function activeLanes() { const a = []; for (let t = 0; t < NTRK; t++) a.push(t); for (let t = 0; t < NTRK; t++) if (kind[t]) for (const l of lanesOf(t)) a.push(l); return a; }
 function defaultPads() {
     const lay = []; for (let l = 0; l < NLANE; l++) lay.push(l < NTRK ? LAYOUT[l] : DRUM_LAYOUT[(l - NTRK) & 15]);
-    return lay.map(l => { const a = [l[0], 0.8, 0.5, l[1], l[2], 1.0, 0.0, l[5], l[6], l[3], l[4], 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]; while (a.length < PK.length) a.push(defOf(a.length)); return a; });
+    return lay.map((l, li) => { const a = [l[0], 0.8, 0.5, l[1], l[2], 1.0, 0.0, li >= NTRK ? 0 : l[5], li >= NTRK ? 0 : l[6], l[3], l[4], 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]; while (a.length < PK.length) a.push(defOf(a.length)); return a; });
 }
 function hex2(n) { return (n < 16 ? '0' : '') + n.toString(16); }
 function encStep(st) {                                    /* 12 hex chars: on+vel, prob, semi+64, ratchet|gate<<2|cond<<5, nudge, lock. The 4 spare bits (prob bits 5-6, nudge bit 7, lock bit 7) hold the exact step length 1..15 */
@@ -331,14 +331,15 @@ function ensureCs() {
     if (csnd) return;
     csnd = []; for (let c = 0; c < NPAT; c++) { const row = []; for (let t = 0; t < NLANE; t++) row.push(pads[t].slice()); csnd.push(row); }
 }
-function sendCs(c, t) { enqueue('cs' + c + '_' + t, 'csnd', c + ',' + t + ':' + padStr(csnd[c][t])); }
+function sendCs(c, t) { enqueue('cs' + c + '_' + t, 'csnd', c + ',' + t + ':' + padStrL(t, csnd[c][t])); }
 function storeCs(l) { ensureCs(); const t = laneTrk(l); csnd[ed[t]][l] = pads[l].slice(); sendCs(ed[t], l); }
 function liveOk(t) { return !playing || clipsCur[t] < 0 || clipsCur[t] === ed[t]; }      /* edits reach the engine only while that clip is the one sounding */
 function applyClipSound(t, c) {                         /* UI follows the clip: its sound, track volume + pan kept */
     ensureCs();
     for (const l of lanesOf(t)) { const v = pads[l][1], p = pads[l][2]; pads[l] = csnd[c][l].slice(); pads[l][1] = v; pads[l][2] = p; }
 }
-function qPadLive(i) { enqueue('setpad' + i, 'setpad', (i + 1) + ':' + padStr(pads[i])); }
+function padStrL(l, a) { if (l >= NTRK && (a[PI.dly] || a[PI.rvb])) { a = a.slice(); a[PI.dly] = 0; a[PI.rvb] = 0; } return padStr(a); }      /* drum sounds never feed the shared delay / reverb bus: they have their own insert effects */
+function qPadLive(i) { enqueue('setpad' + i, 'setpad', (i + 1) + ':' + padStrL(i, pads[i])); }
 function qPad(i) { storeCs(i); if (liveOk(laneTrk(i))) qPadLive(i); }
 function qLay() { enqueue('laysyn', 'laysyn', String(layS)); }      /* the engine plays the pads of the inbound MIDI route with the same layout as the sequencer records them */
 function qMaster() { MK.forEach((k, i) => enqueue('m' + k, k, (i >= 1 && i <= 3) || i === 21 || i === 24 ? String(Math.round(master[i])) : master[i].toFixed(3))); }
@@ -396,7 +397,7 @@ let saveFlash = 0;
 let freshState = false;
 const ENG2_KEYS = ['snz', 'fatk', 'sfld', 'schp', 'trem', 'trat', 'apan', 'vflt'];
 let attMig = false;      /* projects from before 5.120: attack 0 used to be silently soft on pad / lead sounds, now 0 = a hard attack, so old sounds get the former soft default once */
-function neutEng2(a) { for (const k of ENG2_KEYS) if (PI[k] !== undefined) a[PI[k]] = defOf(PI[k]); if (attMig && a[PI.att] === 0) a[PI.att] = 0.12; return a; }      /* the ENGINE 2 page (noise, fold, chop, tremolo, auto-pan ...) is gone: old projects load with those knobs at their neutral values */
+function neutEng2(a, l) { if (l >= NTRK) { a[PI.dly] = 0; a[PI.rvb] = 0; } for (const k of ENG2_KEYS) if (PI[k] !== undefined) a[PI[k]] = defOf(PI[k]); if (attMig && a[PI.att] === 0) a[PI.att] = 0.12; return a; }      /* the ENGINE 2 page (noise, fold, chop, tremolo, auto-pan ...) is gone: old projects load with those knobs at their neutral values */
 function loadState() {
     miscLast = null; pads = defaultPads(); steps = newSteps();
     try {
@@ -408,7 +409,7 @@ function loadState() {
         if (!o || o.v !== 2) { freshState = true; return; }
         attMig = !(o.av >= 1);
         if (Array.isArray(o.pads) && (o.pads.length === NTRK || o.pads.length === NLANE)) {
-            const loaded = o.pads.map(r => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); return neutEng2(a); });
+            const loaded = o.pads.map((r, li) => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); return neutEng2(a, li); });
             for (let l = 0; l < loaded.length; l++) pads[l] = loaded[l];
         }
         if (Array.isArray(o.ly) && o.ly.length === 2) { layS = clamp(Number(o.ly[0]) | 0, 0, 5); layD = clamp(Number(o.ly[1]) | 0, 0, 1); }
@@ -439,7 +440,7 @@ function loadState() {
             if (h && steps[p][t]) { const w = o.sf === 12 ? 12 : (o.sf === 10 ? 10 : (o.sf === 6 ? 6 : 4)); for (let s = 0; s < Math.min(MAXSTEP, Math.floor(h.length / w)); s++) steps[p][t][s] = w >= 10 ? decStep(h.substr(w * s, w)) : (w === 6 ? decStep(h.substr(6 * s, 6)) : decStepOld(h.substr(4 * s, 4))); }
         }
         if (Array.isArray(o.cs) && o.cs.length === NPAT && o.cs.every(row => Array.isArray(row) && (row.length === NTRK || row.length === NLANE))) {
-            csnd = o.cs.map(row => { const out = []; for (let l = 0; l < NLANE; l++) { const a = row[l]; if (Array.isArray(a)) { const b = a.map(Number); while (b.length < PK.length) b.push(defOf(b.length)); out.push(neutEng2(b)); } else out.push(pads[l].slice()); } return out; });
+            csnd = o.cs.map(row => { const out = []; for (let l = 0; l < NLANE; l++) { const a = row[l]; if (Array.isArray(a)) { const b = a.map(Number); while (b.length < PK.length) b.push(defOf(b.length)); out.push(neutEng2(b, l)); } else out.push(pads[l].slice()); } return out; });
         }
         if (o.fx !== 2) {                                                    /* older saves: effects were per track; every pad of a drum track starts with a copy */
             for (let t = 0; t < NTRK; t++) if (kind[t] && slot[t] >= 0) for (let k = 0; k < 16; k++) {
@@ -674,6 +675,7 @@ function editParam(scope, key, delta, idx) {
     } else v = clamp(v + delta * (shiftHeld ? 0.016 : 0.0032), 0, 1);
     if (scope === 'pad') {
         const L = keyLane(key);
+        if ((key === 'dly' || key === 'rvb') && L >= NTRK) { showToast('DRUM SOUNDS', 'USE OWN INSERT FX', 0); return false; }
         if (deleteHeld) { autoClear(L, key); return { v: pads[L][PI[key]] }; }
         pSnap('pad', L, key); pads[L][PI[key]] = v;
         if (recArmed && playing && PI[key] !== 0) autoRec(L, key, v);
@@ -2174,7 +2176,7 @@ function drumCol(t, k) {                                  /* colour of drum soun
 function inboundActive() { return (typeof shadow_inbound_pad_midi_active === 'function') && shadow_inbound_pad_midi_active(); }
 function selectTrack(t) { drumHeldK = []; padHold = {}; growTrk.fill(false); bank = t >> 2; if (sel !== t) { for (let q = 0; q < NTRK; q++) if (topModes[q] === 3) { liveFxAllOff(); topModes[q] = topPrev[q] !== 3 ? topPrev[q] : 0; markEdited(); }
         let chg = false; for (let q = 0; q < NTRK; q++) if (topModes[q] === 4) { topModes[q] = 0; chg = true; } if (chg) { chordReconcile(); markEdited(); }      /* chord pads are a visit too: every synth track opens with its normal pads */      /* Live FX is a visit: another track = gone until you switch it on again */
-        fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); if (view === 44 && !chordOn()) tabEnter(1); } needsRedraw = true; }
+        fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); if (view === 44 && !chordOn()) tabEnter(1); if (kind[sel] && (view === 46 || view === 39 || (view === 38 && fxPage))) tabEnter(38); } needsRedraw = true; }
 function wipeSlot(d) {                                    /* a kit is handed to another track: back to the default kit */
     ensureCs(); const def = defaultPads();
     for (let k = 0; k < 16; k++) {
@@ -4301,6 +4303,7 @@ function mixKnob(i, delta) {
     const t = mixPage * 8 + i;
     if (mixMode > 0) {
         const L = kind[t] ? laneOf(t, dsel[t]) : t, key = mixMode === 1 ? 'dly' : 'rvb';
+        if (kind[t]) { showToast('DRUM TRACK', 'OWN INSERT FX, NO BUS', 0); return; }
         const v = clamp(pads[L][PI[key]] + delta * 0.02, 0, 1);
         pads[L][PI[key]] = v; enqueue('p' + L + key, 'p' + p2(L + 1) + '_' + key, v.toFixed(3)); storeCs(L); markEdited();
         showToast((mixMode === 1 ? 'DLY SEND T' : 'RVB SEND T') + p2(t + 1), String(Math.round(v * 100)), v); return;
@@ -4448,12 +4451,16 @@ const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0], EN
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
 const PG47_ENG = VIEW_ITEMS[47], PG47_SYN = PG47_ENG.map(it => it[0] === 'schp' ? ['drive', 'Drive', 'Drv'] : it);
-const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['dly', 'Delay', 'Dly'] : it);
+const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['xfx', 'Effect', 'FX'] : it);      /* drum sounds have their own insert effects (no shared delay / reverb bus) */
+const FX_SYN = VIEW_ITEMS[38], FX_DRM = [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['x2fx','Effect 2','FX2'],['x2mix','Amount 2','Amt2'],['mono','Output','Out'],['morph','Morph A>B','Mrph']];
+const BLK_FX_SYN = BLOCKS[38], BLK_FX_DRM = [['INSERT 1 / THIS SOUND', 4], ['INSERT 2 + OUTPUT', 4]];
 const SND_SYN = [['type', 'Engine'], ['att', 'Attack', 'Atk'], ['decay', 'Decay', 'Dcy'], ['tone', 'Tone'], ['tune', 'Tune'], ['pan', 'Pan'], ['poly', 'Voices', 'Poly'], ['vol', 'Vol']];      /* synth: engine + the shaping knobs first */       /* synth: Drive lives on the 2nd SYNTH page; the wave (Saw, Square ...) sits here as a small preset-style box */
 function viewItemsFix() {
     if (favSig !== (chordOn() ? 1 : 0)) favBuild();
     VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
     const t = kind[sel] ? 0 : Math.round(pads[sel][0]), e = nxEng(t);
+    if (kind[sel] && (view === 46 || (view === 38 && fxPage))) { view = 38; fxPage = 0; needsRedraw = true; }      /* drum tracks have no shared FX bus pages */
+    VIEW_ITEMS[38] = kind[sel] ? FX_DRM : FX_SYN; BLOCKS[38] = kind[sel] ? BLK_FX_DRM : BLK_FX_SYN;
     VIEW_ITEMS[1] = kind[sel] ? SND_DRM : SND_SYN;      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
     VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : SYN_PG);
 }

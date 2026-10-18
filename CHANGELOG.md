@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.121.0 (18 October 2026)
+- Drum-Tracks haben keinen Zugriff mehr auf den gemeinsamen Delay/Reverb: keine Sends, kein FX-BUS-Tab; stattdessen zwei eigene Insert-Effekte pro Drum-Sound (INSERT 1 + INSERT 2)
+- Synth-Tracks behalten Sends (DEL/REV) und die FX-BUS-Seiten mit allen Delay-/Reverb-Einstellungen
+- Alte Projekte: Drum-Sends werden beim Laden auf 0 gesetzt; Mix-Seite sperrt Sends für Drum-Tracks
+
 ## 5.120.0 (18 October 2026)
 - Tonleitern: 12 statt 3 (Minor, Phryg, Major, Dorian, Lydian, Mixolydian, Locrian, Harm.Moll, Mel.Moll, Phryg.Dominante, Doppelt-Harmonisch, Ungar.Moll) – überall (Pads, Arp, MIDI-FX, Akkorde, SCQ)
 - ScQ-Knopf: reagiert in beide Drehrichtungen, zeigt Tonleiter + Anzahl verschobener Noten (bei Drum-Tracks Hinweis)
