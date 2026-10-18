@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.165.0 (18 October 2026)
+- Browser: Regler 2 = Vorschau-Lautstaerke (10-100 %, Standard 70 %, Anzeige oben rechts, leuchtet mit der Staerke); Design-Themes entfernt: es gibt nur noch das bisherige Standard-Design
+
 ## 5.164.0 (18 October 2026)
 - Browser: Pad druecken laedt und spielt den markierten Sound sofort, auch bei PRV aus und ohne Jog-Klick (Back macht es rueckgaengig)
 

@@ -242,6 +242,7 @@ function gl(t) { return gs - tph[t]; }
 const edSeen = new Array(16).fill(0);
 let recSwallow = false, shiftHeld = false, copyHeld = false, deleteHeld = false, muteHeld = false;
 let delAge = 0;
+let fbVol = 0.7;                                           /* preview volume 0.1 .. 1 (knob 2 in the browser): scales the hit strength of the preview and of the pads while browsing */
 let fbPrev = true;                                           /* browser preview on / off (Up / Down button): on = every sound, kit, synth, sample and effect you scroll to is heard (playing or stopped) */
 function fbSetPrev(v) {                                    /* preview on / off (Up / Down button, knob 1) */
     if (v === fbPrev) return; fbPrev = v; if (!fbPrev) { fbPend = 0; if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; } } else { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) fbPend = 3; } showToast('PREVIEW', fbPrev ? 'ON' : 'OFF', fbPrev ? 1 : 0); needsRedraw = true;
@@ -467,7 +468,7 @@ function loadState() {
         if (Array.isArray(o.tc) && o.tc.length === NTRK) tcolO = o.tc.map(x => clamp(Number(x) | 0, 0, 26));
         for (let t = 0; t < NTRK; t++) for (let c = 0; c < NPAT; c++) fol[t][c] = (Array.isArray(o.fl) && Array.isArray(o.fl[t])) ? clamp(Number(o.fl[t][c]) | 0, 0, 63) : 0;
         lockT = new Array(NLANE).fill(0); if (Array.isArray(o.lt)) for (let l = 0; l < NLANE && l < o.lt.length; l++) lockT[l] = clamp(Number(o.lt[l]) | 0, 0, LOCK_KEYS.length - 1);
-        if (Array.isArray(o.fk) && o.fk.length === 8) favK = o.fk.map(String).map(k => FAV_MAP[k] || k).filter(k => PI[k] !== undefined || MI[k] !== undefined); if (favK.length !== 8) favK = ['cut', 'res', 'decay', 'tone', 'drive', 'dly', 'rvb', 'm_filt']; favBuild(); favs = Array.isArray(o.fv) ? o.fv.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length) : []; favOnly = !!o.fo; if (Array.isArray(o.ui)) { splashOn = o.ui[0] !== 0; idleOn = o.ui[1] === 1; dispInv = o.ui[2] === 1; repAllowed = o.ui[3] !== 0; slowKnobs = o.ui[4] === 1; knobLedsOn = o.ui[5] !== 0; uiTheme = o.ui[11] === 1 ? clamp(Math.round(Number(o.ui[6]) || 0), 0, 9) : 9; uiMin = uiTheme !== 0; bigOn = o.ui[7] === 1; slideOn = o.ui[8] === 1; ciOn = o.ui[9] !== 0; knobLvlOn = o.ui[10] !== 0; btnBright = o.ui[12] === 1; lang = clamp(Math.round(Number(o.ui[13]) || 0), 0, LANGS.length - 1); if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0; } recent = Array.isArray(o.rc) ? o.rc.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length).slice(0, 12) : [];
+        if (Array.isArray(o.fk) && o.fk.length === 8) favK = o.fk.map(String).map(k => FAV_MAP[k] || k).filter(k => PI[k] !== undefined || MI[k] !== undefined); if (favK.length !== 8) favK = ['cut', 'res', 'decay', 'tone', 'drive', 'dly', 'rvb', 'm_filt']; favBuild(); favs = Array.isArray(o.fv) ? o.fv.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length) : []; favOnly = !!o.fo; if (Array.isArray(o.ui)) { splashOn = o.ui[0] !== 0; idleOn = o.ui[1] === 1; dispInv = o.ui[2] === 1; repAllowed = o.ui[3] !== 0; slowKnobs = o.ui[4] === 1; knobLedsOn = o.ui[5] !== 0; uiTheme = 9; uiMin = true;      /* one fixed design (the theme choice was removed) */ uiMin = uiTheme !== 0; bigOn = o.ui[7] === 1; slideOn = o.ui[8] === 1; ciOn = o.ui[9] !== 0; knobLvlOn = o.ui[10] !== 0; btnBright = o.ui[12] === 1; lang = clamp(Math.round(Number(o.ui[13]) || 0), 0, LANGS.length - 1); if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0; } recent = Array.isArray(o.rc) ? o.rc.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length).slice(0, 12) : [];
         if (Array.isArray(o.rn) && o.rn.length === 4) { rndDens = clamp(Number(o.rn[0]) || 0.28, 0.02, 0.9); rndVar = clamp(Number(o.rn[1]) || 0.5, 0, 1); rndKey = o.rn[2] ? 1 : 0; rndRat = clamp(Number(o.rn[3]) || 0, 0, 1); }
         if (typeof o.bp === 'string' && o.bp.charAt(0) === '/' && o.bp.length < 200) broPath = o.bp;
         if (Array.isArray(o.ep)) for (let i = 0; i < NLANE && i < o.ep.length; i++) { const q = o.ep[i] || {}, d = euDef(); euP[i] = { eo: clamp(q.eo | 0, 0, 2), n0: clamp(q.n0 | 0, -24, 24), alt: clamp(q.alt | 0, -12, 12), an: clamp(q.an | 0, -12, 12), wk: clamp(q.wk | 0, -4, 4), wl: clamp(q.wl | 0, 1, 16) || 4, rn: clamp(q.rn | 0, 0, 12), ou: clamp(q.ou | 0, 0, 100), od: clamp(q.od | 0, 0, 100), keep: q.keep ? 1 : 0, rev: q.rev ? 1 : 0, inv: q.inv ? 1 : 0, acc: clamp(q.acc | 0, 0, 60), hum: clamp(q.hum | 0, 0, 40), mut: clamp(q.mut | 0, 0, 100), nud: clamp((q.nud | 0) * (o.pf === 2 ? 1 : 4), 0, NUD_MAX), prb: clamp((q.prb | 0) * (o.pf === 2 ? 1 : (o.pf === 1 ? 2 : 4)), 0, 31), gat: clamp(q.gat | 0, 0, 6), rat: clamp(q.rat | 0, 0, 3), cond: clamp(q.cond | 0, 0, 7), seed: clamp(q.seed | 0, 1, 9972) || d.seed, q: Array.isArray(q.q) && q.q.length === 4 ? q.q.map((z, k) => { z = z || {}; const ln0 = clamp(z.len | 0, 1, 64) || EU_LDEF[k][0]; return { on: z.on ? 1 : 0, len: ln0, hit: clamp(z.hit | 0, 0, ln0), rot: clamp(z.rot | 0, 0, ln0 - 1), not: clamp(z.not | 0, -24, 24), prb: clamp(z.prb | 0, 0, 31), hum: clamp(z.hum | 0, 0, 40), acc: clamp(z.acc | 0, 0, 60) }; }) : null }; }
@@ -1888,7 +1889,6 @@ const MENU_ITEMS = [
     ['Idle screen on/off', () => { idleOn = !idleOn; noteInput(); markEdited(); showToast('IDLE SCREEN', idleOn ? 'ON 5 MIN' : 'OFF', idleOn ? 1 : 0); }],
     ['Note repeat on/off', () => { repAllowed = !repAllowed; if (!repAllowed) { for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0; padsOffSent = -1; } markEdited(); needsRedraw = true; showToast('NOTE REPEAT', repAllowed ? 'AVAILABLE' : 'OFF', repAllowed ? 1 : 0); }],
     ['Slow knobs on/off', () => { slowKnobs = !slowKnobs; slowAcc = {}; markEdited(); showToast('SLOW KNOBS', slowKnobs ? 'ON (HALF SPEED)' : 'OFF', slowKnobs ? 1 : 0); }],
-    ['Design theme', () => { themeOpenPicker(); }],
     ['Big values on/off', () => { bigOn = !bigOn; markEdited(); needsRedraw = true; showToast('BIG VALUES', bigOn ? 'ON' : 'OFF', bigOn ? 1 : 0); }],
     ['Page slide on/off', () => { slideOn = !slideOn; markEdited(); needsRedraw = true; showToast('PAGE SLIDE', slideOn ? 'ON' : 'OFF', slideOn ? 1 : 0); }],
     ['Knob lights on/off', () => { if (knobLedsOn && knobLvlOn) knobLvlOn = false; else if (knobLedsOn) knobLedsOn = false; else { knobLedsOn = true; knobLvlOn = true; } markEdited(); needsRedraw = true; showToast('KNOB LIGHTS', knobLedsOn ? (knobLvlOn ? 'BRIGHTNESS = VALUE' : 'ON (FLAT)') : 'OFF', knobLedsOn ? (knobLvlOn ? 1 : 0.5) : 0); }],
@@ -1969,7 +1969,6 @@ function fullLabel(v, i, items) {                          /* the whole paramete
     if (v === 6 && k === 'rvb') return 'Reverb Send';
     return LONG_NAME[k] || items[i][1] || items[i][2];
 }
-THEME_NAME.forEach((n, i) => MENU_ITEMS.push(['Theme ' + n, () => { uiTheme = i; uiMin = i !== 0; themeBefore = i; markEdited(); needsRedraw = true; showToast('DESIGN THEME', n, (i + 1) / THEME_NAME.length); }]));
 let themeBefore = 0;                                       /* the theme that was active when the picker opened (Back restores it) */
 function themeApply(i) { uiTheme = i; uiMin = i !== 0; }
 LANGS.forEach((n, i) => MENU_ITEMS.push(['Language ' + n, () => { lang = i; langBefore = i; markEdited(); needsRedraw = true; showToast('LANGUAGE', n, (i + 1) / LANGS.length); }]));
@@ -2010,9 +2009,8 @@ function menuVal(n) {                                      /* the current state 
     return '';
 }
 const MENU_GROUPS = [
-    ['THEMES', THEME_NAME.map(n => 'Theme ' + n)],
     ['LANGUAGE', LANGS.map(n => 'Language ' + n)],
-    ['DESIGN', ['Design theme', 'Language', 'Big values on/off', 'Page slide on/off', 'Invert display', 'Button lights', 'Start animation on/off', 'Idle screen on/off', 'Knob lights on/off']],
+    ['DESIGN', ['Language', 'Big values on/off', 'Page slide on/off', 'Invert display', 'Button lights', 'Start animation on/off', 'Idle screen on/off', 'Knob lights on/off']],
     ['GLOBAL', ['Count-in on/off', 'Note repeat on/off', 'Slow knobs on/off', 'Save now', 'Exit Taktile']],
     ['EXPERT', ['CPU meter', 'Load info', 'MIDI monitor', 'Scope', 'Export clip (MIDI)', 'Export all clips (MIDI)']],
     ['PLAY', ['Play / Stop', 'Stop + Reset', 'Record on/off', 'Metronome', 'Mono check', 'Tap tempo', 'Stop all clips']],
@@ -2446,8 +2444,14 @@ function delNote(L, semi) {                                 /* Delete + note pad
     showToast(n ? 'NOTE DELETED' : 'NO NOTE HERE', n ? n + ' STEPS' : '', 0);
 }
 function onPad(idx, on, vel) {
-    if (askKind >= 0) return;
-    if (fb && on) fbEnsure();                                 /* the Synth / Drum question is open: pads must not play notes */
+    if (fb && askKind < 0 && on) {                          /* browser: the pads play at the preview volume */
+        fbEnsure(); const fv = fullVel; vel = Math.max(1, Math.round((fv ? 127 : vel) * fbVol)); fullVel = false;
+        try { onPadCore(idx, on, vel); } finally { fullVel = fv; } return;
+    }
+    onPadCore(idx, on, vel);
+}
+function onPadCore(idx, on, vel) {
+    if (askKind >= 0) return;                                 /* the Synth / Drum question is open: pads must not play notes */
     if (muteHeld || view === 20) {                            /* MUTE + pad (session / mixer: just the pad) = mute without leaving the page */
         if (on) {
             if (view === 7) { muteUsed = true; const t = bank * 4 + (3 - (idx >> 3)); if (t >= 0 && t < NTRK) { if (shiftHeld) soloTrack(t); else toggleMute(t); } }
@@ -3528,7 +3532,7 @@ function fbSetType(nt) {
 }
 function fbAudition() {
     if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; }
-    if (kind[sel]) { const l = ln(); flushPad(l); dspSet('dhit', l + ',100,0'); fbOff = ['dhit', l + ',0,0']; } else { flushPad(sel); dspSet('npad', '0,100,0'); fbOff = ['npad', '0,0,0']; }
+    if (kind[sel]) { const l = ln(); flushPad(l); dspSet('dhit', l + ',' + Math.max(1, Math.round(100 * fbVol)) + ',0'); fbOff = ['dhit', l + ',0,0']; } else { flushPad(sel); dspSet('npad', '0,' + Math.max(1, Math.round(100 * fbVol)) + ',0'); fbOff = ['npad', '0,0,0']; }
     fbT = 12;
 }
 const FLT_KEYS = ['cut', 'locut', 'res', 'fenv'], FLT_OPEN = [1, 0, 0, 0];
@@ -3623,7 +3627,7 @@ function fbBack() {
 }
 function fbPathStr() {                                     /* breadcrumb: DRUMS>KITS>TECHNO, the oldest levels drop out when it gets long */
     const names = fb.st.slice(1).map(s => s.node.n); if (!names.length) return fb.st[0].node.n;
-    let pre = ''; while (names.join('>').length + pre.length > 17 && names.length > 1) { names.shift(); pre = '..>'; }
+    let pre = ''; while (names.join('>').length + pre.length > 12 && names.length > 1) { names.shift(); pre = '..>'; }
     return pre + names.join('>');
 }
 function fbSiblings() {                                    /* the categories next to the open list (only when they are all plain lists), or null */
@@ -3651,7 +3655,7 @@ function kitSoundNames(sl) {                               /* the 16 pad sounds 
 function drawFB() {
     clear_screen();
     const top = fb.st[fb.st.length - 1], its = fbItems(top.node);
-    titleBar(fbPathStr(), fbPrev ? 'PRV' : 'OFF');            /* top left: where you are, top right: preview on / off (Up / Down) */
+    titleBar(fbPathStr(), (fbPrev ? 'PRV ' : 'OFF ') + Math.round(fbVol * 100) + '%');            /* top left: where you are, top right: preview on / off (Up / Down) */
     if (!its.length) { txt(4, 30, 'EMPTY', 1); return; }
     const favOn = it => (!it.kid && !top.node.kits && !top.node.smp && !top.node.fx && favs.indexOf(it.val) >= 0);
     const sib = fbSiblings(), y0 = sib ? 17 : 13, grid = !!top.node.kits, lw0 = grid ? 10 : 17, listW = grid ? 66 : 124;
@@ -4862,7 +4866,7 @@ function flushLeds() {
 function knobUse() {                                       /* which of the 8 knobs do something on the current page: their little lights under the knobs are on */
     const u = [0, 0, 0, 0, 0, 0, 0, 0];
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank) return u;
-    if (fb) { u[0] = 1; return u; }                            /* browser: only knob 1 does something (preview on / off) */
+    if (fb) { u[0] = 1; u[1] = 1; return u; }                  /* browser: knob 1 = preview on / off, knob 2 = preview volume */
     if (heldStep >= 0 && stepWinView()) return u.map(() => 1);
     if (loopHeld && view === 0) { u[0] = 1; u[1] = 1; u[2] = 1; return u; }
     if (view === 0 || view === 7 || view === 20) return u.map(() => 1);
@@ -4872,7 +4876,7 @@ function knobUse() {                                       /* which of the 8 kno
 }
 const KNOB_RAMP = [123, 119, 118, 120];                   /* dim grey ... white: the lights under the knobs get brighter with the value */
 function knobLevels() {                                    /* value 0..1 of each knob on this page (null = no value to show) */
-    if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) return [fbPrev ? 1 : 0.1];      /* knob 1 glows bright when the preview is on, dim when it is off */
+    if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) return [fbPrev ? 1 : 0.1, fbVol];      /* knob 1 glows bright when the preview is on, dim when it is off */
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb || heldStep >= 0 || loopHeld) return null;
     if (view === 0) return seqSnd().map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
     const items = VIEW_ITEMS[itemsView()];
@@ -5146,6 +5150,7 @@ globalThis.onMidiMessageInternal = function (data) {
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
         if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
         if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbSetPrev(dl > 0); return; }
+        if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = decodeDelta(d2); if (dl) { fbVol = clamp(Math.round((fbVol + (dl > 0 ? 0.05 : -0.05)) * 100) / 100, 0.1, 1); showToast('PREVIEW VOLUME', Math.round(fbVol * 100) + '%', fbVol); needsRedraw = true; } return; }      /* knob 2: preview volume */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
         if (type === 0xB0 && (d1 === CC.UP || d1 === CC.DOWN)) { if (d2 > 0) fbSetPrev(!fbPrev); return; }      /* Up / Down: preview on / off */
