@@ -242,6 +242,7 @@ function gl(t) { return gs - tph[t]; }
 const edSeen = new Array(16).fill(0);
 let recSwallow = false, shiftHeld = false, copyHeld = false, deleteHeld = false, muteHeld = false;
 let delAge = 0;
+let fbSplit = true;                                        /* browser layout: true = split view (categories on the left, sounds on the right), false = tab boxes on top (knob 3) */
 let fbVol = 0.7;                                           /* preview volume 0.1 .. 1 (knob 2 in the browser): scales the hit strength of the preview and of the pads while browsing */
 let fbPrev = true;                                           /* browser preview on / off (Up / Down button): on = every sound, kit, synth, sample and effect you scroll to is heard (playing or stopped) */
 function fbSetPrev(v) {                                    /* preview on / off (Up / Down button, knob 1) */
@@ -3658,8 +3659,12 @@ function drawFB() {
     titleBar(fbPathStr(), (fbPrev ? 'PRV ' : 'OFF ') + Math.round(fbVol * 100) + '%');            /* top left: where you are, top right: preview on / off (Up / Down) */
     if (!its.length) { txt(4, 30, 'EMPTY', 1); return; }
     const favOn = it => (!it.kid && !top.node.kits && !top.node.smp && !top.node.fx && favs.indexOf(it.val) >= 0);
-    const sib = fbSiblings(), y0 = sib ? 17 : 13, grid = !!top.node.kits, lw0 = grid ? 10 : 17, listW = grid ? 66 : 124;
-    if (sib) {                                             /* tabs: one box per category, the open one filled (Shift + jog = next) */
+    const sib = fbSiblings(), grid = !!top.node.kits, split = !!(sib && !grid && fbSplit), y0 = (sib && !split) ? 17 : 13, lw0 = grid ? 10 : 17, listW = grid ? 66 : 124, lx = split ? 35 : 0;
+    if (split) {                                           /* split view: the categories as a column on the left (the open one filled), Shift + jog = next */
+        const n = sib.list.length, f0 = clamp(sib.idx - 1, 0, Math.max(0, n - 4));
+        for (let q = 0; q < 4; q++) { const k = f0 + q, y = y0 + q * 10; if (k >= n) continue; const on = k === sib.idx, nm = String(sib.list[k].n).substring(0, 7); if (on) fill_rect(0, y, 33, 10, 1); txtS(2, y + 3, nm, on ? 0 : 1); }
+        fill_rect(33, y0, 1, 40, 1);
+    } else if (sib) {                                      /* tabs: one box per category, the open one filled (Shift + jog = next) */
         const n = sib.list.length, w = clamp(Math.floor(116 / n) - 2, 2, 12), x0 = Math.floor((128 - n * (w + 2)) / 2);
         for (let i = 0; i < n; i++) { if (i === sib.idx) fill_rect(x0 + i * (w + 2), 13, w, 3, 1); else draw_rect(x0 + i * (w + 2), 13, w, 3, 1); }
     }
@@ -3669,10 +3674,10 @@ function drawFB() {
         if (k >= its.length) continue;
         const it = its[k], fv = favOn(it) ? '*' : '', on = k === top.i, c = on ? 0 : 1;
         let lab = fv + String(it.label || '');
-        const cntW = (!uiMin && it.kid) ? String(it.cnt).length * 6 + 4 : 0, mw = listW - 12 - (it.kid ? 8 : 0) - cntW;
+        const cntW = (!uiMin && it.kid) ? String(it.cnt).length * 6 + 4 : 0, mw = listW - lx - 12 - (it.kid ? 8 : 0) - cntW;
         lab = on ? mq(lab, Math.floor(mw / 6)) : lab; while (lab.length > 1 && tw(lab) > mw) lab = lab.substring(0, lab.length - 1);
-        if (on) fill_rect(0, y, listW + 2, 10, 1);
-        txt(3, y + 1, lab, c);
+        if (on) fill_rect(lx + (split ? 2 : 0), y, listW - lx + 2 - (split ? 2 : 0), 10, 1);
+        txt(lx + 3, y + 1, lab, c);
         if (it.kid) { txt(listW - 8, y + 1, '>', c); if (cntW) { const cs = String(it.cnt); txt(listW - 10 - cs.length * 6, y + 1, cs, c); } }
         if (fbIsCur(it, top.node)) fill_rect(listW - 6 + (it.kid ? -8 : 2), y + 3, 3, 3, c);      /* the sound that was on the pad when the browser opened (or the folder it is in) */
     }
@@ -3688,7 +3693,7 @@ function drawFB() {
     else { fill_rect(66, y0, 1, 40, 0); }
     const it0 = its[top.i], act = !it0 ? '' : (it0.kid ? 'CLICK=OPEN' : (top.node.kits ? 'CLICK=LOAD' : 'CLICK=KEEP'));      /* bottom line: position, what the keys do */
     txtS(2, 58, (top.i + 1) + '/' + its.length, 1);
-    if (sib) txtS(34, 58, 'SH+TURN=CAT', 1);
+    if (sib && !split) txtS(34, 58, 'SH+TURN=CAT', 1); else if (split) txtS(34, 58, 'SH+TURN=CAT', 1);
     txtS(126 - act.length * 4, 58, act, 1);
 }
 /* ---- projects: 32 slots, each a full copy of the state ---- */
@@ -4883,7 +4888,7 @@ function flushLeds() {
 function knobUse() {                                       /* which of the 8 knobs do something on the current page: their little lights under the knobs are on */
     const u = [0, 0, 0, 0, 0, 0, 0, 0];
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank) return u;
-    if (fb) { u[0] = 1; u[1] = 1; return u; }                  /* browser: knob 1 = preview on / off, knob 2 = preview volume */
+    if (fb) { u[0] = 1; u[1] = 1; if (fbSiblings() && !fb.st[fb.st.length - 1].node.kits) u[2] = 1; return u; }      /* browser: knob 1 = preview on / off, knob 2 = preview volume, knob 3 = layout */
     if (heldStep >= 0 && stepWinView()) return u.map(() => 1);
     if (loopHeld && view === 0) { u[0] = 1; u[1] = 1; u[2] = 1; return u; }
     if (view === 0 || view === 7 || view === 20) return u.map(() => 1);
@@ -4893,7 +4898,7 @@ function knobUse() {                                       /* which of the 8 kno
 }
 const KNOB_RAMP = [123, 119, 118, 120];                   /* dim grey ... white: the lights under the knobs get brighter with the value */
 function knobLevels() {                                    /* value 0..1 of each knob on this page (null = no value to show) */
-    if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) return [fbPrev ? 1 : 0.1, fbVol];      /* knob 1 glows bright when the preview is on, dim when it is off */
+    if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) return [fbPrev ? 1 : 0.1, fbVol, fbSplit ? 1 : 0.1];      /* knob 1 glows bright when the preview is on, dim when it is off */
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb || heldStep >= 0 || loopHeld) return null;
     if (view === 0) return seqSnd().map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
     const items = VIEW_ITEMS[itemsView()];
@@ -5167,6 +5172,7 @@ globalThis.onMidiMessageInternal = function (data) {
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
         if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
         if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbSetPrev(dl > 0); return; }
+        if (type === 0xB0 && d1 === CC.KNOB1 + 2) { const dl = decodeDelta(d2); if (dl && fbSiblings() && !fb.st[fb.st.length - 1].node.kits) { fbSplit = dl > 0; showToast('BROWSER LAYOUT', fbSplit ? 'SPLIT' : 'TABS', fbSplit ? 1 : 0); needsRedraw = true; } return; }      /* knob 3: split view / tabs */
         if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = decodeDelta(d2); if (dl) { fbVol = clamp(Math.round((fbVol + (dl > 0 ? 0.05 : -0.05)) * 100) / 100, 0.1, 1); showToast('PREVIEW VOLUME', Math.round(fbVol * 100) + '%', fbVol); needsRedraw = true; } return; }      /* knob 2: preview volume */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }

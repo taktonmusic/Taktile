@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.167.0 (18 October 2026)
+- Browser: geteilte Ansicht (Option B3): links die Kategorien, rechts die Sounds; Regler 3 schaltet zwischen SPLIT und TABS
+
 ## 5.166.0 (18 October 2026)
 - Granulator-Seite wie im Bild: grosse Puffer-Anzeige (Wellenform, Lese-Rahmen, Grain-Striche) und die 8 Werte als Text mit Balken darunter statt der Kacheln
 
