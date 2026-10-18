@@ -4187,7 +4187,7 @@ function drawSample() {
 function drawSeq() {
     if (heldStep >= 0 && !recDown) { drawStepEdit(); return; }
     titleBar('C' + (ed[sel] + 1) + '  ' + bpm + ' BPM', recArmed ? (ciBeats > 0 ? 'COUNT ' + ciBeats : (playing ? 'REC' : 'REC ARM')) : ((topModes[sel] === 1 ? 'RPT ' + REP_NAME[repRate] : TOP_NAMES[topModes[sel]]) + (playing ? ' >' : '')));
-    const star = llen[ln()] ? '*' : '', pgTxt = LL() > 16 ? (stepPage + 1) + '/' + pageCount() + ' L' + LL() + star : 'L' + LL() + star;
+    const star = llen[ln()] ? '*' : '', pgTxt = LL() > 16 ? 'BAR ' + (stepPage + 1) + '/' + pageCount() + ' L' + LL() + star : 'L' + LL() + star;      /* every bar = 16 steps = one page */
     txt(0, 11, fit(p2(sel + 1) + ' ' + laneName() + (mutes[sel] ? ' M' : ''), 120 - tw(pgTxt)), 1);
     txt(126 - tw(pgTxt), 11, pgTxt, 1);
     const cur = playing ? ((gs - 1 + 1024 * LL()) % LL()) : -1;

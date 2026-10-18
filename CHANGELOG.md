@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.141.0 (18 October 2026)
+- Step page now reads BAR 2/4 (every bar = 16 steps = one page), so you always see which bar you are in
+- Safer skip of a live-recorded note: an old skip can never stay behind
+
 ## 5.140.0 (18 October 2026)
 - Recording into an empty clip: notes in bar 2, 3 ... are no longer lost when the sequencer was already running before you pressed Rec (the clip now grows from the bar where your take began, and every note keeps its real position)
 

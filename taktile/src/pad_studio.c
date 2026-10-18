@@ -2724,8 +2724,8 @@ static void seq_step(inst_t *s) {
         if (s->clip[tk] < 0) continue;
         if ((s->gs % len) == 0) s->spk_wi[t] = 0;                      /* a speech sound that says one word per note starts again with the loop */
         const uint8_t *st = s->stp[s->clip[tk]][t][s->gs % len];
+        if (s->rskip[t]) { if (s->rskip[t] == s->gs + 1) { s->rskip[t] = 0; continue; } if (s->rskip[t] < s->gs + 1) s->rskip[t] = 0; }      /* never leave an old skip behind */
         if (!(st[0] & 0x80) || s->mute[tk] || s->lmute[t] || s->rechold[tk]) continue;
-        if (s->rskip[t] == s->gs + 1) { s->rskip[t] = 0; continue; }
         if (prob_idx(st[1]) > 0) {
             s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
             if ((float)(s->rng & 0xFFFF) / 65536.0f > 1.0f - 0.03125f * (float)prob_idx(st[1])) continue;
@@ -2763,7 +2763,7 @@ static void seq_step(inst_t *s) {
 }
 
 static void seq_start(inst_t *s) { if (s->mo_clk) { mo_send(0xF, 0xFA, 0, 0); s->mclk = 0.0f; } s->playing = 1; s->tsamp = 0.0; s->next_time = 0.0; s->last_time = 0.0; s->gs = 0; s->pump_ph = 0.0f; s->wob_ph = 0.0f; }
-static void seq_stop(inst_t *s) {
+static void seq_stop(inst_t *s) { memset(s->rskip, 0, sizeof s->rskip);
     if (s->playing && s->mo_clk) mo_send(0xF, 0xFC, 0, 0);
     for (int i = 0; i < 64; i++) if (s->mo_q[i].cnt > 0) { mo_send(0x8, s->mo_q[i].st, s->mo_q[i].d1, 0); s->mo_q[i].cnt = 0; }
     s->playing = 0; s->gs = 0;
