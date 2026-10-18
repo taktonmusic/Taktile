@@ -360,7 +360,7 @@ static const v2_t VAR2[N_V2] = {
 static const v2_t VAR3[N_V3] = {
 #include "variants3.inc"
 };
-enum { T_E_MODAL = 4000, T_E_FM, T_E_VOX, T_E_CHIP, T_E_MORPH, T_E_DRUM, T_E_ANA, T_E_WT, T_E_FM4, T_E_ADD, T_E_PAD, T_E_STR, T_E_FLD, T_E_AC, T_E_FXE };
+enum { T_E_MODAL = 4000, T_E_FM, T_E_VOX, T_E_CHIP, T_E_MORPH, T_E_DRUM, T_E_ANA, T_E_WT, T_E_FM4, T_E_ADD, T_E_PAD, T_E_STR, T_E_FLD, T_E_AC, T_E_FXE, T_E_SPK };
 typedef struct { int eng; float f0, oct, tau1, tau2, att, trim; int sus; float p[10]; } nx_t;
 static const nx_t VAR4[N_V4] = {
 #include "variants4.inc"
@@ -789,6 +789,7 @@ typedef struct {
     struct { float buf[2][GRN_SZ], pos[GRN_G], inc[GRN_G], pl[GRN_G], pr[GRN_G]; int w, tim, age[GRN_G], len[GRN_G], back[GRN_G], lane; unsigned rng; float lpl, lpr; } gr[GRN_SLOTS]; int gr_slot[NLANE];     /* granulator: a few shared slots, a sound that uses it takes one */
     int   lf_w, lf_req, lf_mode, lf_t, lf_cap, lf_len, lf_n, lf_dw, lf_dact, lf_hc;
     int   in_use;
+    char spk_txt[NLANE][48];                                       /* SPEECH engine: the text of every lane */
 } inst_t;
 /* LIVE FX (master bus, held pad = effect on, release = fade back):
  * 1-4 REPEAT 1/4 1/8 1/16 1/32   5 ROLL (repeats get shorter)   6 TRIPLET   7 REVERSE   8 TAPE STOP   9-10 GATE 1/8 1/16
@@ -1343,6 +1344,8 @@ static void ac_modes(inst_t *s, vc_t *v, int set, float f0, float tau, float til
     }
     v->ni[0] = nm;
 }
+#include "speech_lts.inc"
+#include "speech.inc"
 static int ac_hat(int ty) { const nx_t *n = &VAR4[ty - T_V4]; return (n->eng == 13 && (int)(n->p[0] + 0.5f) == 3) ? (int)(n->p[9] + 0.5f) : 0; }
 
 /* ---------------- NEW ENGINES: voice start ---------------- */
@@ -1416,6 +1419,7 @@ static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
         v->nx[48] = onepole_a(clampf(q[6], 80.0f, 16000.0f), sr);       /* noise: high-pass corner */
         v->nx[49] = onepole_a(kd == 6 ? clampf(q[6] * 3.0f, 800.0f, 9000.0f) : (kd == 0 ? 320.0f : 11000.0f), sr);    /* noise: low-pass corner */
         v->ph = 0.0f; break; }
+    case 15: spk_start(s, v, p, n); break;                         /* SPEECH */
     case 14: {                                                      /* EFFECT: p = length s, tone Hz start, tone Hz end, filter Hz start, filter Hz end, resonance, noise, tone level, peak position, filter type (0 LP, 1 BP, 2 HP) */
         for (int k = 0; k < 64; k++) v->nx[k] = 0.0f;
         const float L = clampf(q[0] * dm, 0.03f, 20.0f);
@@ -1459,7 +1463,7 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         if (scs == 1 || (scs == 0 && BASE_T[ty] <= T_SUB808))
         for (int t = 0; t < NTRK; t++) if (t != kt && s->pp[t][PP_DUCK] > 0.01f) s->dk_env[t] = 1.0f;
     }
-    if (s->pp[p][PP_POLY] <= 0.5f && v->active && TY[v->type].sus && v->env > 0.003f) {   /* mono re-trigger of a held synth note: the old note fades out in a ghost instead of being cut (click) */
+    if (s->pp[p][PP_POLY] <= 0.5f && v->active && (TY[v->type].sus || BASE_T[v->type] == T_E_SPK) && v->env > 0.003f) {   /* mono re-trigger of a held synth note: the old note fades out in a ghost instead of being cut (click) */
         int gi = -1;
         for (int i = 0; i < NGH; i++) if (!s->vc[NLANE + i].active) { gi = i; break; }
         if (gi < 0) { gi = s->gnext; s->gnext = (s->gnext + 1) % NGH; }
@@ -2097,6 +2101,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         if (u < 0.002f) env *= u / 0.002f;
         x = (tone * q[7] + fl * q[6] * 1.5f) * env;
         break; }
+    case 15: x = spk_render(s, v, p, n); break;                    /* SPEECH */
     default: {                                                      /* MORPH: two real wavetables crossfaded over time */
         const float f = v->f0;
         v->nx[3] += q[4] * dt; if (v->nx[3] >= 1.0f) v->nx[3] -= 1.0f;
@@ -2493,7 +2498,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         else { pos += step; if (pos >= (double)v->s1) { if (loop && v->gate) pos -= (double)(v->s1 - v->s0); else v->active = 0; } }
         v->sp = pos;
         break; }
-    case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: x = nx_render(s, v, p); break;
+    case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: case T_E_SPK: x = nx_render(s, v, p); break;
     default: v->active = 0; break;
     }
     if (p < NTRK && v->gate && TY[v->type].sus) {                    /* Decay on sustained sounds: the same slope as the FM sound (time constant 0.8 s x the Decay knob law), so a pad and an FM voice answer the knob alike; the very top of the knob (>= 0.97) holds the note */
@@ -3187,6 +3192,11 @@ static void set_param(void *instance, const char *key, const char *val) {
         if (n >= 1 && n <= NLANE) reset_pad(s, n - 1);
         return;
     }
+    if (strncmp(key, "txt", 3) == 0 && key[3] >= '0' && key[3] <= '9') {    /* the text of the SPEECH engine for lane N */
+        const int l = atoi(key + 3);
+        if (l >= 0 && l < NLANE) { int k = 0; for (const char *c = val; *c && k < 40; c++) { char ch = *c; if (ch >= 'a' && ch <= 'z') ch = (char)(ch - 32); if ((ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == ' ' || ch == '.' || ch == ',' || ch == '?' || ch == '!' || ch == '-') s->spk_txt[l][k++] = ch; } while (k > 0 && s->spk_txt[l][k - 1] == ' ') k--; s->spk_txt[l][k] = 0; }
+        return;
+    }
     if (strcmp(key, "csnd") == 0) {                /* "clip,track:" + PP_N values -> stored sound of that clip */
         int c = atoi(val); const char *c1 = strchr(val, ','); if (!c1) return;
         int t = atoi(c1 + 1); const char *c2 = strchr(c1 + 1, ':'); if (!c2 || c < 0 || c >= NPAT || t < 0 || t >= NLANE) return;
@@ -3763,7 +3773,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             const int gi = lane_trk(s, p);
             tact[p] = 1; tmk[p >> 6] |= 1ull << (p & 63);
             float x = vc_render(s, v, p);
-            if (v->type != T_SAMPLE) {      /* tail trim: no sound rings on for ever. Cap = 2 s x decay factor (Decay 50 % = 2 s, 0 = 0.7 s, 100 % = 6 s), then a quick fade */
+            if (v->type != T_SAMPLE && BASE_T[v->type] != T_E_SPK) {      /* tail trim: no sound rings on for ever. Cap = 2 s x decay factor (Decay 50 % = 2 s, 0 = 0.7 s, 100 % = 6 s), then a quick fade */
                 const int sus = TY[v->type].sus;
                 if (!v->gate) v->trel += s->inv_sr;
                 const float tt = sus ? (v->gate ? 0.0f : v->trel) : v->t, cap = (sus ? 1.2f : 2.0f) * s->dm[p];

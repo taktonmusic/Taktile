@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.128.0 (18 October 2026)
+- New SPEECH engine: a speech computer synth. Write a text (jog wheel, like naming a project), every note says it at the pad's pitch
+- English and German (SpkEn / SpkDe, each in a deep and a high voice), found under SYNTHS > ENGINES > SPEECH
+- SOUND tab: Text tile (turn to edit); ENG tab: Speed, Formant, Breath, Inflect
+- The text is saved with the project
+
 ## 5.127.0 (18 October 2026)
 - Drum synth ENGINE tab has its own four knobs (Sweep, Sweep time, Noise, Click), no longer shared with the filter page; all start at 50 = the sound as designed
 - Sweep, Noise and Click are much more audible on kicks and toms

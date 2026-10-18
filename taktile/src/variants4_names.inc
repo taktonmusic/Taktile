@@ -64,4 +64,5 @@
     "TnStab","TnStabHi","TnPluck","TnStrPlk","TnMarim","TnKalim",
     "TnVibes","TnGlock","TnBell","TnSteel","TnFmPluk","TnFmBass",
     "TnFmBell","TnFoldPl","TnFoldBs","DKickThmp","DKickClk","DKickGrit",
-    "DKickBoom","DKickRnd"
+    "DKickBoom","DKickRnd",
+    "SpkEn","SpkEnLo","SpkEnHi","SpkDe","SpkDeLo","SpkDeHi"
