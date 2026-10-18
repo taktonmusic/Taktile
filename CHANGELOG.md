@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.156.0 (18 October 2026)
+- Browser redesign: breadcrumb path in the header (DRUMS>KITS>TECHNO) with PRV/OFF top right, 4-row list with scroll bar, bottom line with position and what the click does
+- Category tabs: boxes above the list show the categories next to the open one; Shift+jog switches to the next/previous category without going back
+- Kit preview: in KITS the 16 pad sounds of the highlighted kit are shown as a small grid (laid out like the pads)
+
 ## 5.155.0 (18 October 2026)
 - Browser: preview on/off in the top right corner (PRV / OFF), toggled with the Up or Down button; with PRV on, every sound, kit, synth, sample and effect you scroll to is heard while playing, recording and stopped (before: stopped only)
 - Tape: Wow much stronger (about +-2.5 % pitch at full, clearly audible wobble), Hiss louder and more linear (about -45 dB at full), Tape colour keeps the loudness (no more volume jump), more saturation and top roll-off

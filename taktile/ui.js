@@ -3605,40 +3605,71 @@ function fbBack() {
     if (fb.st.length > 1) { if (fbIsLeaf(fb.st[fb.st.length - 1].node)) fbRestore(); if (fb.dev && fb.st.length === 2) fb = null; else fb.st.pop(); } else fb = null;
     needsRedraw = true;
 }
+function fbPathStr() {                                     /* breadcrumb: DRUMS>KITS>TECHNO, the oldest levels drop out when it gets long */
+    const names = fb.st.slice(1).map(s => s.node.n); if (!names.length) return fb.st[0].node.n;
+    let pre = ''; while (names.join('>').length + pre.length > 17 && names.length > 1) { names.shift(); pre = '..>'; }
+    return pre + names.join('>');
+}
+function fbSiblings() {                                    /* the categories next to the open list (only when they are all plain lists), or null */
+    if (fb.st.length < 2) return null;
+    const top = fb.st[fb.st.length - 1], par = fb.st[fb.st.length - 2];
+    if (!fbIsLeaf(top.node) || !par.node.kids || par.node.kids.length < 2 || !par.node.kids.every(fbIsLeaf)) return null;
+    return { list: par.node.kids, idx: par.node.kids.indexOf(top.node), par: par };
+}
+function fbCat(dir) {                                      /* Shift + jog: the next / previous category without going back (the preview of the old one is undone first) */
+    const s = fbSiblings(); if (!s) return false;
+    const n = s.list.length, j = ((s.idx + dir) % n + n) % n;
+    fbRestore(); fbPend = 0; s.par.i = j; fb.st[fb.st.length - 1] = { node: s.list[j], i: 0 }; needsRedraw = true; return true;
+}
+function kitSoundNames(sl) {                               /* the 16 pad sounds of a kit as short names (3 letters) for the little grid */
+    const out = [];
+    for (let j = 0; j < 16; j++) {
+        let n = '';
+        if (sl >= 16) n = (FACTORY[sl - 16] && FACTORY[sl - 16][1][j]) || '';
+        else { const k = kits && kits[sl]; n = k && k.r && k.r[j] ? (TYPE_NAME[Math.round(k.r[j][0])] || '') : ''; }
+        n = n.replace(/^(Ac|Fx|Tn|FM|Fm|Chip|Noise)(?=[A-Z])/, '').replace(/^D(?=[A-Z][a-z])/, '');
+        out.push(n.substring(0, 3));
+    }
+    return out;
+}
 function drawFB() {
     clear_screen();
     const top = fb.st[fb.st.length - 1], its = fbItems(top.node);
-    const path = fb.st.slice(1).map(s => s.node.n).join(' > ') || fb.st[0].node.n;
-    { const pv = fbPrev ? 'PRV' : 'OFF', cnt = uiMin ? '' : (its.length ? (top.i + 1) + '/' + its.length : '0'); titleBar((path.length > 11 ? fb.st[fb.st.length - 1].node.n : path).slice(0, 11), pv + (cnt ? ' ' + cnt : '')); }      /* top right: preview on / off (Up / Down) and the position */
+    titleBar(fbPathStr(), fbPrev ? 'PRV' : 'OFF');            /* top left: where you are, top right: preview on / off (Up / Down) */
     if (!its.length) { txt(4, 30, 'EMPTY', 1); return; }
     const favOn = it => (!it.kid && !top.node.kits && !top.node.smp && !top.node.fx && favs.indexOf(it.val) >= 0);
-    if (uiMin) {                                           /* minimal: a quiet list in the small font, the chosen line inverted, no counts */
-        const rows = 5, first = clamp(top.i - 2, 0, Math.max(0, its.length - rows));
-        for (let r = 0; r < rows; r++) {
-            const k = first + r; if (k >= its.length) break;
-            const it = its[k], on = k === top.i, y = 12 + r * 10, c = on ? 0 : 1;
-            if (on) fill_rect(0, y, 126, 10, 1);
-            let lab = (favOn(it) ? '* ' : '') + String(it.label || '').toUpperCase();
-            const mw = 108 - (it.kid ? 6 : 0); if (on) lab = mq(lab, Math.floor(mw / 6)); while (lab.length > 1 && tw(lab) > mw) lab = lab.substring(0, lab.length - 1);
-            txt(3, y + 1, lab, c);
-            if (it.kid) txt(113, y + 1, '>', c);
-            if (fbIsCur(it, top.node)) fill_rect(121, y + 3, 3, 3, c);
+    const sib = fbSiblings(), y0 = sib ? 17 : 13, grid = !!top.node.kits, lw0 = grid ? 10 : 17, listW = grid ? 66 : 124;
+    if (sib) {                                             /* tabs: one box per category, the open one filled (Shift + jog = next) */
+        const n = sib.list.length, w = clamp(Math.floor(116 / n) - 2, 2, 12), x0 = Math.floor((128 - n * (w + 2)) / 2);
+        for (let i = 0; i < n; i++) { if (i === sib.idx) fill_rect(x0 + i * (w + 2), 13, w, 3, 1); else draw_rect(x0 + i * (w + 2), 13, w, 3, 1); }
+    }
+    const first = clamp(top.i - 1, 0, Math.max(0, its.length - 4));      /* four rows, the list scrolls only when the chosen line reaches the 2nd / 3rd row */
+    for (let q = 0; q < 4; q++) {
+        const k = first + q, y = y0 + q * 10;
+        if (k >= its.length) continue;
+        const it = its[k], fv = favOn(it) ? '*' : '', on = k === top.i, c = on ? 0 : 1;
+        let lab = fv + String(it.label || '');
+        const cntW = (!uiMin && it.kid) ? String(it.cnt).length * 6 + 4 : 0, mw = listW - 12 - (it.kid ? 8 : 0) - cntW;
+        lab = on ? mq(lab, Math.floor(mw / 6)) : lab; while (lab.length > 1 && tw(lab) > mw) lab = lab.substring(0, lab.length - 1);
+        if (on) fill_rect(0, y, listW + 2, 10, 1);
+        txt(3, y + 1, lab, c);
+        if (it.kid) { txt(listW - 8, y + 1, '>', c); if (cntW) { const cs = String(it.cnt); txt(listW - 10 - cs.length * 6, y + 1, cs, c); } }
+        if (fbIsCur(it, top.node)) fill_rect(listW - 6 + (it.kid ? -8 : 2), y + 3, 3, 3, c);      /* the sound that was on the pad when the browser opened (or the folder it is in) */
+    }
+    if (grid) {                                            /* the 16 sounds of the highlighted kit, laid out like the pads (pad 1 bottom left) */
+        const it = its[top.i], nm = it && typeof it.val === 'number' ? kitSoundNames(it.val) : null;
+        if (nm) for (let r = 0; r < 4; r++) for (let cc = 0; cc < 4; cc++) {
+            const x = 70 + cc * 14, y = y0 + r * 10 - 0, j = (3 - r) * 4 + cc;
+            draw_rect(x, y, 13, 9, 1); txtS(x + 1, y + 2, nm[j], 1);
         }
-        const th = Math.max(3, Math.floor(50 / its.length)), ty = 12 + Math.floor((50 - th) * top.i / Math.max(1, its.length - 1));
-        fill_rect(127, 12, 1, 50, 0); fill_rect(127, ty, 1, th, 1);
-        return;
     }
-    for (let q = -2; q <= 2; q++) {
-        const k = top.i + q, y = 12 + (q + 2) * 10;
-        if (k < 0 || k >= its.length) continue;
-        const it = its[k], fv = favOn(it) ? '*' : ' ';
-        const lw = it.kid ? Math.floor((97 - String(it.cnt).length * 6) / 6) : 17, lab = q === 0 ? mq(it.label || '', lw) : (it.label || '').slice(0, lw), cur = fbIsCur(it, top.node);
-        if (q === 0) { fill_rect(0, y, 128, 10, 1); txt(3, y + 1, fv + lab, 0); if (it.kid) txt(104, y + 1, '>', 0); } else { txt(3, y + 1, fv + lab, 1); if (it.kid) txt(104, y + 1, '>', 1); }
-        if (it.kid) { const c = String(it.cnt); txt(100 - c.length * 6, y + 1, c, q === 0 ? 0 : 1); }
-        if (cur) fill_rect(118, y + 3, 4, 4, q === 0 ? 0 : 1);      /* the sound that was on the pad when the browser opened (or the folder it is in) */
-    }
-    const th = Math.max(3, Math.floor(50 / its.length)), ty = 12 + Math.floor((50 - th) * top.i / Math.max(1, its.length - 1));      /* scroll bar */
-    fill_rect(126, 12, 2, 50, 0); fill_rect(127, 12, 1, 50, 1); fill_rect(126, ty, 2, th, 1);
+    const th = Math.max(3, Math.floor(40 / its.length)), ty = y0 + Math.floor((40 - th) * top.i / Math.max(1, its.length - 1));      /* scroll bar */
+    if (!grid) { fill_rect(126, y0, 2, 40, 0); fill_rect(127, y0, 1, 40, 1); fill_rect(126, ty, 2, th, 1); }
+    else { fill_rect(66, y0, 1, 40, 0); }
+    const it0 = its[top.i], act = !it0 ? '' : (it0.kid ? 'CLICK=OPEN' : (top.node.kits ? 'CLICK=LOAD' : 'CLICK=KEEP'));      /* bottom line: position, what the keys do */
+    txtS(2, 58, (top.i + 1) + '/' + its.length, 1);
+    if (sib) txtS(34, 58, 'SH+TURN=CAT', 1);
+    txtS(126 - act.length * 4, 58, act, 1);
 }
 /* ---- projects: 32 slots, each a full copy of the state ---- */
 let projSlot = 0, projUsed = [], projNames = [], projUI = null;
@@ -5047,7 +5078,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (type === 0xB0 && (d1 === CC.SHIFT || d1 === CC.PLAY)) { /* fall through */ } else return;
     }
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
-        if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry */
+        if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
         if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbMove(dl, 5); return; }      /* knob 1 = fast scroll, 10 entries per click */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
