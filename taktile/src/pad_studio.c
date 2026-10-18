@@ -4075,17 +4075,17 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 L *= s->lim_g; R *= s->lim_g;
             } else s->lim_g = 1.0f;
         }
-        {   /* TAPE (last stage before the output): a gentle cassette colour - soft saturation, a little head bump and top roll-off, slow pitch drift, very quiet hiss. Everything is 0 = off. */
+        {   /* TAPE (last stage before the output): a gentle cassette colour - soft saturation, a little head bump and top roll-off, slow pitch drift (wow), hiss. Everything is 0 = off. */
             const float tp = s->g[G_TAPE], hs = s->g[G_HISS], ww = s->g[G_WOW];
             if (tp > 0.01f || hs > 0.01f || ww > 0.01f) {
                 float io[2] = { L, R };
                 float dly = 0.0f;
-                if (ww > 0.01f) {                                          /* wow (0.6 Hz) + flutter (6 Hz) + a slow random drift: about 1 % pitch at full */
-                    s->tp_ph1 += 0.6f * s->inv_sr; if (s->tp_ph1 >= 1.0f) s->tp_ph1 -= 1.0f;
+                if (ww > 0.01f) {                                          /* wow (0.9 Hz) + flutter (6 Hz) + a slow random drift: about +-2.5 % pitch at full = a clearly warped tape, a quarter of that at 25 % */
+                    s->tp_ph1 += 0.9f * s->inv_sr; if (s->tp_ph1 >= 1.0f) s->tp_ph1 -= 1.0f;
                     s->tp_ph2 += 6.1f * s->inv_sr; if (s->tp_ph2 >= 1.0f) s->tp_ph2 -= 1.0f;
                     s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
                     s->tp_dr += 0.00005f * (((float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f) - s->tp_dr);
-                    dly = 120.0f + ww * (70.0f * sinf(6.2831853f * s->tp_ph1) + 6.0f * sinf(6.2831853f * s->tp_ph2) + 900.0f * s->tp_dr);
+                    dly = 180.0f + ww * (160.0f * sinf(6.2831853f * s->tp_ph1) + 8.0f * sinf(6.2831853f * s->tp_ph2) + 700.0f * s->tp_dr);
                     if (dly < 2.0f) dly = 2.0f; if (dly > 2040.0f) dly = 2040.0f;
                 }
                 const int w = s->tp_w;
@@ -4098,11 +4098,11 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                         x = s->tp_dl[c][i0 & 2047] * (1.0f - fr) + s->tp_dl[c][i1] * fr;
                     }
                     if (tp > 0.01f) {
-                        const float dg = 1.0f + tp * 3.5f;                        /* soft tape saturation, level kept the same for quiet signals */
-                        x = fast_tanh(x * dg) / dg * (1.0f + tp * 0.8f);
+                        const float dg = 1.0f + tp * 5.0f;                        /* soft tape saturation: quiet signals keep their level, loud ones are squashed and thickened */
+                        x = fast_tanh(x * dg) / dg * (1.0f + tp * 0.25f);
                         s->tp_hb[c] += (1.0f - expf(-6.2831853f * 90.0f * s->inv_sr)) * (x - s->tp_hb[c]);
-                        x += s->tp_hb[c] * 0.30f * tp;                            /* head bump: a warm touch around 90 Hz */
-                        const float fc = 16000.0f - 9500.0f * tp;                 /* top roll-off 16 kHz -> 6.5 kHz */
+                        x += s->tp_hb[c] * 0.35f * tp;                            /* head bump: a warm touch around 90 Hz */
+                        const float fc = 16000.0f - 11000.0f * tp;                /* top roll-off 16 kHz -> 5 kHz */
                         s->tp_lp[c] += (1.0f - expf(-6.2831853f * fc * s->inv_sr)) * (x - s->tp_lp[c]);
                         x = s->tp_lp[c];
                     }
@@ -4110,7 +4110,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                         s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
                         const float nz = (float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f;
                         s->tp_hn[c] += 0.35f * (nz - s->tp_hn[c]);
-                        x += (nz - s->tp_hn[c]) * 0.0035f * hs * hs;                 /* the hiss lives in the highs; full = about -50 dB, far below the music */
+                        x += (nz - s->tp_hn[c]) * 0.016f * hs * sqrtf(hs);           /* the hiss lives in the highs; full = about -45 dB, 25 % is still just audible in quiet parts */
                     }
                     io[c] = x;
                 }

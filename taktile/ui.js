@@ -242,6 +242,7 @@ function gl(t) { return gs - tph[t]; }
 const edSeen = new Array(16).fill(0);
 let recSwallow = false, shiftHeld = false, copyHeld = false, deleteHeld = false, muteHeld = false;
 let delAge = 0;
+let fbPrev = true;                                           /* browser preview on / off (Up / Down button): on = every sound, kit, synth, sample and effect you scroll to is heard (playing or stopped) */
 let fb = null, fbT = 0, fbOff = null, fbPend = 0;                      /* sound / kit folder browser */
 let heldStep = -1, heldWasOn = false, heldEdited = false, heldGrp = [];      /* heldGrp: more steps held together with the first one: knobs edit all of them */
 let acc = [0,0,0,0,0,0,0,0];
@@ -3561,7 +3562,7 @@ function fbMove(dl, big) {
     let st = big || 1; if (!big && n > 30) st = gap < 35 ? 8 : (gap < 75 ? 3 : 1);      /* a long list: turning the jog fast skips ahead, slow = one by one; knob 1 always jumps by 10 */
     top.i = clamp(top.i + (dl > 0 ? st : -st), 0, n - 1);      /* turning moves the highlight; stopped = you hear it (preview, Back restores), playing/recording = silent, the click chooses */
     const it = fbItems(top.node)[top.i];
-    fbPend = (it && !it.kid && !playing && !recArmed) ? (top.node.kits ? 14 : 5) : 0;      /* preview only after the jog rests a moment */
+    fbPend = (it && !it.kid && fbPrev) ? (top.node.kits ? 14 : 5) : 0;      /* preview only after the jog rests a moment */
     needsRedraw = true;
 }
 function fbClick() {
@@ -3608,7 +3609,7 @@ function drawFB() {
     clear_screen();
     const top = fb.st[fb.st.length - 1], its = fbItems(top.node);
     const path = fb.st.slice(1).map(s => s.node.n).join(' > ') || fb.st[0].node.n;
-    titleBar((path.length > 15 ? fb.st[fb.st.length - 1].node.n : path).slice(0, 15), uiMin ? '' : (its.length ? (top.i + 1) + '/' + its.length : '0'));
+    { const pv = fbPrev ? 'PRV' : 'OFF', cnt = uiMin ? '' : (its.length ? (top.i + 1) + '/' + its.length : '0'); titleBar((path.length > 11 ? fb.st[fb.st.length - 1].node.n : path).slice(0, 11), pv + (cnt ? ' ' + cnt : '')); }      /* top right: preview on / off (Up / Down) and the position */
     if (!its.length) { txt(4, 30, 'EMPTY', 1); return; }
     const favOn = it => (!it.kid && !top.node.kits && !top.node.smp && !top.node.fx && favs.indexOf(it.val) >= 0);
     if (uiMin) {                                           /* minimal: a quiet list in the small font, the chosen line inverted, no counts */
@@ -4940,7 +4941,7 @@ globalThis.tick = function () {
     if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
     if (clrPend.ticks > 0) clrPend.ticks--;
     ledAge++;
-    if (fbPend > 0 && --fbPend === 0 && fb && !playing && !recArmed) { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) { fbApply(); if (!tp.node.kits) fbAudition(); } }
+    if (fbPend > 0 && --fbPend === 0 && fb && fbPrev) { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) { fbApply(); if (!tp.node.kits) fbAudition(); } }
     if (fbT > 0 && --fbT === 0 && fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; }
     if (deleteHeld && ++delAge > 300) { deleteHeld = false; needsRedraw = true; }      /* safety: Delete never stays on without any input */
     flushQueue(3);
@@ -5050,6 +5051,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbMove(dl, 5); return; }      /* knob 1 = fast scroll, 10 entries per click */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
+        if (type === 0xB0 && (d1 === CC.UP || d1 === CC.DOWN)) { if (d2 > 0) { fbPrev = !fbPrev; if (!fbPrev) { fbPend = 0; if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; } } else { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) fbPend = 3; } showToast('PREVIEW', fbPrev ? 'ON' : 'OFF', fbPrev ? 1 : 0); needsRedraw = true; } return; }      /* Up / Down: preview on / off */
         if (type === 0xB0 && d1 === CC.MENU) { if (d2 > 0) { while (fb) fbBack(); } return; }
     }
     if (askKind >= 0) {                                       /* first question for every new track: Synth or Drum */

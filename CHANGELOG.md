@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.155.0 (18 October 2026)
+- Browser: preview on/off in the top right corner (PRV / OFF), toggled with the Up or Down button; with PRV on, every sound, kit, synth, sample and effect you scroll to is heard while playing, recording and stopped (before: stopped only)
+- Tape: Wow much stronger (about +-2.5 % pitch at full, clearly audible wobble), Hiss louder and more linear (about -45 dB at full), Tape colour keeps the loudness (no more volume jump), more saturation and top roll-off
+
 ## 5.154.0 (18 October 2026)
 - KITS folder of the sound browser is now always there on drum tracks (was only for a brand-new track), so the kit can be changed later
 - KITS sorted into 9 categories (Techno + Hard, House + Disco, Trance + Psy, Bass + Breaks, HipHop + Lofi, Electro + Synth, Acoustic, World + Organic, FX + Ambient) plus USER KITS
