@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.131.0 (18 October 2026)
+- FX: DELAY and REVERB are now single insert effects (pick them in the FX list of any sound, also each drum pad); Amount = level, Rate = time / size, Depth = feedback / damping
+- FX: drum sounds go back to their own insert effects, delay / reverb SENDS only on synth tracks
+- REC: recording into a clip with notes no longer grows the clip from a note on the last step (undone)
+
 ## 5.130.0 (18 October 2026)
 - SPEECH: much clearer voice (faster formant transitions, stress per word, slower pace, place cues for P/T/K, doubled letters fixed)
 - SPEECH: S / Z / SH / CH are a clean hiss band instead of noise, voiced Z follows the voice

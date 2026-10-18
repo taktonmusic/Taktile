@@ -51,7 +51,7 @@ const ENUMS = {
     wave: ['Auto','Saw','Square','Tri','Sine','Pulse','Pulse12','RampDn','HalfSin','Organ','Hollow','Fold','Stair','Digi','Vowel','Sync'],
     poly: ['Mono','Poly'],
     mfx: ['OFF','OCTV','CHRD','ARP','STRM','ECHO','RNDP','RNDV','COMP','SCAL','TRNS','DIAT'],
-    xfx: ['OFF','STUT','REV','FLNG','TREM','APAN','COMB','WAH','GATE','LOFI','DJ','GRAN'],      /* GRAN (11) is only kept so that old projects still show it: the granulator has its own page */
+    xfx: ['OFF','STUT','REV','FLNG','TREM','APAN','COMB','WAH','GATE','LOFI','DJ','GRAN','DLAY','RVRB'],      /* GRAN (11) is only kept so that old projects still show it: the granulator has its own page */
     dmode: ['PING','TAPE','DUB'],
     rmode: ['HALL','ECHO','SHIM'],
     mono: ['STEREO','MONO','DRY'],
@@ -94,7 +94,7 @@ function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(v
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
 const DRM_ENG_RE = /^D(Kick|Snr|Hat|Clap|Tom|Rim|Clave|Cow|Metal)/;
 function isDrmEng(t) { return DRM_ENG_RE.test(TYPE_NAME[Math.round(t)] || ''); }      /* the drum-synth engine: only these drum sounds have an ENGINE tab */
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : (isDrmEng(pads[ln()][0]) ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 46, 36, 27, 28]); if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : (isDrmEng(pads[ln()][0]) ? [1, 9, 3, 2, 38, 36, 27, 28] : [1, 3, 2, 38, 36, 27, 28]); if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -679,10 +679,11 @@ function editParam(scope, key, delta, idx) {
     if (ENUMS[key]) {
         acc[idx] += delta;
         if (Math.abs(acc[idx]) < (FX_TYPE_KEY[key] ? 14 : 6)) return false;                  /* effect types turn even slower; a list value (arp rate, wave ...) needs a longer turn per step, so it no longer jumps */
-        v = clamp(Math.round(v) + (acc[idx] > 0 ? 1 : -1), 0, (key === 'xfx' || key === 'x2fx') ? 10 : ENUMS[key].length - 1); acc[idx] = 0;
+        v = clamp(Math.round(v) + (acc[idx] > 0 ? 1 : -1), 0, ENUMS[key].length - 1); if ((key === 'xfx' || key === 'x2fx') && v === 11) v = acc[idx] > 0 ? 12 : 10; acc[idx] = 0;
     } else v = clamp(v + delta * (shiftHeld ? 0.016 : 0.0032), 0, 1);
     if (scope === 'pad') {
         const L = keyLane(key);
+        if ((key === 'dly' || key === 'rvb') && L >= NTRK) { showToast('DRUM SOUNDS', 'USE OWN INSERT FX', 0); return false; }
         if (deleteHeld) { autoClear(L, key); return { v: pads[L][PI[key]] }; }
         pSnap('pad', L, key); pads[L][PI[key]] = v;
         if (recArmed && playing && PI[key] !== 0) autoRec(L, key, v);
@@ -2194,7 +2195,7 @@ function drumCol(t, k) {                                  /* colour of drum soun
 function inboundActive() { return (typeof shadow_inbound_pad_midi_active === 'function') && shadow_inbound_pad_midi_active(); }
 function selectTrack(t) { drumHeldK = []; padHold = {}; growTrk.fill(false); bank = t >> 2; if (sel !== t) { for (let q = 0; q < NTRK; q++) if (topModes[q] === 3) { liveFxAllOff(); topModes[q] = topPrev[q] !== 3 ? topPrev[q] : 0; markEdited(); }
         let chg = false; for (let q = 0; q < NTRK; q++) if (topModes[q] === 4) { topModes[q] = 0; chg = true; } if (chg) { chordReconcile(); markEdited(); }      /* chord pads are a visit too: every synth track opens with its normal pads */      /* Live FX is a visit: another track = gone until you switch it on again */
-        fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); if (view === 44 && !chordOn()) tabEnter(1); } needsRedraw = true; }
+        fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); if (view === 44 && !chordOn()) tabEnter(1); if (kind[sel] && (view === 46 || view === 39 || (view === 38 && fxPage))) tabEnter(38); } needsRedraw = true; }
 function wipeSlot(d) {                                    /* a kit is handed to another track: back to the default kit */
     ensureCs(); const def = defaultPads();
     for (let k = 0; k < 16; k++) {
@@ -2348,8 +2349,7 @@ function recordHit(lane, semi, vel) {
     if (growTrk[track] && len < MAXSTEP && gs - 1 >= len && ((g % len) + len) % len >= len - 2) {      /* from the second pass on, a hit in the last two steps means: keep going */ growLoop(lane, len + 16); len = effLen(lane); }
     const pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw);      /* the hit's exact position, snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
     let tS = Math.floor(pSn + 1e-6), tN = Math.round((pSn - tS) / 0.025); if (tN > NUD_MAX) { tS++; tN = 0; }
-    let target = ((tS % len) + len) % len;
-    if (!growTrk[track] && len < MAXSTEP && target === len - 1 && trackHasSteps(ed[track], track)) { growLoop(lane, len + 16); len = effLen(lane); }      /* recording again into a clip that already has notes: a note on its very last step carries on - the clip grows by 16 steps (one more bar) */
+    const target = ((tS % len) + len) % len;
     const st = steps[ed[track]][lane][target]; st[6] = tN; for (let q = st.length; q < 10; q++) st[q] = 0; st[5] = 0; st[9] = 0;
     st[0] = 1; st[1] = clamp(vel, 1, 127); st[2] = clamp(semi, -64, 63);
     qStep(ed[track], lane, target); lastRec = { c: ed[track], l: lane, i: target, g: g, f: fr }; markEdited();
@@ -2536,8 +2536,8 @@ function drawTabsNew() {
 const GW = { MIDI: 19, FX: 18, SAMPLE: 18, EUCLID: 17, DELAY: 16 };
 function lastTabId() { return trackTabs().indexOf(9) >= 0 ? 9 : 28; }      /* SYNTH ENGINE (second tab of a synth track) or SAMPLE (last tab of the others) */
 const TAB_PARENT = { 43: 2, 50: 38, 39: 46, 47: 9, 49: 27 };      /* second pages belong to a tab: EQ > FILTER, GRAIN > FX, FX BUS 2 > FX BUS */
-function tabIndex(tabs) { return tabs.indexOf(view === 9 ? lastTabId() : (view === 38 && fxPage === 1 ? 46 : (TAB_PARENT[view] || view))); }
-function tabPageName(t) { return view === 43 ? 'EQ' : (view === 50 ? 'GRAIN' : (view === 38 && fxPage === 2) ? 'INSERT 2' : (view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
+function tabIndex(tabs) { return tabs.indexOf(view === 9 ? lastTabId() : (view === 38 && fxPage ? 46 : (TAB_PARENT[view] || view))); }
+function tabPageName(t) { return view === 43 ? 'EQ' : (view === 50 ? 'GRAIN' : (view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
 function tabPageNum() { return (view === 43 || view === 50 || (view === 38 && fxPage) || (view === 9 && synPage) || (view === 27 && fxPage)) ? '.2' : ''; }
 let synPage = 0, fxPage = 0;
 function tabPg(t) {                                        /* [page, pages] inside the current tile, always shown: tile name top left, page top right */
@@ -2546,7 +2546,7 @@ function tabPg(t) {                                        /* [page, pages] insi
     const two = (t === 2 || t === 38 || t === 46 || t === 27);
     return [tabPageNum() ? 2 : 1, two ? 2 : 1];
 }
-function pg2(v) { return v === 9 && synPage ? 47 : (v === 38 && fxPage ? (fxPage === 2 ? 53 : 39) : (v === 27 && fxPage ? 49 : v)); }      /* second pages (Jog click): ENGINE 2, FX TIME, MIDI FX 2 */
+function pg2(v) { return v === 9 && synPage ? 47 : (v === 38 && fxPage ? 39 : (v === 27 && fxPage ? 49 : v)); }      /* second pages (Jog click): ENGINE 2, FX TIME, MIDI FX 2 */
 function itemsView() { return view === 28 && smpPage ? (smpPage === 1 ? 29 : (smpPage === 3 ? 48 : 32)) : pg2(view); }
 let exitDlg = -1, suspended = false, selfTestT = 0;
 function selfTest() {                                       /* once after start: can Taktile really save, and is the sample folder there? */
@@ -3392,7 +3392,7 @@ function fbTree() {
     const byRole = { n: 'BY ROLE', kids: [['BASS', [19, 20, 21, 22, 74, 79]], ['LEAD', [26, 73, 80]], ['PLUCK', [23]], ['PAD + STRINGS', [25, 78]], ['KEYS + ORGAN', [24, 76, 77]], ['BELLS', [27]]].map(r => ({ n: r[0], l: (() => { const l = []; for (let t = 1064; t < TYPE_NAME.length; t++) if (r[1].indexOf(BASE_T[t]) >= 0 && !isSpk(t)) l.push(t); return l; })() })) };
     const dsy = (re) => { const l = []; for (let t = 1064; t < TYPE_NAME.length; t++) if (re.test(TYPE_NAME[t])) l.push(t); return l; };
     const dsyn = { n: 'DRUM SYNTHS', kids: [['KICKS', /^DKick/], ['SNARES', /^DSnr/], ['HATS', /^DHat/], ['CLAPS', /^DClap/], ['TOMS', /^DTom/], ['RIM + METAL', /^D(Rim|Clave|Cow|Metal)/]].map(x => ({ n: x[0], l: dsy(x[1]), init: true })) };
-    const fxA = { n: 'AUDIO FX', fx: 'xfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] };       /* one flat list: turn = you hear it on the sound, click = keep */
+    const fxA = { n: 'AUDIO FX', fx: 'xfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13] };       /* one flat list: turn = you hear it on the sound, click = keep */
     const fxM = { n: 'MIDI FX', fx: 'mfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] };
     const fxK = fbWantFx ? [fxA, fxM] : [];
     const drums = { n: 'DRUMS', kindSw: 1, kids: (kitFresh[sel] ? [{ n: 'KITS', kits: true }] : []).concat([fbStyles(), { n: 'BY TYPE', kids: [cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT), cat('PERCUSSION', 3), cat('FX', 4)].concat(nx) }, dsyn]) };
@@ -3405,7 +3405,7 @@ function fbTree() {
     /* the same start for every track, like the question for a new track: SYNTHS | DRUMS | SOUNDS, each opens its list; picking the other kind switches the track */
     return { n: 'BROWSE', kids: [sounds, drums, insts].concat(my, fxK, smp) };
 }
-const FX_LABEL = { x2fx: null, m2fx: null, xfx: ['NONE', 'STUTTER', 'REVERSE', 'FLANGER', 'TREMOLO', 'AUTO PAN', 'COMB', 'WAH', 'GATE', 'LO-FI', 'DJ FILTER', 'GRANULATOR'], mfx: ['NONE', 'OCTAVER', 'CHORD', 'ARPEGGIO', 'STRUM', 'NOTE ECHO', 'RANDOM PITCH', 'RANDOM VEL', 'COMPRESS', 'SCALE', 'TRANSPOSE', 'DIATONIC CHORD'] };
+const FX_LABEL = { x2fx: null, m2fx: null, xfx: ['NONE', 'STUTTER', 'REVERSE', 'FLANGER', 'TREMOLO', 'AUTO PAN', 'COMB', 'WAH', 'GATE', 'LO-FI', 'DJ FILTER', 'GRANULATOR', 'DELAY', 'REVERB'], mfx: ['NONE', 'OCTAVER', 'CHORD', 'ARPEGGIO', 'STRUM', 'NOTE ECHO', 'RANDOM PITCH', 'RANDOM VEL', 'COMPRESS', 'SCALE', 'TRANSPOSE', 'DIATONIC CHORD'] };
 FX_LABEL.x2fx = FX_LABEL.xfx; FX_LABEL.m2fx = FX_LABEL.mfx;
 const FX_AMT = { xfx: 'xmix', x2fx: 'x2mix', mfx: 'mamt', m2fx: 'm2amt' }, FX_AMT_DEF = { xfx: 0.5, x2fx: 0.5, mfx: 0.7, m2fx: 0.7 };
 function fbItems(node) {
@@ -4293,7 +4293,7 @@ function hubBack() {                                       /* one level up; from
     acc.fill(0); needsRedraw = true;
 }
 const SHORTL = { Depth: 'Dpth', Shape: 'Shp', Pitch: 'Ptch', Level: 'Lvl', Layers: 'Lyrs', Chord: 'Chrd', Speed: 'Spd', Feedbk: 'Fdbk', Space: 'Spc', Range: 'Rng', Chance: 'Chnc', Amount: 'Amt', Target: 'Trgt', Octave: 'Oct', Semis: 'Semi', Voicing: 'Voic', Effect: 'FX', Param: 'Prm', VelBias: 'VelB', ArpRate: 'Rate' };      /* names on the effect tiles: always the normal letters */
-const XL = [null, ['Mix', 'Div', 'Hold'], ['Mix', 'Div', 'Hold'], ['Mix', 'Rate', 'Fdbk'], ['Depth', 'Rate', 'Wide'], ['Depth', 'Rate', 'Shape'], ['Mix', 'Pitch', 'Fdbk'], ['Mix', 'Rate', 'Reso'], ['Depth', 'Div', 'Soft'], ['Rate', 'Bits', 'Mix'], ['Reso', 'Pos', '-']];
+const XL = [null, ['Mix', 'Div', 'Hold'], ['Mix', 'Div', 'Hold'], ['Mix', 'Rate', 'Fdbk'], ['Depth', 'Rate', 'Wide'], ['Depth', 'Rate', 'Shape'], ['Mix', 'Pitch', 'Fdbk'], ['Mix', 'Rate', 'Reso'], ['Depth', 'Div', 'Soft'], ['Rate', 'Bits', 'Mix'], ['Reso', 'Pos', '-'], ['Mix', 'Size', 'Rand'], ['Mix', 'Time', 'Fdbk'], ['Mix', 'Size', 'Damp']];
 const ML = [null, ['Level', 'Layers'], ['Level', 'Chord'], ['Level', 'Rate'], ['Level', 'Speed'], ['Feedbk', 'Space'], ['Range', 'Chance'], ['Range', 'Chance'], ['Amount', 'Target'], ['Level', 'Octave'], ['Level', 'Semis'], ['Level', 'Voicing']];
 const CHORD_NAME = ['MAJ', 'MIN', 'SUS2', 'SUS4', '7', 'MIN7', 'MAJ7', 'DIM'], OCT_NAME = ['-1', '+1', '+/-1', '+1+2'], ARP_RATE = ['1/16', '1/8', '1/32'], DIA_NAME = ['TRIAD', '7TH', '9TH', 'OPEN'];
 function itemLabel(v, i, nn) {                                 /* MULTI / MIDI pages: labels follow the chosen effect */
@@ -4521,16 +4521,15 @@ function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (N
 const PG47_ENG = VIEW_ITEMS[47], PG47_SYN = PG47_ENG.map(it => it[0] === 'schp' ? ['drive', 'Drive', 'Drv'] : it);
 const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['xfx', 'Effect', 'FX'] : it);      /* drum sounds have their own insert effects (no shared delay / reverb bus) */
 const FX_SYN = VIEW_ITEMS[38], FX_DRM = [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['x2fx','Effect 2','FX2'],['x2mix','Amount 2','Amt2'],['mono','Output','Out'],['morph','Morph A>B','Mrph']];
-const BLK_FX_SYN = BLOCKS[38];
-VIEW_ITEMS[53] = [['x2fx','Effect 2','FX2'],['x2mix','Amount 2','Amt2'],['x2rt','Rate 2','Rate'],['x2dp','Depth 2','Dpth']]; BLOCKS[53] = [['INSERT 2 / THIS SOUND', 4]];      /* a drum sound's second insert effect */
+const BLK_FX_SYN = BLOCKS[38], BLK_FX_DRM = [['INSERT 1 / THIS SOUND', 4], ['INSERT 2 + OUTPUT', 4]];
 const SND_SPK = [['type', 'Engine'], ['spk', 'Text'], ['tone', 'Tone'], ['tune', 'Tune'], ['drive', 'Drive', 'Drv'], ['pan', 'Pan'], ['poly', 'Voices', 'Poly'], ['vol', 'Vol']];      /* speech: the text takes the place of attack / decay (one shot) */
 const SND_SYN = [['type', 'Engine'], ['att', 'Attack', 'Atk'], ['decay', 'Decay', 'Dcy'], ['tone', 'Tone'], ['tune', 'Tune'], ['pan', 'Pan'], ['poly', 'Voices', 'Poly'], ['vol', 'Vol']];      /* synth: engine + the shaping knobs first */       /* synth: Drive lives on the 2nd SYNTH page; the wave (Saw, Square ...) sits here as a small preset-style box */
 function viewItemsFix() {
     if (favSig !== (chordOn() ? 1 : 0)) favBuild();
     VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
     const t = kind[sel] ? 0 : Math.round(pads[sel][0]), e = nxEng(t);
-    VIEW_ITEMS[38] = FX_SYN; BLOCKS[38] = BLK_FX_SYN;      /* drum sounds and synths: the same FX page (insert, sends, output); a drum sound's second insert is page 2 */
-    if (!kind[sel] && fxPage === 2) fxPage = 0;
+        if (kind[sel] && (view === 46 || (view === 38 && fxPage))) { view = 38; fxPage = 0; needsRedraw = true; }      /* drum tracks have no shared FX bus pages */
+    VIEW_ITEMS[38] = kind[sel] ? FX_DRM : FX_SYN; BLOCKS[38] = kind[sel] ? BLK_FX_DRM : BLK_FX_SYN;
     VIEW_ITEMS[1] = kind[sel] ? SND_DRM : (isSpk(pads[sel][0]) ? SND_SPK : SND_SYN);      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
     VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : (isDrmEng(pads[ln()][0]) ? DRM_PG : (isSpk(pads[ln()][0]) ? (spkLetterOn(ln()) ? SPK_PG_L : SPK_PG) : SYN_PG)));
     BLOCKS[9] = VIEW_ITEMS[9] === DRM_PG ? [['DRUM ENGINE', 4], ['DRIVE + FILTER', 4]] : ((VIEW_ITEMS[9] === SPK_PG || VIEW_ITEMS[9] === SPK_PG_L) ? [['VOICE', 4], ['DRIVE + FILTER', 4]] : [['ENGINE', 4], ['FILTER + VOICES', 4]]);
@@ -5161,8 +5160,6 @@ globalThis.onMidiMessageInternal = function (data) {
             let pg;
             if (view === 2) { view = 43; pg = 2; }
             else if (view === 43) { view = 2; pg = 1; }
-            else if (kind[sel] && view === 38 && !fxPage) { fxPage = 2; pg = 2; }
-            else if (kind[sel] && view === 38 && fxPage === 2) { view = 50; fxPage = 0; pg = 3; }
             else if (view === 38 && !fxPage) { view = 50; pg = 2; }
             else if (view === 50) { view = 38; fxPage = 0; pg = 1; }
             else if (view === 46) { view = 38; fxPage = 1; pg = 2; }

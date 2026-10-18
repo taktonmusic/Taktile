@@ -706,7 +706,10 @@ typedef struct {
 #define GB_SIZE 4096
 #define SH_SIZE 2048
 typedef struct { float xph, xz[2][4], xbuf[2][XB_SIZE], xhold[2]; int xw, xcnt, scnt, sn;
-    float gb[2][GB_SIZE]; int gw, gtim, gage[4], glen[4]; float gpos[4], ginc[4], gpl[4], gpr[4]; unsigned grng; } xs_t;
+    float gb[2][GB_SIZE]; int gw, gtim, gage[4], glen[4]; float gpos[4], ginc[4], gpl[4], gpr[4]; unsigned grng;
+    int fi, fxw, fxi[12]; float xdl, fxf[8]; } xs_t;      /* fi: the delay / reverb memory this insert slot uses (0 = none), see fxm in inst_t */
+#define FXM_N 49152
+#define FXM_SLOTS 10
 #define REP_N 8                                       /* note repeat: up to 8 pads repeat at the same time */
 typedef struct {
     float pp[NLANE][PP_N];
@@ -756,6 +759,7 @@ typedef struct {
     struct { int cnt, lane, semi, follow; float vel; } eq[32];   /* delayed notes: echo + strum */
     /* per-track insert effect (10 types): lfo phase, filter states, delay buffers, sample-hold */
     xs_t xs[2][NLANE];
+    float xmem[FXM_SLOTS][2][FXM_N]; unsigned xmem_used;     /* memory of the DELAY / REVERB insert effects: a pool, only the slots that use one take a block */
     float sbuf[NLANE][2][SB_SIZE];
 
     /* sequencer */
@@ -1021,8 +1025,14 @@ static void lfx_proc(inst_t *s, float *Lp, float *Rp) {
 /* one audio insert slot (type 0 = off); two of them in a row per lane = the effect chain */
 static void xfx_proc(inst_t *s, xs_t *X, float (*sbuf)[SB_SIZE], int xt, float am, float pa, float pb, float *lp, float *rp) {
     float l = *lp, r_ = *rp;
+    if (X->fi && xt != 12 && xt != 13) { s->xmem_used &= ~(1u << (X->fi - 1)); X->fi = 0; }       /* the effect was changed: give its memory back */
+    if ((xt == 12 || xt == 13) && !X->fi) {
+        int got = 0;
+        for (int i = 0; i < FXM_SLOTS; i++) if (!(s->xmem_used & (1u << i))) { s->xmem_used |= 1u << i; X->fi = i + 1; memset(s->xmem[i], 0, sizeof s->xmem[i]); memset(X->fxi, 0, sizeof X->fxi); memset(X->fxf, 0, sizeof X->fxf); X->fxw = 0; X->xdl = 0.0f; got = 1; break; }
+        if (!got) xt = 0;                                          /* all ten delay / reverb inserts are in use: this one stays off */
+    }
     if ((xt == 1 || xt == 2) && !sbuf) xt = 0;                     /* stutter / reverse need the capture buffer: slot 1 only */
-                                if (xt > 0 && xt <= 11) {
+                                if (xt > 0 && xt <= 13) {
                     float in2[2] = { l, r_ }, out2[2] = { l, r_ };
                     float *z = &X->xz[0][0];
                     const float wet2 = pb * 2.0f > 1.0f ? 1.0f : pb * 2.0f;
@@ -1131,6 +1141,37 @@ static void xfx_proc(inst_t *s, xs_t *X, float (*sbuf)[SB_SIZE], int xt, float a
                         const float wl = gl * 0.75f, wr = gr * 0.75f;
                         out2[0] = in2[0] * (1.0f - am * 0.8f) + wl * am * 1.6f;
                         out2[1] = in2[1] * (1.0f - am * 0.8f) + wr * am * 1.6f;
+                    } else if (xt == 12) {                                      /* DELAY: ping-pong echo in time with the tempo. Amount = level, Rate = time (1/16 .. 1/2), Depth = feedback */
+                        float (*B)[FXM_N] = s->xmem[X->fi - 1];
+                        static const float DM[6] = { 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f };
+                        int di = (int)(pa * 5.99f); if (di < 0) di = 0; if (di > 5) di = 5;
+                        float dsm = s->sr * 60.0f / (s->bpm > 20.0f ? s->bpm : 120.0f) * DM[di]; if (dsm > (float)(FXM_N - 4)) dsm = (float)(FXM_N - 4);
+                        if (X->xdl < 1.0f) X->xdl = dsm; else X->xdl += (dsm - X->xdl) * 0.0006f;
+                        const int w = X->fxw; float pos = (float)w - X->xdl; if (pos < 0.0f) pos += (float)FXM_N;
+                        const int i0 = (int)pos; const float fr = pos - (float)i0; const int i1 = i0 + 1 >= FXM_N ? 0 : i0 + 1;
+                        const float tl = B[0][i0] * (1.0f - fr) + B[0][i1] * fr, tr = B[1][i0] * (1.0f - fr) + B[1][i1] * fr, fb = pb * 0.85f;
+                        B[0][w] = in2[0] + tr * fb; B[1][w] = in2[1] + tl * fb;
+                        X->fxw = w + 1 >= FXM_N ? 0 : w + 1;
+                        out2[0] = in2[0] + tl * am * 0.9f; out2[1] = in2[1] + tr * am * 0.9f;
+                    } else if (xt == 13) {                                      /* REVERB: small room / hall (4 combs + 2 all-passes per side). Amount = level, Rate = size, Depth = damping */
+                        float (*B)[FXM_N] = s->xmem[X->fi - 1];
+                        static const int CLN[4] = { 1116, 1188, 1277, 1356 }, COF[4] = { 0, 1300, 2600, 4000 }, ALN[2] = { 556, 441 }, AOF[2] = { 5500, 6200 };
+                        const float fb = 0.72f + pa * 0.26f, dp = 0.12f + pb * 0.7f, rin = (in2[0] + in2[1]) * 0.22f;
+                        for (int c = 0; c < 2; c++) {
+                            float sum = 0.0f; const int sp = c ? 23 : 0;
+                            for (int i = 0; i < 4; i++) {
+                                const int ln = CLN[i] + sp; int ix = X->fxi[c * 6 + i];
+                                const float y = B[c][COF[i] + ix]; float *ls = &X->fxf[c * 4 + i];
+                                *ls = y * (1.0f - dp) + *ls * dp; if (!(fabsf(*ls) < 8.0f)) *ls = 0.0f;
+                                B[c][COF[i] + ix] = rin + *ls * fb; X->fxi[c * 6 + i] = ix + 1 >= ln ? 0 : ix + 1; sum += y;
+                            }
+                            float xa = sum;
+                            for (int a = 0; a < 2; a++) {
+                                const int ln = ALN[a] + sp; int ix = X->fxi[c * 6 + 4 + a];
+                                const float bq = B[c][AOF[a] + ix], y = -xa + bq; B[c][AOF[a] + ix] = xa + bq * 0.5f; X->fxi[c * 6 + 4 + a] = ix + 1 >= ln ? 0 : ix + 1; xa = y;
+                            }
+                            out2[c] = in2[c] * (1.0f - am * 0.4f) + xa * am * 1.5f;
+                        }
                     } else {                                                    /* DJ FILTER: left = low-pass, right = high-pass, middle = off */
                         const float pos = pa - 0.5f, ap = fabsf(pos) * 2.0f;
                         if (ap > 0.04f) {
@@ -2922,7 +2963,7 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
         else if (k == PP_WAVE) { int e = enum_index(val, WAVE_NAME, 16);      if (e < 0) return; v = (float)e; }
         else if (k == PP_POLY) { int e = enum_index(val, POLY_NAME, 2);       if (e < 0) return; v = (float)e; }
         else if (k == PP_DTIME) { int e = enum_index(val, DT_NAME, 5);        if (e < 0) return; v = (float)e; }
-        else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX)  { v = clampf((float)atof(val), 0.0f, 11.0f); }
+        else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX)  { v = clampf((float)atof(val), 0.0f, (k == PP_XFX || k == PP_X2FX) ? 13.0f : 11.0f); }
         else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DMD) { v = clampf((float)atof(val), 0.0f, 2.0f); }
         else if (k == PP_DLN) { v = clampf((float)atof(val), 0.0f, 6.0f); }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
@@ -3215,7 +3256,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_WAVE) v = clampf(v, 0.0f, 15.0f);
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
-            else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, 11.0f);
+            else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, (k == PP_XFX || k == PP_X2FX) ? 13.0f : 11.0f);
             else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DMD) v = clampf(v, 0.0f, 2.0f);
             else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
             else v = clampf(v, 0.0f, 1.0f);
@@ -3238,7 +3279,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_WAVE) v = clampf(v, 0.0f, 15.0f);
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
-            else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, 11.0f);
+            else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, (k == PP_XFX || k == PP_X2FX) ? 13.0f : 11.0f);
             else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DMD) v = clampf(v, 0.0f, 2.0f);
             else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
             else v = clampf(v, 0.0f, 1.0f);
