@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.145.0 (18 October 2026)
+- SONG mode now opens only from the menu (MORE > SONG); Shift + step 1 in the clips no longer jumps into it
+
 ## 5.144.0 (18 October 2026)
 - Tape is now clearly audible: Tape adds real saturation with more head-bump warmth, Wow bends the pitch like a worn cassette (about 10 cents at full), Hiss unchanged
 

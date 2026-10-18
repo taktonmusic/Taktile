@@ -1504,7 +1504,6 @@ function drawDevices() {
 }
 function shiftStep(i) {
     if (!SHIFT_OK[i]) return;                                       /* only symbols with a real function light up */
-    if (i === 0 && view === 7) { songOpen(true); return; }          /* step 1 inside the clips: on to the SONG */
     if (i === 0 && view === 31 && songFromClips) { view = 7; songFromClips = false; acc.fill(0); needsRedraw = true; return; }
     if (i === 13) { openFav(); return; }                              /* step 14: your favorite knobs */
     if (i === 0) { projOpen(); return; }                              /* step 1: PROJECT (slots, new, revert) */
