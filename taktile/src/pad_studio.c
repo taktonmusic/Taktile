@@ -770,6 +770,7 @@ typedef struct {
     uint8_t stp[NPAT][NLANE][MAXSTEP][7];   /* a = on<<7 | vel, b = probability 0..7, c = semi + 64, d = ratchet | gate<<2 | cond<<5, e = nudge 0..7, f = parameter lock value 0 (none) .. 127 */
     uint8_t plk_t[NLANE]; float plk_b[NLANE]; float cdet_z[2];   /* per-lane lock target (PP index, 0 = none), its base value, compressor detector HPF state */
     int   seqlen[NTRK], mute[NTRK]; uint8_t rechold[NTRK];
+    int tph[NTRK];      /* a clip that was recorded from a bar line in the middle of the run starts at that bar line: its own step 0 = this global step */
     int rskip[NLANE];   /* a note recorded live must not sound a second time when its step is still ahead (the pad already played it): holds the absolute step + 1 */   /* rechold: a clip that is being recorded for the first time does not play back until the recording is finished */
     uint8_t lmute[NLANE];            /* per-sound mute (drum pads): the sequencer skips these lanes */
     int   llen[NLANE];                      /* own loop length of one lane (0 = follow the track) */
@@ -2621,7 +2622,7 @@ static void clip_activate_lane(inst_t *s, int l, int c) {
     }
 }
 static void clip_activate(inst_t *s, int t, int c) {
-    s->clip[t] = c; s->fol_cnt[t] = 0;
+    s->clip[t] = c; s->tph[t] = 0; s->fol_cnt[t] = 0;
     if (s->isdrum[t]) { int d = track_slot(s, t); if (d >= 0) for (int k = 0; k < 16; k++) clip_activate_lane(s, NTRK + d * 16 + k, c); }
     else clip_activate_lane(s, t, c);
 }
@@ -2685,7 +2686,7 @@ static void seq_step(inst_t *s) {
             const int c = s->clip[t]; if (c < 0 || c >= NPAT || s->qclip[t] != -2) continue;
             const int act = s->fol[t][c] & 7; if (act == 0) continue;
             int len = s->seqlen[t]; if (len < 1) len = 1;
-            if ((s->gs % len) != 0) continue;
+            if (((s->gs - s->tph[t]) % len) != 0) continue;
             int li = (s->fol[t][c] >> 3) & 7; if (li > 5) li = 5;
             if (++s->fol_cnt[t] < LP[li]) continue;
             s->fol_cnt[t] = 0;
@@ -2722,8 +2723,9 @@ static void seq_step(inst_t *s) {
         const int tk = lane_trk(s, t);
         int len = s->llen[t] > 0 ? s->llen[t] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
         if (s->clip[tk] < 0) continue;
-        if ((s->gs % len) == 0) s->spk_wi[t] = 0;                      /* a speech sound that says one word per note starts again with the loop */
-        const uint8_t *st = s->stp[s->clip[tk]][t][s->gs % len];
+        int gl = s->gs - s->tph[tk]; if (gl < 0) gl = 0;
+        if ((gl % len) == 0) s->spk_wi[t] = 0;                      /* a speech sound that says one word per note starts again with the loop */
+        const uint8_t *st = s->stp[s->clip[tk]][t][gl % len];
         if (s->rskip[t]) { if (s->rskip[t] == s->gs + 1) { s->rskip[t] = 0; continue; } if (s->rskip[t] < s->gs + 1) s->rskip[t] = 0; }      /* never leave an old skip behind */
         if (!(st[0] & 0x80) || s->mute[tk] || s->lmute[t] || s->rechold[tk]) continue;
         if (prob_idx(st[1]) > 0) {
@@ -2733,7 +2735,7 @@ static void seq_step(inst_t *s) {
         {   /* condition: play only on certain passes of the loop (1:2, 2:2, 1:3 ... 4:4) */
             static const int CN[8] = { 1, 2, 2, 3, 3, 3, 4, 4 }, CK[8] = { 0, 0, 1, 0, 1, 2, 0, 3 };
             int cd = (st[3] >> 5) & 7;
-            if (cd && ((s->gs / len) % CN[cd]) != CK[cd]) continue;
+            if (cd && ((gl / len) % CN[cd]) != CK[cd]) continue;
         }
         if (s->plk_t[t]) { const int lv = st[5]; s->pp[t][s->plk_t[t]] = lv ? (float)(lv - 1) / 126.0f : s->plk_b[t]; }       /* parameter lock: this step's value, or back to the base */
         int semi = (int)st[2] - 64;
@@ -2762,8 +2764,8 @@ static void seq_step(inst_t *s) {
     s->gs++;
 }
 
-static void seq_start(inst_t *s) { if (s->mo_clk) { mo_send(0xF, 0xFA, 0, 0); s->mclk = 0.0f; } s->playing = 1; s->tsamp = 0.0; s->next_time = 0.0; s->last_time = 0.0; s->gs = 0; s->pump_ph = 0.0f; s->wob_ph = 0.0f; }
-static void seq_stop(inst_t *s) { memset(s->rskip, 0, sizeof s->rskip);
+static void seq_start(inst_t *s) { memset(s->tph, 0, sizeof s->tph); if (s->mo_clk) { mo_send(0xF, 0xFA, 0, 0); s->mclk = 0.0f; } s->playing = 1; s->tsamp = 0.0; s->next_time = 0.0; s->last_time = 0.0; s->gs = 0; s->pump_ph = 0.0f; s->wob_ph = 0.0f; }
+static void seq_stop(inst_t *s) { memset(s->rskip, 0, sizeof s->rskip); memset(s->tph, 0, sizeof s->tph);
     if (s->playing && s->mo_clk) mo_send(0xF, 0xFC, 0, 0);
     for (int i = 0; i < 64; i++) if (s->mo_q[i].cnt > 0) { mo_send(0x8, s->mo_q[i].st, s->mo_q[i].d1, 0); s->mo_q[i].cnt = 0; }
     s->playing = 0; s->gs = 0;
@@ -3202,6 +3204,11 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "mute") == 0) {                /* "track,0|1" */
         int t = atoi(val); const char *c = strchr(val, ',');
         if (c && t >= 0 && t < NTRK) s->mute[t] = atoi(c + 1) ? 1 : 0;
+        return;
+    }
+    if (strcmp(key, "tph") == 0) {                 /* "track,global step": the clip's own step 0 */
+        int t = atoi(val); const char *c = strchr(val, ',');
+        if (c && t >= 0 && t < NTRK) { int g = atoi(c + 1); s->tph[t] = g < 0 ? 0 : g; }
         return;
     }
     if (strcmp(key, "rskip") == 0) {               /* "lane,step": skip that one step once (it was just played live by the pad) */

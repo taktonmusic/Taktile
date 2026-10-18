@@ -235,6 +235,9 @@ let menuGrp = -1, menuSub = 0;
 let menuOpen = false, menuIdx = 0, browseAll = false, rqOff = 0.5, trkHeld = -1, trkUsed = false;
 let topModes = new Array(16).fill(0), sessDown = 0, sessPeek = false, hitLog = [], muteUsed = false, soloAtPress = false, recDown = false, recStepUsed = false, recHead = 0, fullVel = false, loopHeld = false, euK = new Array(16).fill(4), euR = new Array(16).fill(0), cpuAvg = 0, cpuPeak = 0, padsOffSent = -1, padMenu = false, prevPM = 0, backTicks = 0, ledAge = 0, ledRot = 0, resyncT = 0, resyncTrk = 0, resyncSub = 0, tapT = [];
 let playing = false, gs = 0, recArmed = false, phase = 0;
+const tph = new Array(16).fill(0);      /* per track: the global step where its clip's own step 0 lies (a take that began at a bar line in the middle of the run starts there, like on the Move) */
+function gl(t) { return gs - tph[t]; }
+const edSeen = new Array(16).fill(0);
 let recSwallow = false, shiftHeld = false, copyHeld = false, deleteHeld = false, muteHeld = false;
 let delAge = 0;
 let fb = null, fbT = 0, fbOff = null, fbPend = 0;                      /* sound / kit folder browser */
@@ -813,7 +816,7 @@ function stepsPadUp(idx) {                                // release: a plain ta
 }
 function clipTrig(t, c) {                                  /* does the playing clip of track t fire a note at this very step? */
     if (!playing) return false;
-    for (const l of lanesOf(t)) { const n = effLen(l), row = steps[c] && steps[c][l]; if (!row) continue; const cur = (gs - 1 + 1024 * n) % n; if (row[cur] && row[cur][0] && !lmutes[l]) return true; }
+    for (const l of lanesOf(t)) { const n = effLen(l), row = steps[c] && steps[c][l]; if (!row) continue; const cur = (gl(t) - 1 + 1024 * n) % n; if (row[cur] && row[cur][0] && !lmutes[l]) return true; }
     return false;
 }
 function pulseLow() { const p = playing ? (((gs - 1) % 4) + 4) % 4 : Math.floor(Date.now() / 250) & 3; return p >= 2; }      /* beat-locked blink phase of the pulsing pads */
@@ -831,7 +834,7 @@ function padLedBase(i) {                                 /* LED colour of pad i 
     if (m === 2) {
         const si = padStepIdx(i);
         if (si >= LL()) return 124;                   /* beyond the loop: faint, press to extend */
-        const cur = playing ? ((gs - 1 + 1024 * LL()) % LL()) : -1;
+        const cur = playing ? ((gl(sel) - 1 + 1024 * LL()) % LL()) : -1;
         if (si === cur) return 120;
         return steps[ed[sel]][ln()][si][0] ? tc : 96;
     }
@@ -854,7 +857,7 @@ function padLedBase(i) {                                 /* LED colour of pad i 
 let seqUse = { semis: {}, play: null, lanes: [], lplay: [] };
 function seqUseUpdate() {
     const c = ed[sel], su = { semis: {}, play: null, lanes: [], lplay: [] };
-    const cur = (l) => { const n = effLen(l); return playing ? ((gs - 1 + 1024 * n) % n) : -1; };
+    const cur = (l) => { const n = effLen(l); return playing ? ((gl(laneTrk(l)) - 1 + 1024 * n) % n) : -1; };
     if (kind[sel]) {
         for (let k = 0; k < 16; k++) { const l = laneOf(sel, k), n = effLen(l), row = steps[c][l]; let has = false; for (let s2 = 0; s2 < n; s2++) if (row[s2][0]) { has = true; break; } su.lanes.push(has); const cs = cur(l); su.lplay.push(cs >= 0 && !!row[cs][0]); }
     }
@@ -1013,7 +1016,7 @@ function fillRestore() {
 function fillTick() {
     if (!fillChg.length) return;
     if (!playing) { fillRestore(); return; }
-    const n = effLen(fillChg[0].l), pos = (((gs - 1) % n) + n) % n;
+    const n = effLen(fillChg[0].l), pos = (((gl(laneTrk(fillChg[0].l)) - 1) % n) + n) % n;
     if (fillPos >= 0 && pos < fillPos) { fillRestore(); return; }
     fillPos = pos;
 }
@@ -2279,25 +2282,17 @@ function growTick() {
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
         const len = lens[t]; if (len >= MAXSTEP) continue;
-        const rel = gs - 1 - growG0[t];      /* counted from the bar line where this take began, so it also works when the sequencer was already running */
-        if (rel >= 0 && rel % len === len - 1 && rel < len * 2) growLoop(t, len + 16);
+        const rel = gs - 1 - growG0[t];      /* counted from the bar line where this take began; reaching the last step of the clip (or having passed it) adds the next bar, so one late screen update cannot make the clip miss a bar */
+        if (rel >= len - 1) growLoop(t, Math.max(len + 16, (Math.floor(rel / 16) + 2) * 16));
     }
 }
-function reMap(t, oldLen, n) {                           /* a clip that changes length keeps every note on the same beat of the shared grid: a note is stored as its position in the take (counted from the bar line where the take began) and put at that position mod the new length; what lies beyond a shorter new length is dropped */
-    const c = ed[t], g0 = growG0[t];
+function reMap(t, oldLen, n) {                           /* a take is stored from its own step 1, so growing changes nothing; a shorter clip drops what lies beyond it (the last, unfinished bar) */
+    if (n >= oldLen) return;
+    const c = ed[t];
     for (const l of lanesOf(t)) {
-        const a = steps[c][l], tmp = a.slice(0, Math.max(oldLen, n)).map(x => x.slice());
-        const out = []; for (let i = 0; i < n; i++) out.push([0, 100, 0, 0]);
-        let ch = false;
-        for (let i = 0; i < Math.max(oldLen, n); i++) {
-            if (!tmp[i] || !tmp[i][0]) continue;
-            const r = i < oldLen ? ((((i - g0) % oldLen) + oldLen) % oldLen) : i;
-            if (r >= n) { ch = true; continue; }
-            const j = (((g0 + r) % n) + n) % n;
-            out[j] = tmp[i]; if (j !== i) ch = true;
-        }
-        if (n < oldLen) for (let i = n; i < oldLen; i++) if (a[i] && a[i][0]) ch = true;
-        if (ch) { for (let i = 0; i < Math.max(oldLen, n); i++) a[i] = i < n ? out[i] : [0, 100, 0, 0]; qSeq(c, l); }
+        const a = steps[c][l]; let ch = false;
+        for (let i = n; i < oldLen && i < a.length; i++) if (a[i][0]) { a[i] = [0, 100, 0, 0]; ch = true; }
+        if (ch) qSeq(c, l);
     }
 }
 function growSet(t, n) {                                   /* a clip recorded from empty changes length: the track AND every drum sound that follows it change together, so all sounds stay in sync */
@@ -2352,11 +2347,12 @@ function recordHit(lane, semi, vel) {
     if (typeof r !== 'string') return;
     const a = r.split(','), g = parseInt(a[1]) || 0, fr = parseInt(a[3]) || 0;
     let len = effLen(lane);
-    if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; { const g1 = g - 1, l1 = Math.max(1, len); growG0[track] = g1 - (((g1 % l1) + l1) % l1); } }
-    if (growTrk[track] && len < MAXSTEP && gs - 1 >= len && ((g % len) + len) % len >= len - 2) {      /* from the second pass on, a hit in the last two steps means: keep going */ growLoop(lane, len + 16); len = effLen(lane); }
+    if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; { const g1 = g - 1; growG0[track] = g1 - (((g1 % 16) + 16) % 16); tph[track] = growG0[track]; dspSet('tph', track + ',' + tph[track]); } }      /* the clip begins at the bar line of this take: its step 1 */
     const pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw);      /* the hit's exact position, snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
     let tS = Math.floor(pSn + 1e-6), tN = Math.round((pSn - tS) / 0.025); if (tN > NUD_MAX) { tS++; tN = 0; }
-    const target = ((tS % len) + len) % len;
+    const rel = tS - tph[track];
+    if (growTrk[track]) while (len < MAXSTEP && rel >= len) { growLoop(lane, len + 16); const l2 = effLen(lane); if (l2 <= len) break; len = l2; }      /* the take always reaches the bar you are playing in, even when the loop did not grow in time */
+    const target = ((rel % len) + len) % len;
     const st = steps[ed[track]][lane][target]; st[6] = tN; for (let q = st.length; q < 10; q++) st[q] = 0; st[5] = 0; st[9] = 0;
     st[0] = 1; st[1] = clamp(vel, 1, 127); st[2] = clamp(semi, -64, 63);
     if (tS >= g) dspSet('rskip', lane + ',' + tS);      /* the step is still ahead: the pad already sounded, so this pass does not play it a second time */
@@ -4047,7 +4043,7 @@ function autoSub() { return Math.floor(((posFr || 0)) / 25) & 3; }
 let posFr = 0;
 function autoRec(L, key, v) {
     const c = ed[laneTrk(L)], id = c + '|' + L + '|' + key, len = effLen(L);
-    const p = ((gs - 1 + 1024 * len) % len) * 4 + autoSub();
+    const p = ((gl(laneTrk(L)) - 1 + 1024 * len) % len) * 4 + autoSub();
     pSnap('auto', 0, 'rec');
     if (!AUTO[id]) AUTO[id] = {};
     AUTO[id][p] = Math.round(v * 1000) / 1000; autoHold[id] = 25; dirty = true;
@@ -4060,7 +4056,7 @@ function autoPlay() {
         const a = id.split('|'), c = +a[0], L = +a[1], key = a[2];
         if (ed[laneTrk(L)] !== c) continue;
         if (autoHold[id] > 0) { autoHold[id]--; continue; }
-        const len = effLen(L), n = len * 4, cur = (((gs - 1 + 1024 * len) % len) * 4 + autoSub()) % n;
+        const len = effLen(L), n = len * 4, cur = (((gl(laneTrk(L)) - 1 + 1024 * len) % len) * 4 + autoSub()) % n;
         const last = autoLast[id] === undefined ? cur : autoLast[id];
         if (last === cur) { if (autoLast[id] === undefined) autoLast[id] = cur; continue; }
         let hit = null, j = last;
@@ -4190,7 +4186,7 @@ function drawSeq() {
     const star = llen[ln()] ? '*' : '', pgTxt = LL() > 16 ? 'BAR ' + (stepPage + 1) + '/' + pageCount() + ' L' + LL() + star : 'L' + LL() + star;      /* every bar = 16 steps = one page */
     txt(0, 11, fit(p2(sel + 1) + ' ' + laneName() + (mutes[sel] ? ' M' : ''), 120 - tw(pgTxt)), 1);
     txt(126 - tw(pgTxt), 11, pgTxt, 1);
-    const cur = playing ? ((gs - 1 + 1024 * LL()) % LL()) : -1;
+    const cur = playing ? ((gl(sel) - 1 + 1024 * LL()) % LL()) : -1;
     for (let i = 0; i < 16; i++) {
         const s = stepPage * 16 + i, x = i * 8;
         if (s >= LL()) { set_pixel(x + 3, 30, 1); continue; }
@@ -4273,7 +4269,7 @@ function drawClips() {
             const x = 27 + c * 12, has = trackHasSteps(c, t), cur = clipsCur[t] === c, q = clipsQ[t] === c;
             if (cur) {
                 fill_rect(x, y, 11, 10, 1);
-                if (playing) { const len = lens[t], prog = Math.round(9 * (((gs % len) + len) % len) / len); fill_rect(x + 1 + prog, y + 8, 1, 2, 0); }
+                if (playing) { const len = lens[t], prog = Math.round(9 * (((gl(t) % len) + len) % len) / len); fill_rect(x + 1 + prog, y + 8, 1, 2, 0); }
                 else { set_pixel(x + 4, y + 3, 0); set_pixel(x + 4, y + 4, 0); set_pixel(x + 4, y + 5, 0); set_pixel(x + 5, y + 4, 0); }
             } else if (q) { draw_rect(x, y, 11, 10, 1); fill_rect(x + 3, y + 3, 5, 4, 1); }
             else if (has) { draw_rect(x, y, 11, 10, 1); clipBars(c, t, x, y); }
@@ -4707,7 +4703,7 @@ function drawCore() {
         if (toast.ck && CURVE_KEYS[toast.ck] && !menuOpen && askKind < 0) drawCurveBox(toast.ck);
     }
     if (helpOpen) drawHelp();
-    if (uiMin && playing && hdrDrawn && !toast) { const stp = ((gs - 1) % 16 + 16) % 16; fill_rect(stp * 8, 10, 8, 2, 1); }      /* the playhead runs along the header line */
+    if (uiMin && playing && hdrDrawn && !toast) { const stp = ((gl(sel) - 1) % 16 + 16) % 16; fill_rect(stp * 8, 10, 8, 2, 1); }      /* the playhead runs along the header line */
     needsRedraw = false; if (menuOpen && menuAnim) needsRedraw = true;
     if (view !== slideView) { slideView = view; if (slideOn && !menuOpen && askKind < 0 && exitDlg < 0) slideT0 = Date.now(); }
     if (slideT0 > 0) {                                       /* page slide: the new page is revealed from the left in about 140 ms */
@@ -4763,7 +4759,7 @@ function updateLeds() {
     seqUseUpdate();
     { const ku = knobLedsOn ? knobUse() : [0, 0, 0, 0, 0, 0, 0, 0], lv = (knobLedsOn && knobLvlOn) ? knobLevels() : null;
       for (let i = 0; i < 8; i++) btn(CC.KNOB1 + i, ku[i] ? (lv && lv[i] !== undefined ? KNOB_RAMP[Math.min(3, Math.floor(lv[i] * 4))] : 120) : 0); }
-    const cur = playing ? ((gs - 1 + 1024 * LL()) % LL()) : -1;
+    const cur = playing ? ((gl(sel) - 1 + 1024 * LL()) % LL()) : -1;
     for (let i = 0; i < 32; i++) {
         let c;
         if (view === 7) {
@@ -4939,11 +4935,13 @@ globalThis.tick = function () {
         const np = a[0] === '1', ng = parseInt(a[1]) || 0;
         posFr = parseInt(a[3]) || 0;
         { const ci = parseInt(a[4]) || 0; if (ci !== ciBeats) { ciBeats = ci; needsRedraw = true; if (ci > 0) showToast('COUNT-IN', String(ci), ci / 4); } }
+        if (np !== playing || ng < gs - 1) tph.fill(0);      /* start / stop / restart: every clip begins at its own step 1 again */
+        for (let t = 0; t < NTRK; t++) if (edSeen[t] !== ed[t]) { edSeen[t] = ed[t]; if (!growTrk[t]) tph[t] = 0; }      /* another clip on this track starts at its own step 1 */
         if (np !== playing || ng !== gs) { playing = np; gs = ng; needsRedraw = true; }
         growTick(); loadTick(); autoPlay(); songTick(); rsTick(); meterTick(); scopeTick(); fillTick(); kitPrevTick(); if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
         if (playing && followHold > 0) followHold--;
         if (playing && followHold === 0 && heldStep < 0 && LL() > 16) {   /* screen + step buttons follow the playing bar */
-            const pg = Math.floor((((gs - 1 + 1024 * LL()) % LL())) / 16);
+            const pg = Math.floor((((gl(sel) - 1 + 1024 * LL()) % LL())) / 16);
             if (pg !== stepPage && pg < pageCount()) { stepPage = pg; needsRedraw = true; }
         }
     } else if (posNow) posFail++;

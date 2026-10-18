@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.142.0 (18 October 2026)
+- Recording into an empty clip like the Move: the clip begins at the bar where your take began (your first bar is step 1), grows reliably bar by bar even if the screen updates late, and each note lands in the bar you play it in
+- Each track keeps its own clip start (new engine setting tph)
+- Fixed a possible freeze while a take grows
+
 ## 5.141.0 (18 October 2026)
 - Step page now reads BAR 2/4 (every bar = 16 steps = one page), so you always see which bar you are in
 - Safer skip of a live-recorded note: an old skip can never stay behind
