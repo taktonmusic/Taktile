@@ -8,12 +8,32 @@ static void spk_res(float f, float bw, float sr, float *A, float *B, float *C) {
 }
 static void spk_start(inst_t *s, vc_t *v, int p, const nx_t *n) {
     const int lang = n->p[0] > 0.5f;
-    const char *t = s->spk_txt[p][0] ? s->spk_txt[p] : (lang ? "HALLO" : "HELLO");
-    v->ni[1] = spk_compile(t, lang, (uint8_t *)v->ks); v->ni[0] = 0;
+    const char *t = s->spk_txt[p][0] ? s->spk_txt[p] : (lang ? "HALLO WELT" : "HELLO WORLD");
+    char one[48];
+    if ((int)(s->pp[p][PP_DMD] + 0.5f) == 1) {                      /* PLAY = WORD: every note says the next word of the text */
+        int nw = 0, in = 0; for (const char *c = t; *c; c++) { const int al = (*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z') || (*c >= '0' && *c <= '9'); if (al && !in) nw++; in = al; }
+        if (nw > 0) {
+            const int want = s->spk_wi[p] % nw; s->spk_wi[p]++;
+            int wi = -1; in = 0; const char *st = t, *en = t;
+            for (const char *c = t;; c++) {
+                const int al = *c && ((*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z') || (*c >= '0' && *c <= '9'));
+                if (al && !in) { wi++; st = c; }
+                if (!al && in && wi == want) { en = c; break; }
+                in = al; if (!*c) { en = c; break; }
+            }
+            int k = 0; for (const char *c = st; c < en && k < 46; c++) one[k++] = *c; one[k] = 0; t = one;
+        }
+    }
+    uint8_t *ph = (uint8_t *)v->ks;
+    int cnt = spk_compile(t, lang, ph);
+    static int idCL = -1, idCLV = -1; if (idCL < 0) { idCL = spk_id("CL"); idCLV = spk_id("CLV"); }
+    if (cnt > 1 && (ph[0] == idCL || ph[0] == idCLV)) { memmove(ph, ph + 1, (size_t)(cnt - 1)); cnt--; }   /* start on the burst, not on the silence: the sound lands on the beat */
+    float D = 0.0f; for (int i = 0; i < cnt; i++) D += SPK_P[ph[i]].ms * 0.001f;
+    v->ni[1] = cnt; v->ni[0] = 0;
     for (int k = 0; k < 64; k++) v->nx[k] = 0.0f;
     v->nx[2] = 500.0f; v->nx[3] = 1500.0f; v->nx[4] = 2500.0f; v->nx[7] = 3000.0f; v->nx[8] = 3000.0f; v->nx[23] = 1.0f;
     v->nx[22] = 0.0f;                                              /* the knob / coefficient refresh counter */
-    v->nx[36] = 1.0f; v->nx[37] = 1.0f; v->env = 1.0f;
+    v->nx[36] = 1.0f; v->nx[37] = 1.0f; v->nx[45] = D > 0.01f ? D : 0.01f; v->env = 1.0f;
 }
 static float spk_render(inst_t *s, vc_t *v, int p, const nx_t *n) {
     const float dt = s->inv_sr, sr = s->sr; float *x = v->nx;
@@ -21,7 +41,13 @@ static float spk_render(inst_t *s, vc_t *v, int p, const nx_t *n) {
     const int idx = v->ni[0], cnt = v->ni[1];
     const spkp_t *P = idx < cnt ? &SPK_P[ph[idx]] : NULL;
     if (x[22] < 0.5f) {                                             /* every 32 samples: knobs, pitch contour, resonator coefficients */
-        x[36] = n->p[2] * exp2f((pq[PP_DSW] - 0.5f) * 2.0f);        /* speed: 0.5x .. 2x */
+        {   /* speed: 0.5x .. 2x on top of the tempo. LENGTH AUTO: follows the BPM (normal speed at 120). LENGTH 1/16 .. 2 BAR: the text is stretched or squeezed to fit that time */
+            static const float BT[7] = { 0.0f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f };
+            int li = (int)(pq[PP_DLN] + 0.5f); if (li < 0) li = 0; if (li > 6) li = 6;
+            const float kn = exp2f((pq[PP_DSW] - 0.5f) * 2.0f), bpm = s->bpm > 1.0f ? s->bpm : 120.0f;
+            if (li == 0) x[36] = n->p[2] * kn * clampf(bpm / 120.0f, 0.4f, 3.0f);
+            else x[36] = clampf(x[45] / (BT[li] * 60.0f / bpm), 0.35f, 4.0f) * kn;
+        }
         x[37] = n->p[1] * exp2f((pq[PP_DST] - 0.5f));               /* formant (vocal tract) scale: 0.7x .. 1.4x */
         const float bb = pq[PP_DNZ] * 2.0f; x[39] = bb * bb * 0.05f;   /* breath: aspiration along with the voice */
         const float u = cnt > 0 ? ((float)idx + (P ? x[0] / (P->ms * 0.001f / x[36]) : 1.0f)) / (float)cnt : 1.0f;

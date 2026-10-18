@@ -85,7 +85,7 @@ static inline float sin2pi(float ph) { ph -= floorf(ph); return sin2pi_raw(ph); 
 #include "variants_n.h"
 #include "variants3_n.h"
 #include "variants4_n.h"
-enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_DSW, PP_DST, PP_DNZ, PP_DCK, PP_N };
+enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_DSW, PP_DST, PP_DNZ, PP_DCK, PP_DLN, PP_DMD, PP_N };
 #define NGH 24                       /* ghost voices: released tails of retriggered notes in POLY mode */
 
 enum {
@@ -183,7 +183,7 @@ static const pd_t PD[PP_N] = {
     { "eqlf", "EQ LowF", 0, 0.5f }, { "eqmf", "EQ MidF", 0, 0.5f }, { "eqhf", "EQ HighF", 0, 0.5f }, { "eqq", "EQ Q", 0, 0.5f }, { "eqo", "EQ Out", 0, 0.5f }, { "pcv", "PumpCrv", 0, 0.0f }, { "rfq", "RingFrq", 0, 0.0f },
     { "dtn", "D Tone", 0, 0.5f }, { "dwd", "D Width", 0, 0.5f }, { "rwd", "R Width", 0, 0.5f }, { "rlc", "R LowCut", 0, 0.0f },
     { "gdn", "GrDens", 0, 0.4f }, { "grv", "GrRev", 0, 0.0f }, { "gfz", "GrFreeze", 0, 0.0f }, { "gtn", "GrTone", 0, 1.0f },
-    { "dsw", "DrmSweep", 0, 0.5f }, { "dst", "DrmSwpTime", 0, 0.5f }, { "dnz", "DrmNoise", 0, 0.5f }, { "dck", "DrmClick", 0, 0.5f },      /* drum synth engine knobs, 0.5 = the sound as designed */
+    { "dsw", "DrmSweep", 0, 0.5f }, { "dst", "DrmSwpTime", 0, 0.5f }, { "dnz", "DrmNoise", 0, 0.5f }, { "dck", "DrmClick", 0, 0.5f }, { "dln", "SpkLength", 0, 0.0f }, { "dmd", "SpkPlay", 0, 0.0f },      /* drum synth engine knobs, 0.5 = the sound as designed */
 };
 
 static const char *TYPE_NAME[T_COUNT] = {
@@ -789,6 +789,7 @@ typedef struct {
     struct { float buf[2][GRN_SZ], pos[GRN_G], inc[GRN_G], pl[GRN_G], pr[GRN_G]; int w, tim, age[GRN_G], len[GRN_G], back[GRN_G], lane; unsigned rng; float lpl, lpr; } gr[GRN_SLOTS]; int gr_slot[NLANE];     /* granulator: a few shared slots, a sound that uses it takes one */
     int   lf_w, lf_req, lf_mode, lf_t, lf_cap, lf_len, lf_n, lf_dw, lf_dact, lf_hc;
     int   in_use;
+    int spk_wi[NLANE];                                             /* SPEECH, one word per note: the next word of every lane (back to the first at every loop start) */
     char spk_txt[NLANE][48];                                       /* SPEECH engine: the text of every lane */
 } inst_t;
 /* LIVE FX (master bus, held pad = effect on, release = fade back):
@@ -2673,6 +2674,7 @@ static void seq_step(inst_t *s) {
         const int tk = lane_trk(s, t);
         int len = s->llen[t] > 0 ? s->llen[t] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
         if (s->clip[tk] < 0) continue;
+        if ((s->gs % len) == 0) s->spk_wi[t] = 0;                      /* a speech sound that says one word per note starts again with the loop */
         const uint8_t *st = s->stp[s->clip[tk]][t][s->gs % len];
         if (!(st[0] & 0x80) || s->mute[tk] || s->lmute[t]) continue;
         if (prob_idx(st[1]) > 0) {
@@ -2920,6 +2922,7 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
         else if (k == PP_DTIME) { int e = enum_index(val, DT_NAME, 5);        if (e < 0) return; v = (float)e; }
         else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX)  { v = clampf((float)atof(val), 0.0f, 11.0f); }
         else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO) { v = clampf((float)atof(val), 0.0f, 2.0f); }
+        else if (k == PP_DLN) { v = clampf((float)atof(val), 0.0f, 6.0f); }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         s->pp[p][k] = v;
         if (s->plk_t[p] == k) s->plk_b[p] = v;
@@ -3183,7 +3186,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         int l = atoi(val); const char *c = strchr(val, ','); if (!c || l < 0 || l >= NLANE) return;
         int k = atoi(c + 1);
         if (s->plk_t[l] > 0) { s->pp[l][s->plk_t[l]] = s->plk_b[l]; update_pad(s, l); }       /* put the old target back to its base value */
-        if (k < 1 || k >= PP_N || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX || k == PP_DMODE || k == PP_RMODE || k == PP_MONO) k = 0;
+        if (k < 1 || k >= PP_N || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX || k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DLN || k == PP_DMD) k = 0;
         s->plk_t[l] = (uint8_t)k; if (k) s->plk_b[l] = s->pp[l][k];
         return;
     }
@@ -3194,7 +3197,7 @@ static void set_param(void *instance, const char *key, const char *val) {
     }
     if (strncmp(key, "txt", 3) == 0 && key[3] >= '0' && key[3] <= '9') {    /* the text of the SPEECH engine for lane N */
         const int l = atoi(key + 3);
-        if (l >= 0 && l < NLANE) { int k = 0; for (const char *c = val; *c && k < 40; c++) { char ch = *c; if (ch >= 'a' && ch <= 'z') ch = (char)(ch - 32); if ((ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == ' ' || ch == '.' || ch == ',' || ch == '?' || ch == '!' || ch == '-') s->spk_txt[l][k++] = ch; } while (k > 0 && s->spk_txt[l][k - 1] == ' ') k--; s->spk_txt[l][k] = 0; }
+        if (l >= 0 && l < NLANE) { int k = 0; for (const char *c = val; *c && k < 40; c++) { char ch = *c; if (ch >= 'a' && ch <= 'z') ch = (char)(ch - 32); if ((ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == ' ' || ch == '.' || ch == ',' || ch == '?' || ch == '!' || ch == '-') s->spk_txt[l][k++] = ch; } while (k > 0 && s->spk_txt[l][k - 1] == ' ') k--; s->spk_txt[l][k] = 0; s->spk_wi[l] = 0; }
         return;
     }
     if (strcmp(key, "csnd") == 0) {                /* "clip,track:" + PP_N values -> stored sound of that clip */
@@ -3212,6 +3215,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
             else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, 11.0f);
             else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO) v = clampf(v, 0.0f, 2.0f);
+            else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
             else v = clampf(v, 0.0f, 1.0f);
             s->cpp[c][t][k] = v;
             q = (*end == ',') ? end + 1 : end;
@@ -3234,6 +3238,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
             else if (k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX) v = clampf(v, 0.0f, 11.0f);
             else if (k == PP_DMODE || k == PP_RMODE || k == PP_MONO) v = clampf(v, 0.0f, 2.0f);
+            else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
             else v = clampf(v, 0.0f, 1.0f);
             s->pp[n - 1][k] = v;
             q = (*end == ',') ? end + 1 : end;

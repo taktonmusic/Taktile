@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.129.0 (18 October 2026)
+- SPEECH: Length (AUTO follows tempo, 1/16 to 2 BARS fits the text to the clip length)
+- SPEECH: Play WHOLE/WORD (one word per note, restarts with the loop, starts on the beat)
+- SPEECH: speech speed now scales with BPM
+
 ## 5.128.0 (18 October 2026)
 - New SPEECH engine: a speech computer synth. Write a text (jog wheel, like naming a project), every note says it at the pad's pitch
 - English and German (SpkEn / SpkDe, each in a deep and a high voice), found under SYNTHS > ENGINES > SPEECH
