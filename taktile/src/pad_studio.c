@@ -692,6 +692,7 @@ typedef struct {
     double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode; float srate, sgain, satk_inc, srel_c, sgate_env;                   /* sample playback */
     float nze, trp;                  /* noise follower, tremolo / auto-pan phase */
     float xfd;       /* >0: fast fade-out of a cut-off note (1 -> 0), no click */
+    float aenv, ac;  /* generic attack ramp for struck / plucked sounds on synth tracks (Attack knob above its default) */
 } vc_t;
 
 typedef struct {
@@ -1465,6 +1466,11 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
     memset(v, 0, sizeof(*v)); v->fenv = 1.0f;
     v->fkoff = s->pp[p][PP_FKEY] * 0.16f * log2f(fm > 0.05f ? fm : 0.05f);
     v->active = 1; v->gate = 1; v->type = ty; s->act_dirty = 1;
+    v->aenv = 1.0f; v->ac = 0.0f;
+    if (p < NTRK && !TY[ty].sus && BASE_T[ty] != T_SAMPLE) {       /* Attack on every synth sound: sustained engines have their own, the struck ones (FM init, plucks, bells ...) get a fade-in; at the default (0.12) and below nothing changes */
+        const float ak = (s->pp[p][PP_ATT] - 0.12f) / 0.88f;
+        if (ak > 0.004f) { v->aenv = 0.0f; v->ac = s->inv_sr / (0.0015f + ak * ak * 1.5f); }
+    }
     v->vel = 0.25f + 0.75f * vel;
     { int w0 = (int)(s->pp[p][PP_WAVE] + 0.5f); v->sw = (w0 >= 1 && w0 <= 15) ? w0 : CHR[ty].wv; }   /* 0 = the sound's own oscillator */
     v->fm = fm; v->f0 = base * fm;
@@ -2486,6 +2492,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
     case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: x = nx_render(s, v, p); break;
     default: v->active = 0; break;
     }
+    if (v->aenv < 1.0f) { v->aenv += (1.0f - v->aenv) * v->ac * 3.0f; if (v->aenv > 0.995f) v->aenv = 1.0f; x *= v->aenv; }
     v->t += dt;
     return x;
 }

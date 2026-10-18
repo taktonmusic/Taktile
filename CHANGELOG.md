@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.123.0 (18 October 2026)
+- Attack-Knopf wirkt jetzt auf allen Synth-Sounds: auch bei 2OP-FM (FmInit), Zupf-/Schlag-Sounds, Glocken usw. (vorher nur bei Pads/gehaltenen Sounds); bei 0,12 (Standard) und darunter bleibt alles wie bisher, darüber wird der Einsatz langsamer bis ca. 1,5 s
+
 ## 5.122.0 (18 October 2026)
 - Aufnahme in leeren Clip: Bei Drum-Tracks wuchs die Loop-Länge nicht mit (jeder Drum-Sound blieb bei 16 Steps) – jetzt wachsen Track und alle Drum-Sounds gemeinsam in 16er-Schritten und bleiben synchron
 - Beim zweiten Druck auf Record wird die Länge auf volle 16er-Takte aufgerundet (16, 32, 48 …) für alle Sounds des Tracks
