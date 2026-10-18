@@ -4853,7 +4853,7 @@ function flushLeds() {
 function knobUse() {                                       /* which of the 8 knobs do something on the current page: their little lights under the knobs are on */
     const u = [0, 0, 0, 0, 0, 0, 0, 0];
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank) return u;
-    if (fb) { u[0] = 1; u[1] = 1; return u; }                  /* browser: knob 1 = preview on / off, knob 2 = fast scroll */
+    if (fb) { u[0] = 1; return u; }                            /* browser: only knob 1 does something (preview on / off) */
     if (heldStep >= 0 && stepWinView()) return u.map(() => 1);
     if (loopHeld && view === 0) { u[0] = 1; u[1] = 1; u[2] = 1; return u; }
     if (view === 0 || view === 7 || view === 20) return u.map(() => 1);
@@ -5137,7 +5137,6 @@ globalThis.onMidiMessageInternal = function (data) {
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
         if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
         if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbSetPrev(dl > 0); return; }
-        if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = decodeDelta(d2); if (dl) fbMove(dl, 5); return; }      /* knob 2 = fast scroll, 10 entries per click */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
         if (type === 0xB0 && (d1 === CC.UP || d1 === CC.DOWN)) { if (d2 > 0) fbSetPrev(!fbPrev); return; }      /* Up / Down: preview on / off */
