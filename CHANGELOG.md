@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.134.0 (18 October 2026)
+- Pads: a note recorded live no longer sounds a second time right after you let go
+- X (Delete) button: its release is never lost any more, so it does not stay stuck
+- Chord mode stays on the track where you chose it (no longer switched off when you change track) and survives a restart
+
 ## 5.133.0 (18 October 2026)
 - REC: clip length after recording into an empty clip works like on the Move - stop in the first half of a bar: that bar is not part of the clip (its notes are dropped); second half: it is
 

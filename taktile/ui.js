@@ -2194,7 +2194,6 @@ function drumCol(t, k) {                                  /* colour of drum soun
 }
 function inboundActive() { return (typeof shadow_inbound_pad_midi_active === 'function') && shadow_inbound_pad_midi_active(); }
 function selectTrack(t) { drumHeldK = []; padHold = {}; growTrk.fill(false); bank = t >> 2; if (sel !== t) { for (let q = 0; q < NTRK; q++) if (topModes[q] === 3) { liveFxAllOff(); topModes[q] = topPrev[q] !== 3 ? topPrev[q] : 0; markEdited(); }
-        let chg = false; for (let q = 0; q < NTRK; q++) if (topModes[q] === 4) { topModes[q] = 0; chg = true; } if (chg) { chordReconcile(); markEdited(); }      /* chord pads are a visit too: every synth track opens with its normal pads */      /* Live FX is a visit: another track = gone until you switch it on again */
         fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); if (view === 44 && !chordOn()) tabEnter(1); if (kind[sel] && (view === 46 || view === 39 || (view === 38 && fxPage))) tabEnter(38); } needsRedraw = true; }
 function wipeSlot(d) {                                    /* a kit is handed to another track: back to the default kit */
     ensureCs(); const def = defaultPads();
@@ -2344,7 +2343,7 @@ function recordHit(lane, semi, vel) {
         recUndo(track, lane);
         playing = true; gs = 0; dspSet('play', '1'); growTrk[track] = !trackHasSteps(ed[track], track); growG0[track] = 0;
         const st0 = steps[ed[track]][lane][0]; st0[0] = 1; st0[1] = clamp(vel, 1, 127); st0[2] = clamp(semi, -64, 63);
-        qStep(ed[track], lane, 0); lastRec = { c: ed[track], l: lane, i: 0, g: 1, f: 0 }; showToast('REC', 'T' + p2(track + 1) + ' C' + (ed[track] + 1), 1); markEdited(); return;
+        dspSet('rskip', lane + ',0'); qStep(ed[track], lane, 0); lastRec = { c: ed[track], l: lane, i: 0, g: 1, f: 0 }; showToast('REC', 'T' + p2(track + 1) + ' C' + (ed[track] + 1), 1); markEdited(); return;
     }
     recUndo(track, lane);
     const r = dspGet('pos');
@@ -2358,6 +2357,7 @@ function recordHit(lane, semi, vel) {
     const target = ((tS % len) + len) % len;
     const st = steps[ed[track]][lane][target]; st[6] = tN; for (let q = st.length; q < 10; q++) st[q] = 0; st[5] = 0; st[9] = 0;
     st[0] = 1; st[1] = clamp(vel, 1, 127); st[2] = clamp(semi, -64, 63);
+    if (tS >= g) dspSet('rskip', lane + ',' + tS);      /* the step is still ahead: the pad already sounded, so this pass does not play it a second time */
     qStep(ed[track], lane, target); lastRec = { c: ed[track], l: lane, i: target, g: g, f: fr }; markEdited();
 }
 let cpPad = -1, cpTrk = -1;
@@ -5006,6 +5006,7 @@ globalThis.onMidiMessageInternal = function (data) {
     if ((type === 0x90 || type === 0x80) && d1 < 10) { if (type === 0x90 && d2 > 0 && d1 < 8) { touchK = d1; touchT = 0; knobTouch(d1); } else if (d1 < 8 && touchK === d1) { touchK = -1; if (toast) toast.ticks = Math.max(toast.ticks, 260); } return; }
     if (helpOpen && !(type === 0xB0 && d1 === CC.SHIFT)) { if (d2 > 0 && !(type === 0xB0 && d1 >= CC.KNOB1 && d1 <= CC.KNOB8)) { helpOpen = false; needsRedraw = true; } return; }
     if (status === 0xF8 || status === 0xF0 || status === 0xF7 || type === 0xA0 || type === 0xD0) return;
+    if (type === 0xB0 && d1 === CC.DELETE && d2 === 0 && (deleteHeld || songDelOn)) { deleteHeld = false; if (view !== 31 || menuOpen) songDelOn = false; needsRedraw = true; }      /* a Delete release is never lost, whatever dialog or screen is open */
 
     if (spkUI) { if (spkInput(type, d1, d2)) return; }
     if (projUI) { if (projInput(type, d1, d2)) return; }

@@ -765,7 +765,8 @@ typedef struct {
     /* sequencer */
     uint8_t stp[NPAT][NLANE][MAXSTEP][7];   /* a = on<<7 | vel, b = probability 0..7, c = semi + 64, d = ratchet | gate<<2 | cond<<5, e = nudge 0..7, f = parameter lock value 0 (none) .. 127 */
     uint8_t plk_t[NLANE]; float plk_b[NLANE]; float cdet_z[2];   /* per-lane lock target (PP index, 0 = none), its base value, compressor detector HPF state */
-    int   seqlen[NTRK], mute[NTRK]; uint8_t rechold[NTRK];   /* rechold: a clip that is being recorded for the first time does not play back until the recording is finished */
+    int   seqlen[NTRK], mute[NTRK]; uint8_t rechold[NTRK];
+    int rskip[NLANE];   /* a note recorded live must not sound a second time when its step is still ahead (the pad already played it): holds the absolute step + 1 */   /* rechold: a clip that is being recorded for the first time does not play back until the recording is finished */
     uint8_t lmute[NLANE];            /* per-sound mute (drum pads): the sequencer skips these lanes */
     int   llen[NLANE];                      /* own loop length of one lane (0 = follow the track) */
     int   playing, cur_pat, sel_track, gs;
@@ -2720,6 +2721,7 @@ static void seq_step(inst_t *s) {
         if ((s->gs % len) == 0) s->spk_wi[t] = 0;                      /* a speech sound that says one word per note starts again with the loop */
         const uint8_t *st = s->stp[s->clip[tk]][t][s->gs % len];
         if (!(st[0] & 0x80) || s->mute[tk] || s->lmute[t] || s->rechold[tk]) continue;
+        if (s->rskip[t] == s->gs + 1) { s->rskip[t] = 0; continue; }
         if (prob_idx(st[1]) > 0) {
             s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
             if ((float)(s->rng & 0xFFFF) / 65536.0f > 1.0f - 0.03125f * (float)prob_idx(st[1])) continue;
@@ -3195,6 +3197,11 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "mute") == 0) {                /* "track,0|1" */
         int t = atoi(val); const char *c = strchr(val, ',');
         if (c && t >= 0 && t < NTRK) s->mute[t] = atoi(c + 1) ? 1 : 0;
+        return;
+    }
+    if (strcmp(key, "rskip") == 0) {               /* "lane,step": skip that one step once (it was just played live by the pad) */
+        int l = atoi(val); const char *c = strchr(val, ',');
+        if (c && l >= 0 && l < NLANE) s->rskip[l] = atoi(c + 1) + 1;
         return;
     }
     if (strcmp(key, "rechold") == 0) {             /* "track,0|1" */
