@@ -2267,7 +2267,12 @@ function recStopLen() {                                   /* Rec pressed the sec
         showToast('REC LENGTH', n + ' STEPS', n / MAXSTEP);
     }
 }
-function growTick() {                                     /* recording into an empty clip: the loop follows how long you play (16 steps, 32, 48 ...); stopping before the end of the bar keeps 16 */
+const holdSent = new Array(NTRK).fill(0);
+function holdSync() {                                     /* a clip that is recorded for the first time stays silent until the recording ends, then it joins the others on the shared grid */
+    for (let t = 0; t < NTRK; t++) { const w = (recArmed && growTrk[t]) ? 1 : 0; if (w !== holdSent[t]) { holdSent[t] = w; enqueue('rh' + t, 'rechold', t + ',' + w); } }
+}
+function growTick() {
+    holdSync();                                     /* recording into an empty clip: the loop follows how long you play (16 steps, 32, 48 ...); stopping before the end of the bar keeps 16 */
     if (!recArmed || !playing) return;
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
