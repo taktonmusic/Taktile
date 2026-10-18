@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.133.0 (18 October 2026)
+- REC: clip length after recording into an empty clip works like on the Move - stop in the first half of a bar: that bar is not part of the clip (its notes are dropped); second half: it is
+
 ## 5.132.0 (18 October 2026)
 - REC: a new clip recorded for the first time stays silent (no loop playback) until you stop the recording, then it plays in sync with the other clips
 

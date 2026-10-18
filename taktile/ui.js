@@ -2262,7 +2262,8 @@ function recStopLen() {                                   /* Rec pressed the sec
     let gpos = gs - 1; { const r = dspGet('pos'); if (typeof r === 'string') { const a = r.split(','), g = parseInt(a[1]) || 0; if (g > 0) gpos = g - 1 + (parseInt(a[3]) || 0) / 100; } }      /* the DSP's own step counter, the same one the recorded hits use */
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
-        const el = Math.max(0.01, gpos - growG0[t]), n = clamp(Math.ceil(el / 16) * 16, 16, MAXSTEP);
+        const el = Math.max(0.01, gpos - growG0[t]), n = clamp(Math.round(el / 16) * 16, 16, MAXSTEP);      /* like the Move: stopped in the first half of a bar, that bar is not part of the clip; in the second half, it is */
+        if (n < lens[t]) { const c = ed[t]; for (const l of lanesOf(t)) { const a = steps[c][l]; let ch = false; for (let i = n; i < a.length; i++) if (a[i][0]) { a[i] = [0, 100, 0, 0]; ch = true; } if (ch) qSeq(c, l); } }      /* what was played in that bar is dropped, not folded into the loop */
         growSet(t, n);
         showToast('REC LENGTH', n + ' STEPS', n / MAXSTEP);
     }
