@@ -2558,6 +2558,7 @@ function txtH(x, y, s, c) {                                  /* header font: squ
     }
 }
 let touchK = -1, touchT = 0;                              /* knob under your finger: its name / value stays on screen until you let go */
+const HOT_NAME = { mch: 'Probability', tkey: 'Track Key', tscl: 'Track Scale', arp: 'Arpeggiator', rate: 'Arp Rate', rrate: 'Repeat Rate', mfx: 'MIDI Effect', mamt: 'MIDI Effect Amount', mprm: 'MIDI Effect Param', fatk: 'Filter Attack', vflt: 'Velocity Filter', apan: 'Auto Pan', snz: 'Noise Level', sfld: 'Wave Fold', schp: 'Chop', xmix: 'Effect Amount', xrt: 'Effect Rate', xdp: 'Effect Depth' };      /* full names for the abbreviated ones; shown top right while a knob is turned */
 let hot = { v: -1, i: -1, t: 0 };                       /* the knob you touched last: its cell lights up for a moment */
 function tw(s) { s = tr(s); return (typeof text_width === 'function') ? text_width(s) : s.length * 6; }
 let tabStrip = false;
@@ -2566,7 +2567,7 @@ const TAB_3 = { 1: 'PRE', 9: 'ENG', 3: 'MOD', 2: 'FLT', 38: 'FX', 46: 'BUS', 36:
 function drawTabsNew() {
     const tabs = trackTabs(), cur = Math.max(0, tabIndex(tabs));
     let who = (sel + 1) + ' ' + (kind[sel] ? 'DRUM' : 'SYNTH');
-    if (hot.t > 0 && hot.v === view && VIEW_ITEMS[pg2(view)] && VIEW_ITEMS[pg2(view)][hot.i]) who = String(tr(itemLabel(view, hot.i, 99))).toUpperCase().substring(0, 13);      /* while a knob is turned: its parameter name top right instead of the track */
+    if (hot.t > 0 && hot.v === view && VIEW_ITEMS[pg2(view)] && VIEW_ITEMS[pg2(view)][hot.i]) { const it = VIEW_ITEMS[pg2(view)][hot.i]; who = String(tr((view !== 24 && view !== 27 && (HOT_NAME[it[0]] || LONG_NAME[it[0]])) || itemLabel(view, hot.i, 99))).toUpperCase(); if (who.length > 18) who = mq(who, 18); }      /* while a knob is turned: the full parameter name top right instead of the track (a long one scrolls) */
     let nm = String(tabPageName(tabs[cur])).toUpperCase(); if (tabs[cur] === 1) nm = 'PRESET';
     const pg = tabPg(tabs[cur]), two = pg[1] > 1;
     fill_rect(0, 0, 128, 9, 1); txtS(126 - who.length * 4, 2, who, 0);

@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.174.0 (18 October 2026)
+- Parametername oben rechts beim Drehen ausgeschrieben (z.B. PROBABILITY statt PROB, GRAIN DENSITY), lange Namen laufen durch
+
 ## 5.173.0 (18 October 2026)
 - Browser: das Display zeigt immer nur die Ebene des zuletzt gedrehten Reglers (volle Breite); Regler 1 = Hauptordner, jeder weitere Regler oeffnet die naechste Ebene bis zu den Sounds
 
