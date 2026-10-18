@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.151.0 (18 October 2026)
+- Engine: the sequencer clock now has 6 ticks per 1/16, so 1/32 notes and triplets (1/16T, 1/8T) can be real steps (groundwork for the Move-style Step Grid; nothing changes yet for existing projects)
+- Old projects load unchanged (all tracks stay on the 1/16 grid)
+- MIDI export knows the finer grids
+
 ## 5.150.0 (18 October 2026)
 - Quantize like on the Move: Shift + step 16 quantizes the whole clip (on drum tracks all 16 sounds in one undo step) by the QUANTIZE amount
 - QUANTIZE amount is now adjustable in 5 % steps (5-100 %), old saves keep their value

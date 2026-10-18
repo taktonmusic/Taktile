@@ -207,6 +207,7 @@ let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
 let pads = [], master = MASTER_DEF.slice();
 let steps = [];                 /* [pat][trk][step] = [on, vel, semi, prob] */
 const growTrk = new Array(NTRK).fill(false), growG0 = new Array(NTRK).fill(0);            /* auto length: a clip recorded from empty grows by 16 steps whenever you play into its last beat */
+let tres = new Array(NTRK).fill(6);                       /* ticks per step of each track's grid: 6 = 1/16, 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8 */
 let lens = new Array(NTRK).fill(16), mutes = new Array(NTRK).fill(0), lmutes = new Array(NLANE).fill(0), lmSent = new Array(NLANE).fill(0);   /* lmutes = per-sound mute of the drum pads */
 let bpm = 120, swing = 0;
 let ed = new Array(16).fill(0);           /* edited/launched clip per track */
@@ -353,7 +354,7 @@ function qTransport() {
     for (let t = 0; t < NTRK; t++) { enqueue('kind' + t, 'kind', t + ',' + (kind[t] ? slot[t] : -1)); enqueue('tv' + t, 'tvol', t + ',' + (tv[t] * 1.5).toFixed(3)); }
     syncSel();
     if (!clipInit) { clipInit = true; for (let t = 0; t < NTRK; t++) enqueue('clip' + t, 'clip', t + ',' + ed[t]); }
-    for (let t = 0; t < NTRK; t++) { enqueue('len' + t, 'len', t + ',' + lens[t]); enqueue('mute' + t, 'mute', t + ',' + mutes[t]); }
+    for (let t = 0; t < NTRK; t++) { enqueue('len' + t, 'len', t + ',' + lens[t]); enqueue('mute' + t, 'mute', t + ',' + mutes[t]); enqueue('tres' + t, 'tres', t + ',' + tres[t]); }
 }
 function qSeq(p, t) {                                      /* long patterns go out in chunks of 32 steps */
     const h = encTrack(p, t);
@@ -395,7 +396,7 @@ function saveState() {
         for (let p = 0; p < NPAT; p++) { const row = []; for (let l = 0; l < NLANE; l++) row.push(laneHas(p, l) ? encTrack(p, l) : ''); seqHex.push(row); }
         const keep = {}; for (let t = 0; t < NTRK; t++) { keep[t] = 1; if (slot[t] >= 0) for (let k = 0; k < 16; k++) keep[NTRK + slot[t] * 16 + k] = 1; }
         const cs = csnd.map(row => row.map((r, l) => keep[l] ? r : null));
-        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
+        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, tr: tres, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
         dirty = false; saveFlash = 30; needsRedraw = true;
     } catch (e) { /* ignore */ }
 }
@@ -471,6 +472,7 @@ function loadState() {
         if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0;
         chBak = (Array.isArray(o.cb) && o.cb.length === NTRK) ? o.cb.map(x => (Array.isArray(x) && x.length === 3) ? x.map(Number) : null) : new Array(NTRK).fill(null); for (let t = 0; t < NTRK; t++) { if (kind[t] || topModes[t] !== 4) { topModes[t] = (topModes[t] === 4 ? 0 : topModes[t]); chBak[t] = null; } chOn[t] = topModes[t] === 4 ? 1 : 0; }
         if (Array.isArray(o.lens)) lens = o.lens.map(Number);
+        tres = (Array.isArray(o.tr) && o.tr.length === NTRK) ? o.tr.map(x => [3, 4, 6, 8, 12].includes(Number(x)) ? Number(x) : 6) : new Array(NTRK).fill(6);      /* older projects have no grid: all 1/16, nothing to convert */
         if (Array.isArray(o.mutes)) mutes = o.mutes.map(Number);
         lmutes = new Array(NLANE).fill(0); if (Array.isArray(o.lm)) for (let l = 0; l < NLANE && l < o.lm.length; l++) lmutes[l] = o.lm[l] ? 1 : 0;
         bpm = clamp(Number(o.bpm) || 120, 40, 240); swing = clamp(Number(o.swing) || 0, 0, 25); if (Array.isArray(o.ed) && o.ed.length === NTRK) ed = o.ed.map(x => clamp(Number(x) || 0, 0, NPAT - 1));
@@ -3665,7 +3667,7 @@ function firstDrum() {                                     /* a new project: tra
 function newProject() {                                    /* empty project: one drum track, every other track asks Synth/Drum when first selected (the old state is kept in the undo slot) */
     saveState(); backupState(); try { const cur = host_read_file(STATE_FILE); if (cur) host_write_file('/data/UserData/schwung/taktile-proj-undo.json', cur); } catch (e) { /* ignore */ }
     if (playing) { dspSet('play', '0'); playing = false; gs = 0; }
-    if (DEF) { chOn.fill(0); chBak.fill(null); lens = DEF.lens.slice(); mutes = DEF.mutes.slice(); kind = DEF.kind.slice(); slot = DEF.slot.slice(); dsel = DEF.dsel.slice(); tv = DEF.tv.slice(); llen = DEF.llen.slice(); ed = DEF.ed.slice(); topModes = DEF.topModes.slice(); master = DEF.master.slice(); bpm = DEF.bpm; swing = DEF.swing; }
+    if (DEF) { chOn.fill(0); chBak.fill(null); lens = DEF.lens.slice(); tres = (DEF.tres || new Array(NTRK).fill(6)).slice(); mutes = DEF.mutes.slice(); kind = DEF.kind.slice(); slot = DEF.slot.slice(); dsel = DEF.dsel.slice(); tv = DEF.tv.slice(); llen = DEF.llen.slice(); ed = DEF.ed.slice(); topModes = DEF.topModes.slice(); master = DEF.master.slice(); bpm = DEF.bpm; swing = DEF.swing; }
     lmutes = new Array(NLANE).fill(0); chosen = new Array(NTRK).fill(0); AUTO = {}; autoLast = {}; songOn = false; songLoop = true; songList = [[0, 4, 1, 0, 0, 0]]; songOff = 0; songNext = -1; songMuted = false; songTempoOn = false; songSlot = 0; layS = 0; layD = 0; moClk = 0; moMask = 0; moChn = 0; moXp = 0; moVp = 0; moDn = 0;
     euKL.fill(4); euRL.fill(0); euV = 100; for (let i = 0; i < NLANE; i++) euP[i] = euDef();
     spkTxt = {}; pads = defaultPads(); steps = newSteps(); csnd = null; undoStack = []; redoStack = []; miscLast = null; fillChg = []; tcolO.fill(0); lockT.fill(0); for (const r of fol) r.fill(0);
@@ -4801,7 +4803,7 @@ function splashLeds(ms) {
 
 globalThis.init = function () {
     crumb('init');
-    DEF = { lens: lens.slice(), mutes: mutes.slice(), kind: kind.slice(), slot: slot.slice(), dsel: dsel.slice(), tv: tv.slice(), llen: llen.slice(), ed: ed.slice(), topModes: topModes.slice(), master: master.slice(), bpm: bpm, swing: swing };
+    DEF = { tres: tres.slice(), lens: lens.slice(), mutes: mutes.slice(), kind: kind.slice(), slot: slot.slice(), dsel: dsel.slice(), tv: tv.slice(), llen: llen.slice(), ed: ed.slice(), topModes: topModes.slice(), master: master.slice(), bpm: bpm, swing: swing };
     loadState();
     master[MK.indexOf('m_chp')] = 0;                          /* the comp detector high-pass was removed from the menu: always off */
     if (!freshState) backupState();

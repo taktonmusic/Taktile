@@ -774,6 +774,8 @@ typedef struct {
     uint8_t lmute[NLANE];            /* per-sound mute (drum pads): the sequencer skips these lanes */
     int   llen[NLANE];                      /* own loop length of one lane (0 = follow the track) */
     int   playing, cur_pat, sel_track, gs;
+    int   sub;                              /* tick inside the current 1/16 (0..5): the grid is 6 ticks per 1/16 so 1/32 and triplets are real steps */
+    int   tres[NTRK];                       /* ticks per step of a track's grid: 6 = 1/16 (default), 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8 */
     int   clip[NTRK], qclip[NTRK];   /* active clip per track (-1 = stopped), pending (-2 = none) */
     int   scq[NPAT], pend_on, pend_qm;   /* launch quantisation of one scene (0 = global setting) and the one used by the pending scene launch */
     float bpm, swing;
@@ -2670,6 +2672,9 @@ static void mo_note(inst_t *s, int lane, int trk, float vel, int semi, int gate)
     mo_send(0x8, (uint8_t)(0x80 | ch), (uint8_t)note, 0);
 }
 static void rt_fire(inst_t *s, int t) {
+#ifdef PS_TRACE
+    fprintf(stderr, "F %.0f %d\n", s->tsamp, t);
+#endif
     if (!s->mute[lane_trk(s, t)]) {
         ar_t *ap = &s->ar[t];
         if (t < NTRK && s->rt_n[t] == 1 && (int)(s->pp[t][PP_ARP] + 0.5f) > 0) {      /* ARP on a sequenced step: it runs for the length of the note */
@@ -2689,19 +2694,21 @@ static void rt_fire(inst_t *s, int t) {
 
 /* swing phase of step g: 0 = long (on-beat), 1 = short (off-beat), 2 = neutral. With an odd main loop length the groove restarts with every pass (last step neutral), so the loop sounds the same each time. */
 static int sw_ph(const inst_t *s, long g) {
-    int M = 16; for (int t = 0; t < NTRK; t++) if (s->seqlen[t] != 16 && s->seqlen[t] > 0) { M = s->seqlen[t]; break; }
+    int M = 16; for (int t = 0; t < NTRK; t++) { const int lt = s->seqlen[t] * s->tres[t]; if (lt != 96 && lt > 0 && lt % 6 == 0) { M = lt / 6; break; } }
     if (M & 1) { long i = g % M; return i == M - 1 ? 2 : (int)(i & 1); }
     return (int)(g & 1);
 }
 static void seq_step(inst_t *s) {
     const float L = s->sr * 60.0f / s->bpm / 4.0f;
+    const int sub = s->sub; const long gtk = (long)s->gs * 6 + sub;       /* tick counter: 6 per 1/16 */
+    if (sub == 0) {   /* everything that lives on the 1/16 grid */
     {   /* follow actions: when a clip has played its loops, queue the next one */
         static const int LP[6] = { 1, 2, 3, 4, 8, 16 };
         if (s->gs > 0) for (int t = 0; t < NTRK; t++) {
             const int c = s->clip[t]; if (c < 0 || c >= NPAT || s->qclip[t] != -2) continue;
             const int act = s->fol[t][c] & 7; if (act == 0) continue;
             int len = s->seqlen[t]; if (len < 1) len = 1;
-            if (((s->gs - s->tph[t]) % len) != 0) continue;
+            { const long lt = (long)len * s->tres[t]; if (((gtk - (long)s->tph[t] * 6) % lt) != 0) continue; }
             int li = (s->fol[t][c] >> 3) & 7; if (li > 5) li = 5;
             if (++s->fol_cnt[t] < LP[li]) continue;
             s->fol_cnt[t] = 0;
@@ -2733,15 +2740,21 @@ static void seq_step(inst_t *s) {
     }
     if (s->rec_state == 1 && (s->gs & 15) == 0) { s->rec_state = 2; s->rec_n = 0; s->rec_len = (long)((float)(s->rec_bars * 16) * L); if (s->rec_len > s->rec_max) s->rec_len = s->rec_max; }
     if (s->g[G_MET] > 0.01f && (s->gs & 3) == 0) { s->met_amp = s->g[G_MET]; s->met_env = 1.0f; s->met_ph = 0.0f; s->met_f = ((s->gs & 15) == 0) ? 1700.0f : 1100.0f; }
+    }
     for (int t = 0; t < NLANE; t++) {                              /* t = lane */
-        if (!lane_on(s, t)) continue;
         const int tk = lane_trk(s, t);
+        const int res = s->tres[tk];
+        if (res == 6 && sub != 0) continue;
+        if (!lane_on(s, t)) continue;
         int len = s->llen[t] > 0 ? s->llen[t] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
         if (s->clip[tk] < 0) continue;
-        int gl = s->gs - s->tph[tk]; if (gl < 0) gl = 0;
+        long gl6 = gtk - (long)s->tph[tk] * 6; if (gl6 < 0) gl6 = 0;
+        if (gl6 % res) continue;                                   /* not a step of this track's grid */
+        const int gl = (int)(gl6 / res);
+        const float Ls = L * (float)res / 6.0f;                    /* one step of this grid, in samples */
         if ((gl % len) == 0) s->spk_wi[t] = 0;                      /* a speech sound that says one word per note starts again with the loop */
         const uint8_t *st = s->stp[s->clip[tk]][t][gl % len];
-        if (s->rskip[t]) { if (s->rskip[t] == s->gs + 1) { s->rskip[t] = 0; continue; } if (s->rskip[t] < s->gs + 1) s->rskip[t] = 0; }      /* never leave an old skip behind */
+        if (s->rskip[t]) { const long ab = gtk / res; if (s->rskip[t] == ab + 1) { s->rskip[t] = 0; continue; } if (s->rskip[t] < ab + 1) s->rskip[t] = 0; }      /* never leave an old skip behind */
         if (!(st[0] & 0x80) || s->mute[tk] || s->lmute[t] || s->rechold[tk]) continue;
         if (prob_idx(st[1]) > 0) {
             s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
@@ -2763,27 +2776,27 @@ static void seq_step(inst_t *s) {
         {
             static const float GT[8] = { 0.0f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 8.0f };
             int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7;
-            float iv = L / (float)n;
-            float gs_ = gi == 0 ? 0.8f * iv : GT[gi] * L;
-            if (st[6] > 0) gs_ = (float)st[6] * L - 1.0f;      /* held-step length: lasts exactly until the chosen step */
+            float iv = Ls / (float)n;
+            float gs_ = gi == 0 ? 0.8f * iv : GT[gi] * Ls;
+            if (st[6] > 0) gs_ = (float)st[6] * Ls - 1.0f;      /* held-step length: lasts exactly until the chosen step */
             if (n > 1 && gs_ > 0.9f * iv) gs_ = 0.9f * iv;
             s->act_dirty = 1; s->rt_n[t] = n; s->rt_int[t] = iv; s->rt_semi[t] = semi; s->rt_vel[t] = hv; s->rt_gate[t] = (int)gs_;
-            s->rt_cnt[t] = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * L;      /* nudge: delay up to 70 % of a step in 2.5 % steps (older saves: 10 % steps) */
-            if (sw_ph(s, s->gs) == 1 && s->pp[tk][PP_TSW] > 0.52f) s->rt_cnt[t] += (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * L;   /* per-track extra swing on the off-beat steps */
+            s->rt_cnt[t] = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * Ls;      /* nudge: delay up to 70 % of a step in 2.5 % steps (older saves: 10 % steps) */
+            if (sw_ph(s, s->gs) == 1 && s->pp[tk][PP_TSW] > 0.52f) s->rt_cnt[t] += (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * Ls;   /* per-track extra swing on the off-beat steps */
             if (s->rt_cnt[t] <= 0.0f) rt_fire(s, t);
         }
     }
     float off = (2.0f * s->swing - 1.0f) * L;
     s->last_time = s->next_time;
-    { const int ph = sw_ph(s, s->gs); s->next_time += (double)(L + (ph == 2 ? 0.0f : (ph == 0 ? off : -off))); }
-    s->gs++;
+    { const int ph = sw_ph(s, s->gs); s->next_time += (double)((L + (ph == 2 ? 0.0f : (ph == 0 ? off : -off))) / 6.0f); }
+    if (++s->sub >= 6) { s->sub = 0; s->gs++; }
 }
 
-static void seq_start(inst_t *s) { memset(s->tph, 0, sizeof s->tph); if (s->mo_clk) { mo_send(0xF, 0xFA, 0, 0); s->mclk = 0.0f; } s->playing = 1; s->tsamp = 0.0; s->next_time = 0.0; s->last_time = 0.0; s->gs = 0; s->pump_ph = 0.0f; s->wob_ph = 0.0f; }
+static void seq_start(inst_t *s) { memset(s->tph, 0, sizeof s->tph); if (s->mo_clk) { mo_send(0xF, 0xFA, 0, 0); s->mclk = 0.0f; } s->playing = 1; s->tsamp = 0.0; s->next_time = 0.0; s->last_time = 0.0; s->gs = 0; s->sub = 0; s->pump_ph = 0.0f; s->wob_ph = 0.0f; }
 static void seq_stop(inst_t *s) { memset(s->rskip, 0, sizeof s->rskip); memset(s->tph, 0, sizeof s->tph);
     if (s->playing && s->mo_clk) mo_send(0xF, 0xFC, 0, 0);
     for (int i = 0; i < 64; i++) if (s->mo_q[i].cnt > 0) { mo_send(0x8, s->mo_q[i].st, s->mo_q[i].d1, 0); s->mo_q[i].cnt = 0; }
-    s->playing = 0; s->gs = 0;
+    s->playing = 0; s->gs = 0; s->sub = 0;
     for (int t = 0; t < NTRK; t++) if (s->qclip[t] != -2) { clip_activate(s, t, s->qclip[t]); s->qclip[t] = -2; }
     for (int t = 0; t < NLANE; t++) { s->gate_left[t] = 0; s->rt_n[t] = 0; s->vc[t].gate = 0; if (s->ar[t].key == -2) { s->ar[t].on = 0; s->ar[t].key = -1; } }
     for (int i = 0; i < 32; i++) s->eq[i].cnt = 0;
@@ -2910,7 +2923,7 @@ static void *create_instance(const char *module_dir, const char *json_defaults) 
             s->rec_src = -1; s->rec_slot = -1;
             for (int k = 0; k < G_N; k++) s->g[k] = GD[k].def; s->lim_g = 1.0f;
             s->bpm = 120.0f; s->swing = 0.5f; s->rep_idx = 8;
-            for (int t = 0; t < NTRK; t++) { s->seqlen[t] = 16; s->tg[t] = 1.0f; }
+            for (int t = 0; t < NTRK; t++) { s->seqlen[t] = 16; s->tg[t] = 1.0f; s->tres[t] = 6; }
             for (int d = 0; d < 4; d++) s->dtrk[d] = -1;
             for (int k = 0; k < 32; k++) s->np_trk[k] = -1;
             init_static(s);
@@ -3042,15 +3055,17 @@ static void midi_export(inst_t *s, const char *val) {
         for (int c = c0; c <= c1 && ne < 19000; c++) {
             const long len0 = (c + 1 <= c1 ? start[c + 1] : total) - start[c]; if (len0 <= 0) continue;
             int len = s->llen[l] > 0 ? s->llen[l] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
-            for (long g = 0; g < len0 && ne < 19000; g++) {
+            const int rs = s->tres[tk];
+            for (long g = 0; g * rs < len0 * 6 && ne < 19000; g++) {
                 const uint8_t *st = s->stp[c][l][g % len]; if (!(st[0] & 0x80)) continue;
                 const int semi = (int)st[2] - 64, vel = st[0] & 0x7F; int note = drum ? 36 + ((l - NTRK) & 15) : 60 + semi; if (note < 0) note = 0; if (note > 127) note = 127;
-                const float sw = (g & 1) ? (2.0f * s->swing - 1.0f) * TQ + (s->pp[tk][PP_TSW] > 0.52f ? (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * TQ : 0.0f) : 0.0f;
-                const float nd = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * TQ;
-                const int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7; const float iv = (float)TQ / (float)n;
-                float gl = gi == 0 ? 0.8f * iv : GT[gi] * TQ; if (n > 1 && gl > 0.9f * iv) gl = 0.9f * iv;
+                const float sw = ((g * rs) % 6 == 0 && ((g * rs / 6) & 1)) ? (2.0f * s->swing - 1.0f) * TQ + (s->pp[tk][PP_TSW] > 0.52f ? (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * TQ : 0.0f) : 0.0f;
+                const float TS = (float)(TQ / 6 * rs);
+                const float nd = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * TS;
+                const int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7; const float iv = TS / (float)n;
+                float gl = gi == 0 ? 0.8f * iv : GT[gi] * TS; if (n > 1 && gl > 0.9f * iv) gl = 0.9f * iv;
                 for (int r = 0; r < n && ne < 19998; r++) {
-                    long t0 = (start[c] + g) * TQ + (long)(sw + nd + iv * r), t1 = t0 + (long)(gl < 1.0f ? 1.0f : gl);
+                    long t0 = start[c] * TQ + g * rs * (TQ / 6) + (long)(sw + nd + iv * r), t1 = t0 + (long)(gl < 1.0f ? 1.0f : gl);
                     ev[ne].tick = t0; ev[ne].on = 1; ev[ne].note = note; ev[ne].vel = vel ? vel : 1; ne++;
                     ev[ne].tick = t1; ev[ne].on = 0; ev[ne].note = note; ev[ne].vel = 0; ne++;
                 }
@@ -3208,6 +3223,11 @@ static void set_param(void *instance, const char *key, const char *val) {
         if (c && t >= 0 && t < NTRK) { int l = atoi(c + 1); if (l >= 1 && l <= MAXSTEP) s->seqlen[t] = l; }
         return;
     }
+    if (strcmp(key, "tres") == 0) {                /* "track,ticks per step" (6 = 1/16, 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8) */
+        int t = atoi(val); const char *c = strchr(val, ',');
+        if (c && t >= 0 && t < NTRK) { int r = atoi(c + 1); if (r == 3 || r == 4 || r == 6 || r == 8 || r == 12) s->tres[t] = r; }
+        return;
+    }
     if (strcmp(key, "llen") == 0) {                /* "lane,length" (0 = follow the track) */
         int t = atoi(val); const char *c = strchr(val, ',');
         if (c && t >= 0 && t < NLANE) { int l = atoi(c + 1); if (l >= 0 && l <= MAXSTEP) s->llen[t] = l; }
@@ -3361,7 +3381,12 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
         double span = s->next_time - s->last_time;
         int fr = (s->playing && span > 1.0) ? (int)(100.0 * (s->tsamp - s->last_time) / span) : 0;
         if (fr < 0) fr = 0; if (fr > 99) fr = 99;
-        return snprintf(buf, (size_t)buf_len, "%d,%d,%d,%d,%d", s->playing, s->gs, s->cur_pat, fr, s->ci_left > 0 ? (s->ci_left + s->ci_b - 1) / s->ci_b : 0);
+        int gsr = s->gs;
+        if (s->playing && (s->gs > 0 || s->sub > 0)) {              /* old meaning: steps started so far; the tick in progress adds to the fraction */
+            const long done = (long)s->gs * 6 + s->sub - 1; gsr = (int)(done / 6) + 1;
+            fr = (int)(((done % 6) * 100 + fr) / 6);
+        }
+        return snprintf(buf, (size_t)buf_len, "%d,%d,%d,%d,%d", s->playing, gsr, s->cur_pat, fr, s->ci_left > 0 ? (s->ci_left + s->ci_b - 1) / s->ci_b : 0);
     }
     if (strcmp(key, "brn") == 0) return snprintf(buf, (size_t)buf_len, "%d", br_n);
     if (strcmp(key, "brerr") == 0) return snprintf(buf, (size_t)buf_len, "%d,%d,%d", br_err, br_skip, br_trunc);
