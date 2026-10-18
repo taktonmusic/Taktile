@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.143.0 (18 October 2026)
+- MIDI effects no longer crackle: OCTAVE, CHORD and DIATONIC CHORD now share the level between their notes, so stacked notes no longer overload the output
+
 ## 5.142.0 (18 October 2026)
 - Recording into an empty clip like the Move: the clip begins at the bar where your take began (your first bar is step 1), grows reliably bar by bar even if the screen updates late, and each note lands in the bar you play it in
 - Each track keeps its own clip start (new engine setting tph)

@@ -1485,6 +1485,7 @@ static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
         v->nx[0] = 0.0f; v->nx[1] = 0.37f; v->nx[2] = 0.71f; v->nx[3] = 0.0f; v->nx[4] = 0.0f; break;
     }
 }
+static float g_fxk = 1.0f;                      /* level share of each note while a MIDI effect plays several notes at once */
 static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
     vc_t *v = &s->vc[p];
     s->tgen[p]++;
@@ -1526,7 +1527,7 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         const float ak = s->pp[p][PP_ATT];
         if (ak > 0.004f) { v->aenv = 0.0f; v->ac = s->inv_sr / att_unified(ak); }
     }
-    v->vel = 0.25f + 0.75f * vel;
+    v->vel = (0.25f + 0.75f * vel) * g_fxk;       /* g_fxk < 1 while a MIDI effect stacks several notes: keeps the sum from overloading the output */
     { int w0 = (int)(s->pp[p][PP_WAVE] + 0.5f); v->sw = (w0 >= 1 && w0 <= 15) ? w0 : CHR[ty].wv; }   /* 0 = the sound's own oscillator */
     v->fm = fm; v->f0 = base * fm;
     if (BASE_T[ty] >= T_S0 && BASE_T[ty] < T_S0 + 8) {
@@ -1605,8 +1606,10 @@ static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      
     const float lv = vel * (0.35f + 0.65f * am);
     const float L16 = s->sr * 60.0f / s->bpm / 4.0f;
     static const int CHD[8][4] = { {0,4,7,-99}, {0,3,7,-99}, {0,2,7,-99}, {0,5,7,-99}, {0,4,7,10}, {0,3,7,10}, {0,4,7,11}, {0,3,6,9} };
+    const float k0 = g_fxk;
     switch (mf) {
     case 1: {                                                    /* OCTAVE: Param = which layers (-1 / +1 / both / +1 +2) */
+        g_fxk = k0 * (pr < 0.5f ? 0.70f : 0.55f);
         EMIT(vel, arp_semi, 1);
         if (pr < 0.25f) trig_layer(s, p, lv, arp_semi - 12, 1);
         else if (pr < 0.5f) trig_layer(s, p, lv, arp_semi + 12, 1);
@@ -1615,6 +1618,7 @@ static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      
         break; }
     case 2: {                                                    /* CHORD: Param = chord type (maj min sus2 sus4 7 m7 maj7 dim) */
         int ci = (int)(pr * 7.99f); if (ci < 0) ci = 0; if (ci > 7) ci = 7;
+        g_fxk = k0 * (CHD[ci][3] > -90 ? 0.42f : 0.50f);
         EMIT(vel, arp_semi, 1);
         for (int k = 1; k < 4; k++) if (CHD[ci][k] > -90) trig_layer(s, p, lv, arp_semi + CHD[ci][k], 1);
         break; }
@@ -1664,6 +1668,7 @@ static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      
         for (int k = 0; k < 7; k++) { int dd = MS7[sc][k] > r ? MS7[sc][k] - r : r - MS7[sc][k]; if (dd < bd) { bd = dd; deg = k; } }
         const int base = o * 12 - ks, n = pr < 0.25f ? 3 : (pr < 0.5f ? 4 : (pr < 0.75f ? 5 : 3));
         const int step[5] = { 0, 2, 4, 6, 8 };
+        g_fxk = k0 * (n >= 5 ? 0.38f : (n == 4 ? 0.42f : 0.50f));
         EMIT(vel, base + MS7[sc][deg], 1);
         for (int k = 1; k < n; k++) {
             const int g = deg + step[k]; int semi = base + MS7[sc][g % 7] + 12 * (g / 7);
@@ -1674,6 +1679,7 @@ static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      
     default:                                                     /* TRANSPOSE: Param = -24 .. +24 semitones */
         EMIT(vel, arp_semi + (int)((pr - 0.5f) * 48.0f + (pr >= 0.5f ? 0.5f : -0.5f)), 1); break;
     }
+    g_fxk = k0;
 }
 
 static void trig(inst_t *s, int p, float vel, int arp_semi, int fresh) {
