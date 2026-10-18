@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.164.0 (18 October 2026)
+- Browser: Pad druecken laedt und spielt den markierten Sound sofort, auch bei PRV aus und ohne Jog-Klick (Back macht es rueckgaengig)
+
 ## 5.163.0 (18 October 2026)
 - Browser: schnelles Scrollen auf Regler 2 entfernt, nur Regler 1 (Vorschau) bleibt und leuchtet
 

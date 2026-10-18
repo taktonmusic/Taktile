@@ -2446,7 +2446,8 @@ function delNote(L, semi) {                                 /* Delete + note pad
     showToast(n ? 'NOTE DELETED' : 'NO NOTE HERE', n ? n + ' STEPS' : '', 0);
 }
 function onPad(idx, on, vel) {
-    if (askKind >= 0) return;                                 /* the Synth / Drum question is open: pads must not play notes */
+    if (askKind >= 0) return;
+    if (fb && on) fbEnsure();                                 /* the Synth / Drum question is open: pads must not play notes */
     if (muteHeld || view === 20) {                            /* MUTE + pad (session / mixer: just the pad) = mute without leaving the page */
         if (on) {
             if (view === 7) { muteUsed = true; const t = bank * 4 + (3 - (idx >> 3)); if (t >= 0 && t < NTRK) { if (shiftHeld) soloTrack(t); else toggleMute(t); } }
@@ -3465,6 +3466,7 @@ function fbItems(node) {
 }
 function fbCount(n) { return n.kids ? n.kids.reduce((a, k) => a + fbCount(k), 0) : (n.kits ? (n.slots || fbKitSlots()).length : (n.smp ? smpLoaded().length : n.l.length)); }
 function fbOpen() {
+    fbApplied = null;
     const L = ln();
     if (padMenu) { padMenu = false; }
     fb = { st: [{ node: fbTree(), i: 0 }], orig: { t: Math.round(pads[L][0]), smp: pads[L][PI.smp], sst: pads[L][PI.sst], sen: pads[L][PI.sen], flt: FLT_KEYS.map(k => pads[L][PI[k]]) }, origAll: pads[L].slice() };
@@ -3532,9 +3534,16 @@ function fbAudition() {
 const FLT_KEYS = ['cut', 'locut', 'res', 'fenv'], FLT_OPEN = [1, 0, 0, 0];
 function fltSet(L, vals) { for (let i = 0; i < FLT_KEYS.length; i++) if (Math.abs(pads[L][PI[FLT_KEYS[i]]] - vals[i]) > 1e-6) setLaneP(L, FLT_KEYS[i], vals[i]); }
 function recentAdd(v) { const i = recent.indexOf(v); if (i >= 0) recent.splice(i, 1); recent.unshift(v); if (recent.length > 12) recent.length = 12; markEdited(); }
+let fbApplied = null;                                       /* the entry that is loaded right now (node + index), so a pad press can load the highlighted one when the preview is off */
+function fbEnsure() {                                       /* pad pressed in the browser: the highlighted sound / kit is loaded first, so the pads play it without a jog click (Back still undoes it) */
+    if (!fb) return; const tp = fb.st[fb.st.length - 1], it = fbItems(tp.node)[tp.i];
+    if (!it || it.kid || (fbApplied && fbApplied.node === tp.node && fbApplied.i === tp.i)) return;
+    fbPend = 0; fbApply(); { const L = kind[sel] ? ln() : sel; for (let i = 0; i < queue.length;) { const k = queue[i][0]; if (k === 'setpad' + L || (k.charAt(0) === 'p' && k.indexOf(String(L)) === 1 && /^p\d+[a-z]/.test(k) && k.match(/^p(\d+)/)[1] === String(L))) { const q = queue.splice(i, 1)[0]; dspSet(q[1], q[2]); } else i++; } }      /* the new sound is sent to the DSP before the pad's note */
+}
 function fbApply() {
     synFresh[sel] = false;
     const top = fb.st[fb.st.length - 1], its = fbItems(top.node), it = its[top.i]; if (!it) return;
+    fbApplied = { node: top.node, i: top.i };
     const L = ln();
     if (!top.node.kits) pSnap('pad', L, 'browse');
     if (top.node.kits) { kitSlot = it.val; kitPreview(false); kitPrevQ = []; }      /* no audition hits: just load, play the pads to listen */
