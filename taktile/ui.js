@@ -840,13 +840,13 @@ function padLedBase(i) {                                 /* LED colour of pad i 
         return steps[ed[sel]][ln()][si][0] ? tc : 96;
     }
     if (m === 4 && !dr) {                                  /* CHORD pads: left 4 x 4 = single notes, right 4 x 4 = the chords of the same notes (other colour, tonic white) */
-        const j4 = degOf(cc & 3, rr, 4), chd = cc >= 4, root = j4 >= 32 ? (j4 - 32) % 12 === 0 : j4 % sN() === 0;
-        if (j4 >= 32 && !root && SCALE7[Math.round(master[2]) % NSC].indexOf((j4 - 32) % 12) < 0) return 124;
+        const j4 = degOf(cc & 3, rr, 4), chd = cc >= 4, pc4 = (((j4 - 32 + keyShift()) % 12) + 12) % 12, root = j4 >= 32 ? pc4 === 0 : j4 % sN() === 0;
+        if (j4 >= 32 && !root && SCALE7[Math.round(master[2]) % NSC].indexOf(pc4) < 0) return 124;
         return chd ? (root ? 120 : usedCol(tc)) : (root ? rootCol(tc) : tc);
     }
     const j = dr ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8);
     if (j >= 32) {                                         /* chromatic: root bright, scale notes normal, others dim */
-        const pc = (j - 32) % 12;
+        const pc = (((j - 32 + keyShift()) % 12) + 12) % 12;
         if (pc === 0) return m === 1 ? 120 : rootCol(tc);
         return SCALE7[Math.round(master[2]) % NSC].indexOf(pc) >= 0 ? tc : (m === 1 ? dimCol(tc) : 124);
     }
@@ -1272,9 +1272,9 @@ function opScaleQ() {                                      /* snap every note of
     snap(c, L);
     for (let s = 0; s < LL(); s++) {
         const st = steps[c][L][s]; if (!st[0]) continue;
-        const o = Math.floor(st[2] / 12), r = ((st[2] % 12) + 12) % 12; let best = set[0], bd = 99;
+        const ks = keyShift(), x0 = st[2] - ks, o = Math.floor(x0 / 12), r = ((x0 % 12) + 12) % 12; let best = set[0], bd = 99;      /* the scale starts at the KEY */
         for (const d of set) { const dd = Math.abs(d - r); if (dd < bd) { bd = dd; best = d; } }
-        const ns = clamp(o * 12 + best, -64, 63); if (ns !== st[2]) { st[2] = ns; n++; }
+        const ns = clamp(o * 12 + best + ks, -64, 63); if (ns !== st[2]) { st[2] = ns; n++; }
     }
     clipOpDone('SCALE Q', 1); showToast('SCALE Q ' + ENUMS.scale[Math.round(master[MI.scale]) % NSC].toUpperCase(), n ? n + ' NOTES MOVED' : 'ALL NOTES FIT', n ? 1 : 0.5);
 }
@@ -2248,7 +2248,8 @@ function setKind(t, k) {                                  /* every track is a sy
     if (t === sel) syncSel();
     showToast('TRACK ' + p2(t + 1), k ? 'DRUM' : 'SYNTH', k); markEdited();
 }
-function notePadSemi(d) { if (d >= 32) return d - 44; const A = SCALE7[Math.round(master[2]) % NSC], n = A.length; return 12 * ((d / n) | 0) + A[d % n] - 12; }
+function keyShift() { return clamp(Math.round(master[1]), 0, 11) - 5; }                 /* the KEY moves the pads: the sounds' own root is F (key 5), every other key shifts the pads up or down */
+function notePadSemi(d) { if (d >= 32) return d - 44 + keyShift(); const A = SCALE7[Math.round(master[2]) % NSC], n = A.length; return 12 * ((d / n) | 0) + A[d % n] - 12 + keyShift(); }
 
 function copyTrack(src, dst) {                              /* (unused helper, synth tracks only) */
     pads[dst] = pads[src].slice(); qPad(dst);

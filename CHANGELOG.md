@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.147.0 (18 October 2026)
+- KEY now really moves the pads: changing the key (e.g. C to D) shifts the notes of the pads and of the chord pads, in the sound and in the sequencer; Scale Quantise follows the key too (default key F = unchanged)
+
 ## 5.146.0 (18 October 2026)
 - Chord mode now opens its own CHORD page and returns to your previous screen when the mode ends; the page has Mode, Chord, Level, Key, Scale and the three Layer knobs
 - 16 new scales: Pentatonic major/minor, Blues, Major blues, Hirajoshi, In-Sen, Iwato, Egyptian, Whole tone, Diminished (both), Bebop dominant, Neapolitan minor, Lydian dominant, Altered, Persian (5 to 8 notes; pads, arp and MIDI effects follow the notes of the scale)

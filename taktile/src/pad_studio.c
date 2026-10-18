@@ -2614,9 +2614,10 @@ static void pad_off(inst_t *s, int p) {
 static inline int prob_idx(int b) { return (b & 0x80) ? (b & 0x1F) : ((((b & 7) << 1) | ((b >> 3) & 1)) << 1); }       /* 32 levels (3.1 % each); older saves stored 8 or 16 levels */
 
 static int note_pad_semi(inst_t *s, int d) {          /* d = 0..31 scale degree; 32..95 = chromatic semitone (d-32) */
-    if (d >= 32) return d - 32 - 12;
+    const int ksh = (int)(s->g[G_KEY] + 0.5f) - 5;       /* the KEY moves the pads (the sounds' own root is F = key 5) */
+    if (d >= 32) return d - 32 - 12 + ksh;
     int sc = (int)(s->g[G_SCALE] + 0.5f) % NSC;
-    return 12 * (d / MSN[sc]) + MS7[sc][d % MSN[sc]] - 12;
+    return 12 * (d / MSN[sc]) + MS7[sc][d % MSN[sc]] - 12 + ksh;
 }
 
 /* a clip becomes the active clip of track t: switch to the sound stored for it (volume + pan stay track-wide) */
