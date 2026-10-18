@@ -171,7 +171,7 @@ const VIEW_ITEMS = {
     6: [['rvb','Send'],['rvb_size','Size'],['rvb_dark','Dark'],['rvb_mode','Type'],['rvb_wide','Wide'],['rvb_low','LowCut','Low'],['rvb_ret','Return','Ret']],
     8: [['browse','Jog'],['fullvel','FullVel','FVel'],['rqoff','RecSnap','Snap'],['rdens','RndDens','Dens'],['rvar','RndVel','RVel'],['rkey','RndKey','RKey'],['rrat','RndRatch','RRat'],['m_met','Metro','Met']],
     10: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
-    15: [['qstr','Quantize','Qnt'],['qgrid','Grid'],['ci','Count-In','CntIn'],['rqoff','RecSnap','Snap'],['m_qnt','Launch','Lnch']],
+    15: [['qstr','Quantize','Qnt'],['qgrid','Grid'],['sgrd','Step Grid','StpG'],['ci','Count-In','CntIn'],['rqoff','RecSnap','Snap'],['m_qnt','Launch','Lnch']],
     24: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth']],
     49: [['m2fx','MIDI FX 2','FX'],['m2amt','Amount','Amt'],['m2prm','Param','Prm'],['trn','Transp','Xpos'],['mvb','VelBias','VelB'],['vhm','VelHum','VHum'],['vmn','VelMin','VMin'],['vmx','VelMax','VMax']],
     27: [['mfx','MIDI FX','Effect'],['mamt','Amount','Amt'],['mprm','Param','Prm'],['tkey','Track Key','TKey'],['arp','Arp'],['rate','ArpRate','Rate'],['tscl','Track Scale','TScl'],['mch','Prob']],
@@ -369,7 +369,44 @@ function setLen(n, wholeTrack) {                           /* loop length: a dru
     stepPage = Math.min(stepPage, pageCount() - 1);
     showToast(kind[sel] && !wholeTrack ? 'SOUND LOOP' : 'TRACK LOOP', n + ' STEPS', n / MAXSTEP); markEdited();
 }
-function pageCount() { return Math.max(1, Math.ceil(LL() / 16)); }
+/* ---- Step Grid (like the Move): the track's steps are 1/16 (default), 1/32, 1/16T, 1/8T or 1/8 long. The DSP clock has 6 ticks per 1/16, a step is tres ticks. ---- */
+const GRID_RES = [6, 3, 4, 8, 12], GRID_NAME = ['1/16', '1/32', '1/16T', '1/8T', '1/8'];
+function RES(t) { return tres[t === undefined ? sel : t] || 6; }
+function barSteps(t) { return 96 / RES(t); }                          /* steps in one bar: 16, 32, 24, 12 or 8 */
+function isTrip(t) { const r = RES(t); return r === 4 || r === 8; }
+function PGN(t) { return isTrip(t) ? 12 : 16; }                       /* steps on one page of 16 step buttons: a triplet grid switches off every 4th button */
+function setGrid(t, nr) {                                    /* change a track's Step Grid: every note keeps its exact time (the part between two steps becomes nudge), the loop keeps its length in time */
+    const or = RES(t); if (nr === or || GRID_RES.indexOf(nr) < 0) return false;
+    const conv = (n) => Math.max(1, Math.ceil(n * or / nr - 1e-9)), ls = lanesOf(t);
+    let mx = conv(lens[t]); for (const l of ls) if (llen[l]) mx = Math.max(mx, conv(llen[l]));
+    if (mx > MAXSTEP) { showToast('STEP GRID', 'LOOP TOO LONG', 0); return false; }
+    growTrk[t] = false; let lost = 0;
+    tres[t] = nr; enqueue('tres' + t, 'tres', t + ',' + nr);
+    for (const l of ls) for (let c = 0; c < NPAT; c++) {
+        const row = steps[c][l]; if (!row) continue;
+        let any = false; for (let s = 0; s < row.length && !any; s++) if (row[s] && row[s][0]) any = true;
+        if (!any) continue;
+        const nrow = []; for (let s = 0; s < MAXSTEP; s++) nrow.push([0, 100, 0, 0]);
+        for (let s = 0; s < row.length && s < MAXSTEP; s++) {
+            const st = row[s]; if (!st || !st[0]) continue;
+            const T = (s * or + (st[6] | 0) * 0.025 * or) / nr; let idx = Math.floor(T + 1e-6), nd = Math.round((T - idx) / 0.025);
+            if (nd > NUD_MAX) { idx++; nd = 0; } if (nd < 0) nd = 0;
+            if (idx >= MAXSTEP || nrow[idx][0]) { lost++; continue; }
+            const q = st.slice(); q[6] = nd; if ((q[9] | 0) > 0) q[9] = clamp(Math.round(q[9] * or / nr), 2, 15);
+            nrow[idx] = q;
+        }
+        steps[c][l] = nrow; qSeq(c, l);
+    }
+    lens[t] = conv(lens[t]); enqueue('len' + t, 'len', t + ',' + lens[t]);
+    for (const l of ls) if (llen[l]) { llen[l] = conv(llen[l]); enqueue('llen' + l, 'llen', l + ',' + llen[l]); }
+    for (const id in AUTO) { const L = parseInt(id.split('|')[1]); if (ls.indexOf(L) < 0) continue; const m = {}; for (const k in AUTO[id]) m[Math.floor(+k * or / nr)] = AUTO[id][k]; AUTO[id] = m; }
+    autoLast = {}; stepPage = 0; heldStep = -1; heldGrp = [];
+    showToast('STEP GRID ' + GRID_NAME[GRID_RES.indexOf(nr)], lost ? lost + ' NOTES MERGED' : 'LOOP ' + lens[t] + ' STEPS', 1); markEdited(); needsRedraw = true; return true;
+}
+function pageCount() { return Math.max(1, Math.ceil(LL() / PGN())); }
+function btnStep(i, pg) { const q = pg === undefined ? stepPage : pg; if (!isTrip()) return q * 16 + i; return (i & 3) === 3 ? -1 : q * 12 + (i >> 2) * 3 + (i & 3); }      /* step button -> step number (-1 = switched off) */
+function stepBtn(s) { if (!isTrip()) return s & 15; const k = s % 12; return Math.floor(k / 3) * 4 + k % 3; }
+function curStep(t, n) { const f = ((gl(t) - 1) * 6 + (posFr || 0) * 0.06) / RES(t); return ((Math.floor(f + 1e-9) % n) + n) % n; }      /* the step of track t that is sounding now */
 function qSeqT(p, t) { for (const l of lanesOf(t)) qSeq(p, l); }
 function qStep(p, t, s) { enqueue('st' + p + '_' + t + '_' + s, 'st', p + ',' + t + ',' + s + ',' + encStep(steps[p][t][s])); }
 function qEverything(wipe) {
@@ -483,7 +520,7 @@ function markEdited() { needsRedraw = true; dirty = true; ticksSinceEdit = 0; he
 /* ---- value helpers ---- */
 function scopeOf(key) { return PI[key] !== undefined ? 'pad' : (MI[key] !== undefined ? 'master' : 'sys'); }
 function getVal(scope, key) {
-    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'qstr') return qAmt / 100; if (key === 'ci') return ciOn ? 1 : 0; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'repmode') return topModes[sel] === 1 ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return Math.min(1, topModes[sel] / 3); if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
+    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'sgrd') return Math.max(0, GRID_RES.indexOf(RES())) / 4; if (key === 'qstr') return qAmt / 100; if (key === 'ci') return ciOn ? 1 : 0; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'repmode') return topModes[sel] === 1 ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return Math.min(1, topModes[sel] / 3); if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
         if (key === 'kslot') return kitSlot / (15 + FACTORY.length); if (key === 'ksave' || key === 'kload' || key === 'psave' || key === 'pload' || key === 'spk') return 0; if (key === 'kinf') return kitInfo() === 'EMPTY' ? 0 : 1;
         if (key === 'rdens') return rndDens; if (key === 'rvar') return rndVar; if (key === 'favo') return favOnly ? 1 : 0; if (key === 'kprev') return 0; if (key === 'rkey') return rndKey; if (key === 'rrat') return rndRat; if (key === 'tcol') return (tcolO[sel] || 0) / 26; if (key === 'pnew' || key === 'prst') return 0; if (key === 'pslot') return projSlot / 31; if (key === 'pinf') return projUsed[projSlot] ? 1 : 0;
         if (EU_KEYS[key]) return euGet(key)[0];
@@ -566,6 +603,7 @@ function fmtVal(key, v) {
     if (key === 'rrate') return REP_NAME[repRate];
     if (key === 'qscale' || key === 'qtime') return 'TURN >';
     if (key === 'qgrid') return Q_GRID[qGrid][0];
+    if (key === 'sgrd') return GRID_NAME[Math.max(0, GRID_RES.indexOf(RES()))];
     if (key === 'qstr') return qAmt + '%';
     if (key === 'ci') return ciOn ? 'ON' : 'OFF';
     if (ENUMS[key]) return String(ENUMS[key][clamp(Math.round(v), 0, ENUMS[key].length - 1)]);
@@ -617,6 +655,7 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'qscale') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; opScaleQ(); }
         else if (key === 'qtime') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opTimeQ(); }
         else if (key === 'qgrid') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; qGrid = clamp(qGrid + (acc[idx] > 0 ? 1 : -1), 0, 5); acc[idx] = 0; markEdited(); }
+        else if (key === 'sgrd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const gi = clamp(Math.max(0, GRID_RES.indexOf(RES())) + (acc[idx] > 0 ? 1 : -1), 0, 4); acc[idx] = 0; setGrid(sel, GRID_RES[gi]); }
         else if (key === 'qstr') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; qAmt = clamp(qAmt + (acc[idx] > 0 ? 5 : -5), 5, 100); acc[idx] = 0; markEdited(); }
         else if (key === 'ci') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; ciOn = acc[idx] > 0; acc[idx] = 0; markEdited(); showToast('COUNT-IN', ciOn ? 'ON (1 BAR)' : 'OFF', ciOn ? 1 : 0); }
         else if (key === 'kind') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : 0; acc[idx] = 0; setKind(sel, d); }
@@ -716,7 +755,7 @@ function seqKnob(i, delta) {
     switch (i) {
     case 0: pSnap('sys', 0, 'bpm'); bpm = clamp(bpm + delta * big, 40, 240); enqueue('bpm', 'bpm', String(bpm)); break;
     case 1: pSnap('sys', 0, 'swing'); swing = clamp(swing + delta, 0, 25); enqueue('swing', 'swing', (0.5 + swing / 100).toFixed(3)); break;
-    case 2: setLen(lens[sel] + delta * (shiftHeld ? 16 : 1), true); stepPage = Math.min(stepPage, pageCount() - 1); break;
+    case 2: setLen(lens[sel] + delta * (shiftHeld ? barSteps(sel) : 1), true); stepPage = Math.min(stepPage, pageCount() - 1); break;
     case 3: acc[3] += delta; if (Math.abs(acc[3]) >= 2) { setClip(sel, clamp(ed[sel] + (acc[3] > 0 ? 1 : -1), 0, NPAT - 1)); acc[3] = 0; } break;
     default: {
         const k = ['tune', 'decay', 'tone', 'vol'][i - 4];
@@ -792,6 +831,10 @@ function sN() { return SCALE7[effScale()].length; }                       /* not
 function degOf(col, row, w) { return layS >= 3 ? 32 + col + [5, 4, 8][layS - 3] * row : layS === 0 ? col + 3 * row : (layS === 1 ? row * w + col : col + sN() * row); }
 function padStepOf(i) { return (3 - (i >> 3)) * 8 + (i & 7); }       /* step 1 = top left ... step 32 = bottom right */
 function padStepIdx(i) {                                  /* step number of a pad in STEPS mode (drum track: right 4x4 block = 16 steps), -1 = no step pad */
+    if (isTrip()) {                                       /* triplet grid: the pads show 12 (drum) or 24 (synth) steps, the unused pads stay dark */
+        if (kind[sel]) { const c = i & 7; return soundArea(c) || (c & 3) === 3 ? -1 : stepPage * 12 + (3 - (i >> 3)) * 3 + (c & 3); }
+        return (i & 7) > 5 ? -1 : (stepPage >> 1) * 24 + (3 - (i >> 3)) * 6 + (i & 7);
+    }
     if (kind[sel]) { const c = i & 7; return soundArea(c) ? -1 : stepPage * 16 + (3 - (i >> 3)) * 4 + (c & 3); }
     return (stepPage >> 1) * 32 + padStepOf(i);
 }
@@ -803,7 +846,7 @@ function stepsPad(idx, vel) {                             /* STEPS mode: 32 pads
     const c = ed[sel], L = ln();
     snap(c, L);
     if (s >= LL()) {                                  /* a pad beyond the loop end extends the loop (in blocks of 16) */
-        setLen(Math.min(MAXSTEP, Math.ceil((s + 1) / 16) * 16), false);
+        setLen(Math.min(MAXSTEP, Math.ceil((s + 1) / barSteps()) * barSteps()), false);
     }
     if (deleteHeld) { steps[c][L][s] = [0, 100, 0, 0]; qStep(c, L, s); markEdited(); return; }
     const st = stepAt(s);
@@ -823,7 +866,7 @@ function stepsPadUp(idx) {                                // release: a plain ta
 }
 function clipTrig(t, c) {                                  /* does the playing clip of track t fire a note at this very step? */
     if (!playing) return false;
-    for (const l of lanesOf(t)) { const n = effLen(l), row = steps[c] && steps[c][l]; if (!row) continue; const cur = (gl(t) - 1 + 1024 * n) % n; if (row[cur] && row[cur][0] && !lmutes[l]) return true; }
+    for (const l of lanesOf(t)) { const n = effLen(l), row = steps[c] && steps[c][l]; if (!row) continue; const cur = curStep(t, n); if (row[cur] && row[cur][0] && !lmutes[l]) return true; }
     return false;
 }
 function padLedBase(i) {                                 /* LED colour of pad i (0..31) of the selected track */
@@ -840,7 +883,7 @@ function padLedBase(i) {                                 /* LED colour of pad i 
     if (m === 2) {
         const si = padStepIdx(i);
         if (si >= LL()) return 124;                   /* beyond the loop: faint, press to extend */
-        const cur = playing ? ((gl(sel) - 1 + 1024 * LL()) % LL()) : -1;
+        const cur = playing ? curStep(sel, LL()) : -1;
         if (si === cur) return 120;
         return steps[ed[sel]][ln()][si][0] ? tc : 96;
     }
@@ -863,7 +906,7 @@ function padLedBase(i) {                                 /* LED colour of pad i 
 let seqUse = { semis: {}, play: null, lanes: [], lplay: [] };
 function seqUseUpdate() {
     const c = ed[sel], su = { semis: {}, play: null, lanes: [], lplay: [] };
-    const cur = (l) => { const n = effLen(l); return playing ? ((gl(laneTrk(l)) - 1 + 1024 * n) % n) : -1; };
+    const cur = (l) => { const n = effLen(l); return playing ? curStep(laneTrk(l), n) : -1; };
     if (kind[sel]) {
         for (let k = 0; k < 16; k++) { const l = laneOf(sel, k), n = effLen(l), row = steps[c][l]; let has = false; for (let s2 = 0; s2 < n; s2++) if (row[s2][0]) { has = true; break; } su.lanes.push(has); const cs = cur(l); su.lplay.push(cs >= 0 && !!row[cs][0]); }
     }
@@ -999,11 +1042,11 @@ function fillBar(quiet) {
     if (fillChg.length && !quiet) { showToast('FILL', 'ALREADY ON', 0); return; }
     const t = sel, c = ed[t];
     for (const l of lanesOf(t)) {
-        const n = effLen(l); if (n < 8 || !laneHas(c, l)) continue;
+        const n = effLen(l), q4 = Math.max(1, Math.round(barSteps(t) / 4)); if (n < 2 * q4 || !laneHas(c, l)) continue;
         let src = null; for (let s = 0; s < n; s++) if (steps[c][l][s][0]) { src = steps[c][l][s]; break; }
         if (kind[t] && BASE_T[Math.round(pads[l][0])] <= 4) continue;                 /* kicks keep their pattern */
-        for (let s = n - 4; s < n; s++) {
-            const st = steps[c][l][s], orig = st.slice(), v = clamp(60 + (s - (n - 4)) * 22, 1, 127);
+        for (let s = n - q4; s < n; s++) {
+            const st = steps[c][l][s], orig = st.slice(), v = clamp(60 + (s - (n - q4)) * 88 / q4, 1, 127);
             const nv = [1, v, kind[t] ? 0 : ((src && src[2]) || 0), 0, kind[t] ? 1 : 0, 0, 0, 0];
             if (st[0] && st[1] > v) nv[1] = st[1];
             fillChg.push({ c: c, l: l, s: s, orig: orig, fill: nv.slice() }); steps[c][l][s] = nv;
@@ -1022,7 +1065,7 @@ function fillRestore() {
 function fillTick() {
     if (!fillChg.length) return;
     if (!playing) { fillRestore(); return; }
-    const n = effLen(fillChg[0].l), pos = (((gl(laneTrk(fillChg[0].l)) - 1) % n) + n) % n;
+    const n = effLen(fillChg[0].l), pos = curStep(laneTrk(fillChg[0].l), n);
     if (fillPos >= 0 && pos < fillPos) { fillRestore(); return; }
     fillPos = pos;
 }
@@ -1031,7 +1074,7 @@ function doCapture() {                                  /* keep what was just pl
     let n = 0;
     for (const h of hitLog) {
         if (gs - h.g > 32) continue;
-        const tk = laneTrk(h.t), len = effLen(h.t), tgt = ((h.g % len) + len) % len, c = ed[tk];
+        const tk = laneTrk(h.t), len = effLen(h.t), hg = Math.floor(h.g * 6 / RES(tk) + 1e-9), tgt = ((hg % len) + len) % len, c = ed[tk];
         if (n === 0) snap(c, h.t);
         const st = steps[c][h.t][tgt]; st[0] = 1; st[1] = clamp(h.vel, 1, 127); st[2] = clamp(h.semi, -64, 63);
         qStep(c, h.t, tgt); n++;
@@ -1163,7 +1206,7 @@ function undoSound() {
     showToast('UNDO SOUND', 'RESTORED', 1);
 }
 function allLoops16() {                                   /* every track and every drum sound back to the standard 16 steps (recorded steps beyond step 16 stay stored, just not played) */
-    for (let t = 0; t < NTRK; t++) if (lens[t] !== 16) { lens[t] = 16; enqueue('len' + t, 'len', t + ',16'); }
+    for (let t = 0; t < NTRK; t++) if (lens[t] !== barSteps(t)) { lens[t] = barSteps(t); enqueue('len' + t, 'len', t + ',' + lens[t]); }
     for (let l = 0; l < NLANE; l++) if (llen[l]) { llen[l] = 0; enqueue('llen' + l, 'llen', l + ',0'); }
     stepPage = 0; markEdited(); needsRedraw = true; showToast('ALL LOOPS', '16 STEPS', 1);
 }
@@ -1228,6 +1271,7 @@ function copyTrackFull(a, b) {                              /* Shift + Copy + tr
         for (let c = 0; c < NPAT; c++) { snap(c, lb[j], undoGroup); steps[c][lb[j]] = steps[c][la[j]].map(x => x.slice()); qSeq(c, lb[j]); }
         llen[lb[j]] = llen[la[j]]; enqueue('llen' + lb[j], 'llen', lb[j] + ',' + llen[lb[j]]);
     }
+    tres[b] = tres[a]; enqueue('tres' + b, 'tres', b + ',' + tres[b]);
     lens[b] = lens[a]; enqueue('len' + b, 'len', b + ',' + lens[b]);
     showToast('TRACK COPIED', 'T' + p2(a + 1) + ' > T' + p2(b + 1), 1); markEdited(); needsRedraw = true;
 }
@@ -1255,10 +1299,10 @@ function opRotate(d) { const c = ed[sel], L = ln(), n = LL(); snap(c, L); const 
 function opDouble() { const c = ed[sel], n = lens[sel]; if (n * 2 > MAXSTEP) { showToast('DOUBLE', 'MAX ' + MAXSTEP, 1); return; } snapAll(c, sel); for (const l of lanesOf(sel)) { const m = effLen(l); if (m * 2 > MAXSTEP) continue; for (let s = 0; s < m; s++) steps[c][l][s + m] = steps[c][l][s].slice(); if (llen[l]) { llen[l] = m * 2; enqueue('llen' + l, 'llen', l + ',' + llen[l]); } } lens[sel] = n * 2; clipOpDone('DOUBLE x2', 1, true); }
 const Q_GRID = [['1/4', 4], ['1/8', 2], ['1/8T', 4 / 3], ['1/16', 1], ['1/16T', 2 / 3], ['1/32', 0.5]];
 let qGrid = 3, qAmt = 100;                                   /* time quantize: grid (in steps) and amount 5 .. 100 % (like the Move's QUANTIZE entry) */
-function qSnapPos(p) { const g = Q_GRID[qGrid][1]; return Math.round(p / g) * g; }
+function qSnapPos(p, cap) { const g = Math.min(Q_GRID[qGrid][1], cap || 99); return Math.round(p / g) * g; }      /* cap: a grid finer than the Quantize grid (1/32, triplets) is never snapped coarser than its own steps */
 function qLane(c, L, str) {                                 /* move every note of one sound toward the grid; returns how many moved */
-    const n = effLen(L), row = steps[c][L], out = []; let moved = 0;
-    for (let s = 0; s < n; s++) { const st = row[s]; if (!st || !st[0]) continue; const pos = s + (st[6] | 0) * 0.025; let np = pos + (qSnapPos(pos) - pos) * str; let ns = Math.floor(np + 1e-6), fr = np - ns, nd = Math.round(fr / 0.025); if (nd > NUD_MAX) { ns++; nd = 0; } out.push({ s, st, ns: ((ns % n) + n) % n, nd }); }
+    const n = effLen(L), row = steps[c][L], out = [], rs = RES(laneTrk(L)); let moved = 0;
+    for (let s = 0; s < n; s++) { const st = row[s]; if (!st || !st[0]) continue; const pos = s + (st[6] | 0) * 0.025; let np = pos + (qSnapPos(pos * rs / 6) * 6 / rs - pos) * str; let ns = Math.floor(np + 1e-6), fr = np - ns, nd = Math.round(fr / 0.025); if (nd > NUD_MAX) { ns++; nd = 0; } out.push({ s, st, ns: ((ns % n) + n) % n, nd }); }
     const fresh = () => [0, 100, 0, 0, 0, 0, 0, 0], res = new Array(n).fill(null);
     for (const o of out) { if (!res[o.ns]) { res[o.ns] = o; } else if (!res[o.s]) { res[o.s] = { s: o.s, st: o.st, ns: o.s, nd: o.st[6] | 0 }; } }
     for (let s = 0; s < n; s++) { const o = res[s]; if (o) { const st = o.st.slice(); st[6] = o.nd; if (o.ns !== o.s || o.nd !== (o.st[6] | 0)) moved++; row[s] = st; } else if (row[s] && row[s][0]) row[s] = fresh(); }
@@ -1907,7 +1951,7 @@ const LONG_NAME = { dly_time: 'Delay Time', dly_fb: 'Delay Feedback', dly_mode: 
     tkey: 'Track Key', tscl: 'Track Scale', qscale: 'Quantize To Scale', sst: 'Sample Start', sen: 'Sample End', smd: 'Sample Mode', smp: 'Sample File', sgn: 'Sample Gain', satk: 'Sample Attack', srel: 'Sample Release', sstr: 'Time Stretch',
     mch: 'Note Chance', mvb: 'Velocity Bias', trn: 'Transpose', orn: 'Random Octave', vhm: 'Velocity Humanize', vmn: 'Velocity Min', vmx: 'Velocity Max', eqlf: 'EQ Low Freq', eqmf: 'EQ Mid Freq', eqhf: 'EQ High Freq', eqq: 'EQ Mid Width', eqo: 'EQ Output', pcv: 'Pump Curve', rfq: 'Ring Frequency',
     dtn: 'Delay Tone', dwd: 'Delay Width', rwd: 'Reverb Width', rlc: 'Reverb Low Cut', gdn: 'Grain Density', grv: 'Grain Reverse', gfz: 'Grain Freeze', gtn: 'Grain Window',
-    enot: 'Euclid Note', ealt: 'Euclid Alt Note', eacn: 'Euclid Accent Note', ewlk: 'Euclid Walk', ewln: 'Euclid Walk Length', ernd: 'Euclid Random Note', eoup: 'Euclid Octave Up', eodn: 'Euclid Octave Down', eon: 'Euclid Mode', qgrid: 'Quantize Grid', qstr: 'Quantize Amount', ci: 'Count-In', qtime: 'Quantize Now',
+    enot: 'Euclid Note', ealt: 'Euclid Alt Note', eacn: 'Euclid Accent Note', ewlk: 'Euclid Walk', ewln: 'Euclid Walk Length', ernd: 'Euclid Random Note', eoup: 'Euclid Octave Up', eodn: 'Euclid Octave Down', eon: 'Euclid Mode', qgrid: 'Quantize Grid', sgrd: 'Step Grid', qstr: 'Quantize Amount', ci: 'Count-In', qtime: 'Quantize Now',
     rmb: 'Kick Rumble', rmt: 'Rumble Tail', ehit: 'Euclid Hits', erot: 'Euclid Rotate', elen: 'Euclid Length', emut: 'Euclid Mutate', mamt: 'MIDI FX Amount', mprm: 'MIDI FX Param', mfx: 'MIDI Effect', xfx: 'Insert Effect', xmix: 'Insert Amount', m2fx: 'MIDI Effect 2', m2amt: 'MIDI 2 Amount', m2prm: 'MIDI 2 Param', x2fx: 'Audio Effect 2', x2mix: 'Audio 2 Amount', x2rt: 'Audio 2 Rate', x2dp: 'Audio 2 Depth',
     xrt: 'Insert Rate', xdp: 'Insert Depth', fdec: 'Filter Env Decay', fkey: 'Filter Key Track', fmode: 'Filter Mode', slg: 'Slices To Pads' };
 function fullLabel(v, i, items) {                          /* the whole parameter name (the grid uses short names) */
@@ -2214,7 +2258,7 @@ function setKind(t, k) {                                  /* every track is a sy
             slot[t] = d; ensureSlot(d);
         }
         kind[t] = 1; dsel[t] = clamp(dsel[t], 0, 15);
-        for (const l of lanesOf(t)) if (!llen[l]) { let far = false; for (let p = 0; p < NPAT && !far; p++) for (let s2 = 16; s2 < MAXSTEP; s2++) if (steps[p][l][s2][0]) { far = true; break; } if (!far) llen[l] = 16; }      /* every drum sound starts with its own 16 steps */
+        for (const l of lanesOf(t)) if (!llen[l]) { let far = false; for (let p = 0; p < NPAT && !far; p++) for (let s2 = barSteps(t); s2 < MAXSTEP; s2++) if (steps[p][l][s2][0]) { far = true; break; } if (!far) llen[l] = barSteps(t); }      /* every drum sound starts with its own 16 steps */
         enqueue('kind' + t, 'kind', t + ',' + slot[t]); pushLanes(t, full);
     } else {
         kind[t] = 0; enqueue('kind' + t, 'kind', t + ',-1');
@@ -2237,7 +2281,7 @@ function stepRecord(lane, semi, vel) {                 /* Rec held + stopped: pa
     recHead = (recHead + 1) % n; markEdited();
 }
 function resetLen(t) {                                    /* an emptied clip goes back to the standard length (16 steps), drum sounds follow the track again */
-    if (lens[t] !== 16) { lens[t] = 16; enqueue('len' + t, 'len', t + ',16'); }
+    if (lens[t] !== barSteps(t)) { lens[t] = barSteps(t); enqueue('len' + t, 'len', t + ',' + lens[t]); }
     for (const l of lanesOf(t)) if (llen[l]) { llen[l] = 0; enqueue('llen' + l, 'llen', l + ',0'); }
     growTrk[t] = false;
 }
@@ -2245,7 +2289,7 @@ function recStopLen() {                                   /* Rec pressed the sec
     let gpos = gs - 1; { const r = dspGet('pos'); if (typeof r === 'string') { const a = r.split(','), g = parseInt(a[1]) || 0; if (g > 0) gpos = g - 1 + (parseInt(a[3]) || 0) / 100; } }      /* the DSP's own step counter, the same one the recorded hits use */
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
-        const el = Math.max(0.01, gpos - growG0[t]), n = clamp(Math.round(el / 16) * 16, 16, MAXSTEP);      /* like the Move: stopped in the first half of a bar, that bar is not part of the clip; in the second half, it is */
+        const bs = barSteps(t), el = Math.max(0.01, (gpos - growG0[t]) * 6 / RES(t)), n = clamp(Math.round(el / bs) * bs, bs, MAXSTEP);      /* like the Move: stopped in the first half of a bar, that bar is not part of the clip; in the second half, it is */
         growSet(t, n);
         showToast('REC LENGTH', n + ' STEPS', n / MAXSTEP);
     }
@@ -2260,8 +2304,8 @@ function growTick() {
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
         const len = lens[t]; if (len >= MAXSTEP) continue;
-        const rel = gs - 1 - growG0[t];      /* counted from the bar line where this take began; reaching the last step of the clip (or having passed it) adds the next bar, so one late screen update cannot make the clip miss a bar */
-        if (rel >= len - 1) growLoop(t, Math.max(len + 16, (Math.floor(rel / 16) + 2) * 16));
+        const bs = barSteps(t), rel = Math.floor(((gs - 1 - growG0[t]) * 6 + (posFr || 0) * 0.06) / RES(t));      /* counted from the bar line where this take began; reaching the last step of the clip (or having passed it) adds the next bar, so one late screen update cannot make the clip miss a bar */
+        if (rel >= len - 1) growLoop(t, Math.max(len + bs, (Math.floor(rel / bs) + 2) * bs));
     }
 }
 function reMap(t, oldLen, n) {                           /* a take is stored from its own step 1, so growing changes nothing; a shorter clip drops what lies beyond it (the last, unfinished bar) */
@@ -2300,6 +2344,7 @@ function recRelease(key, lane) {                           /* the recorded note 
     const h = recHeldPad[key]; delete recHeldPad[key]; if (!h || !pads[lane]) return;
     let dur = (Date.now() - h.t) / (15000 / bpm);                      /* fallback: the clock of the UI */
     if (playing && h.g !== undefined) { const r = dspGet('pos'); if (typeof r === 'string') { const a = r.split(','), g = parseInt(a[1]) || 0, f = parseInt(a[3]) || 0; const d2 = (g - h.g) + (f - h.f) / 100; if (d2 >= 0 && d2 < 4096) dur = d2; } }
+    dur = dur * 6 / RES(laneTrk(h.l));                                  /* sixteenths -> steps of this track's grid */
     const st = steps[h.c][h.l][h.i]; if (!st[0]) return;
     for (let q = st.length; q < 10; q++) st[q] = 0;
     const arp = Math.round(pads[lane][PI.arp]) > 0;
@@ -2326,14 +2371,14 @@ function recordHit(lane, semi, vel) {
     const a = r.split(','), g = parseInt(a[1]) || 0, fr = parseInt(a[3]) || 0;
     let len = effLen(lane);
     if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; { const g1 = g - 1; growG0[track] = g1 - (((g1 % 16) + 16) % 16); tph[track] = growG0[track]; dspSet('tph', track + ',' + tph[track]); } }      /* the clip begins at the bar line of this take: its step 1 */
-    const pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw);      /* the hit's exact position, snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
+    const rs = RES(track), pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw, rs === 6 || rs === 12 ? 99 : rs / 6) * 6 / rs;      /* the hit's exact position (in steps of the track's grid), snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
     let tS = Math.floor(pSn + 1e-6), tN = Math.round((pSn - tS) / 0.025); if (tN > NUD_MAX) { tS++; tN = 0; }
-    const rel = tS - tph[track];
-    if (growTrk[track]) while (len < MAXSTEP && rel >= len) { growLoop(lane, len + 16); const l2 = effLen(lane); if (l2 <= len) break; len = l2; }      /* the take always reaches the bar you are playing in, even when the loop did not grow in time */
+    const rel = tS - Math.round(tph[track] * 6 / rs);
+    if (growTrk[track]) while (len < MAXSTEP && rel >= len) { growLoop(lane, len + barSteps(track)); const l2 = effLen(lane); if (l2 <= len) break; len = l2; }      /* the take always reaches the bar you are playing in, even when the loop did not grow in time */
     const target = ((rel % len) + len) % len;
     const st = steps[ed[track]][lane][target]; st[6] = tN; for (let q = st.length; q < 10; q++) st[q] = 0; st[5] = 0; st[9] = 0;
     st[0] = 1; st[1] = clamp(vel, 1, 127); st[2] = clamp(semi, -64, 63);
-    if (tS >= g) dspSet('rskip', lane + ',' + tS);      /* the step is still ahead: the pad already sounded, so this pass does not play it a second time */
+    if (tS > Math.floor(((g - 1) + fr / 100) * 6 / rs + 1e-9)) dspSet('rskip', lane + ',' + tS);      /* the step is still ahead: the pad already sounded, so this pass does not play it a second time */
     qStep(ed[track], lane, target); lastRec = { c: ed[track], l: lane, i: target, g: g, f: fr }; markEdited();
 }
 let cpPad = -1, cpTrk = -1;
@@ -2428,7 +2473,9 @@ function onPad(idx, on, vel) {
     if (!inboundActive()) dspSet('npad', dg + ',' + (on ? Math.max(1, vel) : 0) + ',' + (m === 1 ? 1 : (m === 4 && (idx & 7) < 4 ? 2 : 0)));
 }
 function onStep(i, on) {
-    const s = stepPage * 16 + i;
+    const s = btnStep(i);
+    if (s < 0 && !(view === 7 || view === 31 || muteHeld || shiftHeld)) return;      /* a switched-off button of a triplet grid */
+    if (s < 0 && !on) return;
     if (on && muteHeld) { muteUsed = true; if (shiftHeld) soloTrack(i); else toggleMute(i); return; }
     if (on && recDown && !playing) {
         recStepUsed = true; recHead = s; const c0 = ed[sel], L0 = ln(); if (s < LL()) { snap(c0, L0); steps[c0][L0][s] = [0, 100, 0, 0]; qStep(c0, L0, s); }
@@ -2437,11 +2484,12 @@ function onStep(i, on) {
     if (on) {
         if (loopHeld && view === 0) { if (deleteHeld) { if (kind[sel]) { llen[ln()] = 0; enqueue('llen' + ln(), 'llen', ln() + ',0'); showToast('SOUND LOOP', 'FOLLOWS TRACK', 0); markEdited(); } } else setLen(s + 1, shiftHeld); return; }
         if (copyHeld && view === 0 && !shiftHeld) { stepCopyKey(s); return; }
-        if (shiftHeld && heldStep >= 0 && s !== heldStep && s < LL() && view === 0) {      /* hold a step, then Shift + more steps: edit them together */
+        if (shiftHeld && heldStep >= 0 && s >= 0 && s !== heldStep && s < LL() && view === 0) {      /* hold a step, then Shift + more steps: edit them together */
             if (!heldGrp.includes(s)) { const L = ln(); snap(ed[sel], L); heldGrp.push(s); heldEdited = true; const g = stepAt(s); if (!g[0]) { g[0] = 1; if (fullVel) g[1] = 127; } qStep(ed[sel], L, s); markEdited(); showToast('STEPS', (heldGrp.length + 1) + ' TOGETHER', Math.min(1, (heldGrp.length + 1) / 8)); needsRedraw = true; }
             return;
         }
         if (shiftHeld) { shiftStep(i); return; }
+        if (s < 0 && view !== 7 && view !== 31) return;
         if (view === 31) { songStepKey(i); return; }
         if (view === 7) { if (loopHeld && i < NPAT) launchScene(i); else if (!loopHeld) selectTrack(i); return; }
         if (s >= LL()) return;
@@ -2839,6 +2887,7 @@ function selInfo(key, v) {                                  /* [number of choice
         case 'scs': return [3, clamp(Math.round(v * 2), 0, 2)];
         case 'm_qnt': return [7, Math.min(6, Math.floor(v * 7))];
         case 'qgrid': return [6, qGrid];
+        case 'sgrd': return [5, Math.max(0, GRID_RES.indexOf(RES()))];
     }
     return null;
 }
@@ -3985,10 +4034,11 @@ function songLed(i) {
 /* ---- motion recording: knob moves are stored per clip / lane / parameter in quarter steps and replayed ---- */
 let AUTO = {}, autoLast = {}, autoHold = {};
 function autoSub() { return Math.floor(((posFr || 0)) / 25) & 3; }
+function autoIdx(t, len) { const f = ((gl(t) - 1) * 6 + (posFr || 0) * 0.06) / RES(t); return ((Math.floor(f * 4 + 1e-9) % (len * 4)) + len * 4) % (len * 4); }      /* position inside the loop in quarter steps */
 let posFr = 0;
 function autoRec(L, key, v) {
     const c = ed[laneTrk(L)], id = c + '|' + L + '|' + key, len = effLen(L);
-    const p = ((gl(laneTrk(L)) - 1 + 1024 * len) % len) * 4 + autoSub();
+    const p = autoIdx(laneTrk(L), len);
     pSnap('auto', 0, 'rec');
     if (!AUTO[id]) AUTO[id] = {};
     AUTO[id][p] = Math.round(v * 1000) / 1000; autoHold[id] = 25; dirty = true;
@@ -4001,7 +4051,7 @@ function autoPlay() {
         const a = id.split('|'), c = +a[0], L = +a[1], key = a[2];
         if (ed[laneTrk(L)] !== c) continue;
         if (autoHold[id] > 0) { autoHold[id]--; continue; }
-        const len = effLen(L), n = len * 4, cur = (((gl(laneTrk(L)) - 1 + 1024 * len) % len) * 4 + autoSub()) % n;
+        const len = effLen(L), n = len * 4, cur = autoIdx(laneTrk(L), len);
         const last = autoLast[id] === undefined ? cur : autoLast[id];
         if (last === cur) { if (autoLast[id] === undefined) autoLast[id] = cur; continue; }
         let hit = null, j = last;
@@ -4128,12 +4178,13 @@ function drawSample() {
 function drawSeq() {
     if (heldStep >= 0 && !recDown) { drawStepEdit(); return; }
     titleBar('C' + (ed[sel] + 1) + '  ' + bpm + ' BPM', recArmed ? (ciBeats > 0 ? 'COUNT ' + ciBeats : (playing ? 'REC' : 'REC ARM')) : ((topModes[sel] === 1 ? 'RPT ' + REP_NAME[repRate] : TOP_NAMES[topModes[sel]]) + (playing ? ' >' : '')));
-    const star = llen[ln()] ? '*' : '', pgTxt = LL() > 16 ? 'BAR ' + (stepPage + 1) + '/' + pageCount() + ' L' + LL() + star : 'L' + LL() + star;      /* every bar = 16 steps = one page */
+    const star = llen[ln()] ? '*' : '', gn = RES() === 6 ? '' : GRID_NAME[GRID_RES.indexOf(RES())] + ' ', pgTxt = gn + (LL() > PGN() ? (RES() === 6 ? 'BAR ' : 'P') + (stepPage + 1) + '/' + pageCount() + ' L' + LL() + star : 'L' + LL() + star);      /* every bar = 16 steps = one page */
     txt(0, 11, fit(p2(sel + 1) + ' ' + laneName() + (mutes[sel] ? ' M' : ''), 120 - tw(pgTxt)), 1);
     txt(126 - tw(pgTxt), 11, pgTxt, 1);
-    const cur = playing ? ((gl(sel) - 1 + 1024 * LL()) % LL()) : -1;
+    const cur = playing ? curStep(sel, LL()) : -1;
     for (let i = 0; i < 16; i++) {
-        const s = stepPage * 16 + i, x = i * 8;
+        const s = btnStep(i), x = i * 8;
+        if (s < 0) continue;                                    /* switched off in a triplet grid */
         if (s >= LL()) { set_pixel(x + 3, 30, 1); continue; }
         const st = steps[ed[sel]][ln()][s];
         if (st[0]) { const h = 5 + Math.round(st[1] / 127 * 12); fill_rect(x, 33 - h + 1, 7, h, 1); if (st[3] > 0) { fill_rect(x + 2, 33 - h + 3, 3, 1, 0); } }
@@ -4210,7 +4261,7 @@ function drawClips() {
             const x = 27 + c * 12, has = trackHasSteps(c, t), cur = clipsCur[t] === c, q = clipsQ[t] === c;
             if (cur) {
                 fill_rect(x, y, 11, 10, 1);
-                if (playing) { const len = lens[t], prog = Math.round(9 * (((gl(t) % len) + len) % len) / len); fill_rect(x + 1 + prog, y + 8, 1, 2, 0); }
+                if (playing) { const lt = lens[t] * RES(t), prog = Math.round(9 * (((gl(t) * 6) % lt + lt) % lt) / lt); fill_rect(x + 1 + prog, y + 8, 1, 2, 0); }
                 else { set_pixel(x + 4, y + 3, 0); set_pixel(x + 4, y + 4, 0); set_pixel(x + 4, y + 5, 0); set_pixel(x + 5, y + 4, 0); }
             } else if (q) { draw_rect(x, y, 11, 10, 1); fill_rect(x + 3, y + 3, 5, 4, 1); }
             else if (has) { draw_rect(x, y, 11, 10, 1); clipBars(c, t, x, y); }
@@ -4644,7 +4695,7 @@ function drawCore() {
         if (toast.ck && CURVE_KEYS[toast.ck] && !menuOpen && askKind < 0) drawCurveBox(toast.ck);
     }
     if (helpOpen) drawHelp();
-    if (uiMin && playing && hdrDrawn && !toast) { const stp = ((gl(sel) - 1) % 16 + 16) % 16; fill_rect(stp * 8, 10, 8, 2, 1); }      /* the playhead runs along the header line */
+    if (uiMin && playing && hdrDrawn && !toast) { const stp = stepBtn(curStep(sel, LL())); fill_rect(stp * 8, 10, 8, 2, 1); }      /* the playhead runs along the header line */
     needsRedraw = false; if (menuOpen && menuAnim) needsRedraw = true;
     if (view !== slideView) { slideView = view; if (slideOn && !menuOpen && askKind < 0 && exitDlg < 0) slideT0 = Date.now(); }
     if (slideT0 > 0) {                                       /* page slide: the new page is revealed from the left in about 140 ms */
@@ -4700,7 +4751,7 @@ function updateLeds() {
     seqUseUpdate();
     { const ku = knobLedsOn ? knobUse() : [0, 0, 0, 0, 0, 0, 0, 0], lv = (knobLedsOn && knobLvlOn) ? knobLevels() : null;
       for (let i = 0; i < 8; i++) btn(CC.KNOB1 + i, ku[i] ? (lv && lv[i] !== undefined ? KNOB_RAMP[Math.min(3, Math.floor(lv[i] * 4))] : 120) : 0); }
-    const cur = playing ? ((gl(sel) - 1 + 1024 * LL()) % LL()) : -1;
+    const cur = playing ? curStep(sel, LL()) : -1;
     for (let i = 0; i < 32; i++) {
         let c;
         if (view === 7) {
@@ -4717,7 +4768,7 @@ function updateLeds() {
         led(PAD_FIRST + i, c);
     }
     for (let i = 0; i < 16; i++) {
-        const s = stepPage * 16 + i; let c;
+        const s = btnStep(i); let c;
         if (muteHeld) c = mutes[i] ? 0 : trkCol(i);
         else if (view === 7) {
             if (loopHeld) { let pl = false, hs = false; if (i < NPAT) { for (let t = 0; t < NTRK; t++) { if (clipsCur[t] === i) pl = true; if (trackHasSteps(i, t)) hs = true; } } c = i >= NPAT ? 0 : (pl ? 120 : (hs ? 118 : 123)); }
@@ -4725,7 +4776,7 @@ function updateLeds() {
         }
         else if (view === 31) c = i < 8 ? (sceneHas(i) ? trkCol(i) : dimCol(trkCol(i))) : (i < 14 ? 118 : (i === 14 ? 123 : (songOn ? 126 : 120)));
         else if (askKind >= 0 || exitDlg >= 0 || (view === 28 && broOpen)) c = 0;      /* the steps stay visible in every page, they can be pressed there too */
-        else if (s >= LL()) c = 0;
+        else if (s < 0 || s >= LL()) c = 0;
         else if (heldStep >= 0 && heldStep < LL() && s > heldStep && s < heldStep + (steps[ed[sel]][ln()][heldStep][9] || 0)) c = 126;      /* hold a step: the steps it lasts over light up white */
         else if (s === cur) c = 120;
         else if (steps[ed[sel]][ln()][s][0]) c = trkCol(sel);
@@ -4881,8 +4932,8 @@ globalThis.tick = function () {
         if (np !== playing || ng !== gs) { playing = np; gs = ng; needsRedraw = true; }
         growTick(); loadTick(); autoPlay(); songTick(); rsTick(); meterTick(); scopeTick(); fillTick(); kitPrevTick(); if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
         if (playing && followHold > 0) followHold--;
-        if (playing && followHold === 0 && heldStep < 0 && LL() > 16) {   /* screen + step buttons follow the playing bar */
-            const pg = Math.floor((((gl(sel) - 1 + 1024 * LL()) % LL())) / 16);
+        if (playing && followHold === 0 && heldStep < 0 && LL() > PGN()) {   /* screen + step buttons follow the playing bar */
+            const pg = Math.floor(curStep(sel, LL()) / PGN());
             if (pg !== stepPage && pg < pageCount()) { stepPage = pg; needsRedraw = true; }
         }
     } else if (posNow) posFail++;

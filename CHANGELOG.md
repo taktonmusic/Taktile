@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.152.0 (18 October 2026)
+- Step Grid like the Move: Shift+Step 3 -> Step Grid (per track): 1/16 (default), 1/32, 1/16T, 1/8T, 1/8
+- 1/32 = 2 pages per bar; triplets show 12 steps per page (every 4th step button and pad is switched off); the page label shows the grid
+- Switching the grid keeps every note at its exact time (the part between two steps becomes nudge) and the loop keeps its length in time
+- Recording, quantize, fill, capture, automation, playhead and loop growth all follow the track's grid
+- Old projects open unchanged on the 1/16 grid
+
 ## 5.151.0 (18 October 2026)
 - Engine: the sequencer clock now has 6 ticks per 1/16, so 1/32 notes and triplets (1/16T, 1/8T) can be real steps (groundwork for the Move-style Step Grid; nothing changes yet for existing projects)
 - Old projects load unchanged (all tracks stay on the 1/16 grid)
