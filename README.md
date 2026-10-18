@@ -39,7 +39,7 @@ Taktile is a pattern-based groove box built for jamming live. It takes over the 
 | 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 11 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off) |
 | 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator (switch, off by default), quantize grid 1/4 … 1/32 with strength, auto-growing clips while recording, MIDI clock + note out (USB-A) |
 | 🧪 **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |
-| 💾 **Workflow** | 32 project slots (load, save, rename, new empty, delete), rolling backups, undo history, CPU meter and scope animations (Menu → EXPERT), in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
+| 💾 **Workflow** | 32 project slots (load, save, rename, new empty, delete), rolling backups, undo history, CPU meter and 11 scope views incl. spectrum, stereo, waterfall (Menu → EXPERT), in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
 
 ## Signal flow
 
