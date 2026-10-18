@@ -244,7 +244,7 @@ let recSwallow = false, shiftHeld = false, copyHeld = false, deleteHeld = false,
 let delAge = 0;
 let fbSplit = true;                                        /* browser layout: true = split view (categories on the left, sounds on the right), false = tab boxes on top (knob 3) */
 let fbVol = 0.7;                                           /* preview volume 0.1 .. 1 (knob 2 in the browser): scales the hit strength of the preview and of the pads while browsing */
-let fbKA = 0, fbKB = 0;
+let fbKA = 0, fbKB = 0, fbKC = 0;      /* knob turn counters of the browser: several clicks make one step, so the lists do not race */
 let fbPm = 1;                                              /* browser preview mode (knob 3): 0 = OFF, 1 = STOP (only while the sequencer is stopped, the default), 2 = ALL (also while playing / recording) */
 const FB_PM = ['OFF', 'STOP', 'ALL'];
 function fbPrevOn() { return fbPm === 2 || (fbPm === 1 && !playing); }      /* is the automatic preview active right now */
@@ -5176,8 +5176,8 @@ globalThis.onMidiMessageInternal = function (data) {
     }
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
         if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
-        if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) { if (fbSiblings()) { fbKA += dl; if (Math.abs(fbKA) >= 2) { fbCat(fbKA > 0 ? 1 : -1); fbKA = 0; } } else fbMove(dl); } return; }      /* knob 1: the left column (categories); in a plain list it scrolls like knob 2 */
-        if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = decodeDelta(d2); if (dl) fbMove(dl); return; }      /* knob 2: the right column (the sounds) */
+        if (type === 0xB0 && d1 === CC.KNOB1) { const dl = Math.sign(decodeDelta(d2)); if (dl) { if (fbSiblings()) { fbKA += dl; if (Math.abs(fbKA) >= 4) { fbCat(fbKA > 0 ? 1 : -1); fbKA = 0; } } else { fbKC += dl; if (Math.abs(fbKC) >= 3) { fbMove(fbKC > 0 ? 1 : -1, 1); fbKC = 0; } } } return; }      /* knob 1: the left column (categories); in a plain list it scrolls like knob 2 */
+        if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = Math.sign(decodeDelta(d2)); if (dl) { fbKC += dl; if (Math.abs(fbKC) >= 3) { fbMove(fbKC > 0 ? 1 : -1, 1); fbKC = 0; } } return; }      /* knob 2: the right column (the sounds), 3 clicks = 1 entry */
         if (type === 0xB0 && d1 === CC.KNOB1 + 2) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld) { fbVol = clamp(Math.round((fbVol + (dl > 0 ? 0.05 : -0.05)) * 100) / 100, 0.1, 1); showToast('PREVIEW VOLUME', Math.round(fbVol * 100) + '%', fbVol); needsRedraw = true; } else { fbKB += dl; if (Math.abs(fbKB) >= 2) { fbSetPm(fbPm + (fbKB > 0 ? 1 : -1)); fbKB = 0; } } } return; }      /* knob 3: preview OFF / STOP / ALL (Shift + knob 3 = preview volume) */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }

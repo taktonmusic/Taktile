@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.170.0 (18 October 2026)
+- Browser: Regler 1 und 2 scrollen langsamer (Regler 2: 3 Klicks = 1 Eintrag, Regler 1: 4 Klicks = 1 Kategorie, kein schnelles Ueberspringen mehr)
+
 ## 5.169.0 (18 October 2026)
 - Browser: Regler 1 = linke Spalte (Kategorien), Regler 2 = rechte Spalte (Sounds), Regler 3 = Vorschau AUS / STOP (Standard, nur im Stop) / ALL; Shift+Regler 3 = Vorschau-Lautstaerke
 
