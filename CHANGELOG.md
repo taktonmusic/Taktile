@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.153.0 (18 October 2026)
+- Undo button glows only while there is something to undo (with Shift: to redo), like on the Move; Undo / Shift+Undo = Redo unchanged
+
 ## 5.152.0 (18 October 2026)
 - Step Grid like the Move: Shift+Step 3 -> Step Grid (per track): 1/16 (default), 1/32, 1/16T, 1/8T, 1/8
 - 1/32 = 2 pages per bar; triplets show 12 steps per page (every 4th step button and pad is switched off); the page label shows the grid

@@ -4790,8 +4790,9 @@ function updateLeds() {
     for (let i = 0; i < 16; i++) btn(16 + i, ((i === 3 || i === 10 || i === 11) && shiftHeld) ? (topModes[sel] === (i === 3 ? 3 : i - 9) ? 126 : 28) : (((shiftHeld && SHIFT_OK[i]) || symLit(i)) ? 126 : 0));
     btn(CC.PLAY, playing ? 126 : 16);
     btn(CC.REC, recArmed ? 127 : 16);
+    btn(CC.UNDO, (shiftHeld ? redoStack.length : undoStack.length) ? 126 : 16);      /* like the Move: Undo glows while there is something to undo (with Shift: to redo) */
     if (btnBright) {                                          /* brighter right-hand buttons: Mute, Copy (Double), Delete, Undo, Back, Sample, Loop glow even when idle */
-        for (const cc of [CC.MUTE, CC.COPY, CC.DELETE, CC.UNDO, CC.BACK, CC.SAMPLE, CC.LOOP]) if (!btnWant[cc] || btnWant[cc] < 60) btnWant[cc] = 70;
+        for (const cc of [CC.MUTE, CC.COPY, CC.DELETE, CC.BACK, CC.SAMPLE, CC.LOOP]) if (!btnWant[cc] || btnWant[cc] < 60) btnWant[cc] = 70;
         for (const cc of [CC.MENU, CC.CAPTURE, CC.PLAY, CC.REC]) if (btnWant[cc] < 60) btnWant[cc] = 70;
     }
 }
