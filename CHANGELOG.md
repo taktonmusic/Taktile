@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.125.0 (18 October 2026)
+- Attack bei ALLEN Synths identisch: nur der Knopf bestimmt die Zeit; kein Sonderwert pro Preset mehr (Pad und FM starten bei 0 gleich hart)
+- Decay bei Pads/Strings/Lead mit derselben Abfall-Kurve wie FM (Zeitkonstante 0,8 s × Decay-Knopf), nicht nur kürzeres Sustain; ganz oben (≥ 0,97) bleibt der Ton gehalten
+- Alte Projekte: Attack 0,12 → 0, gehaltene Sounds bekommen Decay oben, klingen also wie vorher
+
 ## 5.124.0 (18 October 2026)
 - Attack: EIN gemeinsamer Mechanismus für alle Engines – der Knopf bestimmt allein die Zeit (0 = sofort, 1 = 2 s), bei FM, Pads, Strings, Plucks, Glocken usw. gleich; beim Wählen eines Sounds setzt sich der Knopf auf den Attack, mit dem das Preset gebaut wurde (Pad bleibt weich, FM sofort); alte Projekte werden entsprechend umgerechnet
 - Decay: auch bei gehaltenen Sounds (Pads, Strings, Lead): unter 0,2 stirbt der gehaltene Ton ab, bei 0 nur noch ein Klick – wie bei FM
