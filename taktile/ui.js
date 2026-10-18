@@ -3650,6 +3650,7 @@ function fbSiblings(lv) {                                  /* the categories nex
 }
 let fbShow = -1;                                           /* which level of the tree the display shows: the one of the knob you turned last (-1 = the deepest, the sounds) */
 function fbShowIdx() { return fbShow < 0 ? fb.st.length - 1 : Math.min(fbShow, fb.st.length - 1); }
+const FB_KCL = 6, FB_KGAP = 150; let fbKT = 0;             /* browser knobs: 6 clicks per step, at most one step per 150 ms */
 const fbRem = new Map(), fbKN = [0, 0, 0, 0, 0];             /* fbRem: the entry last chosen in each folder (so coming back to a folder lands on it), fbKN: turn counters of the level knobs */
 function fbKnob(j, dl) {                                   /* level knob j (0 = main folders ... ): scroll that level; the levels below are opened again along the remembered / first entries, the last level shows the sounds */
     if (!dl || !fb || j > fb.st.length) return;
@@ -3668,7 +3669,8 @@ function fbKnob(j, dl) {                                   /* level knob j (0 = 
     if (j < fb.st.length - 1 && fbShow !== j) { fbShow = j; needsRedraw = true; }      /* the first click on a knob shows its level
     */
     const last = j === fb.st.length - 1;
-    fbKN[j] += dl; if (Math.abs(fbKN[j]) < 3) return;      /* several clicks make one step */
+    fbKN[j] += dl; if (Math.abs(fbKN[j]) < FB_KCL) return;      /* several clicks make one step */
+    const nowK = Date.now(); if (nowK - fbKT < FB_KGAP) { fbKN[j] = 0; return; } fbKT = nowK;      /* and never more than one step every 150 ms, however fast you turn */
     const dir = fbKN[j] > 0 ? 1 : -1; fbKN[j] = 0;
     if (last) { fbMove(dir, 1); return; }
     fbShow = j;

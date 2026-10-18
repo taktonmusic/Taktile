@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.175.0 (18 October 2026)
+- Browser: Regler scrollen deutlich langsamer (6 Klicks pro Schritt, hoechstens ein Schritt alle 150 ms)
+
 ## 5.174.0 (18 October 2026)
 - Parametername oben rechts beim Drehen ausgeschrieben (z.B. PROBABILITY statt PROB, GRAIN DENSITY), lange Namen laufen durch
 
