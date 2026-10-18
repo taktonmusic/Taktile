@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.150.0 (18 October 2026)
+- Quantize like on the Move: Shift + step 16 quantizes the whole clip (on drum tracks all 16 sounds in one undo step) by the QUANTIZE amount
+- QUANTIZE amount is now adjustable in 5 % steps (5-100 %), old saves keep their value
+- Shift + step 3 page now shows Quantize, Grid, Count-In, Record Snap, Launch (Layout, Key and Scale live on the track page / Shift + step 9)
+- Manuals updated
+
 ## 5.149.0 (18 October 2026)
 - Chord mode now has two pages: page 1 Mode, Chord, Level, Track Key, Track Scale; page 2 (jog click) Layer FX, Layer Amt, Layer Prm, Prob, VelBias. Chord mode works on synth tracks only
 - Track Key / Track Scale tiles are labelled TKey / TScl so they cannot be mixed up with the master Key / Scale

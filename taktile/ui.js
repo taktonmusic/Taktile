@@ -171,7 +171,7 @@ const VIEW_ITEMS = {
     6: [['rvb','Send'],['rvb_size','Size'],['rvb_dark','Dark'],['rvb_mode','Type'],['rvb_wide','Wide'],['rvb_low','LowCut','Low'],['rvb_ret','Return','Ret']],
     8: [['browse','Jog'],['fullvel','FullVel','FVel'],['rqoff','RecSnap','Snap'],['rdens','RndDens','Dens'],['rvar','RndVel','RVel'],['rkey','RndKey','RKey'],['rrat','RndRatch','RRat'],['m_met','Metro','Met']],
     10: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
-    15: [['qgrid','Grid'],['qstr','Strength','Str'],['rqoff','RecSnap','Snap'],['m_qnt','Launch','Lnch'],['lay','Layout','Lay'],['key','Key'],['scale','Scale','Scl']],
+    15: [['qstr','Quantize','Qnt'],['qgrid','Grid'],['ci','Count-In','CntIn'],['rqoff','RecSnap','Snap'],['m_qnt','Launch','Lnch']],
     24: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth']],
     49: [['m2fx','MIDI FX 2','FX'],['m2amt','Amount','Amt'],['m2prm','Param','Prm'],['trn','Transp','Xpos'],['mvb','VelBias','VelB'],['vhm','VelHum','VHum'],['vmn','VelMin','VMin'],['vmx','VelMax','VMax']],
     27: [['mfx','MIDI FX','Effect'],['mamt','Amount','Amt'],['mprm','Param','Prm'],['tkey','Track Key','TKey'],['arp','Arp'],['rate','ArpRate','Rate'],['tscl','Track Scale','TScl'],['mch','Prob']],
@@ -395,7 +395,7 @@ function saveState() {
         for (let p = 0; p < NPAT; p++) { const row = []; for (let l = 0; l < NLANE; l++) row.push(laneHas(p, l) ? encTrack(p, l) : ''); seqHex.push(row); }
         const keep = {}; for (let t = 0; t < NTRK; t++) { keep[t] = 1; if (slot[t] >= 0) for (let k = 0; k < 16; k++) keep[NTRK + slot[t] * 16 + k] = 1; }
         const cs = csnd.map(row => row.map((r, l) => keep[l] ? r : null));
-        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, spk: spkTxt, mg: 1, qg: [qGrid, qStr], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
+        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
         dirty = false; saveFlash = 30; needsRedraw = true;
     } catch (e) { /* ignore */ }
 }
@@ -465,7 +465,7 @@ function loadState() {
         if (Array.isArray(o.sn)) sceneNames = new Array(NPAT).fill('').map((_, i) => typeof o.sn[i] === 'string' ? o.sn[i].slice(0, 12) : '');
         if (Array.isArray(o.sq)) sceneQ = new Array(NPAT).fill(0).map((_, i) => clamp(Number(o.sq[i]) | 0, 0, 4));
         if (typeof o.se === 'number') sel = clamp(o.se | 0, 0, NTRK - 1);
-        if (Array.isArray(o.qg)) { qGrid = clamp(o.qg[0] | 0, 0, 5); qStr = clamp(o.qg[1] | 0, 0, 3); } browseAll = !!o.ba; if (typeof o.rq === 'number') rqOff = clamp(o.rq, 0, 1);
+        if (Array.isArray(o.qg)) { qGrid = clamp(o.qg[0] | 0, 0, 5); qAmt = o.qg.length > 2 ? clamp(Math.round(Number(o.qg[2]) || 100), 5, 100) : [25, 50, 75, 100][clamp(o.qg[1] | 0, 0, 3)]; } browseAll = !!o.ba; if (typeof o.rq === 'number') rqOff = clamp(o.rq, 0, 1);
         spkTxt = (o.spk && typeof o.spk === 'object' && !Array.isArray(o.spk)) ? o.spk : {};
         if (Array.isArray(o.pm) && o.pm.length === NTRK) topModes = o.pm.map(x => clamp(Number(x) || 0, 0, 4));
         if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0;
@@ -481,7 +481,7 @@ function markEdited() { needsRedraw = true; dirty = true; ticksSinceEdit = 0; he
 /* ---- value helpers ---- */
 function scopeOf(key) { return PI[key] !== undefined ? 'pad' : (MI[key] !== undefined ? 'master' : 'sys'); }
 function getVal(scope, key) {
-    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'qstr') return qStr / 3; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'repmode') return topModes[sel] === 1 ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return Math.min(1, topModes[sel] / 3); if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
+    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'qstr') return qAmt / 100; if (key === 'ci') return ciOn ? 1 : 0; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'repmode') return topModes[sel] === 1 ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return Math.min(1, topModes[sel] / 3); if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
         if (key === 'kslot') return kitSlot / (15 + FACTORY.length); if (key === 'ksave' || key === 'kload' || key === 'psave' || key === 'pload' || key === 'spk') return 0; if (key === 'kinf') return kitInfo() === 'EMPTY' ? 0 : 1;
         if (key === 'rdens') return rndDens; if (key === 'rvar') return rndVar; if (key === 'favo') return favOnly ? 1 : 0; if (key === 'kprev') return 0; if (key === 'rkey') return rndKey; if (key === 'rrat') return rndRat; if (key === 'tcol') return (tcolO[sel] || 0) / 26; if (key === 'pnew' || key === 'prst') return 0; if (key === 'pslot') return projSlot / 31; if (key === 'pinf') return projUsed[projSlot] ? 1 : 0;
         if (EU_KEYS[key]) return euGet(key)[0];
@@ -564,7 +564,8 @@ function fmtVal(key, v) {
     if (key === 'rrate') return REP_NAME[repRate];
     if (key === 'qscale' || key === 'qtime') return 'TURN >';
     if (key === 'qgrid') return Q_GRID[qGrid][0];
-    if (key === 'qstr') return [25, 50, 75, 100][qStr] + '%';
+    if (key === 'qstr') return qAmt + '%';
+    if (key === 'ci') return ciOn ? 'ON' : 'OFF';
     if (ENUMS[key]) return String(ENUMS[key][clamp(Math.round(v), 0, ENUMS[key].length - 1)]);
     if (key === 'tune') { const s = Math.round((v - 0.5) * 24); return (s > 0 ? '+' : '') + s + 'st'; }
     if (key === 'pan') { const d = Math.round((v - 0.5) * 200); return d === 0 ? 'C' : (d < 0 ? 'L' + (-d) : 'R' + d); }
@@ -614,7 +615,8 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'qscale') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; opScaleQ(); }
         else if (key === 'qtime') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opTimeQ(); }
         else if (key === 'qgrid') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; qGrid = clamp(qGrid + (acc[idx] > 0 ? 1 : -1), 0, 5); acc[idx] = 0; markEdited(); }
-        else if (key === 'qstr') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; qStr = clamp(qStr + (acc[idx] > 0 ? 1 : -1), 0, 3); acc[idx] = 0; markEdited(); }
+        else if (key === 'qstr') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; qAmt = clamp(qAmt + (acc[idx] > 0 ? 5 : -5), 5, 100); acc[idx] = 0; markEdited(); }
+        else if (key === 'ci') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; ciOn = acc[idx] > 0; acc[idx] = 0; markEdited(); showToast('COUNT-IN', ciOn ? 'ON (1 BAR)' : 'OFF', ciOn ? 1 : 0); }
         else if (key === 'kind') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : 0; acc[idx] = 0; setKind(sel, d); }
         else if (key === 'tvol') { setTV(sel, clamp(getTV(sel) + delta * (shiftHeld ? 0.016 : 0.0032), 0, 1)); }
         else if (key === 'pmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; { const dr = acc[idx] > 0 ? 1 : -1; let m = clamp(topModes[sel] + dr, 0, 3); if (m === 1 && (!repAllowed || !kind[sel])) m = clamp(topModes[sel] + 2 * dr, 0, 3); topModes[sel] = m; } acc[idx] = 0; heldStep = -1; heldPad = -1; }
@@ -1250,16 +1252,20 @@ function opReverse() { const c = ed[sel], L = ln(), n = LL(); snap(c, L); const 
 function opRotate(d) { const c = ed[sel], L = ln(), n = LL(); snap(c, L); const a = steps[c][L].slice(0, n); for (let s = 0; s < n; s++) steps[c][L][s] = a[((s - d) % n + n) % n]; clipOpDone(d > 0 ? 'ROTATE >' : 'ROTATE <'); }
 function opDouble() { const c = ed[sel], n = lens[sel]; if (n * 2 > MAXSTEP) { showToast('DOUBLE', 'MAX ' + MAXSTEP, 1); return; } snapAll(c, sel); for (const l of lanesOf(sel)) { const m = effLen(l); if (m * 2 > MAXSTEP) continue; for (let s = 0; s < m; s++) steps[c][l][s + m] = steps[c][l][s].slice(); if (llen[l]) { llen[l] = m * 2; enqueue('llen' + l, 'llen', l + ',' + llen[l]); } } lens[sel] = n * 2; clipOpDone('DOUBLE x2', 1, true); }
 const Q_GRID = [['1/4', 4], ['1/8', 2], ['1/8T', 4 / 3], ['1/16', 1], ['1/16T', 2 / 3], ['1/32', 0.5]];
-let qGrid = 3, qStr = 3;                                     /* time quantize: grid (in steps) and strength 25/50/75/100 % */
+let qGrid = 3, qAmt = 100;                                   /* time quantize: grid (in steps) and amount 5 .. 100 % (like the Move's QUANTIZE entry) */
 function qSnapPos(p) { const g = Q_GRID[qGrid][1]; return Math.round(p / g) * g; }
-function opTimeQ() {                                        /* move every note of this sound toward the grid (1/4 ... 1/32, triplets), the offset inside a step is kept as nudge */
-    const c = ed[sel], L = ln(), n = LL(), str = [0.25, 0.5, 0.75, 1][qStr]; snap(c, L);
-    const row = steps[c][L], out = []; let moved = 0, lost = 0;
+function qLane(c, L, str) {                                 /* move every note of one sound toward the grid; returns how many moved */
+    const n = effLen(L), row = steps[c][L], out = []; let moved = 0;
     for (let s = 0; s < n; s++) { const st = row[s]; if (!st || !st[0]) continue; const pos = s + (st[6] | 0) * 0.025; let np = pos + (qSnapPos(pos) - pos) * str; let ns = Math.floor(np + 1e-6), fr = np - ns, nd = Math.round(fr / 0.025); if (nd > NUD_MAX) { ns++; nd = 0; } out.push({ s, st, ns: ((ns % n) + n) % n, nd }); }
     const fresh = () => [0, 100, 0, 0, 0, 0, 0, 0], res = new Array(n).fill(null);
-    for (const o of out) { if (!res[o.ns]) { res[o.ns] = o; } else if (!res[o.s]) { res[o.s] = { s: o.s, st: o.st, ns: o.s, nd: o.st[6] | 0 }; lost++; } else lost++; }
+    for (const o of out) { if (!res[o.ns]) { res[o.ns] = o; } else if (!res[o.s]) { res[o.s] = { s: o.s, st: o.st, ns: o.s, nd: o.st[6] | 0 }; } }
     for (let s = 0; s < n; s++) { const o = res[s]; if (o) { const st = o.st.slice(); st[6] = o.nd; if (o.ns !== o.s || o.nd !== (o.st[6] | 0)) moved++; row[s] = st; } else if (row[s] && row[s][0]) row[s] = fresh(); }
-    clipOpDone('QUANT ' + Q_GRID[qGrid][0], 1); showToast('QUANT ' + Q_GRID[qGrid][0], moved + ' MOVED ' + [25, 50, 75, 100][qStr] + '%', 1);
+    return moved;
+}
+function opTimeQ() {                                        /* like the Move: the whole clip (on a drum track all 16 sounds) moves toward the grid by the QUANTIZE amount, the offset inside a step is kept as nudge */
+    const c = ed[sel], str = qAmt / 100, ls = kind[sel] ? lanesOf(sel) : [ln()]; let moved = 0; undoGroup++;
+    for (const L of ls) { snap(c, L, undoGroup); moved += qLane(c, L, str); }
+    clipOpDone('QUANT ' + Q_GRID[qGrid][0], 1, kind[sel]); showToast('QUANT ' + Q_GRID[qGrid][0], moved + ' MOVED ' + qAmt + '%', 1);
 }
 function opScaleQ() {                                      /* snap every note of the clip to the current key + scale */
     if (kind[sel]) { showToast('SCALE Q', 'SYNTH TRACKS ONLY', 0); return; }
@@ -1899,7 +1905,7 @@ const LONG_NAME = { dly_time: 'Delay Time', dly_fb: 'Delay Feedback', dly_mode: 
     tkey: 'Track Key', tscl: 'Track Scale', qscale: 'Quantize To Scale', sst: 'Sample Start', sen: 'Sample End', smd: 'Sample Mode', smp: 'Sample File', sgn: 'Sample Gain', satk: 'Sample Attack', srel: 'Sample Release', sstr: 'Time Stretch',
     mch: 'Note Chance', mvb: 'Velocity Bias', trn: 'Transpose', orn: 'Random Octave', vhm: 'Velocity Humanize', vmn: 'Velocity Min', vmx: 'Velocity Max', eqlf: 'EQ Low Freq', eqmf: 'EQ Mid Freq', eqhf: 'EQ High Freq', eqq: 'EQ Mid Width', eqo: 'EQ Output', pcv: 'Pump Curve', rfq: 'Ring Frequency',
     dtn: 'Delay Tone', dwd: 'Delay Width', rwd: 'Reverb Width', rlc: 'Reverb Low Cut', gdn: 'Grain Density', grv: 'Grain Reverse', gfz: 'Grain Freeze', gtn: 'Grain Window',
-    enot: 'Euclid Note', ealt: 'Euclid Alt Note', eacn: 'Euclid Accent Note', ewlk: 'Euclid Walk', ewln: 'Euclid Walk Length', ernd: 'Euclid Random Note', eoup: 'Euclid Octave Up', eodn: 'Euclid Octave Down', eon: 'Euclid Mode', qgrid: 'Quantize Grid', qstr: 'Quantize Strength', qtime: 'Quantize Now',
+    enot: 'Euclid Note', ealt: 'Euclid Alt Note', eacn: 'Euclid Accent Note', ewlk: 'Euclid Walk', ewln: 'Euclid Walk Length', ernd: 'Euclid Random Note', eoup: 'Euclid Octave Up', eodn: 'Euclid Octave Down', eon: 'Euclid Mode', qgrid: 'Quantize Grid', qstr: 'Quantize Amount', ci: 'Count-In', qtime: 'Quantize Now',
     rmb: 'Kick Rumble', rmt: 'Rumble Tail', ehit: 'Euclid Hits', erot: 'Euclid Rotate', elen: 'Euclid Length', emut: 'Euclid Mutate', mamt: 'MIDI FX Amount', mprm: 'MIDI FX Param', mfx: 'MIDI Effect', xfx: 'Insert Effect', xmix: 'Insert Amount', m2fx: 'MIDI Effect 2', m2amt: 'MIDI 2 Amount', m2prm: 'MIDI 2 Param', x2fx: 'Audio Effect 2', x2mix: 'Audio 2 Amount', x2rt: 'Audio 2 Rate', x2dp: 'Audio 2 Depth',
     xrt: 'Insert Rate', xdp: 'Insert Depth', fdec: 'Filter Env Decay', fkey: 'Filter Key Track', fmode: 'Filter Mode', slg: 'Slices To Pads' };
 function fullLabel(v, i, items) {                          /* the whole parameter name (the grid uses short names) */
@@ -2826,12 +2832,11 @@ function selInfo(key, v) {                                  /* [number of choice
     const E = ENUMS[key] || (key === 'x2fx' ? ENUMS.xfx : (key === 'm2fx' ? ENUMS.mfx : null));
     if (E) return [E.length, clamp(Math.round(v), 0, E.length - 1)];
     switch (key) {
-        case 'kind': case 'fullvel': case 'repmode': case 'favo': return [2, v > 0.5 ? 1 : 0];
+        case 'kind': case 'fullvel': case 'repmode': case 'favo': case 'ci': return [2, v > 0.5 ? 1 : 0];
         case 'pmode': return [4, clamp(Math.round(v * 3), 0, 3)];
         case 'scs': return [3, clamp(Math.round(v * 2), 0, 2)];
         case 'm_qnt': return [7, Math.min(6, Math.floor(v * 7))];
         case 'qgrid': return [6, qGrid];
-        case 'qstr': return [4, qStr];
     }
     return null;
 }
