@@ -3189,7 +3189,35 @@ const FACTORY = [
     ['CINEMA', 'FxImpact FxBoom FxImpDry FxImpHi FxRiser FxRisHi FxRevCym FxRevSnr FxWhoosh FxFall FxSweepDn FxThundr FxSubDrp FxImpBig FxRisNz FxSweepUp'.split(' ')],
     ['FX PLAY', 'FxLaser FxLaserLo FxZapUp FxBlip FxBubble FxNzHit FxNzSnap FxStatic FxFallNz FxWhshLo FxRisTn FxRisLo FxImpHi FxRevSnr FxNzHit FxBlip'.split(' ')],
     ['TONAL', 'TnMarim TnKalim TnVibes TnGlock TnBell TnSteel TnPluck TnStrPlk TnFmPluk TnFmBell TnBass TnSub TnStab TnFoldPl TnFmBass TnBassDub'.split(' ')],
+    ['PEAKTIME', 'KckTch3 KckHrd2 SnrTch3 ClpDry2 HatCl04 HatOp04 RimTk2 TomSet3 ShkGrv2 CrsCym2 RdeCym2 TomSet4 ZapSet2 FMPerc3 GlchX02 ImpactX2'.split(' ')],
+    ['BERLIN', 'KckTch6 RumbKick SnrTch5 ClpDry6 HatCl02 HatOp02 RimTk4 TomSet6 ShkGrv3 CrsCym3 RdeCym3 TomSet5 FMPerc2 GlchX04 MetalHit SweepX3'.split(' ')],
+    ['WAREHOUSE', 'KickMax KckHrd4 SnrBig6 ClapWide HatCl10 HatOp10 RimDry TomDeep ShakLoos CrashBig RideWash TomSet8 Anvil MetalHit PipeHit ImpactX6'.split(' ')],
+    ['DETROIT', 'Kick909 KckTch2 Snr909 ClapStk HatCl01 HatOp909 RimTk1 TomSet1 ShkGrv1 CrsCym1 RdeCym1 TomSet2 CngSet1 CowSet1 FMPerc1 ZapSet6'.split(' ')],
+    ['EBM', 'KickHard KckHrd5 SnrBig4 ClapWide HatCl09 HatOpen RimDry TomPunch ShakTght CrashBig RideWash TomSet8 Anvil MetalHit FMClang ImpactBig'.split(' ')],
+    ['CHICAGO', 'Kick707 KckHse2 SnrSnap ClpRoom2 HatCl03 HatOp03 RimWood TomMid ShakeMed CrsCym3 RdeCym3 TomFloor CngSet2 BngSet1 CowSet2 FMPerc2'.split(' ')],
+    ['AFROHOUSE', 'KckHse4 KickWarm SnrLof3 ClpRoom5 HatCl05 HatSoft RimTk6 TomSet6 ShkGrv6 RdeCym5 HatAir CongaMid CongaHi BongoHi CongaLo AcCabasa'.split(' ')],
+    ['TECHHOUSE', 'KckHse6 KckTch4 SnrTch2 ClpDry3 HatCl06 HatOp06 RimTk3 TomSet7 ShkGrv4 CrsCym4 RdeCym4 TomSet8 CngSet3 FMPerc4 CowSet4 ZapSet3'.split(' ')],
+    ['GOA', 'KckPsy2 RumbGoa SnrBig3 ClapTrap HatCl08 HatOp08 RimLong FMtom ShakeLng CrashLng RideBell TomLo ZapSet3 LaserX3 ZapRise GlchX06'.split(' ')],
+    ['DARKPSY', 'KckPsy4 RumbDark SnrDeep ClpTrp3 HatCl07 HatOp07 RimHi TomSet5 ShkGrv5 CrsCym5 RdeCym5 TomDeep ZapSet7 LaserX5 ZapDown GlchX08'.split(' ')],
+    ['PROGRESSIVE', 'KckTrn2 KckTrn4 Snr909 ClapLong HatCl06 HatOp06 RimClick TomRack ShakeLng Splash RideBell TomSynth CongaHi ZapBeam CowLong RiseX2'.split(' ')],
+    ['JUNGLE', 'KickPunch Kick90s SnrRoll SnrBig2 HatSnap HatLoose RimTk5 TomPunch ShkGrv1 AcCrshDry AcRideTnk TomFat BngSet3 CngSet5 CowMute ImpHit2'.split(' ')],
+    ['DUBSTEP', 'KickDeep Sub808Mid SnrWide ClapHigh HatTick HatOp909 RimDry TomDeep ShakeSht CrashShr RideShrt TomLo Sub808Lo ImpactLo SweepX2 DownX2'.split(' ')],
+    ['DRILL', '808Kck3 Sub808Hrt SnrTrap ClpTrp3 HatTrap HatShort RimTick TomSynth ShakeSht HatSizzl HatTick Sub808Hi PercHi FMBlip ZapHi 808Deep'.split(' ')],
+    ['SYNTHWAVE', 'DKickLof DKickSub DSnrLoFi DClapTrp DHatLoFi DHatOp DRimHi DTomElec DHatPed DHatOp2 DHatCl DTomHi DMetal DCowHi DClave DKickThmp'.split(' ')],
+    ['AC BRUSH', 'AcKickJzz AcKickSub AcSnrBrsh AcSnrJazz AcHatSft AcHatHlf AcStick AcTomLo AcShaker AcRideSft AcRideBel AcTomFlr AcEgg AcCabasa AcTriMute AcWoodLo'.split(' ')],
+    ['AC PUNK', 'AcKickPnc AcKickRck AcSnrCrk AcSnrRock AcHatTgt AcHatOpn AcRimHi AcTomMid AcHatTgt AcCrash AcChina AcTomHi AcTamb AcCowHi AcClick AcSplash'.split(' ')],
+    ['AC FUNK', 'AcKickTgt AcKickBtr AcSnrPicc AcSnrTght AcHatCls AcHatSzl AcRim AcTomRck AcHatPdl AcCrshSwl AcRide AcTomDry AcCowbell AcWoodHi AcClapTgt AcShaker'.split(' ')],
+    ['LATIN', 'Taiko TomModMd CongaHi CongaLo CngSet1 CngSet2 BngSet1 BngSet2 AcCabasa AcTamb AcTambHit CowRing AcCowLo AcWoodHi Clave AcTriang'.split(' ')],
+    ['AFRO PERC', 'TimpLo TomModLo CongaSlp CongaOpn BongoHi BongoLo AcShaker AcEgg AcTamb AcCabasa CowMute TomModHi AcWoodLo AcWoodHi WoodLo Clave'.split(' ')],
+    ['RISERS', 'FxRiser FxRisHi FxRisLo FxRisNz FxRisTn FxRevCym FxRevSnr FxWhoosh RiseX1 RiseX2 RiseX3 RiseX4 RiseX5 RiseX6 RiseX7 RiseX8'.split(' ')],
+    ['IMPACTS', 'FxImpact FxImpBig FxImpDry FxImpHi FxSubDrp FxThundr FxBoom ImpactX1 ImpactX2 ImpactX3 ImpactX4 ImpactX5 ImpactX6 ImpactX7 ImpactX8 ImpHit1'.split(' ')],
+    ['GLITCH LAB', 'GlchX01 GlchX02 GlchX03 GlchX04 GlchX05 GlchX06 GlchX07 GlchX08 GlchX09 GlchX10 LaserX1 LaserX2 LaserX3 LaserX4 FmZap FMBlip'.split(' ')],
 ];
+const FACTORY_N0 = 42;                                      /* the first kits also form the BY STYLE folders of the sound browser */
+/* the new kits borrow the character (drive, tone, decay ...) of a related kit */
+const KIT_ALIAS = { PEAKTIME: 'TECHNO', BERLIN: 'TECHNO', WAREHOUSE: 'INDUST', DETROIT: 'TECHNO', EBM: 'INDUST', CHICAGO: 'HOUSE', AFROHOUSE: 'DEEPHOUSE', TECHHOUSE: 'HOUSE', GOA: 'PSY', DARKPSY: 'PSY', PROGRESSIVE: 'TRANCE', JUNGLE: 'DNB', DUBSTEP: 'DUB', DRILL: 'TRAP', SYNTHWAVE: 'SYNTHSOFT', 'AC BRUSH': 'JAZZ', 'AC PUNK': 'AC ROCK', 'AC FUNK': 'STUDIO', LATIN: 'WORLD', 'AFRO PERC': 'WORLD', RISERS: 'CINEMA', IMPACTS: 'CINEMA', 'GLITCH LAB': 'FX PLAY' };
+/* the KITS folder of the sound browser: categories, then kits */
+const KIT_CATS = [['TECHNO + HARD', ['TECHNO', 'PEAKTIME', 'BERLIN', 'DETROIT', 'HARDTECH', 'DUBTECH', 'MINIMAL', 'ACID', 'GABBA', 'INDUST', 'WAREHOUSE', 'EBM']], ['HOUSE + DISCO', ['HOUSE', 'DEEPHOUSE', 'CHICAGO', 'TECHHOUSE', 'AFROHOUSE', 'DISCO', 'GARAGE']], ['TRANCE + PSY', ['TRANCE', 'PROGRESSIVE', 'PSY', 'GOA', 'DARKPSY', 'FULLON', 'RAVE']], ['BASS + BREAKS', ['DNB', 'JUNGLE', 'BREAKS', 'DUB', 'DUBSTEP', 'TRAP', 'DRILL', '808']], ['HIPHOP + LOFI', ['HIPHOP', 'LOFI']], ['ELECTRO + SYNTH', ['ELECTRO', 'CHIPKIT', 'SYNTHKIT', 'SYNTHHARD', 'SYNTHSOFT', 'SYNTHWAVE']], ['ACOUSTIC', ['AC ROCK', 'AC PUNK', 'AC FUNK', 'JAZZ', 'AC BRUSH', 'STUDIO', 'AC LOFI', 'PERC LAB']], ['WORLD + ORGANIC', ['WORLD', 'LATIN', 'AFRO PERC', 'TABLA', 'ORGANIC', 'GAMELAN', 'ORCHESTRA', 'FOUND']], ['FX + AMBIENT', ['AMBIENT', 'CINEMA', 'RISERS', 'IMPACTS', 'FX PLAY', 'GLITCH LAB', 'TONAL']]];
 /* the character of the factory kits: per role (K kick, S snare/clap/rim, H hats + cymbals, C crash, T toms, P percussion) the sound parameters */
 const KIT_ROLE = ['K', 'K', 'S', 'S', 'H', 'H', 'S', 'T', 'H', 'C', 'H', 'T', 'P', 'P', 'P', 'P'];
 const KIT_STYLE = {
@@ -3239,7 +3267,7 @@ const KIT_STYLE = {
 function kitName(s) { return s >= 16 ? FACTORY[s - 16][0] : 'USER ' + (s + 1); }
 function kitGet(s) {
     if (s < 16) return kits[s];
-    const f = FACTORY[s - 16], ls = lanesOf(sel), rows = [], st = KIT_STYLE[f[0]] || {}, base = defaultPads()[NTRK];
+    const f = FACTORY[s - 16], ls = lanesOf(sel), rows = [], st = KIT_STYLE[f[0]] || KIT_STYLE[KIT_ALIAS[f[0]]] || {}, base = defaultPads()[NTRK];
     for (let j = 0; j < ls.length; j++) {
         const r = base.slice(), ti = TYPE_NAME.indexOf(f[1][j % 16]); if (ti >= 0) r[0] = ti;
         r[1] = pads[ls[j]][1]; r[2] = pads[ls[j]][2];                       /* Volume and Pan stay as they are */
@@ -3334,6 +3362,14 @@ function fbSynGroups() {
     synTreeCache = SYN_ORDER.map(n => ({ n: n, kids: Object.keys(g[n]).map(k => ({ n: k, l: g[n][k] })) })).filter(x => x.kids.length);
     synTreeN = TYPE_NAME.length; return synTreeCache;
 }
+function fbKitTree() {                                      /* KITS > category > kit; own saved kits in USER KITS */
+    kitsLoad(); const kids = KIT_CATS.map(c => ({ n: c[0], kits: true, slots: c[1].map(nm => 16 + FACTORY.findIndex(f => f[0] === nm)).filter(s => s >= 16) }));
+    const used = {}; kids.forEach(k => k.slots.forEach(s => used[s] = 1)); const rest = []; for (let i = 0; i < FACTORY.length; i++) if (!used[16 + i]) rest.push(16 + i);
+    if (rest.length) kids.push({ n: 'OTHER', kits: true, slots: rest });
+    const us = []; for (let i = 0; i < 16; i++) if (kits[i] && kits[i].d) us.push(i);
+    if (us.length) kids.push({ n: 'USER KITS', kits: true, slots: us });
+    return { n: 'KITS', kids: kids };
+}
 function fbKitSlots() { kitsLoad(); const a = []; for (let i = 0; i < FACTORY.length; i++) a.push(16 + i); for (let i = 0; i < 16; i++) if (kits[i] && kits[i].d) a.push(i); return a; }
 /* ---- by style / genre: the same sounds sorted the way you think while making a track ---- */
 let nameIdx = null;
@@ -3350,7 +3386,7 @@ const STYLE_X = {
 };
 function fbStyles() {                                      /* drums: STYLE > KICK / SNARE / HATS / PERCUSSION, sounds picked for that style */
     const kids = [];
-    FACTORY.forEach(f => {
+    FACTORY.slice(0, FACTORY_N0).forEach(f => {
         const g = {}; ['KICK', 'SNARE', 'CLAP', 'HATS', 'CYMBALS', 'PERCUSSION'].forEach(n => g[n] = []);
         const fold = (fo, t) => fo === 'SNARE' ? (isClapT(t) ? 'CLAP' : 'SNARE') : (fo === 'HATS' ? (isCymT(t) ? 'CYMBALS' : 'HATS') : fo);
         f[1].forEach((nm, p) => { const t = tIdx(nm); if (t === undefined) return; const fo = fold(KIT_ROLE_FOLDER[KIT_ROLE[p]], t); if (g[fo].indexOf(t) < 0) g[fo].push(t); });
@@ -3398,7 +3434,7 @@ function fbTree() {
     const fxA = { n: 'AUDIO FX', fx: 'xfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13] };       /* one flat list: turn = you hear it on the sound, click = keep */
     const fxM = { n: 'MIDI FX', fx: 'mfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] };
     const fxK = fbWantFx ? [fxA, fxM] : [];
-    const drums = { n: 'DRUMS', kindSw: 1, kids: (kitFresh[sel] ? [{ n: 'KITS', kits: true }] : []).concat([fbStyles(), { n: 'BY TYPE', kids: [cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT), cat('PERCUSSION', 3), cat('FX', 4)].concat(nx) }, dsyn]) };
+    const drums = { n: 'DRUMS', kindSw: 1, kids: [fbKitTree()].concat([fbStyles(), { n: 'BY TYPE', kids: [cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT), cat('PERCUSSION', 3), cat('FX', 4)].concat(nx) }, dsyn]) };
     const all = [{ n: 'ALL SOUNDS', l: TYPE_NAME.map((x, k) => k).filter(k => BASE_T[k] !== 359) }];
     const roleMap = { 'BASS': 'BASS', 'LEAD': 'LEAD', 'PLUCK': 'PLUCK', 'PAD + STRINGS': 'PADS', 'KEYS + ORGAN': 'KEYS', 'BELLS': 'BELLS' };
     const typed = fbSynGroups().map(g => ({ n: g.n, kids: g.kids.slice() }));      /* sorted by sound type (pad, lead, bass ...), not by genre: the new engines join each type as a NEW folder */
@@ -3413,13 +3449,13 @@ FX_LABEL.x2fx = FX_LABEL.xfx; FX_LABEL.m2fx = FX_LABEL.mfx;
 const FX_AMT = { xfx: 'xmix', x2fx: 'x2mix', mfx: 'mamt', m2fx: 'm2amt' }, FX_AMT_DEF = { xfx: 0.5, x2fx: 0.5, mfx: 0.7, m2fx: 0.7 };
 function fbItems(node) {
     if (node.kids) return node.kids.map(k => ({ label: k.n, kid: k, cnt: fbCount(k) }));
-    if (node.kits) return fbKitSlots().map(sl => ({ label: kitName(sl), val: sl }));
+    if (node.kits) return (node.slots || fbKitSlots()).map(sl => ({ label: kitName(sl), val: sl }));
     if (node.smp) return smpLoaded().map(i => ({ label: smpNames[i], val: i }));
     if (node.fx) return node.l.map(t => ({ label: FX_LABEL[node.fx][t], val: t }));
     if (node.initFirst) return node.l.map((t, k) => ({ label: k === 0 ? 'INIT' : TYPE_NAME[t], val: t, init: k === 0 }));
     return node.l.map(t => ({ label: (node.init ? 'INIT ' : '') + TYPE_NAME[t], val: t }));
 }
-function fbCount(n) { return n.kids ? n.kids.reduce((a, k) => a + fbCount(k), 0) : (n.kits ? fbKitSlots().length : (n.smp ? smpLoaded().length : n.l.length)); }
+function fbCount(n) { return n.kids ? n.kids.reduce((a, k) => a + fbCount(k), 0) : (n.kits ? (n.slots || fbKitSlots()).length : (n.smp ? smpLoaded().length : n.l.length)); }
 function fbOpen() {
     const L = ln();
     if (padMenu) { padMenu = false; }

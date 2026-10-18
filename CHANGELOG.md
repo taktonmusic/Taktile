@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.154.0 (18 October 2026)
+- KITS folder of the sound browser is now always there on drum tracks (was only for a brand-new track), so the kit can be changed later
+- KITS sorted into 9 categories (Techno + Hard, House + Disco, Trance + Psy, Bass + Breaks, HipHop + Lofi, Electro + Synth, Acoustic, World + Organic, FX + Ambient) plus USER KITS
+- 23 new factory kits (65 in total): Peaktime, Berlin, Warehouse, Detroit, EBM, Chicago, Afrohouse, Techhouse, Goa, Darkpsy, Progressive, Jungle, Dubstep, Drill, Synthwave, AC Brush, AC Punk, AC Funk, Latin, Afro Perc, Risers, Impacts, Glitch Lab
+
 ## 5.153.0 (18 October 2026)
 - Undo button glows only while there is something to undo (with Shift: to redo), like on the Move; Undo / Shift+Undo = Redo unchanged
 
