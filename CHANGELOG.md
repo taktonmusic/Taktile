@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.171.0 (18 October 2026)
+- Browser: Regler 1-5 steuern die Ebenen des Baums von oben (Regler 1 Hauptordner, 2 naechste Ebene ..., der letzte die Sounds), Regler 8 = Vorschau OFF/STOP/ALL (Shift+Regler 8 = Lautstaerke)
+
 ## 5.170.0 (18 October 2026)
 - Browser: Regler 1 und 2 scrollen langsamer (Regler 2: 3 Klicks = 1 Eintrag, Regler 1: 4 Klicks = 1 Kategorie, kein schnelles Ueberspringen mehr)
 

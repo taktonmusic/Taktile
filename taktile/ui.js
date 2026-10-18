@@ -3642,6 +3642,24 @@ function fbSiblings() {                                    /* the categories nex
     if (!fbIsLeaf(top.node) || !par.node.kids || par.node.kids.length < 2 || !par.node.kids.every(fbIsLeaf)) return null;
     return { list: par.node.kids, idx: par.node.kids.indexOf(top.node), par: par };
 }
+const fbRem = new Map(), fbKN = [0, 0, 0, 0, 0];             /* fbRem: the entry last chosen in each folder (so coming back to a folder lands on it), fbKN: turn counters of the level knobs */
+function fbKnob(j, dl) {                                   /* level knob j (0 = main folders ... ): scroll that level; the levels below are opened again along the remembered / first entries, the last level shows the sounds */
+    if (!dl || !fb || j >= fb.st.length) return;
+    const last = j === fb.st.length - 1;
+    fbKN[j] += dl; if (Math.abs(fbKN[j]) < 3) return;      /* several clicks make one step */
+    const dir = fbKN[j] > 0 ? 1 : -1; fbKN[j] = 0;
+    if (last) { fbMove(dir, 1); return; }
+    const lv = fb.st[j], n = fbItems(lv.node).length, ni = clamp(lv.i + dir, 0, n - 1); if (ni === lv.i) return;
+    fbRestore(); fbPend = 0;                               /* the preview of the old sound is undone */
+    for (let k = j + 1; k < fb.st.length; k++) fbRem.set(fb.st[k].node, fb.st[k].i);
+    lv.i = ni; fb.st.length = j + 1;
+    for (let g = 0; g < 6; g++) {                          /* open the highlighted folder, and the one inside it, down to a list of sounds */
+        const top = fb.st[fb.st.length - 1], it = fbItems(top.node)[top.i]; if (!it || !it.kid) break;
+        const ki = fbItems(it.kid).length; fb.st.push({ node: it.kid, i: clamp(fbRem.has(it.kid) ? fbRem.get(it.kid) : 0, 0, Math.max(0, ki - 1)) });
+    }
+    const top = fb.st[fb.st.length - 1], it = fbItems(top.node)[top.i];
+    fbPend = (it && !it.kid && fbPrevOn()) ? (top.node.kits ? 14 : 5) : 0; needsRedraw = true;
+}
 function fbCat(dir) {                                      /* Shift + jog: the next / previous category without going back (the preview of the old one is undone first) */
     const s = fbSiblings(); if (!s) return false;
     const n = s.list.length, j = ((s.idx + dir) % n + n) % n;
@@ -4893,7 +4911,7 @@ function flushLeds() {
 function knobUse() {                                       /* which of the 8 knobs do something on the current page: their little lights under the knobs are on */
     const u = [0, 0, 0, 0, 0, 0, 0, 0];
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank) return u;
-    if (fb) { u[0] = fbSiblings() ? 1 : 0; u[1] = 1; u[2] = 1; return u; }      /* browser: knob 1 = categories (left column), knob 2 = sounds (right column), knob 3 = preview */
+    if (fb) { for (let i = 0; i < 5 && i < fb.st.length; i++) u[i] = 1; u[7] = 1; return u; }      /* browser: one knob per level of the tree (knob 1 = top), knob 8 = preview */
     if (heldStep >= 0 && stepWinView()) return u.map(() => 1);
     if (loopHeld && view === 0) { u[0] = 1; u[1] = 1; u[2] = 1; return u; }
     if (view === 0 || view === 7 || view === 20) return u.map(() => 1);
@@ -4903,7 +4921,7 @@ function knobUse() {                                       /* which of the 8 kno
 }
 const KNOB_RAMP = [123, 119, 118, 120];                   /* dim grey ... white: the lights under the knobs get brighter with the value */
 function knobLevels() {                                    /* value 0..1 of each knob on this page (null = no value to show) */
-    if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) return [undefined, undefined, [0.1, 0.5, 1][fbPm]];      /* knob 1 glows bright when the preview is on, dim when it is off */
+    if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) { const o = new Array(8).fill(undefined); o[7] = [0.1, 0.5, 1][fbPm]; return o; }      /* knob 1 glows bright when the preview is on, dim when it is off */
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb || heldStep >= 0 || loopHeld) return null;
     if (view === 0) return seqSnd().map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
     const items = VIEW_ITEMS[itemsView()];
@@ -5176,9 +5194,8 @@ globalThis.onMidiMessageInternal = function (data) {
     }
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
         if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
-        if (type === 0xB0 && d1 === CC.KNOB1) { const dl = Math.sign(decodeDelta(d2)); if (dl) { if (fbSiblings()) { fbKA += dl; if (Math.abs(fbKA) >= 4) { fbCat(fbKA > 0 ? 1 : -1); fbKA = 0; } } else { fbKC += dl; if (Math.abs(fbKC) >= 3) { fbMove(fbKC > 0 ? 1 : -1, 1); fbKC = 0; } } } return; }      /* knob 1: the left column (categories); in a plain list it scrolls like knob 2 */
-        if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = Math.sign(decodeDelta(d2)); if (dl) { fbKC += dl; if (Math.abs(fbKC) >= 3) { fbMove(fbKC > 0 ? 1 : -1, 1); fbKC = 0; } } return; }      /* knob 2: the right column (the sounds), 3 clicks = 1 entry */
-        if (type === 0xB0 && d1 === CC.KNOB1 + 2) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld) { fbVol = clamp(Math.round((fbVol + (dl > 0 ? 0.05 : -0.05)) * 100) / 100, 0.1, 1); showToast('PREVIEW VOLUME', Math.round(fbVol * 100) + '%', fbVol); needsRedraw = true; } else { fbKB += dl; if (Math.abs(fbKB) >= 2) { fbSetPm(fbPm + (fbKB > 0 ? 1 : -1)); fbKB = 0; } } } return; }      /* knob 3: preview OFF / STOP / ALL (Shift + knob 3 = preview volume) */
+        if (type === 0xB0 && d1 >= CC.KNOB1 && d1 <= CC.KNOB1 + 4) { fbKnob(d1 - CC.KNOB1, Math.sign(decodeDelta(d2))); return; }      /* knobs 1-5 = the levels of the tree from the top: knob 1 the main folders, knob 2 the next level, ... the last one the sounds */
+        if (type === 0xB0 && d1 === CC.KNOB8) { const dl = Math.sign(decodeDelta(d2)); if (dl) { if (shiftHeld) { fbVol = clamp(Math.round((fbVol + (dl > 0 ? 0.05 : -0.05)) * 100) / 100, 0.1, 1); showToast('PREVIEW VOLUME', Math.round(fbVol * 100) + '%', fbVol); needsRedraw = true; } else { fbKB += dl; if (Math.abs(fbKB) >= 2) { fbSetPm(fbPm + (fbKB > 0 ? 1 : -1)); fbKB = 0; } } } return; }      /* knob 8: preview OFF / STOP / ALL (Shift + knob 8 = preview volume) */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
         if (type === 0xB0 && (d1 === CC.UP || d1 === CC.DOWN)) { if (d2 > 0) fbSetPm(fbPm ? 0 : 1); return; }      /* Up / Down: preview off / on (stop) */
