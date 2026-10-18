@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.138.0 (18 October 2026)
+- GRAN insert effect removed (old projects load it as off); the GRAIN page stays
+
 ## 5.137.0 (18 October 2026)
 - New TAPE page (MORE > TAPE): a soft cassette colour on the master output - Tape (warm saturation, head bump, softer highs), Hiss (very quiet noise, at most about -57 dB) and Wow (slow pitch wobble). All off by default
 
