@@ -2,7 +2,7 @@
 
 A pattern-based groove box for the **Ableton Move**, written as an *overtake* module for [Schwung](https://github.com/charlesvestal/schwung). It takes over pads, buttons, knobs and display; all sound comes from its own C DSP (`dsp.so`).
 
-> **Status:** Developed and tested together with a real Ableton Move. Release 5.119.0 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds).
+> **Status:** Developed and tested together with a real Ableton Move. Release 5.120.0 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds).
 
 ![display preview](docs/display-preview.png)
 

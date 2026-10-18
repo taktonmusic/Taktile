@@ -60,7 +60,7 @@ __asm__(".symver powf,powf@GLIBC_2.17");
 #define NLANE      80                 /* sound lanes: 0-15 = tracks, 16-79 = four drum kits x 16 sounds */
 #define PAD_BASE   36
 #define MAX_INST   2
-#define GRN_SZ     131072         /* BEADS granulator history per sound (3 s: room for long grains) */
+#define GRN_SZ     524288         /* BEADS granulator history per sound (11 s: room for grains up to 4.5 s) */
 #define GRN_G      16             /* grains that can sound at once */
 #define GRN_SLOTS  4              /* sounds that can use the granulator at the same time */
 #define TWO_PI     6.28318530717958647692f
@@ -206,19 +206,20 @@ static const char *RATE_NAME[4]  = { "1/8", "1/16", "1/16T", "1/32" };
 static const float RATE_SPB[4]   = { 2.0f, 4.0f, 6.0f, 8.0f };
 static const float RPT_SPB[16]   = { 0.5f, 0.6667f, 1.0f, 1.3333f, 1.5f, 2.0f, 2.6667f, 3.0f, 4.0f, 5.3333f, 6.0f, 8.0f, 12.0f, 16.0f, 24.0f, 32.0f };   /* note repeat rates: steps per beat, slow to fast */
 static const char *KEY_NAME[12]  = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-static const char *SCALE_NAME[3] = { "Minor", "Phryg", "Major" };
+#define NSC 12
+static const char *SCALE_NAME[NSC] = { "Minor", "Phryg", "Major", "Dorian", "Lydian", "Mixol", "Locr", "HarmMin", "MelMin", "PhrDom", "DblHarm", "HungMin" };
 static const char *DT_NAME[5]  = { "1/16", "1/8", "3/16", "1/4", "1/2" };
 static const char *DMODE_NAME[3] = { "PING", "TAPE", "DUB" };
 static const char *RMODE_NAME[3] = { "HALL", "ECHO", "SHIM" };
 static const float DT_BEATS[5] = { 0.25f, 0.5f, 0.75f, 1.0f, 2.0f };
-static const int   SCALE_TBL[3][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 } };
+static const int   SCALE_TBL[NSC][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 } };
 
 /* ---------------- global parameters ---------------- */
 enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_N };
 static const pd_t GD[G_N] = {
     { "m_vol",    "Volume", 0, 0.80f },
     { "key",      "Key",    12, 5.0f },
-    { "scale",    "Scale",  3, 0.0f },
+    { "scale",    "Scale",  NSC, 0.0f },
     { "dly_time", "D Time", 5, 1.0f },
     { "dly_fb",   "D Fdbk", 0, 0.40f },
     { "dly_ret",  "D Ret",  0, 0.50f },
@@ -411,6 +412,11 @@ static uint32_t ch_rng(uint32_t *s) { *s ^= *s << 13; *s ^= *s >> 17; *s ^= *s <
 static float ch_f(uint32_t *s) { return (float)(ch_rng(s) & 0xFFFFFF) / 16777216.0f; }
 static float ch_r(uint32_t *s, float lo, float hi) { return lo + (hi - lo) * ch_f(s); }
 static float ch_p(uint32_t *s, float p, float lo, float hi) { return ch_f(s) < p ? ch_r(s, lo, hi) : 0.0f; }   /* with probability p a value in lo..hi, else 0 */
+/* attack time: knob at 0 = a true hard attack (a few samples, no click); from ~0.12 up the preset own attack is fully there, above that it grows further */
+static inline float att_time(float a, float tatt, float base, float k2) {
+    float g = a * 8.0f; if (g > 1.0f) g = 1.0f; float g2 = (a - 0.10f) * 10.0f; if (g2 < 0.0f) g2 = 0.0f; if (g2 > 1.0f) g2 = 1.0f;
+    return base * (0.3f + 0.7f * g) + tatt * g + a * a * k2 * g2;
+}
 static void init_chars(void);
 
 static void init_types(void) {
@@ -817,8 +823,8 @@ static void gran_proc(inst_t *s, int t, const float *q, float *Lp, float *Rp) {
     const int w = G->w;
     if (q[PP_GFZ] < 0.5f) { G->buf[0][w] = *Lp; G->buf[1][w] = *Rp; G->w = (w + 1) & (GRN_SZ - 1); }      /* Freeze: the buffer stops listening, the grains keep looping what it holds */
     if (!G->rng) G->rng = 2463534242u + (unsigned)t * 977u;
-    /* BEADS: Size is exponential, 4 ms (micro grains, a buzzing cloud) up to 1.2 s (long grains, a smeared time-stretch); Density = overlap, with a little random timing */
-    const int glen = (int)(0.004f * powf(300.0f, q[PP_GSZ] < 0.0f ? 0.0f : (q[PP_GSZ] > 1.0f ? 1.0f : q[PP_GSZ])) * s->sr);
+    /* BEADS: Size is exponential, 4 ms (micro grains, a buzzing cloud) up to 4.5 s (very long grains, a smeared time-stretch); Density = overlap, with a little random timing */
+    const int glen = (int)(0.004f * powf(1125.0f, q[PP_GSZ] < 0.0f ? 0.0f : (q[PP_GSZ] > 1.0f ? 1.0f : q[PP_GSZ])) * s->sr);
     const float ov = 1.0f + q[PP_GDN] * 7.0f;
     if (--G->tim <= 0) {
         G->rng ^= G->rng << 13; G->rng ^= G->rng >> 17; G->rng ^= G->rng << 5;
@@ -1185,9 +1191,9 @@ static void update_pad(inst_t *s, int p) {
     float semis = (q[PP_TUNE] - 0.5f) * 24.0f;
     if (is_melodic(ty)) semis = roundf(semis);
     s->semi[p] = semis;
-    {   /* decay 0 = a click, 0.5 = natural length, 1 = 3x: the lowest fifth of the knob ramps down into a click (the rest keeps the old curve, so existing sounds stay as they were) */
+    {   /* decay 0 = a real snap / click (about 1/150 of the natural length), 0.5 = natural length, 1 = 3x: the lowest fifth of the knob ramps down into it (the rest keeps the old curve, so existing sounds stay as they were) */
         const float dv = q[PP_DECAY];
-        float f = 1.0f; if (dv < 0.2f) { const float u = dv / 0.2f; f = 0.15f + 0.85f * u * u; }
+        float f = 1.0f; if (dv < 0.2f) { const float u = dv / 0.2f; f = 0.012f + 0.988f * u * u; }
         s->dm[p] = powf(3.0f, (dv - 0.5f) * 2.0f) * f;
     }
     s->a_tone[p] = q[PP_TONE] < 0.99f ? onepole_a(150.0f * powf(110.0f, q[PP_TONE]), s->sr) : 1.0f;
@@ -1468,7 +1474,7 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         v->sw = (w >= 1 && w <= 15) ? w : (CHR[ty].wv ? CHR[ty].wv : y->wave);
         v->sdet = y->det + s->pp[p][PP_DET] * 0.04f;
         v->ssub = clampf(y->sub + s->pp[p][PP_SUB], 0.0f, 1.0f);
-        v->satt = T->att + s->pp[p][PP_ATT] * s->pp[p][PP_ATT] * 1.5f;
+        v->satt = att_time(s->pp[p][PP_ATT], T->att, 0.0f, 1.5f);
         for (int k = 0; k < 6; k++) v->ph6[k] = 0.137f * (float)(k + 1);
     }
     if (ty == T_SAMPLE) {
@@ -1498,7 +1504,7 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
     v->c1 = T->tau1 > 0.0f ? expf(-1.0f / (T->tau1 * dm * s->sr)) : 0.0f;
     v->c2 = T->tau2 > 0.0f ? expf(-1.0f / (T->tau2 * dm * s->sr)) : 0.0f;
     v->pek = T->pet > 0.0f ? expf(-1.0f / (T->pet * s->sr)) : 0.0f;
-    v->third = powf(2.0f, (float)SCALE_TBL[(int)(s->g[G_SCALE] + 0.5f) % 3][1] / 12.0f);
+    v->third = powf(2.0f, (float)SCALE_TBL[(int)(s->g[G_SCALE] + 0.5f) % NSC][1] / 12.0f);
     if (BASE_T[ty] >= T_E_MODAL) nx_init(s, v, p, ty);
     if (BASE_T[ty] == T_HATCL || (BASE_T[ty] == T_E_AC && ac_hat(ty) == 1)) {                         /* choke every open hat */
         for (int i = 0; i < NLANE; i++)
@@ -1507,7 +1513,7 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
 }
 
 /* ---------------- MIDI effects (per track, 10 types) ---------------- */
-static const int MS7[3][7] = { { 0, 2, 3, 5, 7, 8, 10 }, { 0, 1, 3, 5, 7, 8, 10 }, { 0, 2, 4, 5, 7, 9, 11 } };
+static const int MS7[NSC][7] = { { 0, 2, 3, 5, 7, 8, 10 }, { 0, 1, 3, 5, 7, 8, 10 }, { 0, 2, 4, 5, 7, 9, 11 }, { 0, 2, 3, 5, 7, 9, 10 }, { 0, 2, 4, 6, 7, 9, 11 }, { 0, 2, 4, 5, 7, 9, 10 }, { 0, 1, 3, 5, 6, 8, 10 }, { 0, 2, 3, 5, 7, 8, 11 }, { 0, 2, 3, 5, 7, 9, 11 }, { 0, 1, 4, 5, 7, 8, 10 }, { 0, 1, 4, 5, 7, 8, 11 }, { 0, 2, 3, 6, 7, 8, 11 } };
 static void ghost_put(inst_t *s, int p, const vc_t *lay) {
     int gi = -1;
     for (int i = 0; i < NGH; i++) if (!s->vc[NLANE + i].active) { gi = i; break; }
@@ -1534,7 +1540,7 @@ static void trig_fx(inst_t *s, int p, float vel, int arp_semi, int slot) {      
     const int mf = (int)(s->pp[p][slot == 2 ? PP_M2FX : PP_MFX] + 0.5f);
     if (mf <= 0 || mf > 11) { if (slot == 1) trig_fx(s, p, vel, arp_semi, 2); else trig_raw(s, p, vel, arp_semi, 1); return; }
     const float am = s->pp[p][slot == 2 ? PP_M2AMT : PP_MAMT], pr = s->pp[p][slot == 2 ? PP_M2PRM : PP_MPRM];
-    const int sc = (int)(s->g[G_SCALE] + 0.5f) % 3;
+    const int sc = (int)(s->g[G_SCALE] + 0.5f) % NSC;
     const float lv = vel * (0.35f + 0.65f * am);
     const float L16 = s->sr * 60.0f / s->bpm / 4.0f;
     static const int CHD[8][4] = { {0,4,7,-99}, {0,3,7,-99}, {0,2,7,-99}, {0,5,7,-99}, {0,4,7,10}, {0,3,7,10}, {0,4,7,11}, {0,3,6,9} };
@@ -1714,7 +1720,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         }
         if (q[6] > 0.0f) { v->nx[3] += f * 0.5f * dt; if (v->nx[3] >= 1.0f) v->nx[3] -= 1.0f; out += q[6] * sin2pi(v->nx[3]); }
         if (T->sus) {
-            const float at = T->att > 0.0005f ? T->att : 0.0005f;
+            const float at = att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         v->env2 *= v->c2;
@@ -1741,7 +1747,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             x += *bp * W[k];
         }
         x *= 0.9f;
-        { const float at = T->att > 0.0005f ? T->att : 0.0005f;
+        { const float at = att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
           if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
         x *= v->env;
@@ -1773,7 +1779,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             v->nx[7] = o; v->nx[6] = hold > 1 ? (float)(hold - 1) : 0.0f;
         }
         if (T->sus) {
-            const float at = T->att > 0.0005f ? T->att : 0.0005f;
+            const float at = att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = o * v->env * 0.6f;
@@ -1845,7 +1851,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         float o = a + q[6] * b + sub * (v->nx[9] < 0.5f ? 0.6f : -0.6f);
         o *= 1.0f / (1.0f + q[6] + sub * 0.5f);
         if (q[7] > 0.0f) o = fast_tanh(o * (1.0f + q[7] * 4.0f)) * 0.8f;
-        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -1869,7 +1875,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             o = o * 0.5f + 0.25f * ((1.0f - fr) * wt_at(v->nx[0], ta) + fr * wt_at(v->nx[0], tb) + (1.0f - fr) * wt_at(v->nx[1], ta) + fr * wt_at(v->nx[1], tb));
         }
         if (q[6] > 0.0f) { v->nx[2] += f * 0.5f * dt; WRAP(v->nx[2]); o += q[6] * sin2pi(v->nx[2]); }
-        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -1898,7 +1904,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         default: { const float s3 = sin2pi(v->ph3 + (s4 * ix * ie * vs) * 0.15915494f), s2 = sin2pi(v->ph2 + (s4 * ix * ie * vs * 0.6f) * 0.15915494f);
                    out = 0.5f * sin2pi(v->ph + (s2 * ix * ie * vs) * 0.15915494f) + 0.35f * s3; break; }  /* two stacks side by side */
         }
-        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2 > 0.0f ? v->c2 : 0.0f;
@@ -1930,7 +1936,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         }
         o *= v->nx[44];
         if (q[4] > 0.0f) { v->nx[1] += q[5] * dt; WRAP(v->nx[1]); o *= 1.0f - q[4] * 0.5f * (1.0f - sin2pi(v->nx[1])); }
-        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -1964,7 +1970,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             v->nx[i] += v->nx[16 + i]; if (v->nx[i] >= 1.0f) v->nx[i] -= 1.0f;
             o += v->nx[28 + i] * fsin01(v->nx[i]);
         }
-        { const float at = 0.004f + pq[PP_ATT] * pq[PP_ATT] * 3.0f + T->att;
+        { const float at = att_time(pq[PP_ATT], T->att, 0.004f, 3.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -1993,7 +1999,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         v->nx[9] += f * 0.5f * dt; WRAP(v->nx[9]);
         y += q[4] * sin2pi(v->nx[9]);
         v->nx[10] += 0.002f * (y - v->nx[10]); y -= v->nx[10];            /* DC blocker (the bias leaves an offset) */
-        { const float at = 0.0008f + pq[PP_ATT] * pq[PP_ATT] * 2.0f + T->att;
+        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -2098,7 +2104,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         const float xx = TWO_PI * fc * dt, a = xx / (1.0f + xx);
         v->z1 += a * (osc - v->z1); v->z2 += a * (v->z1 - v->z2);
         if (T->sus) {
-            const float at = T->att > 0.0005f ? T->att : 0.0005f;
+            const float at = att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         v->env2 *= v->c2;
@@ -2252,7 +2258,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         break; }
     case T_SUBBASS: {
         v->ph += v->f0 * dt; WRAP(v->ph);
-        if (v->gate) v->env += (1.0f - v->env) * (dt / T->att);
+        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
         else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = fast_tanh(bsin(v) * 1.4f) * v->env * 0.8f;
         break; }
@@ -2286,7 +2292,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float saw = v->sw ? wf(v->ph, v->sw) + wf(v->ph2, v->sw) + wf(v->ph3, v->sw) : (v->ph + v->ph2 + v->ph3) * 2.0f - 3.0f;
         v->z1 += s->a_reese * (saw - v->z1);
         v->z2 += s->a_reese * (v->z1 - v->z2);
-        if (v->gate) v->env += (1.0f - v->env) * (dt / T->att);
+        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
         else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = v->z2 * v->env * 0.9f;
         break; }
@@ -2322,7 +2328,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float saw = v->sw ? wf(v->ph, v->sw) + wf(v->ph2, v->sw) + wf(v->ph3, v->sw) : (v->ph + v->ph2 + v->ph3) * 2.0f - 3.0f;
         v->z1 += s->a_pad * (saw - v->z1);
         v->z2 += s->a_pad * (v->z1 - v->z2);
-        if (v->gate) v->env += (1.0f - v->env) * (dt / T->att);
+        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
         else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = v->z2 * v->env * 0.7f;
         break; }
@@ -2332,7 +2338,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float osc = v->sw ? wf(v->ph, v->sw) * 0.6f + wf(v->ph2, v->sw) * 0.4f : (2.0f * v->ph - 1.0f) * 0.6f + (v->ph2 < 0.5f ? 0.4f : -0.4f);
         v->z1 += s->a_lead * (osc - v->z1);
         v->z2 += s->a_lead * (v->z1 - v->z2);
-        if (v->gate) v->env += (1.0f - v->env) * (dt / T->att);
+        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
         else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = v->z2 * v->env;
         break; }
@@ -2487,7 +2493,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
 /* ---------------- arp ---------------- */
 static int arp_offset(inst_t *s, int p, int n) {
     int arp = (int)(s->pp[p][PP_ARP] + 0.5f);
-    const int *tb = SCALE_TBL[(int)(s->g[G_SCALE] + 0.5f) % 3];
+    const int *tb = SCALE_TBL[(int)(s->g[G_SCALE] + 0.5f) % NSC];
     switch (arp) {
     case 1: return tb[n % 6];
     case 2: return tb[5 - (n % 6)];
@@ -2528,12 +2534,12 @@ static void pad_off(inst_t *s, int p) {
 }
 
 /* ---------------- sequencer ---------------- */
-static const int SCALE7[3][7] = { { 0, 2, 3, 5, 7, 8, 10 }, { 0, 1, 3, 5, 7, 8, 10 }, { 0, 2, 4, 5, 7, 9, 11 } };
+static const int SCALE7[NSC][7] = { { 0, 2, 3, 5, 7, 8, 10 }, { 0, 1, 3, 5, 7, 8, 10 }, { 0, 2, 4, 5, 7, 9, 11 }, { 0, 2, 3, 5, 7, 9, 10 }, { 0, 2, 4, 6, 7, 9, 11 }, { 0, 2, 4, 5, 7, 9, 10 }, { 0, 1, 3, 5, 6, 8, 10 }, { 0, 2, 3, 5, 7, 8, 11 }, { 0, 2, 3, 5, 7, 9, 11 }, { 0, 1, 4, 5, 7, 8, 10 }, { 0, 1, 4, 5, 7, 8, 11 }, { 0, 2, 3, 6, 7, 8, 11 } };
 static inline int prob_idx(int b) { return (b & 0x80) ? (b & 0x1F) : ((((b & 7) << 1) | ((b >> 3) & 1)) << 1); }       /* 32 levels (3.1 % each); older saves stored 8 or 16 levels */
 
 static int note_pad_semi(inst_t *s, int d) {          /* d = 0..31 scale degree; 32..95 = chromatic semitone (d-32) */
     if (d >= 32) return d - 32 - 12;
-    int sc = (int)(s->g[G_SCALE] + 0.5f) % 3;
+    int sc = (int)(s->g[G_SCALE] + 0.5f) % NSC;
     return 12 * (d / 7) + SCALE7[sc][d % 7] - 12;
 }
 
@@ -3216,7 +3222,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         if (strcmp(key, GD[k].key) != 0) continue;
         float v;
         if (k == G_KEY)        { int e = enum_index(val, KEY_NAME, 12);   if (e < 0) return; v = (float)e; }
-        else if (k == G_SCALE) { int e = enum_index(val, SCALE_NAME, 3);  if (e < 0) return; v = (float)e; }
+        else if (k == G_SCALE) { int e = enum_index(val, SCALE_NAME, NSC);  if (e < 0) return; v = (float)e; }
         else if (k == G_DLYT)  { int e = enum_index(val, DT_NAME, 5);   if (e < 0) return; v = (float)e; }
         else if (k == G_DMODE) { int e = enum_index(val, DMODE_NAME, 3); if (e < 0) return; v = (float)e; }
         else if (k == G_RMODE) { int e = enum_index(val, RMODE_NAME, 3); if (e < 0) return; v = (float)e; }

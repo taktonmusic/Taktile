@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.120.0 (18 October 2026)
+- Tonleitern: 12 statt 3 (Minor, Phryg, Major, Dorian, Lydian, Mixolydian, Locrian, Harm.Moll, Mel.Moll, Phryg.Dominante, Doppelt-Harmonisch, Ungar.Moll) – überall (Pads, Arp, MIDI-FX, Akkorde, SCQ)
+- ScQ-Knopf: reagiert in beide Drehrichtungen, zeigt Tonleiter + Anzahl verschobener Noten (bei Drum-Tracks Hinweis)
+- Attack 0 = echter harter Attack bei Pad/Lead/Sub/Reese/Engines (vorher blieb der weiche Preset-Attack); alte Projekte bekommen einmalig den bisherigen weichen Wert, neue Sounds Standard 0.12
+- Decay 0 = echter Snap/Klick (ca. 1/150 der natürlichen Länge statt 1/20)
+- Grain-Größe bis 4,5 s (vorher 1,2 s), Puffer 11 s
+
 ## 5.119.0 (17 October 2026)
 - Beim Drehen steht der Parameter-Name oben rechts (statt Track) – der Kachel-Name links bleibt
 

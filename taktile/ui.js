@@ -59,18 +59,19 @@ const ENUMS = {
     arp: ['Off','Up','Down','UpDn','Rand','Roll'],
     rate: ['1/8','1/16','1/16T','1/32'],
     key: ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],
-    scale: ['Minor','Phryg','Major'],
+    scale: ['Minor','Phryg','Major','Dorian','Lydian','Mixol','Locr','HarmMin','MelMin','PhrDom','DblHarm','HungMin'],
     dly_time: ['1/16','1/8','3/16','1/4','1/2'],
 };
 ENUMS.m2fx = ENUMS.mfx; ENUMS.x2fx = ENUMS.xfx; ENUMS.dly_mode = ENUMS.dmode; ENUMS.rvb_mode = ENUMS.rmode;
 const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn'];
-const PDEF = { 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
+const PDEF = { 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 22: 0.12, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
 const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low'];
 const PI = {}; PK.forEach((k, i) => PI[k] = i);
 const FAV_MAP = { dtime: 'dly_time', dfb: 'dly_fb', rsize: 'rvb_size', rdark: 'rvb_dark', dmode: 'dly_mode', rmode: 'rvb_mode', dtn: 'dly_tone', dwd: 'dly_wide', rwd: 'rvb_wide', rlc: 'rvb_low', chor: 'dly', phas: 'rvb', chrt: 'dly_time', chdp: 'dly_fb', phrt: 'rvb_size', phfb: 'rvb_dark' };     /* favourites saved before the shared FX bus */
 const MI = {}; MK.forEach((k, i) => MI[k] = i);
-const SCALE7 = [[0,2,3,5,7,8,10],[0,1,3,5,7,8,10],[0,2,4,5,7,9,11]];
+const SCALE7 = [[0,2,3,5,7,8,10],[0,1,3,5,7,8,10],[0,2,4,5,7,9,11],[0,2,3,5,7,9,10],[0,2,4,6,7,9,11],[0,2,4,5,7,9,10],[0,1,3,5,6,8,10],[0,2,3,5,7,8,11],[0,2,3,5,7,9,11],[0,1,4,5,7,8,10],[0,1,4,5,7,8,11],[0,2,3,6,7,8,11]];
+const NSC = SCALE7.length;
 const PROB_PCT = Array.from({ length: 32 }, (_, i) => Math.round(100 - i * 100 / 32));   /* 32 levels */
 const NUD_MAX = 28;                                                       /* nudge 0..28 = 0..70 % of a step in 2.5 % steps */
 function nudTxt(n) { return '+' + (n * 2.5).toFixed(n % 2 ? 1 : 0) + '%'; }
@@ -387,14 +388,15 @@ function saveState() {
         for (let p = 0; p < NPAT; p++) { const row = []; for (let l = 0; l < NLANE; l++) row.push(laneHas(p, l) ? encTrack(p, l) : ''); seqHex.push(row); }
         const keep = {}; for (let t = 0; t < NTRK; t++) { keep[t] = 1; if (slot[t] >= 0) for (let k = 0; k < 16; k++) keep[NTRK + slot[t] * 16 + k] = 1; }
         const cs = csnd.map(row => row.map((r, l) => keep[l] ? r : null));
-        host_write_file(STATE_FILE, JSON.stringify({ v: 2, mg: 1, qg: [qGrid, qStr], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
+        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 1, mg: 1, qg: [qGrid, qStr], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
         dirty = false; saveFlash = 30; needsRedraw = true;
     } catch (e) { /* ignore */ }
 }
 let saveFlash = 0;
 let freshState = false;
 const ENG2_KEYS = ['snz', 'fatk', 'sfld', 'schp', 'trem', 'trat', 'apan', 'vflt'];
-function neutEng2(a) { for (const k of ENG2_KEYS) if (PI[k] !== undefined) a[PI[k]] = defOf(PI[k]); return a; }      /* the ENGINE 2 page (noise, fold, chop, tremolo, auto-pan ...) is gone: old projects load with those knobs at their neutral values */
+let attMig = false;      /* projects from before 5.120: attack 0 used to be silently soft on pad / lead sounds, now 0 = a hard attack, so old sounds get the former soft default once */
+function neutEng2(a) { for (const k of ENG2_KEYS) if (PI[k] !== undefined) a[PI[k]] = defOf(PI[k]); if (attMig && a[PI.att] === 0) a[PI.att] = 0.12; return a; }      /* the ENGINE 2 page (noise, fold, chop, tremolo, auto-pan ...) is gone: old projects load with those knobs at their neutral values */
 function loadState() {
     miscLast = null; pads = defaultPads(); steps = newSteps();
     try {
@@ -404,6 +406,7 @@ function loadState() {
         if (!txt) { freshState = true; return; }
         const o = JSON.parse(txt);
         if (!o || o.v !== 2) { freshState = true; return; }
+        attMig = !(o.av >= 1);
         if (Array.isArray(o.pads) && (o.pads.length === NTRK || o.pads.length === NLANE)) {
             const loaded = o.pads.map(r => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); return neutEng2(a); });
             for (let l = 0; l < loaded.length; l++) pads[l] = loaded[l];
@@ -508,7 +511,7 @@ function fmtVal(key, v) {
     if (key === 'scs') return ['AUTO', 'ALL', 'OFF'][Math.round(v * 2)];
     if (key === 'm_eql' || key === 'm_eqm' || key === 'm_eqh' || key === 'eql' || key === 'eqm' || key === 'eqh') { const d = Math.round((v - 0.5) * 24); return (d > 0 ? '+' : '') + d + 'dB'; }
     if (key === 'tsw') return v < 0.52 ? 'OFF' : '+' + Math.round((v - 0.5) * 2 * 25) + '%';
-    if (key === 'gsz') { const ms = 4 * Math.pow(300, v); return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(1) + 's'; }
+    if (key === 'gsz') { const ms = 4 * Math.pow(1125, v); return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(1) + 's'; }
     if (key === 'grn') return v < 0.01 ? 'OFF' : Math.round(v * 100) + '%';
     if (key === 'm_chp') return v < 0.02 ? 'OFF' : String(Math.round(40 + 360 * v));
     if (key === 'favo') return favOnly ? 'ON' : 'OFF';
@@ -597,7 +600,7 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'rqoff') { rqOff = clamp(rqOff + delta * 0.02, 0, 1); }
         else if (key === 'repmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; if (!repAllowed) { showToast('NOTE REPEAT', 'OFF IN OPTIONS', 0); return false; } toggleTop(1, true); }
         else if (key === 'rrate') { acc[idx] += delta; if (Math.abs(acc[idx]) < 5) return false; setRepRate(repRate + (acc[idx] > 0 ? 1 : -1), false); acc[idx] = 0; }
-        else if (key === 'qscale') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opScaleQ(); }
+        else if (key === 'qscale') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; opScaleQ(); }
         else if (key === 'qtime') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opTimeQ(); }
         else if (key === 'qgrid') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; qGrid = clamp(qGrid + (acc[idx] > 0 ? 1 : -1), 0, 5); acc[idx] = 0; markEdited(); }
         else if (key === 'qstr') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; qStr = clamp(qStr + (acc[idx] > 0 ? 1 : -1), 0, 3); acc[idx] = 0; markEdited(); }
@@ -819,14 +822,14 @@ function padLedBase(i) {                                 /* LED colour of pad i 
     }
     if (m === 4 && !dr) {                                  /* CHORD pads: left 4 x 4 = single notes, right 4 x 4 = the chords of the same notes (other colour, tonic white) */
         const j4 = degOf(cc & 3, rr, 4), chd = cc >= 4, root = j4 >= 32 ? (j4 - 32) % 12 === 0 : j4 % 7 === 0;
-        if (j4 >= 32 && !root && SCALE7[Math.round(master[2]) % 3].indexOf((j4 - 32) % 12) < 0) return 124;
+        if (j4 >= 32 && !root && SCALE7[Math.round(master[2]) % NSC].indexOf((j4 - 32) % 12) < 0) return 124;
         return chd ? (root ? 120 : usedCol(tc)) : (root ? rootCol(tc) : tc);
     }
     const j = dr ? degOf(cc & 3, rr, 4) : degOf(cc, rr, 8);
     if (j >= 32) {                                         /* chromatic: root bright, scale notes normal, others dim */
         const pc = (j - 32) % 12;
         if (pc === 0) return m === 1 ? 120 : rootCol(tc);
-        return SCALE7[Math.round(master[2]) % 3].indexOf(pc) >= 0 ? tc : (m === 1 ? dimCol(tc) : 124);
+        return SCALE7[Math.round(master[2]) % NSC].indexOf(pc) >= 0 ? tc : (m === 1 ? dimCol(tc) : 124);
     }
     if (j % 7 === 0) return m === 1 ? 120 : rootCol(tc);   /* PITCH: tonic in the darker shade of the track colour, the rest full colour; REPEAT: tonic white */
     return tc;
@@ -1243,7 +1246,8 @@ function opTimeQ() {                                        /* move every note o
     clipOpDone('QUANT ' + Q_GRID[qGrid][0], 1); showToast('QUANT ' + Q_GRID[qGrid][0], moved + ' MOVED ' + [25, 50, 75, 100][qStr] + '%', 1);
 }
 function opScaleQ() {                                      /* snap every note of the clip to the current key + scale */
-    const c = ed[sel], L = ln(), set = SCALE7[Math.round(master[MI.scale]) % 3].concat([12]); let n = 0;
+    if (kind[sel]) { showToast('SCALE Q', 'SYNTH TRACKS ONLY', 0); return; }
+    const c = ed[sel], L = ln(), set = SCALE7[Math.round(master[MI.scale]) % NSC].concat([12]); let n = 0;
     snap(c, L);
     for (let s = 0; s < LL(); s++) {
         const st = steps[c][L][s]; if (!st[0]) continue;
@@ -1251,7 +1255,7 @@ function opScaleQ() {                                      /* snap every note of
         for (const d of set) { const dd = Math.abs(d - r); if (dd < bd) { bd = dd; best = d; } }
         const ns = clamp(o * 12 + best, -64, 63); if (ns !== st[2]) { st[2] = ns; n++; }
     }
-    clipOpDone('SCALE Q', 1); showToast('SCALE Q', n + ' NOTES', 1);
+    clipOpDone('SCALE Q', 1); showToast('SCALE Q ' + ENUMS.scale[Math.round(master[MI.scale]) % NSC].toUpperCase(), n ? n + ' NOTES MOVED' : 'ALL NOTES FIT', n ? 1 : 0.5);
 }
 function opHalf() { const c = ed[sel], L = ln(), n = LL(); if (n < 2) return; snap(c, L); if (llen[L]) { llen[L] = n >> 1; enqueue('llen' + L, 'llen', L + ',' + llen[L]); } else lens[sel] = n >> 1; clipOpDone('HALF /2'); }
 function opProb(mode) {                                   /* probability of all notes of the clip: 0 random, 1 curve (on-beats sure, off-beats lower), 2 everything 100% */
@@ -2213,7 +2217,7 @@ function setKind(t, k) {                                  /* every track is a sy
     if (t === sel) syncSel();
     showToast('TRACK ' + p2(t + 1), k ? 'DRUM' : 'SYNTH', k); markEdited();
 }
-function notePadSemi(d) { if (d >= 32) return d - 44; return 12 * ((d / 7) | 0) + SCALE7[Math.round(master[2]) % 3][d % 7] - 12; }
+function notePadSemi(d) { if (d >= 32) return d - 44; return 12 * ((d / 7) | 0) + SCALE7[Math.round(master[2]) % NSC][d % 7] - 12; }
 
 function copyTrack(src, dst) {                              /* (unused helper, synth tracks only) */
     pads[dst] = pads[src].slice(); qPad(dst);
