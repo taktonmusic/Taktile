@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.140.0 (18 October 2026)
+- Recording into an empty clip: notes in bar 2, 3 ... are no longer lost when the sequencer was already running before you pressed Rec (the clip now grows from the bar where your take began, and every note keeps its real position)
+
 ## 5.139.0 (18 October 2026)
 - Tape tiles (Tape, Hiss, Wow) as an extra block at the end of the FX BUS 2 page, so every track reaches them
 

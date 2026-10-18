@@ -2265,7 +2265,6 @@ function recStopLen() {                                   /* Rec pressed the sec
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
         const el = Math.max(0.01, gpos - growG0[t]), n = clamp(Math.round(el / 16) * 16, 16, MAXSTEP);      /* like the Move: stopped in the first half of a bar, that bar is not part of the clip; in the second half, it is */
-        if (n < lens[t]) { const c = ed[t]; for (const l of lanesOf(t)) { const a = steps[c][l]; let ch = false; for (let i = n; i < a.length; i++) if (a[i][0]) { a[i] = [0, 100, 0, 0]; ch = true; } if (ch) qSeq(c, l); } }      /* what was played in that bar is dropped, not folded into the loop */
         growSet(t, n);
         showToast('REC LENGTH', n + ' STEPS', n / MAXSTEP);
     }
@@ -2280,25 +2279,25 @@ function growTick() {
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
         const len = lens[t]; if (len >= MAXSTEP) continue;
-        if (gs - 1 >= 0 && (gs - 1) % len === len - 1 && gs - 1 < len * 2) growLoop(t, len + 16);
+        const rel = gs - 1 - growG0[t];      /* counted from the bar line where this take began, so it also works when the sequencer was already running */
+        if (rel >= 0 && rel % len === len - 1 && rel < len * 2) growLoop(t, len + 16);
     }
 }
-function reMap(t, oldLen, n) {                           /* a clip that changes length keeps every note on the same beat of the shared grid: notes recorded from a bar line that is not a multiple of the new length move along, a shorter clip folds back */
-    const c = ed[t], sh = ((growG0[t] % n) + n) % n;
+function reMap(t, oldLen, n) {                           /* a clip that changes length keeps every note on the same beat of the shared grid: a note is stored as its position in the take (counted from the bar line where the take began) and put at that position mod the new length; what lies beyond a shorter new length is dropped */
+    const c = ed[t], g0 = growG0[t];
     for (const l of lanesOf(t)) {
         const a = steps[c][l], tmp = a.slice(0, Math.max(oldLen, n)).map(x => x.slice());
+        const out = []; for (let i = 0; i < n; i++) out.push([0, 100, 0, 0]);
         let ch = false;
-        if (n > oldLen) {
-            if (!sh) continue;
-            const out = []; for (let i = 0; i < n; i++) out.push([0, 100, 0, 0]);
-            for (let i = oldLen; i < n; i++) if (tmp[i][0]) out[i] = tmp[i];
-            for (let i = 0; i < oldLen; i++) out[(i + sh) % n] = tmp[i];
-            for (let i = 0; i < n; i++) a[i] = out[i];
-            ch = true;
-        } else if (n < oldLen) {
-            for (let i = n; i < oldLen; i++) if (tmp[i][0]) { if (!a[i % n][0]) a[i % n] = tmp[i]; a[i] = [0, 100, 0, 0]; ch = true; }
+        for (let i = 0; i < Math.max(oldLen, n); i++) {
+            if (!tmp[i] || !tmp[i][0]) continue;
+            const r = i < oldLen ? ((((i - g0) % oldLen) + oldLen) % oldLen) : i;
+            if (r >= n) { ch = true; continue; }
+            const j = (((g0 + r) % n) + n) % n;
+            out[j] = tmp[i]; if (j !== i) ch = true;
         }
-        if (ch) qSeq(c, l);
+        if (n < oldLen) for (let i = n; i < oldLen; i++) if (a[i] && a[i][0]) ch = true;
+        if (ch) { for (let i = 0; i < Math.max(oldLen, n); i++) a[i] = i < n ? out[i] : [0, 100, 0, 0]; qSeq(c, l); }
     }
 }
 function growSet(t, n) {                                   /* a clip recorded from empty changes length: the track AND every drum sound that follows it change together, so all sounds stay in sync */
