@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.157.0 (18 October 2026)
+- Granulator-Anzeige neu: Puffer-Ansicht mit Wellenform der letzten Sekunden, Lesebereich (Spread) als Klammer, jeder Grain als Strich mit Laengenbalken
+
 ## 5.156.0 (18 October 2026)
 - Browser redesign: breadcrumb path in the header (DRUMS>KITS>TECHNO) with PRV/OFF top right, 4-row list with scroll bar, bottom line with position and what the click does
 - Category tabs: boxes above the list show the categories next to the open one; Shift+jog switches to the next/previous category without going back

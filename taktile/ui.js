@@ -4477,30 +4477,27 @@ function grainPoll() {                                     /* live picture of th
 }
 const GWIN = [ph => Math.min(1, Math.min(ph, 1 - ph) * 12), ph => 2 * Math.min(ph, 1 - ph), ph => Math.sin(Math.PI * ph), ph => Math.exp(-20 * (ph - 0.5) * (ph - 0.5)), ph => { const s = Math.sin(Math.PI * ph); return s * s; }];
 function gWin(ph, v) { const m = clamp(v, 0, 1) * 4, i = Math.min(3, Math.floor(m)), f = m - i; return GWIN[i](ph) * (1 - f) + GWIN[i + 1](ph) * f; }
-function drawGrains() {                                    /* left = a while ago, right = now: the sound's level as a soft mirrored wave, every grain drawn with the real WINDOW shape (width = size, height = pitch) */
-    const TN = tabStrip && TAB_NEW, y0 = TN ? 52 : 49, h = TN ? 12 : 15, yc = y0 + (TN ? 6 : 7), on = pads[ln()][PI.grn] >= 0.01, frz = pads[ln()][PI.gfz] > 0.5, wv = pads[ln()][PI.gtn];
+function drawGrains() {                                    /* BUFFER VIEW: the sound's last seconds as a mirrored wave (left = old, right = now), the grains' reading area (SPREAD) as a bracket, every grain as a tick where it reads, with a bar for its length (backwards = bar to the left) */
+    const TN = tabStrip && TAB_NEW, y0 = TN ? 52 : 49, h = TN ? 12 : 15, on = pads[ln()][PI.grn] >= 0.01, frz = pads[ln()][PI.gfz] > 0.5, sp = clamp(pads[ln()][PI.gsp], 0, 1);
     draw_rect(0, y0, 128, h, 1);
     if (!on) { txtS(28, y0 + 5, 'GRAIN OFF  TURN KNOB 1', 1); return; }
-    if (frz) { txtS(3, y0 + 2, 'FRZ', 1); for (let x = 2; x < 126; x += 4) set_pixel(x, yc, 1); }
-    for (let k = 0; k < 32 && k < grEnv.length; k++) {                       /* history: thin mirrored bars, rounded to a wave */
-        const a = parseInt(grEnv[k], 16) / 15 || 0, hh = Math.round(a * 5), x = 3 + Math.round(k * 3.75);
+    const wz = h - 6, yc = y0 + 1 + (wz >> 1), mh = (wz >> 1) - (wz % 2 ? 0 : 1), xl = 2, xr = 124, W = xr - xl;      /* wave zone, centre line, half height */
+    const lev = k => (k >= 0 && k < 32 && k < grEnv.length) ? (parseInt(grEnv[k], 16) / 15 || 0) : 0;
+    for (let x = xl; x <= xr; x++) {                                          /* the wave: the 32 history levels, smoothly joined */
+        const f = (x - xl) * 31 / W, k = Math.floor(f), a = lev(k) * (1 - (f - k)) + lev(Math.min(31, k + 1)) * (f - k), hh = Math.round(Math.sqrt(a) * mh);
         if (hh > 0) fill_rect(x, yc - hh, 1, hh * 2 + 1, 1); else set_pixel(x, yc, 1);
     }
-    const big = frz ? 0 : 1;
+    const xw = clamp(Math.round(xr - Math.max(0.04, sp) * W), xl, xr - 3), y1 = y0 + 1, y2 = y0 + wz;      /* the reading area: a bracket around the newest part (width = Spread) */
+    fill_rect(xw, y1, 1, y2 - y1 + 1, 1); fill_rect(xr + 1, y1, 1, y2 - y1 + 1, 1);
+    for (let x = xw; x <= xr + 1; x += 2) { set_pixel(x, y1, 1); set_pixel(x, y2, 1); }
+    if (frz) { txtS(3, y0 + h - 6, 'FRZ', 1); for (let x = xl; x <= xr; x += 4) set_pixel(x, yc, 1); }
+    const ty = y0 + h - 2;                                                    /* tick row */
     for (let k = 0; k < grains.length; k++) {
-        const g = grains[k], rv = g[2] < 0, w = clamp(Math.round(6 + g[1] * 0.45), 6, 40), x0 = clamp(Math.round(124 - g[0] * 1.15), 2, 124 - w), base = clamp(y0 + h - 3 - Math.round((Math.abs(g[2]) - 4) * 0.9), y0 + 7, y0 + h - 3), ah = 6;
-        let py = -1;
-        for (let i = 0; i < w; i++) {                                         /* the window shape as an outline arch (backwards grains lean the other way) */
-            const ph = (rv ? w - 1 - i : i) / (w - 1), yy = base - Math.round(gWin(ph, wv) * ah);
-            set_pixel(x0 + i, yy, 1);
-            if (py >= 0 && Math.abs(yy - py) > 1) { const lo = Math.min(yy, py), hi = Math.max(yy, py); for (let q = lo; q <= hi; q++) set_pixel(x0 + i, q, 1); }
-            py = yy;
-        }
-        fill_rect(x0, base, w, 1, 1);                                          /* baseline under the arch */
-        if (g[3] < 35) fill_rect(x0, base - ah, 1, ah + 1, 1);                 /* fresh grain: start tick */
+        const g = grains[k], x = clamp(Math.round(xr - g[0] * W / 99), xl, xr), rv = g[2] < 0, tl = g[3] < 35 ? 4 : 2, bl = clamp(Math.round(1 + g[1] * 0.12), 1, 14);
+        fill_rect(x, ty - tl + 1, 1, tl, 1);                                  /* tick: tall = a fresh grain, short = an old one */
+        const bx = rv ? Math.max(xl, x - bl) : x, bw = rv ? x - bx + 1 : Math.min(xr + 1 - x, bl) + 1;
+        fill_rect(bx, ty, Math.max(1, bw), 1, 1);                              /* length of the grain */
     }
-    fill_rect(126, y0 + 1, 1, h - 2, 1);
-    if (big) fill_rect(125, yc, 3, 1, 1);
 }
 const BUS_TITLE = { 46: ['FX BUS', 'ALL TRACKS'], 39: ['FX BUS 2', 'ALL TRACKS'] };      /* shared by every track: the header must not say TRACK 03 */
 function drawParams() {
