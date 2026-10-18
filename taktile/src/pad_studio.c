@@ -412,8 +412,10 @@ static uint32_t ch_rng(uint32_t *s) { *s ^= *s << 13; *s ^= *s >> 17; *s ^= *s <
 static float ch_f(uint32_t *s) { return (float)(ch_rng(s) & 0xFFFFFF) / 16777216.0f; }
 static float ch_r(uint32_t *s, float lo, float hi) { return lo + (hi - lo) * ch_f(s); }
 static float ch_p(uint32_t *s, float p, float lo, float hi) { return ch_f(s) < p ? ch_r(s, lo, hi) : 0.0f; }   /* with probability p a value in lo..hi, else 0 */
-/* attack time: knob at 0 = a true hard attack (a few samples, no click); from ~0.12 up the preset own attack is fully there, above that it grows further */
-static inline float att_time(float a, float tatt, float base, float k2) {
+/* ONE attack for every engine: the Attack knob alone sets the time (0 = instant, 1 = 2 s), the same on a plucked FM bell and on a pad. Only drum sounds keep the preset's own attack. */
+static inline float att_unified(float a) { return 0.0005f + a * a * 2.0f; }
+static inline float att_time(int p, float a, float tatt, float base, float k2) {
+    if (p < NTRK) return att_unified(a);
     float g = a * 8.0f; if (g > 1.0f) g = 1.0f; float g2 = (a - 0.10f) * 10.0f; if (g2 < 0.0f) g2 = 0.0f; if (g2 > 1.0f) g2 = 1.0f;
     return base * (0.3f + 0.7f * g) + tatt * g + a * a * k2 * g2;
 }
@@ -692,7 +694,7 @@ typedef struct {
     double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode; float srate, sgain, satk_inc, srel_c, sgate_env;                   /* sample playback */
     float nze, trp;                  /* noise follower, tremolo / auto-pan phase */
     float xfd;       /* >0: fast fade-out of a cut-off note (1 -> 0), no click */
-    float aenv, ac;  /* generic attack ramp for struck / plucked sounds on synth tracks (Attack knob above its default) */
+    float aenv, ac, hd;  /* generic attack ramp for struck / plucked sounds on synth tracks (Attack knob above its default) */
 } vc_t;
 
 typedef struct {
@@ -1466,10 +1468,10 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
     memset(v, 0, sizeof(*v)); v->fenv = 1.0f;
     v->fkoff = s->pp[p][PP_FKEY] * 0.16f * log2f(fm > 0.05f ? fm : 0.05f);
     v->active = 1; v->gate = 1; v->type = ty; s->act_dirty = 1;
-    v->aenv = 1.0f; v->ac = 0.0f;
-    if (p < NTRK && !TY[ty].sus && BASE_T[ty] != T_SAMPLE) {       /* Attack on every synth sound: sustained engines have their own, the struck ones (FM init, plucks, bells ...) get a fade-in; at the default (0.12) and below nothing changes */
-        const float ak = (s->pp[p][PP_ATT] - 0.12f) / 0.88f;
-        if (ak > 0.004f) { v->aenv = 0.0f; v->ac = s->inv_sr / (0.0015f + ak * ak * 1.5f); }
+    v->aenv = 1.0f; v->ac = 0.0f; v->hd = 1.0f;
+    if (p < NTRK && !TY[ty].sus && BASE_T[ty] != T_SAMPLE) {       /* Attack on every struck / plucked synth sound (FM, bells, ...): the same time as on the sustained ones */
+        const float ak = s->pp[p][PP_ATT];
+        if (ak > 0.004f) { v->aenv = 0.0f; v->ac = s->inv_sr / att_unified(ak); }
     }
     v->vel = 0.25f + 0.75f * vel;
     { int w0 = (int)(s->pp[p][PP_WAVE] + 0.5f); v->sw = (w0 >= 1 && w0 <= 15) ? w0 : CHR[ty].wv; }   /* 0 = the sound's own oscillator */
@@ -1480,7 +1482,7 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         v->sw = (w >= 1 && w <= 15) ? w : (CHR[ty].wv ? CHR[ty].wv : y->wave);
         v->sdet = y->det + s->pp[p][PP_DET] * 0.04f;
         v->ssub = clampf(y->sub + s->pp[p][PP_SUB], 0.0f, 1.0f);
-        v->satt = att_time(s->pp[p][PP_ATT], T->att, 0.0f, 1.5f);
+        v->satt = att_time(p, s->pp[p][PP_ATT], T->att, 0.0f, 1.5f);
         for (int k = 0; k < 6; k++) v->ph6[k] = 0.137f * (float)(k + 1);
     }
     if (ty == T_SAMPLE) {
@@ -1726,7 +1728,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         }
         if (q[6] > 0.0f) { v->nx[3] += f * 0.5f * dt; if (v->nx[3] >= 1.0f) v->nx[3] -= 1.0f; out += q[6] * sin2pi(v->nx[3]); }
         if (T->sus) {
-            const float at = att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
+            const float at = att_time(p, s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         v->env2 *= v->c2;
@@ -1753,7 +1755,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             x += *bp * W[k];
         }
         x *= 0.9f;
-        { const float at = att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
+        { const float at = att_time(p, s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
           if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
         x *= v->env;
@@ -1785,7 +1787,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             v->nx[7] = o; v->nx[6] = hold > 1 ? (float)(hold - 1) : 0.0f;
         }
         if (T->sus) {
-            const float at = att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
+            const float at = att_time(p, s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = o * v->env * 0.6f;
@@ -1857,7 +1859,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         float o = a + q[6] * b + sub * (v->nx[9] < 0.5f ? 0.6f : -0.6f);
         o *= 1.0f / (1.0f + q[6] + sub * 0.5f);
         if (q[7] > 0.0f) o = fast_tanh(o * (1.0f + q[7] * 4.0f)) * 0.8f;
-        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
+        { const float at = att_time(p, pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -1881,7 +1883,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             o = o * 0.5f + 0.25f * ((1.0f - fr) * wt_at(v->nx[0], ta) + fr * wt_at(v->nx[0], tb) + (1.0f - fr) * wt_at(v->nx[1], ta) + fr * wt_at(v->nx[1], tb));
         }
         if (q[6] > 0.0f) { v->nx[2] += f * 0.5f * dt; WRAP(v->nx[2]); o += q[6] * sin2pi(v->nx[2]); }
-        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
+        { const float at = att_time(p, pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -1910,7 +1912,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         default: { const float s3 = sin2pi(v->ph3 + (s4 * ix * ie * vs) * 0.15915494f), s2 = sin2pi(v->ph2 + (s4 * ix * ie * vs * 0.6f) * 0.15915494f);
                    out = 0.5f * sin2pi(v->ph + (s2 * ix * ie * vs) * 0.15915494f) + 0.35f * s3; break; }  /* two stacks side by side */
         }
-        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
+        { const float at = att_time(p, pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2 > 0.0f ? v->c2 : 0.0f;
@@ -1942,7 +1944,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         }
         o *= v->nx[44];
         if (q[4] > 0.0f) { v->nx[1] += q[5] * dt; WRAP(v->nx[1]); o *= 1.0f - q[4] * 0.5f * (1.0f - sin2pi(v->nx[1])); }
-        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
+        { const float at = att_time(p, pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -1976,7 +1978,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             v->nx[i] += v->nx[16 + i]; if (v->nx[i] >= 1.0f) v->nx[i] -= 1.0f;
             o += v->nx[28 + i] * fsin01(v->nx[i]);
         }
-        { const float at = att_time(pq[PP_ATT], T->att, 0.004f, 3.0f);
+        { const float at = att_time(p, pq[PP_ATT], T->att, 0.004f, 3.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -2005,7 +2007,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         v->nx[9] += f * 0.5f * dt; WRAP(v->nx[9]);
         y += q[4] * sin2pi(v->nx[9]);
         v->nx[10] += 0.002f * (y - v->nx[10]); y -= v->nx[10];            /* DC blocker (the bias leaves an offset) */
-        { const float at = att_time(pq[PP_ATT], T->att, 0.0008f, 2.0f);
+        { const float at = att_time(p, pq[PP_ATT], T->att, 0.0008f, 2.0f);
           if (T->sus) { if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
           else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; } }
         v->env2 *= v->c2;
@@ -2110,7 +2112,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         const float xx = TWO_PI * fc * dt, a = xx / (1.0f + xx);
         v->z1 += a * (osc - v->z1); v->z2 += a * (v->z1 - v->z2);
         if (T->sus) {
-            const float at = att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
+            const float at = att_time(p, s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f);
             if (v->gate) v->env += (1.0f - v->env) * (dt / at); else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         } else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         v->env2 *= v->c2;
@@ -2264,7 +2266,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         break; }
     case T_SUBBASS: {
         v->ph += v->f0 * dt; WRAP(v->ph);
-        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
+        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(p, s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
         else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = fast_tanh(bsin(v) * 1.4f) * v->env * 0.8f;
         break; }
@@ -2298,7 +2300,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float saw = v->sw ? wf(v->ph, v->sw) + wf(v->ph2, v->sw) + wf(v->ph3, v->sw) : (v->ph + v->ph2 + v->ph3) * 2.0f - 3.0f;
         v->z1 += s->a_reese * (saw - v->z1);
         v->z2 += s->a_reese * (v->z1 - v->z2);
-        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
+        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(p, s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
         else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = v->z2 * v->env * 0.9f;
         break; }
@@ -2334,7 +2336,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float saw = v->sw ? wf(v->ph, v->sw) + wf(v->ph2, v->sw) + wf(v->ph3, v->sw) : (v->ph + v->ph2 + v->ph3) * 2.0f - 3.0f;
         v->z1 += s->a_pad * (saw - v->z1);
         v->z2 += s->a_pad * (v->z1 - v->z2);
-        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
+        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(p, s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
         else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = v->z2 * v->env * 0.7f;
         break; }
@@ -2344,7 +2346,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         float osc = v->sw ? wf(v->ph, v->sw) * 0.6f + wf(v->ph2, v->sw) * 0.4f : (2.0f * v->ph - 1.0f) * 0.6f + (v->ph2 < 0.5f ? 0.4f : -0.4f);
         v->z1 += s->a_lead * (osc - v->z1);
         v->z2 += s->a_lead * (v->z1 - v->z2);
-        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
+        if (v->gate) v->env += (1.0f - v->env) * (dt / att_time(p, s->pp[p][PP_ATT], T->att, 0.0005f, 2.0f));
         else { v->env *= v->c1; if (v->env < 1e-3f) v->active = 0; }
         x = v->z2 * v->env;
         break; }
@@ -2491,6 +2493,10 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         break; }
     case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: x = nx_render(s, v, p); break;
     default: v->active = 0; break;
+    }
+    if (p < NTRK && v->gate && TY[v->type].sus) {                    /* Decay on sustained sounds too: below 0.2 a held note dies away (0 = a click), like on the struck ones */
+        const float dv = s->pp[p][PP_DECAY];
+        if (dv < 0.2f) { const float td = 0.008f * powf(600.0f, dv * 5.0f); v->hd *= expf(-dt / td); x *= v->hd; }
     }
     if (v->aenv < 1.0f) { v->aenv += (1.0f - v->aenv) * v->ac * 3.0f; if (v->aenv > 0.995f) v->aenv = 1.0f; x *= v->aenv; }
     v->t += dt;

@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.124.0 (18 October 2026)
+- Attack: EIN gemeinsamer Mechanismus für alle Engines – der Knopf bestimmt allein die Zeit (0 = sofort, 1 = 2 s), bei FM, Pads, Strings, Plucks, Glocken usw. gleich; beim Wählen eines Sounds setzt sich der Knopf auf den Attack, mit dem das Preset gebaut wurde (Pad bleibt weich, FM sofort); alte Projekte werden entsprechend umgerechnet
+- Decay: auch bei gehaltenen Sounds (Pads, Strings, Lead): unter 0,2 stirbt der gehaltene Ton ab, bei 0 nur noch ein Klick – wie bei FM
+
 ## 5.123.0 (18 October 2026)
 - Attack-Knopf wirkt jetzt auf allen Synth-Sounds: auch bei 2OP-FM (FmInit), Zupf-/Schlag-Sounds, Glocken usw. (vorher nur bei Pads/gehaltenen Sounds); bei 0,12 (Standard) und darunter bleibt alles wie bisher, darüber wird der Einsatz langsamer bis ca. 1,5 s
 

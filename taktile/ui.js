@@ -64,7 +64,10 @@ const ENUMS = {
 };
 ENUMS.m2fx = ENUMS.mfx; ENUMS.x2fx = ENUMS.xfx; ENUMS.dly_mode = ENUMS.dmode; ENUMS.rvb_mode = ENUMS.rmode;
 const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn'];
-const PDEF = { 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 22: 0.12, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
+const PDEF = { 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
+const ATT_DEF = {25:0.225,58:0.084,64:0.285,65:0.335,78:0.375,80:0.082,81:0.185,85:0.098,91:0.391,92:0.689,94:0.094,95:0.084,163:0.116,176:0.140,177:0.285,193:0.206,202:0.090,203:0.107,205:0.105,215:0.297,216:0.192,217:0.648,218:0.428,223:0.082,226:0.090,236:0.478,237:0.253,238:0.305,239:0.439,322:0.133,323:0.093,324:0.178,333:0.411,334:0.485,335:0.860,336:0.392,339:0.122,348:0.094,349:0.090,350:0.096,352:0.460,541:0.082,542:0.102,543:0.079,544:0.156,545:0.147,565:0.114,566:0.187,567:0.209,568:0.262,569:0.171,570:0.208,571:0.335,606:0.077,607:0.110,608:0.085,609:0.138,610:0.130,611:0.109,612:0.139,613:0.167,614:0.148,615:0.208,616:0.077,617:0.106,619:0.094,620:0.108,622:0.097,623:0.100,626:0.136,627:0.177,628:0.179,629:0.200,630:0.174,631:0.194,644:0.212,645:0.191,646:0.398,647:0.428,648:0.374,649:0.429,650:0.511,651:0.544,652:0.531,653:0.573,654:0.549,655:0.699,656:0.555,657:0.819,669:0.087,670:0.081,671:0.098,672:0.079,675:0.077,676:0.098,692:0.197,693:0.326,694:0.347,695:0.343,696:0.586,697:0.575,698:0.498,699:0.517,702:0.103,703:0.111,704:0.125,705:0.170,706:0.155,707:0.130,709:0.116,710:0.094,711:0.164,712:0.204,713:0.144,714:0.240,715:0.257,732:0.079,733:0.155,734:0.297,735:0.273,736:0.337,737:0.262,738:0.354,739:0.492,776:0.096,777:0.118,778:0.099,779:0.132,782:0.096,783:0.097,784:0.102,785:0.097,786:0.133,787:0.162,790:0.076,791:0.084,792:0.087,793:0.107,794:0.090,795:0.084,801:0.108,802:0.108,804:0.124,805:0.121,806:0.180,807:0.208,808:0.224,809:0.324,810:0.361,811:0.375,816:0.082,817:0.077,820:0.079,824:0.099,825:0.082,880:0.097,881:0.095,883:0.083,888:0.238,889:0.407,890:0.330,891:0.521,892:0.687,893:0.797,894:0.696,895:0.923,896:0.200,897:0.381,898:0.466,899:0.476,900:0.557,901:0.541,902:0.461,903:0.558,904:0.488,905:0.670,906:0.805,907:0.933,908:0.949,909:0.957,910:0.609,911:1.000,912:0.312,913:0.204,914:0.294,915:0.371,916:0.492,917:0.424,918:0.466,919:0.388,923:0.082,928:0.080,930:0.088,931:0.087,935:0.099,992:0.348,993:0.373,994:0.722,995:0.601,996:0.811,997:0.857,998:0.940,999:0.741,1000:0.246,1001:0.418,1002:0.471,1003:0.491,1004:0.303,1005:0.354,1006:0.445,1007:0.596,1009:0.076,1010:0.077,1011:0.098,1013:0.085,1134:0.172,1137:0.547,1138:0.418,1144:0.418,1145:0.418,1146:0.387,1147:0.474,1148:0.244,1149:0.244,1150:0.121,1151:0.099,1154:0.353,1155:0.671,1156:0.387,1157:0.099,1195:0.632,1196:0.707,1197:0.547,1198:0.500,1199:0.447,1200:0.774,1201:0.387,1202:0.591,1263:0.172,1264:0.447,1273:0.591,1275:0.199,1278:0.707,1283:0.172,1286:0.500,1296:0.547,1297:0.223,1298:0.099,1300:0.273,1302:0.223,1303:0.387,1304:0.500,1305:0.547,1306:0.353,1307:0.671,1308:0.500,1309:0.774,1310:0.632,1311:0.447,1312:1.000,1313:0.387,1314:1.000,1331:0.500,1335:0.866};      /* the attack each sustained preset was designed with, as a knob value: choosing a sound sets the Attack knob to it, so a pad still opens softly, and every engine then answers the knob the same way */
+function attDefOf(t) { return ATT_DEF[Math.round(t)] || 0; }
+function typeAtt(L, nt) { if (L >= NTRK) return; pads[L][PI.att] = attDefOf(nt); if (liveOk(laneTrk(L))) enqueue('p' + L + 'att', 'p' + p2(L + 1) + '_att', pads[L][PI.att].toFixed(3)); }
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
 const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low'];
 const PI = {}; PK.forEach((k, i) => PI[k] = i);
@@ -139,7 +142,7 @@ function browseSound(dl) {                                 /* jog: presets insid
     }
     brw = { c: c, l: l, i: Math.max(0, l.indexOf(nt)) }; brwTicks = 55; needsRedraw = true;
     if (nt === cur) return;
-    pads[L][0] = nt; if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); storeCs(L);
+    pads[L][0] = nt; if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); typeAtt(L, nt); storeCs(L);
     markEdited(); needsRedraw = true;
 }
 function jogFirst(dl) {
@@ -389,15 +392,15 @@ function saveState() {
         for (let p = 0; p < NPAT; p++) { const row = []; for (let l = 0; l < NLANE; l++) row.push(laneHas(p, l) ? encTrack(p, l) : ''); seqHex.push(row); }
         const keep = {}; for (let t = 0; t < NTRK; t++) { keep[t] = 1; if (slot[t] >= 0) for (let k = 0; k < 16; k++) keep[NTRK + slot[t] * 16 + k] = 1; }
         const cs = csnd.map(row => row.map((r, l) => keep[l] ? r : null));
-        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 1, mg: 1, qg: [qGrid, qStr], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
+        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, mg: 1, qg: [qGrid, qStr], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
         dirty = false; saveFlash = 30; needsRedraw = true;
     } catch (e) { /* ignore */ }
 }
 let saveFlash = 0;
 let freshState = false;
 const ENG2_KEYS = ['snz', 'fatk', 'sfld', 'schp', 'trem', 'trat', 'apan', 'vflt'];
-let attMig = false;      /* projects from before 5.120: attack 0 used to be silently soft on pad / lead sounds, now 0 = a hard attack, so old sounds get the former soft default once */
-function neutEng2(a, l) { if (l >= NTRK) { a[PI.dly] = 0; a[PI.rvb] = 0; } for (const k of ENG2_KEYS) if (PI[k] !== undefined) a[PI[k]] = defOf(PI[k]); if (attMig && a[PI.att] === 0) a[PI.att] = 0.12; return a; }      /* the ENGINE 2 page (noise, fold, chop, tremolo, auto-pan ...) is gone: old projects load with those knobs at their neutral values */
+let attMig = false;      /* projects from before 5.124: the Attack knob now means the same time on every engine, so a sound that sat at its default gets its preset's own attack as a knob value (a pad stays soft, FM stays instant) */
+function neutEng2(a, l) { if (l >= NTRK) { a[PI.dly] = 0; a[PI.rvb] = 0; } for (const k of ENG2_KEYS) if (PI[k] !== undefined) a[PI[k]] = defOf(PI[k]); if (attMig && l < NTRK && a[PI.att] <= 0.13) a[PI.att] = attDefOf(a[0]); return a; }      /* the ENGINE 2 page (noise, fold, chop, tremolo, auto-pan ...) is gone: old projects load with those knobs at their neutral values */
 function loadState() {
     miscLast = null; pads = defaultPads(); steps = newSteps();
     try {
@@ -407,7 +410,7 @@ function loadState() {
         if (!txt) { freshState = true; return; }
         const o = JSON.parse(txt);
         if (!o || o.v !== 2) { freshState = true; return; }
-        attMig = !(o.av >= 1);
+        attMig = !(o.av >= 2);
         if (Array.isArray(o.pads) && (o.pads.length === NTRK || o.pads.length === NLANE)) {
             const loaded = o.pads.map((r, li) => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); return neutEng2(a, li); });
             for (let l = 0; l < loaded.length; l++) pads[l] = loaded[l];
@@ -3452,7 +3455,7 @@ function fbDive(t) {                                       /* a drum pad opens t
 }
 function fbSetType(nt) {
     const L = ln(); if (Math.round(pads[L][0]) === nt) return;
-    pads[L][0] = nt; if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); storeCs(L); markEdited();
+    pads[L][0] = nt; if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); typeAtt(L, nt); storeCs(L); markEdited();
 }
 function fbAudition() {
     if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; }
@@ -3478,6 +3481,7 @@ function fbApply() {
 function initSound(L) {                                    /* every sound parameter back to its default (volume, pan and type stay) */
     const d = defaultPads()[L]; if (!d) return;
     for (let i = 0; i < PK.length; i++) if (i !== PI.vol && i !== PI.pan && i !== 0) pads[L][i] = d[i];
+    if (L < NTRK) pads[L][PI.att] = attDefOf(pads[L][0]);
     pads[L][PI.dly] = 0; pads[L][PI.rvb] = 0;                  /* an INIT sound is dry: no delay or reverb send (set them per track / per drum pad on the FX tile) */
     qPad(L);
 }
