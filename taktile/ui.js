@@ -4599,11 +4599,61 @@ function viewItemsFix() {
 
 /* ---- scope page: master output wave (triggered) and 8 band levels, polled from the DSP ---- */
 let scopeStr = '', scopeMode = 0, scopePoll = 0, animT = 0;
+const SCOPE_NAMES = ['WAVE + BANDS', 'WAVE', 'BANDS', 'DANCE', 'STARS', 'RINGS', 'WAVE + 16', 'SPECTRUM', 'STEREO', 'WATERFALL', 'BEAT'];
+let scPk = new Array(16).fill(0), scSm = new Array(16).fill(0), scWf = [], scPh = 0.5, scSt = [];
+function sc16(i) { return scopeStr.length >= 338 ? parseInt(scopeStr.substr(144 + i * 2, 2), 16) / 255 : 0; }
+function scopeExtra() {                                          /* peak caps, smoothed spectrum, waterfall rows, stereo points (only with the long data string) */
+    if (scopeStr.length < 338) return;
+    const row = []; for (let i = 0; i < 16; i++) { const v = sc16(i); row.push(v); scSm[i] = scSm[i] * 0.4 + v * 0.6; scPk[i] = Math.max(v, scPk[i] - 0.025); }
+    if (scopeMode === 9) { scWf.unshift(row); if (scWf.length > 9) scWf.pop(); }
+    scSt = []; for (let i = 0; i < 40; i++) scSt.push([parseInt(scopeStr.substr(176 + i * 4, 2), 16) / 255 * 2 - 1, parseInt(scopeStr.substr(178 + i * 4, 2), 16) / 255 * 2 - 1]);
+    scPh = parseInt(scopeStr.substr(336, 2), 16) / 255;
+}
+function drawScopeNew() {
+    if (scopeStr.length < 338) { txt(4, 28, 'NO LONG DATA', 1); txt(4, 40, 'FROM THE DSP', 1); return; }
+    const m = scopeMode;
+    if (m === 6) {                                                               /* wave on top, 16 bands with peak caps below */
+        const w = []; for (let i = 0; i < 64; i++) w.push((parseInt(scopeStr.substr(i * 2, 2), 16) / 255) * 2 - 1);
+        let pk = 0; for (const v of w) pk = Math.max(pk, Math.abs(v)); const gn = pk > 0.02 ? clamp(0.95 / pk, 1, 8) : 1, cy = 24; let py = cy;
+        for (let i = 0; i < 64; i++) { const y = clamp(Math.round(cy - w[i] * gn * 11), 12, 36), a = Math.min(y, py), c2 = Math.max(y, py); for (let q = a; q <= c2; q++) { set_pixel(i * 2, q, 1); set_pixel(i * 2 + 1, q, 1); } py = y; }
+        for (let x = 0; x < 128; x += 8) set_pixel(x, cy, 1);
+        if (pk > 0.95) txt(104, 13, 'CLIP', 1);
+        fill_rect(0, 40, 128, 1, 1);
+        for (let i = 0; i < 16; i++) { const x = 4 + i * 7, h = Math.round(clamp(scSm[i], 0, 1) * 21); if (h > 0) fill_rect(x, 62 - h, 5, h, 1); const ph = Math.round(clamp(scPk[i], 0, 1) * 21); fill_rect(x, clamp(62 - ph - 2, 42, 62), 5, 1, 1); }
+    } else if (m === 7) {                                                         /* full smooth spectrum with a peak line and frequency marks */
+        const pts = []; for (let x = 0; x < 124; x++) { const f = x * 15 / 123, k = Math.floor(f), fr = f - k, a = scSm[k], b = scSm[Math.min(15, k + 1)]; pts.push(a + (b - a) * fr); }
+        for (let x = 0; x < 124; x++) { const h = Math.round(clamp(pts[x], 0, 1) * 38); if (h > 0) fill_rect(2 + x, 56 - h, 1, h, 1); const f = x * 15 / 123, k = Math.floor(f), ph = Math.round(clamp(scPk[k] * (1 - (f - k)) + scPk[Math.min(15, k + 1)] * (f - k), 0, 1) * 38); set_pixel(2 + x, clamp(56 - ph - 2, 12, 56), 1); }
+        fill_rect(0, 56, 128, 1, 1);
+        for (const [l, x] of [['100', 20], ['1K', 60], ['10K', 108]]) { fill_rect(x, 57, 1, 2, 1); txtS(x - 5, 59, l, 1); }
+        for (const yy of [20, 32, 44]) for (let x = 0; x < 128; x += 6) set_pixel(x, yy, 1);
+    } else if (m === 8) {                                                         /* stereo vector scope: mid up, side sideways; phase meter at the bottom */
+        const cx = 64, cy = 35; fill_rect(cx - 27, cy, 55, 1, 1); fill_rect(cx, cy - 21, 1, 43, 1);
+        for (let k = -1; k <= 1; k += 2) for (let q = 1; q <= 14; q++) { set_pixel(cx + k * q, cy - k * Math.round(q * 0.8), 1); set_pixel(cx + k * q, cy + k * Math.round(q * 0.8), 1); }
+        let pk = 0; for (const [l, r] of scSt) pk = Math.max(pk, Math.abs(l), Math.abs(r)); const gn = pk > 0.02 ? clamp(0.9 / pk, 1, 6) : 1;
+        for (const [l, r] of scSt) { const x = Math.round(cx + (l - r) * gn * 0.707 * 30), y = Math.round(cy - (l + r) * gn * 0.707 * 17); if (x >= 0 && x < 127 && y >= 11 && y < 56) { set_pixel(x, y, 1); set_pixel(x + 1, y, 1); } }
+        txtS(4, 12, 'L', 1); txtS(120, 12, 'R', 1);
+        draw_rect(4, 57, 120, 6, 1); const px = Math.round(4 + clamp(scPh, 0, 1) * 119); if (px >= 64) fill_rect(64, 59, px - 63, 2, 1); else fill_rect(px, 59, 65 - px, 2, 1); fill_rect(64, 57, 1, 6, 1);
+        txtS(7, 50, '-1', 1); txtS(111, 50, '+1', 1); txtS(52, 50, 'PHASE', 1);
+    } else if (m === 9) {                                                         /* waterfall: newest spectrum in front, older rows behind and higher */
+        for (let row = scWf.length - 1; row >= 0; row--) {
+            const base = 58 - row * 4, off = Math.round(row * 3.2), ys = [], r = scWf[row];
+            for (let x = 0; x < 96; x++) { const f = x * 15 / 95, k = Math.floor(f), fr = f - k, v = r[k] + (r[Math.min(15, k + 1)] - r[k]) * fr; ys.push(base - Math.round(clamp(v, 0, 1) * 17)); }
+            for (let x = 0; x < 96; x++) { const X = 6 + x + off; if (X > 127) continue; fill_rect(X, ys[x] + 1, 1, base + 2 - ys[x], 0); }
+            for (let x = 1; x < 96; x++) { const X = 6 + x + off; if (X > 127) continue; const a = Math.min(ys[x - 1], ys[x]), b = Math.max(ys[x - 1], ys[x]); fill_rect(X, a, 1, b - a + 1, 1); }
+        }
+        txtS(6, 59, '100', 1); txtS(52, 59, '1K', 1); txtS(92, 59, '10K', 1);
+    } else {                                                                      /* beat: rings pulse out with the bass, 16 spokes follow the spectrum */
+        const bass = Math.max(sc16(0), sc16(1), sc16(2), sc16(3)) , cx = 64, cy = 37, t = animT;
+        for (let k = 0; k < 3; k++) { const r = ((t * (0.5 + bass * 1.5) + k * 9) % 22) + 3; for (let a = 0; a < 60; a++) { const an = a * 0.1047, x = Math.round(cx + Math.cos(an) * r * 1.5), y = Math.round(cy + Math.sin(an) * r * 0.8); if (x >= 0 && x < 128 && y >= 11 && y < 64) set_pixel(x, y, 1); } }
+        const rr = Math.round(3 + bass * 5); fill_rect(cx - rr, cy - (rr >> 1), rr * 2, rr + 1, 1);
+        for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, h = 2 + Math.round(clamp(scSm[i] * 1.4, 0, 1) * 10), x0 = cx + Math.cos(a) * 36, y0 = cy + Math.sin(a) * 21, x1 = cx + Math.cos(a) * (36 + h * 0.9), y1 = cy + Math.sin(a) * (21 + h * 0.4), n = 6; for (let q = 0; q <= n; q++) { const x = Math.round(x0 + (x1 - x0) * q / n), y = Math.round(y0 + (y1 - y0) * q / n); if (x >= 0 && x < 128 && y >= 11 && y < 64) set_pixel(x, y, 1); } }
+    }
+}
 function scopeTick() {
     if (view !== 42 || menuOpen) return;
     if (scopeMode >= 3) { animT++; if (animT % 2 === 0) needsRedraw = true; }
     if (++scopePoll % 2) return;
-    const r = dspGet('scope'); if (typeof r === 'string' && r.length >= 144 && r !== scopeStr) { scopeStr = r; needsRedraw = true; }
+    const r = dspGet('scope'); if (typeof r === 'string' && r.length >= 144 && r !== scopeStr) { scopeStr = r; needsRedraw = true; scopeExtra(); }
 }
 
 /* ---- MIDI monitor: shows every raw message the module receives (to find out which number a button really sends). Back leaves it. ---- */
@@ -4654,7 +4704,8 @@ function drawScopeAnim() {
     }
 }
 function drawScope() {
-    titleBar('SCOPE', ['WAVE + BANDS', 'WAVE', 'BANDS', 'DANCE', 'STARS', 'RINGS'][scopeMode]);
+    titleBar('SCOPE', SCOPE_NAMES[scopeMode]);
+    if (scopeMode >= 6) { drawScopeNew(); return; }
     if (scopeMode >= 3) { drawScopeAnim(); return; }
     if (scopeStr.length < 144) { txt(4, 28, 'NO SIGNAL DATA', 1); return; }
     const w = [], b = [];
@@ -5216,7 +5267,7 @@ globalThis.onMidiMessageInternal = function (data) {
         return; }
     case CC.JOGCLICK:
         if (d2 > 0 && view === 45 && !menuOpen && !fb && !shiftHeld) { devClick(); return; }
-        if (d2 > 0 && view === 42 && !menuOpen && !shiftHeld) { scopeMode = (scopeMode + 1) % 6; needsRedraw = true; return; }
+        if (d2 > 0 && view === 42 && !menuOpen && !shiftHeld) { scopeMode = (scopeMode + 1) % 11; needsRedraw = true; return; }
         if (d2 > 0 && view === 40 && !menuOpen && !shiftHeld) { if (undoStack.length) histApply(); return; }
         if (d2 > 0 && view === 20 && !menuOpen && !padMenu && !shiftHeld) { mixMode = (mixMode + 1) % 3; needsRedraw = true; showToast('MIX', ['VOLUME', 'DELAY SEND', 'REVERB SEND'][mixMode], mixMode / 2); return; }
         if (d2 > 0 && (view === 0 || view === 1) && !menuOpen && !padMenu && !shiftHeld && askKind < 0 && !fb) { fbOpen(); acc.fill(0); needsRedraw = true; return; }   /* jog click on SEQ/SOUND = preset browser (HOME: Shift + step 3) */

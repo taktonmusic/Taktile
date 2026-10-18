@@ -724,7 +724,8 @@ typedef struct {
     float root_hz;
     int mo_clk, mo_trk, mo_chn, mo_xp, mo_vp, mo_dn; float mclk; struct { int cnt; uint8_t st, d1; } mo_q[64];   /* MIDI out: clock + notes per track */
     int16_t *rec_buf; long rec_n, rec_len, rec_max; int rec_state, rec_bars, rec_src; char rec_last[48]; int rec_slot;   /* resampling */
-    float sc_w[128], sc_lp[8], sc_env[8]; int sc_i, sc_c;            /* master scope ring (decimated) and 8 band levels for the UI scope page */
+    float sc_w[128], sc_lp[8], sc_env[8]; int sc_i, sc_c;
+    float sc_lp2[16], sc_env2[16], sc_sl[64], sc_sr[64], sc_cll, sc_crr, sc_clr; int sc_si;   /* 16-band spectrum, stereo ring and phase correlation for the extra scope pages */            /* master scope ring (decimated) and 8 band levels for the UI scope page */
     float dk_env[NTRK], dk_c[NTRK], meter[NTRK];                 /* sidechain ducking (kick -> other tracks) and level meters */
     float semi[NLANE], dm[NLANE], a_tone[NLANE], dg[NLANE], dnorm[NLANE], gain[NLANE], pl[NLANE], pr[NLANE];
     int   isdrum[NTRK], dtrk[4]; float tg[NTRK];       /* drum tracks: dtrk[slot] = track, tg = track gain */
@@ -3453,10 +3454,13 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
     }
     if (strcmp(key, "midiexp") == 0) { snprintf(buf, (size_t)buf_len, "%s", g_mx_res); return (int)strlen(buf); }
     if (strcmp(key, "scope") == 0) {                 /* 64 wave points (2 hex digits each, triggered on a rising zero crossing) + 8 band levels (2 hex digits each) */
-        char tmp[160]; int n = 0, st = 0, o = s->sc_i;
+        char tmp[420]; int n = 0, st = 0, o = s->sc_i;
         for (int i = 0; i < 60; i++) { float a = s->sc_w[(o + i) & 127], b = s->sc_w[(o + i + 1) & 127]; if (a < 0.0f && b >= 0.0f) { st = i + 1; break; } }
         for (int i = 0; i < 64; i++) { float v = s->sc_w[(o + st + i) & 127]; int q = (int)((v * 0.5f + 0.5f) * 255.0f + 0.5f); if (q < 0) q = 0; if (q > 255) q = 255; n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%02x", q); }
         for (int b = 0; b < 8; b++) { int q = (int)(sqrtf(s->sc_env[b]) * 400.0f); if (q > 255) q = 255; n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%02x", q); }
+        for (int b = 0; b < 16; b++) { int q = (int)(sqrtf(s->sc_env2[b]) * 400.0f); if (q > 255) q = 255; n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%02x", q); }
+        for (int i = 0; i < 40; i++) { int j = (s->sc_si + 24 + i) & 63; int ql = (int)((s->sc_sl[j] * 0.5f + 0.5f) * 255.0f + 0.5f), qr = (int)((s->sc_sr[j] * 0.5f + 0.5f) * 255.0f + 0.5f); if (ql < 0) ql = 0; if (ql > 255) ql = 255; if (qr < 0) qr = 0; if (qr > 255) qr = 255; n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%02x%02x", ql, qr); }
+        { float dn = sqrtf(s->sc_cll * s->sc_crr); float cr = dn > 1e-7f ? s->sc_clr / dn : 1.0f; int q = (int)((cr * 0.5f + 0.5f) * 255.0f + 0.5f); if (q < 0) q = 0; if (q > 255) q = 255; n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%02x", q); }
         if (buf_len <= n) return -1;
         memcpy(buf, tmp, (size_t)n + 1); return n;
     }
@@ -4141,6 +4145,17 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             static const float scf[8] = { 80.f, 160.f, 320.f, 640.f, 1280.f, 2560.f, 5120.f, 10240.f };
             float m = (L + R) * 0.5f, prev = 0.0f;
             if (++s->sc_c >= 24) { s->sc_c = 0; s->sc_w[s->sc_i] = m; s->sc_i = (s->sc_i + 1) & 127; }
+            if (s->sc_c == 0) { s->sc_sl[s->sc_si] = L; s->sc_sr[s->sc_si] = R; s->sc_si = (s->sc_si + 1) & 63; }
+            s->sc_cll += (L * L - s->sc_cll) * 0.0003f; s->sc_crr += (R * R - s->sc_crr) * 0.0003f; s->sc_clr += (L * R - s->sc_clr) * 0.0003f;
+            {   float pv = 0.0f;
+                for (int b = 0; b < 16; b++) {
+                    static float sc16[16]; if (sc16[0] == 0.0f) for (int q = 0; q < 16; q++) sc16[q] = 60.0f * powf(200.0f, (float)q / 15.0f);
+                    float a2 = 1.0f - expf(-6.2831853f * sc16[b] * s->inv_sr);
+                    s->sc_lp2[b] += a2 * (m - s->sc_lp2[b]);
+                    float bd = s->sc_lp2[b] - pv; pv = s->sc_lp2[b];
+                    s->sc_env2[b] += (fabsf(bd) - s->sc_env2[b]) * (s->sc_env2[b] < fabsf(bd) ? 0.01f : 0.0006f);
+                }
+            }
             for (int b = 0; b < 8; b++) {
                 float a = 1.0f - expf(-6.2831853f * scf[b] * s->inv_sr);
                 s->sc_lp[b] += a * (m - s->sc_lp[b]);

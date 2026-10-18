@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.158.0 (18 October 2026)
+- Scope: alle Ansichten waehlbar (Jog-Klick): 6 WAVE+16 Baender mit Peak-Kappen, 7 SPECTRUM, 8 STEREO mit Phasenanzeige, 9 WATERFALL, 10 BEAT; DSP liefert 16 Baender, Stereo-Punkte, Phase
+
 ## 5.157.0 (18 October 2026)
 - Granulator-Anzeige neu: Puffer-Ansicht mit Wellenform der letzten Sekunden, Lesebereich (Spread) als Klammer, jeder Grain als Strich mit Laengenbalken
 
