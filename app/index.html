@@ -100,7 +100,7 @@ canvas { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; image-r
 <style>
 /* Taktile app: phone behaviour and the one-screen layouts (portrait and landscape), sized for an iPhone 13 and anything near it.
  * --edge is the free margin around the whole layout (Rand +/- in the menu), so the system's close symbol and bars never cover controls. */
-:root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px); --edge: 10px; --etop: 12px; }
+:root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px); --edge: 14px; --etop: 18px; --notch: 50px; }
 html { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; touch-action: manipulation; }
 button, .pad, .stp, .key, .knob { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
 .note, .note * { -webkit-user-select: text; user-select: text; }
@@ -123,7 +123,7 @@ button, .pad, .stp, .key, .knob { -webkit-touch-callout: none; -webkit-user-sele
   body::before { display: none; }
   header, .note, .group h2, .knob .cap, .dup { display: none; }
   .left, .right, .group { display: contents; }
-  .wrap { position: fixed; inset: 0; max-width: none; display: block; padding: calc(var(--sat) + var(--edge) + var(--etop)) calc(var(--sar) + var(--edge)) calc(var(--sab) + var(--edge)) calc(var(--sal) + var(--edge)); }
+  .wrap { position: fixed; inset: 0; max-width: none; display: block; padding: calc(max(var(--sat), 20px) + var(--edge) + var(--etop)) calc(var(--sar) + var(--edge)) calc(max(var(--sab), 10px) + var(--edge)) calc(var(--sal) + var(--edge)); }
   .console { height: 100%; box-sizing: border-box; padding: 6px; gap: 6px; border-radius: 10px; display: grid; align-content: stretch; min-height: 0; }
   .screenbox { grid-area: screen; position: static; padding: 0; background: transparent; display: flex; justify-content: center; min-height: 0; }
   .screen { padding: 3px; margin: 0; max-width: none; width: var(--sw, 100%); }
@@ -166,21 +166,22 @@ button, .pad, .stp, .key, .knob { -webkit-touch-callout: none; -webkit-user-sele
 @media (max-width: 600px) and (orientation: portrait) {
   .console { grid-template-columns: 112px minmax(0, 1fr); grid-template-areas: "screen screen" "knobs knobs" "pads pads" "steps steps" "ctl mods" "wheel keys" "wheel keys" "nav nav";
     grid-template-rows: auto auto auto auto minmax(34px, 1fr) minmax(32px, 1fr) minmax(32px, 1fr) minmax(32px, 1fr); }
-  .screen { --sw: min(80%, calc(2 * (100vh - var(--sat) - var(--sab) - 530px - 2 * var(--edge)))); }
+  .screen { --sw: min(80%, calc(2 * (100vh - var(--sat) - var(--sab) - 560px - 2 * var(--edge)))); }
   #keys { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .pad { aspect-ratio: 38 / 50; }
 }
 @supports (height: 1dvh) {
-  @media (max-width: 600px) and (orientation: portrait) { .screen { --sw: min(80%, calc(2 * (100dvh - var(--sat) - var(--sab) - 530px - 2 * var(--edge)))); } }
+  @media (max-width: 600px) and (orientation: portrait) { .screen { --sw: min(80%, calc(2 * (100dvh - var(--sat) - var(--sab) - 560px - 2 * var(--edge)))); } }
 }
 
 /* landscape: small display, big pads from display top to steps bottom, buttons and wheel underneath */
 @media (max-height: 520px) and (orientation: landscape) {
-  :root { --etop: 4px; }
+  :root { --etop: 0px; }
+  .wrap { padding-top: calc(max(var(--sat), 6px) + var(--edge)); padding-left: calc(max(var(--sal), var(--notch)) + var(--edge)); padding-right: calc(max(var(--sar), 24px) + var(--edge)); }
   .console { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) 92px;
     grid-template-areas: "screen pads pads" "knobs pads pads" "steps pads pads" "ctl mods wheel" "nav keys wheel";
     grid-template-rows: auto auto minmax(54px, 1fr) minmax(34px, auto) minmax(34px, auto); }
-  .screen { --sw: min(100%, calc(2 * (100vh - var(--sat) - var(--sab) - 236px - 2 * var(--edge)))); }
+  .screen { --sw: min(100%, calc(2 * (100vh - var(--sat) - var(--sab) - 250px - 2 * var(--edge)))); }
   .pads-zone { height: 100%; }
   #wheel { --wheel: 92px; }
   .pads { height: 100%; grid-template-rows: repeat(4, minmax(0, 1fr)); }
@@ -189,7 +190,7 @@ button, .pad, .stp, .key, .knob { -webkit-touch-callout: none; -webkit-user-sele
   .key { min-height: 28px; }
 }
 @supports (height: 1dvh) {
-  @media (max-height: 520px) and (orientation: landscape) { .screen { --sw: min(100%, calc(2 * (100dvh - var(--sat) - var(--sab) - 236px - 2 * var(--edge)))); } }
+  @media (max-height: 520px) and (orientation: landscape) { .screen { --sw: min(100%, calc(2 * (100dvh - var(--sat) - var(--sab) - 250px - 2 * var(--edge)))); } }
 }
 </style>
 </head><body>
@@ -5805,7 +5806,7 @@ globalThis.onUnload = function () { try { _unload(); } catch (e) { /* ignore */ 
   document.body.appendChild(sheet);
   Array.prototype.forEach.call(document.querySelectorAll('#keys .key'), function (k) { if (/^Spur/.test(k.textContent)) k.classList.add('dup'); });   /* S1-S4 beside the pads do the same */
   /* Rand: free margin around the layout so the system's close symbol and bars do not cover controls (saved on this device) */
-  var edge = 10; try { var sv = parseInt(localStorage.getItem('taktile-app:edge'), 10); if (sv >= 0 && sv <= 60) edge = sv; } catch (x) { /* ignore */ }
+  var edge = 14; try { var sv = parseInt(localStorage.getItem('taktile-app:edge'), 10); if (sv >= 0 && sv <= 60) edge = sv; } catch (x) { /* ignore */ }
   var edgeBox = document.createElement('div'); edgeBox.className = 'edgeset';
   edgeBox.innerHTML = '<span>Rand</span><button type="button" class="btn" id="bEdgeM" aria-label="Rand kleiner">\u2212</button><output id="edgeV"></output><button type="button" class="btn" id="bEdgeP" aria-label="Rand größer">+</button>';
   function setEdge(v) { edge = Math.max(0, Math.min(60, v)); document.documentElement.style.setProperty('--edge', edge + 'px'); var o = edgeBox.querySelector('#edgeV'); if (o) o.textContent = edge; try { localStorage.setItem('taktile-app:edge', String(edge)); } catch (x) { /* ignore */ } }
