@@ -242,7 +242,7 @@ function gl(t) { return gs - tph[t]; }
 const edSeen = new Array(16).fill(0);
 let recSwallow = false, shiftHeld = false, copyHeld = false, deleteHeld = false, muteHeld = false;
 let delAge = 0;
-let fbSplit = true;                                        /* browser layout: true = split view (categories on the left, sounds on the right), false = tab boxes on top (knob 3) */
+let fbSplit = false;                                        /* browser layout: true = split view (categories on the left, sounds on the right), false = tab boxes on top (knob 3) */
 let fbVol = 0.7;                                           /* preview volume 0.1 .. 1 (knob 2 in the browser): scales the hit strength of the preview and of the pads while browsing */
 let fbKA = 0, fbKB = 0, fbKC = 0;      /* knob turn counters of the browser: several clicks make one step, so the lists do not race */
 let fbPm = 1;                                              /* browser preview mode (knob 3): 0 = OFF, 1 = STOP (only while the sequencer is stopped, the default), 2 = ALL (also while playing / recording) */
@@ -3716,7 +3716,7 @@ function drawFB() {
     else { fill_rect(66, y0, 1, 40, 0); }
     const it0 = its[top.i], act = !it0 ? '' : (it0.kid ? 'CLICK=OPEN' : (top.node.kits ? 'CLICK=LOAD' : 'CLICK=KEEP'));      /* bottom line: position, what the keys do */
     txtS(2, 58, (top.i + 1) + '/' + its.length, 1);
-    if (sib) txtS(44, 58, '<> CAT', 1);
+    if (sib) txtS(34, 58, 'SH+TURN=CAT', 1);
     txtS(126 - act.length * 4, 58, act, 1);
 }
 /* ---- projects: 32 slots, each a full copy of the state ---- */

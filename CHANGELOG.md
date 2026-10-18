@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.172.0 (18 October 2026)
+- Browser: geteilte Ansicht entfernt, Liste wieder ueber die ganze Breite mit den Kategorie-Kaestchen oben; Bedienung der Ebenen nur ueber die Regler 1-5
+
 ## 5.171.0 (18 October 2026)
 - Browser: Regler 1-5 steuern die Ebenen des Baums von oben (Regler 1 Hauptordner, 2 naechste Ebene ..., der letzte die Sounds), Regler 8 = Vorschau OFF/STOP/ALL (Shift+Regler 8 = Lautstaerke)
 
