@@ -4851,7 +4851,8 @@ function flushLeds() {
 }
 function knobUse() {                                       /* which of the 8 knobs do something on the current page: their little lights under the knobs are on */
     const u = [0, 0, 0, 0, 0, 0, 0, 0];
-    if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb) return u;
+    if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank) return u;
+    if (fb) { u[0] = 1; u[1] = 1; return u; }                  /* browser: knob 1 = preview on / off, knob 2 = fast scroll */
     if (heldStep >= 0 && stepWinView()) return u.map(() => 1);
     if (loopHeld && view === 0) { u[0] = 1; u[1] = 1; u[2] = 1; return u; }
     if (view === 0 || view === 7 || view === 20) return u.map(() => 1);
@@ -4861,6 +4862,7 @@ function knobUse() {                                       /* which of the 8 kno
 }
 const KNOB_RAMP = [123, 119, 118, 120];                   /* dim grey ... white: the lights under the knobs get brighter with the value */
 function knobLevels() {                                    /* value 0..1 of each knob on this page (null = no value to show) */
+    if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) return [fbPrev ? 1 : 0.1];      /* knob 1 glows bright when the preview is on, dim when it is off */
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb || heldStep >= 0 || loopHeld) return null;
     if (view === 0) return seqSnd().map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
     const items = VIEW_ITEMS[itemsView()];

@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.161.0 (18 October 2026)
+- Browser: Regler 1 (Vorschau, hell = an, gedimmt = aus) und Regler 2 (schnelles Scrollen) leuchten unter dem Display
+
 ## 5.160.0 (18 October 2026)
 - Browser: Sounds, Kits, Samples, Presets und Effekte nach Namen sortiert (A-Z, INIT zuerst); Regler 2 = schnelles Scrollen
 
