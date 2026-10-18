@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.173.0 (18 October 2026)
+- Browser: das Display zeigt immer nur die Ebene des zuletzt gedrehten Reglers (volle Breite); Regler 1 = Hauptordner, jeder weitere Regler oeffnet die naechste Ebene bis zu den Sounds
+
 ## 5.172.0 (18 October 2026)
 - Browser: geteilte Ansicht entfernt, Liste wieder ueber die ganze Breite mit den Kategorie-Kaestchen oben; Bedienung der Ebenen nur ueber die Regler 1-5
 

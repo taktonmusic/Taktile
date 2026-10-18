@@ -3476,6 +3476,7 @@ function fbItems(node) {
 }
 function fbCount(n) { return n.kids ? n.kids.reduce((a, k) => a + fbCount(k), 0) : (n.kits ? (n.slots || fbKitSlots()).length : (n.smp ? smpLoaded().length : n.l.length)); }
 function fbOpen() {
+    fbShow = -1;
     fbApplied = null;
     const L = ln();
     if (padMenu) { padMenu = false; }
@@ -3583,6 +3584,7 @@ function fbIsLeaf(n) { return !n.kids; }
 let fbLast = 0;
 let fbAcc = 0;
 function fbMove(dl, big) {
+    fbShow = -1;
     const top = fb.st[fb.st.length - 1], n = fbItems(top.node).length; if (!n) return;
     const now = Date.now(), gap = now - fbLast; fbLast = now;
     let st = big || 1; if (!big && n > 30) st = gap < 35 ? 8 : (gap < 75 ? 3 : 1);      /* a long list: turning the jog fast skips ahead, slow = one by one; knob 1 always jumps by 10 */
@@ -3592,6 +3594,7 @@ function fbMove(dl, big) {
     needsRedraw = true;
 }
 function fbClick() {
+    fbShow = -1;
     const top = fb.st[fb.st.length - 1], its = fbItems(top.node), it = its[top.i];
     if (!it) { fb = null; needsRedraw = true; return; }
     if (it.kid && it.kid.kindSw !== undefined && it.kid.kindSw !== kind[sel] && fb.st.length === 1) {      /* the other kind: the track turns into a synth / drum track and the list opens */
@@ -3628,40 +3631,60 @@ function fbIsCur(it, node) {                               /* is this entry (or 
     return typeof it.val === 'number' && it.val === o.t;
 }
 function fbBack() {
+    fbShow = -1;
     if (fb.st.length > 1) { if (fbIsLeaf(fb.st[fb.st.length - 1].node)) fbRestore(); if (fb.dev && fb.st.length === 2) fb = null; else fb.st.pop(); } else fb = null;
     needsRedraw = true;
 }
-function fbPathStr() {                                     /* breadcrumb: DRUMS>KITS>TECHNO, the oldest levels drop out when it gets long */
-    const names = fb.st.slice(1).map(s => s.node.n); if (!names.length) return fb.st[0].node.n;
+function fbPathStr() {                                     /* breadcrumb: DRUMS>KITS>TECHNO up to the level shown, the oldest levels drop out when it gets long */
+    const names = fb.st.slice(1, fbShowIdx() + 1).map(s => s.node.n); if (!names.length) return fb.st[0].node.n;
     let pre = ''; while (names.join('>').length + pre.length > 12 && names.length > 1) { names.shift(); pre = '..>'; }
     return pre + names.join('>');
 }
-function fbSiblings() {                                    /* the categories next to the open list (only when they are all plain lists), or null */
-    if (fb.st.length < 2) return null;
-    const top = fb.st[fb.st.length - 1], par = fb.st[fb.st.length - 2];
+function fbSiblings(lv) {                                  /* the categories next to the open list (only when they are all plain lists), or null (lv = the level shown, default the deepest) */
+    if (lv === undefined) lv = fb.st.length - 1;
+    if (lv < 1) return null;
+    const top = fb.st[lv], par = fb.st[lv - 1];
     if (!fbIsLeaf(top.node) || !par.node.kids || par.node.kids.length < 2 || !par.node.kids.every(fbIsLeaf)) return null;
     return { list: par.node.kids, idx: par.node.kids.indexOf(top.node), par: par };
 }
+let fbShow = -1;                                           /* which level of the tree the display shows: the one of the knob you turned last (-1 = the deepest, the sounds) */
+function fbShowIdx() { return fbShow < 0 ? fb.st.length - 1 : Math.min(fbShow, fb.st.length - 1); }
 const fbRem = new Map(), fbKN = [0, 0, 0, 0, 0];             /* fbRem: the entry last chosen in each folder (so coming back to a folder lands on it), fbKN: turn counters of the level knobs */
 function fbKnob(j, dl) {                                   /* level knob j (0 = main folders ... ): scroll that level; the levels below are opened again along the remembered / first entries, the last level shows the sounds */
-    if (!dl || !fb || j >= fb.st.length) return;
+    if (!dl || !fb || j > fb.st.length) return;
+    if (j === fb.st.length) {                              /* the knob one level deeper than the open list: it opens the highlighted folder (and goes down to a list of sounds) */
+        const top = fb.st[fb.st.length - 1], it = fbItems(top.node)[top.i];
+        if (!it || !it.kid || (it.kid.kindSw !== undefined && it.kid.kindSw !== kind[sel])) return;
+        fbRestore(); fbPend = 0;
+        for (let g = 0; g < 6; g++) {
+            const tp = fb.st[fb.st.length - 1], ti = fbItems(tp.node)[tp.i]; if (!ti || !ti.kid) break;
+            if (ti.kid.kindSw !== undefined && ti.kid.kindSw !== kind[sel]) break;
+            const ki = fbItems(ti.kid).length; fb.st.push({ node: ti.kid, i: clamp(fbRem.has(ti.kid) ? fbRem.get(ti.kid) : 0, 0, Math.max(0, ki - 1)) });
+        }
+        fbShow = j; fbKN.fill(0); const tp2 = fb.st[fb.st.length - 1], i2 = fbItems(tp2.node)[tp2.i];
+        fbPend = (i2 && !i2.kid && fbPrevOn()) ? (tp2.node.kits ? 14 : 5) : 0; needsRedraw = true; return;
+    }
+    if (j < fb.st.length - 1 && fbShow !== j) { fbShow = j; needsRedraw = true; }      /* the first click on a knob shows its level
+    */
     const last = j === fb.st.length - 1;
     fbKN[j] += dl; if (Math.abs(fbKN[j]) < 3) return;      /* several clicks make one step */
     const dir = fbKN[j] > 0 ? 1 : -1; fbKN[j] = 0;
     if (last) { fbMove(dir, 1); return; }
+    fbShow = j;
     const lv = fb.st[j], n = fbItems(lv.node).length, ni = clamp(lv.i + dir, 0, n - 1); if (ni === lv.i) return;
     fbRestore(); fbPend = 0;                               /* the preview of the old sound is undone */
     for (let k = j + 1; k < fb.st.length; k++) fbRem.set(fb.st[k].node, fb.st[k].i);
     lv.i = ni; fb.st.length = j + 1;
     for (let g = 0; g < 6; g++) {                          /* open the highlighted folder, and the one inside it, down to a list of sounds */
         const top = fb.st[fb.st.length - 1], it = fbItems(top.node)[top.i]; if (!it || !it.kid) break;
+        if (it.kid.kindSw !== undefined && it.kid.kindSw !== kind[sel]) break;      /* the other track kind is only entered with a click */
         const ki = fbItems(it.kid).length; fb.st.push({ node: it.kid, i: clamp(fbRem.has(it.kid) ? fbRem.get(it.kid) : 0, 0, Math.max(0, ki - 1)) });
     }
     const top = fb.st[fb.st.length - 1], it = fbItems(top.node)[top.i];
     fbPend = (it && !it.kid && fbPrevOn()) ? (top.node.kits ? 14 : 5) : 0; needsRedraw = true;
 }
 function fbCat(dir) {                                      /* Shift + jog: the next / previous category without going back (the preview of the old one is undone first) */
-    const s = fbSiblings(); if (!s) return false;
+    fbShow = -1; const s = fbSiblings(); if (!s) return false;
     const n = s.list.length, j = ((s.idx + dir) % n + n) % n;
     fbRestore(); fbPend = 0; s.par.i = j; fb.st[fb.st.length - 1] = { node: s.list[j], i: 0 }; needsRedraw = true; return true;
 }
@@ -3678,11 +3701,11 @@ function kitSoundNames(sl) {                               /* the 16 pad sounds 
 }
 function drawFB() {
     clear_screen();
-    const top = fb.st[fb.st.length - 1], its = fbItems(top.node);
+    const sh = fbShowIdx(), top = fb.st[sh], its = fbItems(top.node);
     titleBar(fbPathStr(), 'PRV ' + FB_PM[fbPm]);            /* top left: where you are, top right: preview on / off (Up / Down) */
     if (!its.length) { txt(4, 30, 'EMPTY', 1); return; }
     const favOn = it => (!it.kid && !top.node.kits && !top.node.smp && !top.node.fx && favs.indexOf(it.val) >= 0);
-    const sib = fbSiblings(), grid = !!top.node.kits, split = !!(sib && !grid && fbSplit), y0 = (sib && !split) ? 17 : 13, lw0 = grid ? 10 : 17, listW = grid ? 66 : 124, lx = split ? 35 : 0;
+    const sib = fbSiblings(sh), grid = !!top.node.kits, split = !!(sib && !grid && fbSplit), y0 = (sib && !split) ? 17 : 13, lw0 = grid ? 10 : 17, listW = grid ? 66 : 124, lx = split ? 35 : 0;
     if (split) {                                           /* split view: the categories as a column on the left (the open one filled), Shift + jog = next */
         const n = sib.list.length, f0 = clamp(sib.idx - 1, 0, Math.max(0, n - 4));
         for (let q = 0; q < 4; q++) { const k = f0 + q, y = y0 + q * 10; if (k >= n) continue; const on = k === sib.idx, nm = on ? mq(String(sib.list[k].n), 7) : String(sib.list[k].n).substring(0, 7); if (on) fill_rect(0, y, 33, 10, 1); txtS(2, y + 3, nm, on ? 0 : 1); }
