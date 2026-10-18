@@ -3451,13 +3451,16 @@ function fbTree() {
 const FX_LABEL = { x2fx: null, m2fx: null, xfx: ['NONE', 'STUTTER', 'REVERSE', 'FLANGER', 'TREMOLO', 'AUTO PAN', 'COMB', 'WAH', 'GATE', 'LO-FI', 'DJ FILTER', 'NONE', 'DELAY', 'REVERB'], mfx: ['NONE', 'OCTAVER', 'CHORD', 'ARPEGGIO', 'STRUM', 'NOTE ECHO', 'RANDOM PITCH', 'RANDOM VEL', 'COMPRESS', 'SCALE', 'TRANSPOSE', 'DIATONIC CHORD'] };
 FX_LABEL.x2fx = FX_LABEL.xfx; FX_LABEL.m2fx = FX_LABEL.mfx;
 const FX_AMT = { xfx: 'xmix', x2fx: 'x2mix', mfx: 'mamt', m2fx: 'm2amt' }, FX_AMT_DEF = { xfx: 0.5, x2fx: 0.5, mfx: 0.7, m2fx: 0.7 };
+function fbSort(a) {                                       /* sounds, kits, samples and effects are listed by name (A-Z, numbers in natural order); INIT stays first */
+    return a.map((x, k) => [x, k]).sort((p, q) => (q[0].init ? 1 : 0) - (p[0].init ? 1 : 0) || String(p[0].label).localeCompare(String(q[0].label), 'en', { numeric: true, sensitivity: 'base' }) || p[1] - q[1]).map(x => x[0]);
+}
 function fbItems(node) {
     if (node.kids) return node.kids.map(k => ({ label: k.n, kid: k, cnt: fbCount(k) }));
-    if (node.kits) return (node.slots || fbKitSlots()).map(sl => ({ label: kitName(sl), val: sl }));
-    if (node.smp) return smpLoaded().map(i => ({ label: smpNames[i], val: i }));
-    if (node.fx) return node.l.map(t => ({ label: FX_LABEL[node.fx][t], val: t }));
-    if (node.initFirst) return node.l.map((t, k) => ({ label: k === 0 ? 'INIT' : TYPE_NAME[t], val: t, init: k === 0 }));
-    return node.l.map(t => ({ label: (node.init ? 'INIT ' : '') + TYPE_NAME[t], val: t }));
+    if (node.kits) return fbSort((node.slots || fbKitSlots()).map(sl => ({ label: kitName(sl), val: sl })));
+    if (node.smp) return fbSort(smpLoaded().map(i => ({ label: smpNames[i], val: i })));
+    if (node.fx) return fbSort(node.l.map(t => ({ label: FX_LABEL[node.fx][t], val: t })));
+    if (node.initFirst) return fbSort(node.l.map((t, k) => ({ label: k === 0 ? 'INIT' : TYPE_NAME[t], val: t, init: k === 0 })));
+    return fbSort(node.l.map(t => ({ label: (node.init ? 'INIT ' : '') + TYPE_NAME[t], val: t })));
 }
 function fbCount(n) { return n.kids ? n.kids.reduce((a, k) => a + fbCount(k), 0) : (n.kits ? (n.slots || fbKitSlots()).length : (n.smp ? smpLoaded().length : n.l.length)); }
 function fbOpen() {
@@ -5130,7 +5133,8 @@ globalThis.onMidiMessageInternal = function (data) {
     }
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
         if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
-        if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbSetPrev(dl > 0); return; }      /* knob 1: turn right = preview ON, turn left = OFF */
+        if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbSetPrev(dl > 0); return; }
+        if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = decodeDelta(d2); if (dl) fbMove(dl, 5); return; }      /* knob 2 = fast scroll, 10 entries per click */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
         if (type === 0xB0 && (d1 === CC.UP || d1 === CC.DOWN)) { if (d2 > 0) fbSetPrev(!fbPrev); return; }      /* Up / Down: preview on / off */

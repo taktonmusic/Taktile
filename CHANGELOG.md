@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.160.0 (18 October 2026)
+- Browser: Sounds, Kits, Samples, Presets und Effekte nach Namen sortiert (A-Z, INIT zuerst); Regler 2 = schnelles Scrollen
+
 ## 5.159.0 (18 October 2026)
 - Browser: Regler 1 schaltet die Vorschau (PRV/OFF) ein und aus: nach rechts drehen = ein, nach links = aus (ersetzt das schnelle Scrollen auf Regler 1)
 
