@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.139.0 (18 October 2026)
+- Tape tiles (Tape, Hiss, Wow) as an extra block at the end of the FX BUS 2 page, so every track reaches them
+
 ## 5.138.0 (18 October 2026)
 - GRAN insert effect removed (old projects load it as off); the GRAIN page stays
 
