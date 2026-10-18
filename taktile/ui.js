@@ -244,9 +244,14 @@ let recSwallow = false, shiftHeld = false, copyHeld = false, deleteHeld = false,
 let delAge = 0;
 let fbSplit = true;                                        /* browser layout: true = split view (categories on the left, sounds on the right), false = tab boxes on top (knob 3) */
 let fbVol = 0.7;                                           /* preview volume 0.1 .. 1 (knob 2 in the browser): scales the hit strength of the preview and of the pads while browsing */
-let fbPrev = true;                                           /* browser preview on / off (Up / Down button): on = every sound, kit, synth, sample and effect you scroll to is heard (playing or stopped) */
-function fbSetPrev(v) {                                    /* preview on / off (Up / Down button, knob 1) */
-    if (v === fbPrev) return; fbPrev = v; if (!fbPrev) { fbPend = 0; if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; } } else { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) fbPend = 3; } showToast('PREVIEW', fbPrev ? 'ON' : 'OFF', fbPrev ? 1 : 0); needsRedraw = true;
+let fbKA = 0, fbKB = 0;
+let fbPm = 1;                                              /* browser preview mode (knob 3): 0 = OFF, 1 = STOP (only while the sequencer is stopped, the default), 2 = ALL (also while playing / recording) */
+const FB_PM = ['OFF', 'STOP', 'ALL'];
+function fbPrevOn() { return fbPm === 2 || (fbPm === 1 && !playing); }      /* is the automatic preview active right now */
+function fbSetPm(m) {                                      /* set the preview mode (knob 3, Up / Down) */
+    m = clamp(m, 0, 2); if (m === fbPm) return; fbPm = m;
+    if (!fbPrevOn()) { fbPend = 0; if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; } } else { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) fbPend = 3; }
+    showToast('PREVIEW', FB_PM[fbPm] + (fbPm === 1 ? ' (ONLY WHEN STOPPED)' : ''), fbPm / 2); needsRedraw = true;
 }
 let fb = null, fbT = 0, fbOff = null, fbPend = 0;                      /* sound / kit folder browser */
 let heldStep = -1, heldWasOn = false, heldEdited = false, heldGrp = [];      /* heldGrp: more steps held together with the first one: knobs edit all of them */
@@ -3583,7 +3588,7 @@ function fbMove(dl, big) {
     let st = big || 1; if (!big && n > 30) st = gap < 35 ? 8 : (gap < 75 ? 3 : 1);      /* a long list: turning the jog fast skips ahead, slow = one by one; knob 1 always jumps by 10 */
     top.i = clamp(top.i + (dl > 0 ? st : -st), 0, n - 1);      /* turning moves the highlight; stopped = you hear it (preview, Back restores), playing/recording = silent, the click chooses */
     const it = fbItems(top.node)[top.i];
-    fbPend = (it && !it.kid && fbPrev) ? (top.node.kits ? 14 : 5) : 0;      /* preview only after the jog rests a moment */
+    fbPend = (it && !it.kid && fbPrevOn()) ? (top.node.kits ? 14 : 5) : 0;      /* preview only after the jog rests a moment */
     needsRedraw = true;
 }
 function fbClick() {
@@ -3656,7 +3661,7 @@ function kitSoundNames(sl) {                               /* the 16 pad sounds 
 function drawFB() {
     clear_screen();
     const top = fb.st[fb.st.length - 1], its = fbItems(top.node);
-    titleBar(fbPathStr(), (fbPrev ? 'PRV ' : 'OFF ') + Math.round(fbVol * 100) + '%');            /* top left: where you are, top right: preview on / off (Up / Down) */
+    titleBar(fbPathStr(), 'PRV ' + FB_PM[fbPm]);            /* top left: where you are, top right: preview on / off (Up / Down) */
     if (!its.length) { txt(4, 30, 'EMPTY', 1); return; }
     const favOn = it => (!it.kid && !top.node.kits && !top.node.smp && !top.node.fx && favs.indexOf(it.val) >= 0);
     const sib = fbSiblings(), grid = !!top.node.kits, split = !!(sib && !grid && fbSplit), y0 = (sib && !split) ? 17 : 13, lw0 = grid ? 10 : 17, listW = grid ? 66 : 124, lx = split ? 35 : 0;
@@ -4888,7 +4893,7 @@ function flushLeds() {
 function knobUse() {                                       /* which of the 8 knobs do something on the current page: their little lights under the knobs are on */
     const u = [0, 0, 0, 0, 0, 0, 0, 0];
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank) return u;
-    if (fb) { u[0] = 1; u[1] = 1; if (fbSiblings() && !fb.st[fb.st.length - 1].node.kits) u[2] = 1; return u; }      /* browser: knob 1 = preview on / off, knob 2 = preview volume, knob 3 = layout */
+    if (fb) { u[0] = fbSiblings() ? 1 : 0; u[1] = 1; u[2] = 1; return u; }      /* browser: knob 1 = categories (left column), knob 2 = sounds (right column), knob 3 = preview */
     if (heldStep >= 0 && stepWinView()) return u.map(() => 1);
     if (loopHeld && view === 0) { u[0] = 1; u[1] = 1; u[2] = 1; return u; }
     if (view === 0 || view === 7 || view === 20) return u.map(() => 1);
@@ -4898,7 +4903,7 @@ function knobUse() {                                       /* which of the 8 kno
 }
 const KNOB_RAMP = [123, 119, 118, 120];                   /* dim grey ... white: the lights under the knobs get brighter with the value */
 function knobLevels() {                                    /* value 0..1 of each knob on this page (null = no value to show) */
-    if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) return [fbPrev ? 1 : 0.1, fbVol, fbSplit ? 1 : 0.1];      /* knob 1 glows bright when the preview is on, dim when it is off */
+    if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) return [undefined, undefined, [0.1, 0.5, 1][fbPm]];      /* knob 1 glows bright when the preview is on, dim when it is off */
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb || heldStep >= 0 || loopHeld) return null;
     if (view === 0) return seqSnd().map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
     const items = VIEW_ITEMS[itemsView()];
@@ -5064,7 +5069,7 @@ globalThis.tick = function () {
     if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
     if (clrPend.ticks > 0) clrPend.ticks--;
     ledAge++;
-    if (fbPend > 0 && --fbPend === 0 && fb && fbPrev) { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) { fbApply(); if (!tp.node.kits) fbAudition(); } }
+    if (fbPend > 0 && --fbPend === 0 && fb && fbPrevOn()) { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) { fbApply(); if (!tp.node.kits) fbAudition(); } }
     if (fbT > 0 && --fbT === 0 && fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; }
     if (deleteHeld && ++delAge > 300) { deleteHeld = false; needsRedraw = true; }      /* safety: Delete never stays on without any input */
     flushQueue(3);
@@ -5171,16 +5176,12 @@ globalThis.onMidiMessageInternal = function (data) {
     }
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
         if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
-        if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbSetPrev(dl > 0); return; }
-        if (type === 0xB0 && (d1 === CC.LEFT || d1 === CC.RIGHT)) {      /* arrows: left / right = previous / next category; in a folder list left = one level up, right = open */
-            if (d2 > 0) { const rt = d1 === CC.RIGHT; if (fbSiblings()) fbCat(rt ? 1 : -1); else if (rt) { const tp = fb.st[fb.st.length - 1], it = fbItems(tp.node)[tp.i]; if (it && it.kid) fbClick(); } else fbBack(); }
-            return;
-        }
-        if (type === 0xB0 && d1 === CC.KNOB1 + 2) { const dl = decodeDelta(d2); if (dl && fbSiblings() && !fb.st[fb.st.length - 1].node.kits) { fbSplit = dl > 0; showToast('BROWSER LAYOUT', fbSplit ? 'SPLIT' : 'TABS', fbSplit ? 1 : 0); needsRedraw = true; } return; }      /* knob 3: split view / tabs */
-        if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = decodeDelta(d2); if (dl) { fbVol = clamp(Math.round((fbVol + (dl > 0 ? 0.05 : -0.05)) * 100) / 100, 0.1, 1); showToast('PREVIEW VOLUME', Math.round(fbVol * 100) + '%', fbVol); needsRedraw = true; } return; }      /* knob 2: preview volume */
+        if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) { if (fbSiblings()) { fbKA += dl; if (Math.abs(fbKA) >= 2) { fbCat(fbKA > 0 ? 1 : -1); fbKA = 0; } } else fbMove(dl); } return; }      /* knob 1: the left column (categories); in a plain list it scrolls like knob 2 */
+        if (type === 0xB0 && d1 === CC.KNOB1 + 1) { const dl = decodeDelta(d2); if (dl) fbMove(dl); return; }      /* knob 2: the right column (the sounds) */
+        if (type === 0xB0 && d1 === CC.KNOB1 + 2) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld) { fbVol = clamp(Math.round((fbVol + (dl > 0 ? 0.05 : -0.05)) * 100) / 100, 0.1, 1); showToast('PREVIEW VOLUME', Math.round(fbVol * 100) + '%', fbVol); needsRedraw = true; } else { fbKB += dl; if (Math.abs(fbKB) >= 2) { fbSetPm(fbPm + (fbKB > 0 ? 1 : -1)); fbKB = 0; } } } return; }      /* knob 3: preview OFF / STOP / ALL (Shift + knob 3 = preview volume) */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
-        if (type === 0xB0 && (d1 === CC.UP || d1 === CC.DOWN)) { if (d2 > 0) fbSetPrev(!fbPrev); return; }      /* Up / Down: preview on / off */
+        if (type === 0xB0 && (d1 === CC.UP || d1 === CC.DOWN)) { if (d2 > 0) fbSetPm(fbPm ? 0 : 1); return; }      /* Up / Down: preview off / on (stop) */
         if (type === 0xB0 && d1 === CC.MENU) { if (d2 > 0) { while (fb) fbBack(); } return; }
     }
     if (askKind >= 0) {                                       /* first question for every new track: Synth or Drum */

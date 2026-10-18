@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.169.0 (18 October 2026)
+- Browser: Regler 1 = linke Spalte (Kategorien), Regler 2 = rechte Spalte (Sounds), Regler 3 = Vorschau AUS / STOP (Standard, nur im Stop) / ALL; Shift+Regler 3 = Vorschau-Lautstaerke
+
 ## 5.168.0 (18 October 2026)
 - Browser: Pfeiltasten links/rechts wechseln die Kategorie (in Ordnerlisten: links = zurueck, rechts = oeffnen); lange Kategorienamen laufen in der linken Spalte durch
 
