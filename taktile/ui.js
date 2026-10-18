@@ -67,7 +67,7 @@ ENUMS.m2fx = ENUMS.mfx; ENUMS.x2fx = ENUMS.xfx; ENUMS.dly_mode = ENUMS.dmode; EN
 const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn','dsw','dst','dnz','dck','dln','dmd','dlt'];
 const PDEF = { 105: 0.5, 106: 0.5, 107: 0.5, 108: 0.5, 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
-const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low'];
+const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low','m_tape','m_hiss','m_wow'];
 const PI = {}; PK.forEach((k, i) => PI[k] = i);
 const FAV_MAP = { dtime: 'dly_time', dfb: 'dly_fb', rsize: 'rvb_size', rdark: 'rvb_dark', dmode: 'dly_mode', rmode: 'rvb_mode', dtn: 'dly_tone', dwd: 'dly_wide', rwd: 'rvb_wide', rlc: 'rvb_low', chor: 'dly', phas: 'rvb', chrt: 'dly_time', chdp: 'dly_fb', phrt: 'rvb_size', phfb: 'rvb_dark' };     /* favourites saved before the shared FX bus */
 const MI = {}; MK.forEach((k, i) => MI[k] = i);
@@ -86,7 +86,7 @@ const LAYOUT = [
 ];
 const INIT_DRUMS = 'DKick808 DKickHse DSnr909 DClap DHatCl DHatOp DRim DTomMid DHatSoft DHatOp2 DHatTght DTomLo DCowbell DTomHi DClave DCowHi'.split(' ');      /* the INIT drum kit: pure synth drums, every one of them editable like a synth sound */
 const DRUM_LAYOUT = INIT_DRUMS.map(n => [Math.max(0, TYPE_NAME.indexOf(n)), .5, .5, 0, 1, 0, 0]);
-const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0];
+const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
 const TAB_SYM = { 50: 'GRAIN', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SEND', 39: 'BUS', 27: 'MIDI', 36: 'EUCLID', 46: 'BUS' };
 const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
@@ -163,6 +163,7 @@ const VIEW_ITEMS = {
     46: [['dly_time','DlyTime','Time'],['dly_fb','DlyFdbk','Fdbk'],['dly_tone','DlyTone','Tone'],['dly_ret','DlyRet','Ret'],['rvb_size','RvbSize','Size'],['rvb_dark','RvbDark','Dark'],['rvb_mode','RvbType','Type'],['rvb_ret','RvbRet','Ret']],
     50: [['grn','Grain','Grn'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
     39: [['dly_mode','DlyType','Type'],['dly_wide','DlyWide','Wide'],['rvb_wide','RvbWide','Wide'],['rvb_low','RvbLow','Low']],
+    52: [['m_tape','Tape'],['m_hiss','Hiss'],['m_wow','Wow'],['m_vol','Vol']],
     41: [['m_eql','Low'],['m_eqm','Mid'],['m_eqh','High'],['m_lim','Limiter','Lim'],['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_comp','Comp']],
     4: [['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_wid','Width','Wid'],['m_comp','Comp'],['dly_ret','DlyRet','DRet'],['rvb_ret','RvbRet','RRet'],['m_lim','Limiter','Lim']],
     5: [['dly','Send'],['dly_time','Time'],['dly_fb','Fdbk'],['dly_mode','Type'],['dly_tone','Tone'],['dly_wide','Wide'],['dly_ret','Return','Ret']],
@@ -197,7 +198,7 @@ const VIEW_ITEMS = {
 const HUBS = {
     16: ['HOME', [['SOUND', 1], ['TRACK', 21], ['MIX', 20], ['BUS', 4], ['OPTIONS', -1], ['MORE', 18]]],
     17: ['FX', [['DELAY', 5], ['REVERB', 6], ['MULTI', 24], ['MIDI', 27], ['DUCK', 30]]],
-    18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['SCOPE', 42]]],
+    18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['TAPE', 52], ['SCOPE', 42]]],
 };
 let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
 
@@ -915,6 +916,7 @@ const HELP = {
     10: ['Tempo, Swing, Human', 'Launch-Quantisierung', 'Key + Scale'],
     7: ['Clips: Pad = starten', 'Jog: Tracks scrollen', 'Copy+Pad = kopieren'],
     44: ['Deine 8 Favoriten', 'Menu: Pin last knob', 'Reset favorites = Standard'],
+    52: ['Tape: Waerme + Saettigung', 'Hiss = leises Rauschen', 'Wow = Tonhoehen-Wackeln'],
     41: ['Master EQ 3 Baender', 'Low / Mid / High +-12dB', 'Limiter = Obergrenze'],
     43: ['EQ pro Sound/Track', 'Low 100Hz Mid 1k High 8k', '+-12 dB, Mitte = aus'],
     42: ['Scope + 8 Baender', 'Jog klick: Ansicht, auch Tiere', 'Master-Ausgang live'],
@@ -949,6 +951,7 @@ const HELP_EN = {
     10: ['Tempo, swing, human', 'Launch quantize', 'Key + scale'],
     7: ['Clips: pad = launch', 'Jog: scroll tracks', 'Copy+pad = copy'],
     44: ['Your 8 favorites', 'Menu: pin last knob', 'Reset favorites = default'],
+    52: ['Tape: warmth + saturation', 'Hiss = quiet noise', 'Wow = pitch wobble'],
     41: ['Master EQ 3 bands', 'Low / Mid / High +-12dB', 'Limiter = ceiling'],
     43: ['EQ per sound/track', 'Frequencies adjustable', '+-12 dB, middle = off'],
     42: ['Scope + 8 bands', 'Jog click: view, also animals', 'Master output live'],
@@ -1901,7 +1904,7 @@ function knobTouch(i) {
 }
 const LONG_NAME = { dly_time: 'Delay Time', dly_fb: 'Delay Feedback', dly_mode: 'Delay Type', dly_tone: 'Delay Tone', dly_wide: 'Delay Width', dly_ret: 'Delay Return', rvb_size: 'Reverb Size', rvb_dark: 'Reverb Damping', rvb_mode: 'Reverb Type', rvb_wide: 'Reverb Width', rvb_low: 'Reverb Low Cut', dmode: 'Delay Type', rmode: 'Reverb Type', dtime: 'Delay Time', dfb: 'Delay Feedback', rsize: 'Reverb Size', rdark: 'Reverb Damping', chrt: 'Chorus Rate', chdp: 'Chorus Depth', phrt: 'Phaser Rate', phfb: 'Phaser Feedback',
     dly: 'Delay Send', rvb: 'Reverb Send', cut: 'Lowpass Cutoff', locut: 'Highpass Cutoff', res: 'Resonance', fenv: 'Filter Envelope', crush: 'Bit Crusher', ring: 'Ring Modulator', pump: 'Pump', wob: 'Wobble',
-    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_wid: 'Stereo Width',
+    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_tape: 'Tape Colour', m_hiss: 'Tape Hiss', m_wow: 'Tape Wow', m_wid: 'Stereo Width',
     m_comp: 'Compressor', dly_ret: 'Delay Return', rvb_ret: 'Reverb Return', eql: 'Sound EQ Low', eqm: 'Sound EQ Mid', eqh: 'Sound EQ High', m_eql: 'EQ Low', m_eqm: 'EQ Mid', m_eqh: 'EQ High', m_lim: 'Limiter', poly: 'Voices', wave: 'Waveform', det: 'Detune',
     sub: 'Sub Oscillator', att: 'Attack', vol: 'Volume', tvol: 'Track Volume', pmode: 'Pad Mode', dsel: 'Drum Sound', lay: 'Pad Layout', tcol: 'Track Color', tsw: 'Track Swing', rdens: 'Random Density',
     rvar: 'Random Velocity', rkey: 'Random In Key', rrat: 'Random Ratchet', rqoff: 'Record Snap', fullvel: 'Full Velocity', m_hum: 'Humanize', m_met: 'Metronome', m_qnt: 'Launch Quantize',

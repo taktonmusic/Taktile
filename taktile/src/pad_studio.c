@@ -216,7 +216,7 @@ static const float DT_BEATS[5] = { 0.25f, 0.5f, 0.75f, 1.0f, 2.0f };
 static const int   SCALE_TBL[NSC][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 } };
 
 /* ---------------- global parameters ---------------- */
-enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_N };
+enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_N };
 static const pd_t GD[G_N] = {
     { "m_vol",    "Volume", 0, 0.80f },
     { "key",      "Key",    12, 5.0f },
@@ -245,6 +245,9 @@ static const pd_t GD[G_N] = {
     { "rvb_mode", "R Type", 3, 0.0f },
     { "rvb_wide", "R Wide", 0, 0.50f },
     { "rvb_low",  "R Low",  0, 0.00f },
+    { "m_tape",   "Tape",   0, 0.00f },
+    { "m_hiss",   "Hiss",   0, 0.00f },
+    { "m_wow",    "Wow",    0, 0.00f },
 };
 
 /* ---------------- sound types ---------------- */
@@ -718,6 +721,7 @@ typedef struct {
     int   focused;                  /* 1..32 */
 
     float sr, inv_sr;
+    float tp_dl[2][2048], tp_lp[2], tp_hb[2], tp_hn[2], tp_ph1, tp_ph2, tp_dr, tp_drv; int tp_w; unsigned tp_rng;   /* master tape: wow / flutter delay, soft saturation, head bump, hiss */
     float root_hz;
     int mo_clk, mo_trk, mo_chn, mo_xp, mo_vp, mo_dn; float mclk; struct { int cnt; uint8_t st, d1; } mo_q[64];   /* MIDI out: clock + notes per track */
     int16_t *rec_buf; long rec_n, rec_len, rec_max; int rec_state, rec_bars, rec_src; char rec_last[48]; int rec_slot;   /* resampling */
@@ -2883,6 +2887,7 @@ static void *create_instance(const char *module_dir, const char *json_defaults) 
             s->sr = (float)g_sr;
             s->inv_sr = 1.0f / s->sr;
             s->rng = 0x2545F491u + (uint32_t)i * 7919u;
+            s->tp_rng = 2463534242u;
             s->focused = 1;
             s->pend_pad = -1;
             s->rec_src = -1; s->rec_slot = -1;
@@ -4104,6 +4109,49 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 if (tg < s->lim_g) s->lim_g = tg; else s->lim_g += (1.0f - s->lim_g) * 0.0006f;
                 L *= s->lim_g; R *= s->lim_g;
             } else s->lim_g = 1.0f;
+        }
+        {   /* TAPE (last stage before the output): a gentle cassette colour - soft saturation, a little head bump and top roll-off, slow pitch drift, very quiet hiss. Everything is 0 = off. */
+            const float tp = s->g[G_TAPE], hs = s->g[G_HISS], ww = s->g[G_WOW];
+            if (tp > 0.01f || hs > 0.01f || ww > 0.01f) {
+                float io[2] = { L, R };
+                float dly = 0.0f;
+                if (ww > 0.01f) {                                          /* wow (0.6 Hz) + flutter (6 Hz) + a slow random drift: at most about 0.3 % pitch */
+                    s->tp_ph1 += 0.6f * s->inv_sr; if (s->tp_ph1 >= 1.0f) s->tp_ph1 -= 1.0f;
+                    s->tp_ph2 += 6.1f * s->inv_sr; if (s->tp_ph2 >= 1.0f) s->tp_ph2 -= 1.0f;
+                    s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
+                    s->tp_dr += 0.00005f * (((float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f) - s->tp_dr);
+                    dly = 40.0f + ww * (24.0f * sinf(6.2831853f * s->tp_ph1) + 2.0f * sinf(6.2831853f * s->tp_ph2) + 600.0f * s->tp_dr);
+                    if (dly < 2.0f) dly = 2.0f; if (dly > 2040.0f) dly = 2040.0f;
+                }
+                const int w = s->tp_w;
+                for (int c = 0; c < 2; c++) {
+                    float x = io[c];
+                    if (ww > 0.01f) {
+                        s->tp_dl[c][w] = x;
+                        float rp = (float)w - dly; if (rp < 0.0f) rp += 2048.0f;
+                        const int i0 = (int)rp, i1 = (i0 + 1) & 2047; const float fr = rp - (float)i0;
+                        x = s->tp_dl[c][i0 & 2047] * (1.0f - fr) + s->tp_dl[c][i1] * fr;
+                    }
+                    if (tp > 0.01f) {
+                        const float dg = 1.0f + tp * 1.2f;                        /* soft tape saturation, level kept the same for quiet signals */
+                        x = fast_tanh(x * dg) / dg;
+                        s->tp_hb[c] += (1.0f - expf(-6.2831853f * 90.0f * s->inv_sr)) * (x - s->tp_hb[c]);
+                        x += s->tp_hb[c] * 0.18f * tp;                            /* head bump: a warm touch around 90 Hz */
+                        const float fc = 16000.0f - 9500.0f * tp;                 /* top roll-off 16 kHz -> 6.5 kHz */
+                        s->tp_lp[c] += (1.0f - expf(-6.2831853f * fc * s->inv_sr)) * (x - s->tp_lp[c]);
+                        x = s->tp_lp[c];
+                    }
+                    if (hs > 0.01f) {
+                        s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
+                        const float nz = (float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f;
+                        s->tp_hn[c] += 0.35f * (nz - s->tp_hn[c]);
+                        x += (nz - s->tp_hn[c]) * 0.0035f * hs * hs;                 /* the hiss lives in the highs; full = about -50 dB, far below the music */
+                    }
+                    io[c] = x;
+                }
+                s->tp_w = (w + 1) & 2047;
+                L = io[0]; R = io[1];
+            }
         }
         L = softclip(L); R = softclip(R);
         if (pv_on) {                                                  /* browser audition, independent of master volume */
