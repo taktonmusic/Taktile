@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.162.0 (18 October 2026)
+- Browser: bei offenem Sound-Browser spielen die Pads nur den Ton, auch bei Record wird nichts in den Clip aufgenommen
+
 ## 5.161.0 (18 October 2026)
 - Browser: Regler 1 (Vorschau, hell = an, gedimmt = aus) und Regler 2 (schnelles Scrollen) leuchten unter dem Display
 

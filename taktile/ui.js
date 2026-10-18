@@ -2359,6 +2359,7 @@ function recRelease(key, lane) {                           /* the recorded note 
 }
 function recHit(lane, semi, vel, key) { lastRec = null; recordHit(lane, semi, vel); if (lastRec) recHeldPad[key] = { c: lastRec.c, l: lastRec.l, i: lastRec.i, g: lastRec.g, f: lastRec.f, t: Date.now() }; }
 function recordHit(lane, semi, vel) {
+    if (fb) return;                                            /* the sound browser is open: pads only play, nothing is recorded */
     const track = laneTrk(lane);
     if (recDown && !playing) { stepRecord(lane, semi, vel); return; }
     if (fullVel) vel = 127;
