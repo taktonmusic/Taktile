@@ -3,9 +3,9 @@
 typedef struct { const char *nm; int16_t f1, f2, f3; uint16_t ms; uint8_t av, af; int16_t fc, fbw; uint8_t ah, nas; } spkp_t;
 /* name, F1 F2 F3 (Hz), duration (ms), voicing, frication, frication centre / bandwidth, aspiration, nasal */
 static const spkp_t SPK_P[] = {
-    { "_",   500, 1500, 2500,  40,   0,   0,    0,    0,   0,   0 },   /* 0: gap between words */
-    { ",",   500, 1500, 2500, 140,   0,   0,    0,    0,   0,   0 },   /* 1: comma */
-    { ".",   500, 1500, 2500, 280,   0,   0,    0,    0,   0,   0 },   /* 2: full stop */
+    { "_",   500, 1500, 2500,  60,   0,   0,    0,    0,   0,   0 },   /* 0: gap between words */
+    { ",",   500, 1500, 2500, 220,   0,   0,    0,    0,   0,   0 },   /* 1: comma */
+    { ".",   500, 1500, 2500, 400,   0,   0,    0,    0,   0,   0 },   /* 2: full stop */
     { "IY",  270, 2290, 3010, 115, 215,   0,    0,    0,   0,   0 },
     { "IH",  390, 1990, 2550,  70, 215,   0,    0,    0,   0,   0 },
     { "EH",  530, 1840, 2480,  85, 220,   0,    0,    0,   0,   0 },
@@ -27,24 +27,24 @@ static const spkp_t SPK_P[] = {
     { "W",   290,  610, 2150,  60, 175,   0,    0,    0,   0,   0 },
     { "Y",   260, 2070, 3020,  55, 175,   0,    0,    0,   0,   0 },
     { "HH",  500, 1500, 2500,  65,   0,   0,    0,    0, 190,   0 },
-    { "F",   500, 1500, 2500,  85,   0,  95, 5500, 6000,   0,   0 },
-    { "TH",  500, 1500, 2500,  85,   0,  75, 6200, 6000,   0,   0 },
-    { "S",   500, 1500, 2500,  95,   0, 230, 7200, 2500,   0,   0 },
-    { "SH",  500, 1500, 2500, 100,   0, 230, 3300, 1800,   0,   0 },
+    { "F",   500, 1500, 2500,  85,   0,  100, 5500, 6000,   0,   0 },
+    { "TH",  500, 1500, 2500,  85,   0,  80, 6200, 6000,   0,   0 },
+    { "S",   500, 1500, 2500,  95,   0, 150, 7200, 2500,   0,   0 },
+    { "SH",  500, 1500, 2500, 100,   0, 170, 3300, 1800,   0,   0 },
     { "V",   250, 1100, 2200,  55, 110,  70, 5500, 6000,   0,   0 },
     { "DH",  250, 1300, 2400,  45, 110,  55, 6000, 6000,   0,   0 },
-    { "Z",   250, 1500, 2500,  75, 110, 140, 7200, 2500,   0,   0 },
-    { "ZH",  250, 1500, 2500,  75, 110, 150, 3300, 1800,   0,   0 },
-    { "XI",  500, 1500, 2500,  95,   0, 200, 4800, 3500,   0,   0 },   /* German "ich" sound */
-    { "XA",  500, 1500, 2500,  95,   0, 200, 1800, 1500,   0,   0 },   /* German "ach" sound */
+    { "Z",   250, 1500, 2500,  75, 110, 90, 7200, 2500,   0,   0 },
+    { "ZH",  250, 1500, 2500,  75, 110, 110, 3300, 1800,   0,   0 },
+    { "XI",  500, 1500, 2500,  95,   0, 150, 4800, 3500,   0,   0 },   /* German "ich" sound */
+    { "XA",  500, 1500, 2500,  95,   0, 140, 1800, 1500,   0,   0 },   /* German "ach" sound */
     { "CL",  500, 1500, 2500,  55,   0,   0,    0,    0,   0,   0 },   /* closure of P T K */
     { "CLV", 200, 1300, 2300,  45,  70,   0,    0,    0,   0,   0 },   /* closure of B D G: the voice bar */
-    { "BP",  500, 1500, 2500,  12,   0, 115, 1100, 2200,   0,   0 },
-    { "BT",  500, 1500, 2500,  14,   0, 175, 4500, 2600,   0,   0 },
-    { "BK",  500, 1500, 2500,  16,   0, 150, 2100, 1600,   0,   0 },
-    { "BB",  250, 1300, 2300,  10,  80,  70, 1100, 2200,   0,   0 },
-    { "BD",  250, 1300, 2300,  10,  80, 100, 4200, 2600,   0,   0 },
-    { "BG",  250, 1300, 2300,  12,  80,  90, 2000, 1600,   0,   0 },
+    { "BP", 250, 1000, 2200,  12,   0, 115, 1100, 2200,   0,   0 },
+    { "BT", 250, 1800, 2700,  14,   0, 175, 4500, 2600,   0,   0 },
+    { "BK", 250, 1600, 2300,  16,   0, 150, 2100, 1600,   0,   0 },
+    { "BB", 250, 1000, 2200,  10,  80,  70, 1100, 2200,   0,   0 },
+    { "BD", 250, 1800, 2700,  10,  80, 100, 4200, 2600,   0,   0 },
+    { "BG", 250, 1600, 2300,  12,  80,  90, 2000, 1600,   0,   0 },
     { "ASP", 500, 1500, 2500,  26,   0,   0,    0,    0, 150,   0 },   /* breath after P T K */
     { "ga",  700, 1220, 2600,  75, 225,   0,    0,    0,   0,   0 },   /* German vowels: short / long */
     { "gaa", 730, 1100, 2600, 140, 230,   0,    0,    0,   0,   0 },
@@ -207,7 +207,7 @@ static const spk_rule_t SPK_EN[] = {
     /* Z */ { "", "Z", "", "Z" },
 };
 static const char *SPK_EN_DICT[][2] = {                                  /* words the rules get wrong, and the names of this project */
-    { "TAKTILE", "T AE K T AY L" }, { "TAKT", "T AA K T" }, { "ROBOT", "R OW B AA T" }, { "COMPUTER", "K AX M P Y UW T ER" }, { "HELLO", "HH AX L OW" }, { "MOVE", "M UW V" },
+    { "TAKTILE", "T AE K T AY L" }, { "TAKT", "T AA K T" }, { "ROBOT", "R OW B AA T" }, { "COMPUTER", "K AX M P Y UW T ER" }, { "HELLO", "HH EH L OW" }, { "MOVE", "M UW V" },
     { "GROOVE", "G R UW V" }, { "SCHWUNG", "SH V UH NG" }, { "ACID", "AE S IH D" }, { "BASS", "B EY S" }, { "TECHNO", "T EH K N OW" }, { "ABLETON", "AE B AX L T AX N" },
     { "WORLD", "W ER L D" }, { "SPEAK", "S P IY K" }, { "SPEECH", "S P IY CH" }, { "VOICE", "V OY S" }, { "SYNTH", "S IH N TH" }, { "DRUM", "D R AH M" }, { "THE", "DH AX" },
     { "A", "AX" }, { "TO", "T UW" }, { "OF", "AX V" }, { "ARE", "AA R" }, { "YOU", "Y UW" }, { "ONE", "W AH N" }, { "TWO", "T UW" }, { "THREE", "TH R IY" }, { "FOUR", "F AO R" },
@@ -218,7 +218,7 @@ static const char *SPK_EN_DICT[][2] = {                                  /* word
 };
 static void spk_en_word(spk_out_t *w, const char *word) {
     char b[64]; int L = 0; b[L++] = ' ';
-    for (const char *c = word; *c && L < 60; c++) if (*c >= 'A' && *c <= 'Z') b[L++] = *c;
+    for (const char *c = word; *c && L < 60; c++) if (*c >= 'A' && *c <= 'Z') { if (L > 1 && *c == b[L - 1] && strchr("BDFGLMNPRTZS", *c)) continue; b[L++] = *c; }      /* a doubled consonant letter is one sound */
     b[L++] = ' '; b[L] = 0;
     if (L <= 2) return;
     for (unsigned i = 0; i < sizeof SPK_EN_DICT / sizeof SPK_EN_DICT[0]; i++)
@@ -347,6 +347,23 @@ static void spk_de_word(spk_out_t *w, const char *word) {
 /* ---- text -> phoneme list ---- */
 static const char *SPK_EN_NUM[10] = { "ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE" };
 static const char *SPK_DE_NUM[10] = { "NULL", "EINS", "ZWEI", "DREI", "VIER", "FUENF", "SECHS", "SIEBEN", "ACHT", "NEUN" };
+
+/* ---- single letters (PLAY = LETTER): every step of the pattern says one letter or sound. EN / DE sounds as phoneme lists ---- */
+#define SPK_NLET 33
+static const char *SPK_LET_NAME[SPK_NLET] = { "A","E","I","O","U","B","C","D","F","G","H","J","K","L","M","N","P","Q","R","S","T","V","W","X","Y","Z","SH","CH","TH","NG","AE","OE","UE" };
+static const char *SPK_LET[SPK_NLET][2] = {
+    { "AE AE AE", "gaa gaa" }, { "EH EH EH", "gee gee" }, { "IH IY IY", "gii gii" }, { "AO AO AO", "goo goo" }, { "AH AH AH", "guu guu" },
+    { "B AH AH", "B gax gax gax" }, { "K AH AH", "TS gee" }, { "D AH AH", "D gax gax gax" }, { "F F AH", "F F gax" }, { "G AH AH", "G gax gax gax" },
+    { "HH AH AH", "HH gax gax gax" }, { "JH AH AH", "Y gax gax gax" }, { "K AH AH", "K gax gax gax" }, { "L AH AH", "L gax gax gax" }, { "M M AH", "M M gax" },
+    { "N N AH", "N N gax" }, { "P AH AH", "P gax gax gax" }, { "K W AH", "K V gax" }, { "R R AH", "R R gax gax" }, { "S S AH", "Z Z gax" },
+    { "T AH AH", "T gax gax gax" }, { "V V AH", "F F gax" }, { "W AH AH", "V V gax" }, { "K S S", "K S S" }, { "Y AH AH", "gue gue" },
+    { "Z Z AH", "TS gee" }, { "SH SH AH", "SH SH gax" }, { "CH AH AH", "CH gax gax gax" }, { "TH TH AH", "TH TH gax" }, { "NG NG AH", "NG NG gax" },
+    { "AE AE AE", "ge ge ge" }, { "ER ER ER", "goe goe goe" }, { "UW UW IY", "gue gue gue" },
+};
+static int spk_letter(int idx, int lang, uint8_t *out) {
+    if (idx < 0) idx = 0; if (idx >= SPK_NLET) idx = SPK_NLET - 1;
+    spk_out_t w = { out, 0 }; spk_toks(&w, SPK_LET[idx][lang ? 1 : 0]); return w.n;
+}
 static int spk_compile(const char *txt, int lang, uint8_t *out) {
     spk_out_t w = { out, 0 };
     char word[48]; int wl = 0, any = 0;

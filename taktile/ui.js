@@ -51,7 +51,7 @@ const ENUMS = {
     wave: ['Auto','Saw','Square','Tri','Sine','Pulse','Pulse12','RampDn','HalfSin','Organ','Hollow','Fold','Stair','Digi','Vowel','Sync'],
     poly: ['Mono','Poly'],
     mfx: ['OFF','OCTV','CHRD','ARP','STRM','ECHO','RNDP','RNDV','COMP','SCAL','TRNS','DIAT'],
-    xfx: ['OFF','STUT','REV','FLNG','TREM','APAN','COMB','WAH','GATE','LOFI','DJ','GRAN'],
+    xfx: ['OFF','STUT','REV','FLNG','TREM','APAN','COMB','WAH','GATE','LOFI','DJ','GRAN'],      /* GRAN (11) is only kept so that old projects still show it: the granulator has its own page */
     dmode: ['PING','TAPE','DUB'],
     rmode: ['HALL','ECHO','SHIM'],
     mono: ['STEREO','MONO','DRY'],
@@ -62,9 +62,9 @@ const ENUMS = {
     scale: ['Minor','Phryg','Major','Dorian','Lydian','Mixol','Locr','HarmMin','MelMin','PhrDom','DblHarm','HungMin'],
     dly_time: ['1/16','1/8','3/16','1/4','1/2'],
 };
-ENUMS.dln = ['AUTO', '1/16', '1/8', '1/4', '1/2', '1 BAR', '2 BARS']; ENUMS.dmd = ['WHOLE', 'WORD'];      /* speech: fit the text to a length, say all of it or one word per note */
+ENUMS.dln = ['AUTO', '1/16', '1/8', '1/4', '1/2', '1 BAR', '2 BARS']; ENUMS.dmd = ['WHOLE', 'WORD', 'LETTER'];      /* speech: fit the text to a length, say all of it or one word per note */
 ENUMS.m2fx = ENUMS.mfx; ENUMS.x2fx = ENUMS.xfx; ENUMS.dly_mode = ENUMS.dmode; ENUMS.rvb_mode = ENUMS.rmode;
-const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn','dsw','dst','dnz','dck','dln','dmd'];
+const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn','dsw','dst','dnz','dck','dln','dmd','dlt'];
 const PDEF = { 105: 0.5, 106: 0.5, 107: 0.5, 108: 0.5, 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
 const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low'];
@@ -94,7 +94,7 @@ function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(v
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
 const DRM_ENG_RE = /^D(Kick|Snr|Hat|Clap|Tom|Rim|Clave|Cow|Metal)/;
 function isDrmEng(t) { return DRM_ENG_RE.test(TYPE_NAME[Math.round(t)] || ''); }      /* the drum-synth engine: only these drum sounds have an ENGINE tab */
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : (isDrmEng(pads[ln()][0]) ? [1, 9, 3, 2, 38, 36, 27, 28] : [1, 3, 2, 38, 36, 27, 28]); if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : (isDrmEng(pads[ln()][0]) ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 46, 36, 27, 28]); if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -159,7 +159,7 @@ const VIEW_ITEMS = {
     1: [['type','Type'],['tune','Tune'],['decay','Decay','Dcy'],['tone','Tone'],['drive','Drive','Drv'],['pan','Pan'],['poly','Voices','Poly'],['vol','Vol']],
     2: [['cut','LPCut','LPF'],['res','Reso'],['locut','HPCut','HPF'],['fenv','FltEnv','FEnv'],['fdec','FltDecay','FDec'],['fkey','KeyTrack','FKey'],['fmode','Mode'],['crush','Crush','Crsh']],
     3: [['ring','Ring'],['rfq','RingFrq','RFrq'],['pump','Pump'],['wob','Wobble','Wob'],['duck','Duck'],['duckr','DuckRel','DRel'],['scs','DuckSrc','DSrc'],['pcv','PumpCrv','PCrv']],       /* synth tracks; drum tracks add the kick rumble (viewItemsFix) */
-    38: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['dly','Delay','Del'],['rvb','Reverb','Rev'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
+    38: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['dly','Delay','Delay'],['rvb','Reverb','Reverb'],['mono','Output','Out'],['morph','Morph A>B','Mrph']],
     46: [['dly_time','DlyTime','Time'],['dly_fb','DlyFdbk','Fdbk'],['dly_tone','DlyTone','Tone'],['dly_ret','DlyRet','Ret'],['rvb_size','RvbSize','Size'],['rvb_dark','RvbDark','Dark'],['rvb_mode','RvbType','Type'],['rvb_ret','RvbRet','Ret']],
     50: [['grn','Grain','Grn'],['gsz','Size'],['gsp','Spread','Sprd'],['gpi','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
     39: [['dly_mode','DlyType','Type'],['dly_wide','DlyWide','Wide'],['rvb_wide','RvbWide','Wide'],['rvb_low','RvbLow','Low']],
@@ -286,7 +286,7 @@ function decStepOld(h) {                                  /* states saved before
 function encTrack(p, t) { return steps[p][t].map(encStep).join(''); }
 function trackHasSteps(p, t) { if (kind[t]) { for (const l of lanesOf(t)) if (laneHas(p, l)) return true; return false; } return laneHas(p, t); }
 function stepOnAt(p, t, s) { for (const l of lanesOf(t)) if (steps[p][l][s][0]) return true; return false; }
-const LOCK_KEYS = ['cut', 'res', 'fenv', 'tune', 'decay', 'tone', 'drive', 'pan', 'vol', 'locut'], LOCK_NAME = ['LPCut', 'Reso', 'FltEnv', 'Tune', 'Decay', 'Tone', 'Drive', 'Pan', 'Vol', 'HPCut'];
+const LOCK_KEYS = ['cut', 'res', 'fenv', 'tune', 'decay', 'tone', 'drive', 'pan', 'vol', 'locut', 'dlt'], LOCK_NAME = ['LPCut', 'Reso', 'FltEnv', 'Tune', 'Decay', 'Tone', 'Drive', 'Pan', 'Vol', 'HPCut', 'Letter'];
 let ciOn = true, ciBeats = 0;                                   /* count-in before recording starts */
 const FOL_NAME = ['OFF', 'NEXT', 'PREV', 'FIRST', 'RANDOM', 'STOP'], FOL_LOOPS = [1, 2, 3, 4, 8, 16];
 const fol = Array.from({ length: NTRK }, () => new Array(NPAT).fill(0)), folSent = Array.from({ length: NTRK }, () => new Array(NPAT).fill(0));   /* follow action per clip: bits 0-2 action, 3-5 loops */
@@ -517,6 +517,7 @@ function fmtVal(key, v) {
     if (key === 'm_eql' || key === 'm_eqm' || key === 'm_eqh' || key === 'eql' || key === 'eqm' || key === 'eqh') { const d = Math.round((v - 0.5) * 24); return (d > 0 ? '+' : '') + d + 'dB'; }
     if (key === 'tsw') return v < 0.52 ? 'OFF' : '+' + Math.round((v - 0.5) * 2 * 25) + '%';
     if (key === 'gsz') { const ms = 4 * Math.pow(1125, v); return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(1) + 's'; }
+    if (key === 'dlt') return SPK_LET[letIdx(v)];
     if (key === 'grn') return v < 0.01 ? 'OFF' : Math.round(v * 100) + '%';
     if (key === 'm_chp') return v < 0.02 ? 'OFF' : String(Math.round(40 + 360 * v));
     if (key === 'favo') return favOnly ? 'ON' : 'OFF';
@@ -672,16 +673,16 @@ function editParam(scope, key, delta, idx) {
     }
     if (key === 'smp') { selectSample(delta > 0 ? 1 : -1, true); return { v: getVal(scope, key) }; }
     if (key === 'smd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'smd', clamp(Math.round(pads[ln()][PI.smd] * 2) + d, 0, 2) / 2); return { v: pads[ln()][PI.smd] }; }
+    if (key === 'dlt') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; const L = ln(), ni = clamp(letIdx(pads[L][PI.dlt]) + d, 0, SPK_NLET - 1); setLaneP(L, 'dlt', ni / (SPK_NLET - 1)); showToast('LETTER', SPK_LET[ni], ni / (SPK_NLET - 1)); return { v: pads[L][PI.dlt] }; }      /* the letter brush: the next step you press says this letter */
     if (key === 'fmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'fmode', clamp(Math.round(pads[ln()][PI.fmode] * 2) + d, 0, 2) / 2); return { v: pads[ln()][PI.fmode] }; }
     let v = getVal(scope, key);
     if (ENUMS[key]) {
         acc[idx] += delta;
         if (Math.abs(acc[idx]) < (FX_TYPE_KEY[key] ? 14 : 6)) return false;                  /* effect types turn even slower; a list value (arp rate, wave ...) needs a longer turn per step, so it no longer jumps */
-        v = clamp(Math.round(v) + (acc[idx] > 0 ? 1 : -1), 0, ENUMS[key].length - 1); acc[idx] = 0;
+        v = clamp(Math.round(v) + (acc[idx] > 0 ? 1 : -1), 0, (key === 'xfx' || key === 'x2fx') ? 10 : ENUMS[key].length - 1); acc[idx] = 0;
     } else v = clamp(v + delta * (shiftHeld ? 0.016 : 0.0032), 0, 1);
     if (scope === 'pad') {
         const L = keyLane(key);
-        if ((key === 'dly' || key === 'rvb') && L >= NTRK) { showToast('DRUM SOUNDS', 'USE OWN INSERT FX', 0); return false; }
         if (deleteHeld) { autoClear(L, key); return { v: pads[L][PI[key]] }; }
         pSnap('pad', L, key); pads[L][PI[key]] = v;
         if (recArmed && playing && PI[key] !== 0) autoRec(L, key, v);
@@ -795,7 +796,11 @@ function stepsPad(idx, vel) {                             /* STEPS mode: 32 pads
     if (deleteHeld) { steps[c][L][s] = [0, 100, 0, 0]; qStep(c, L, s); markEdited(); return; }
     const st = stepAt(s);
     heldStep = s; heldPad = idx; heldEdited = false; heldWasOn = !!st[0];
-    if (!heldWasOn) { st[0] = 1; st[1] = fullVel ? 127 : clamp(vel, 1, 127); qStep(c, L, s); markEdited(); }
+    if (!heldWasOn) {
+        st[0] = 1; st[1] = fullVel ? 127 : clamp(vel, 1, 127);
+        if (spkLetterOn(L)) { st[8] = letLockVal(pads[L][PI.dlt]); setLetLock(L); showToast('STEP ' + (s + 1), SPK_LET[letIdx(pads[L][PI.dlt])], pads[L][PI.dlt]); }      /* LETTER mode: the new step says the letter you have chosen */
+        qStep(c, L, s); markEdited();
+    }
     needsRedraw = true;
 }
 function stepsPadUp(idx) {                                // release: a plain tap on a lit step switches it off
@@ -2128,11 +2133,18 @@ function euclidKnob(i, delta) {
 }
 
 /* step-held knobs */
+function setLetLock(L) { const k = LOCK_KEYS.indexOf('dlt'); if (lockT[L] !== k) { lockT[L] = k; qLockT(L); } }
 function stepKnob(i, delta) {
     if (delta === 0 || i > 7) return;
     const st = stepAt(heldStep), k = (i === 0 && shiftHeld) ? 4 : 1;
+    if (i === 7 && !shiftHeld && spkLetterOn(ln())) {          /* speech in LETTER mode: hold a step, turn knob 8 = the letter of this step */
+        acc[7] += delta; if (Math.abs(acc[7]) < 3) return; const d = acc[7] > 0 ? 1 : -1; acc[7] = 0;
+        const L = ln(), cur = st[8] ? letOfLock(st[8]) : letIdx(pads[L][PI.dlt]), ni = clamp(cur + d, 0, SPK_NLET - 1);
+        st[8] = letLockVal(ni / (SPK_NLET - 1)); setLetLock(L); showToast('STEP ' + (heldStep + 1), SPK_LET[ni], ni / (SPK_NLET - 1));
+        heldEdited = true; grpSync(7); qStep(ed[sel], L, heldStep); markEdited(); return;
+    }
     if (i === 7) {
-        if (shiftHeld) { acc[7] += delta; if (Math.abs(acc[7]) < 4) return; const d = acc[7] > 0 ? 1 : -1; acc[7] = 0; const L = ln(); lockT[L] = (lockT[L] + d + LOCK_KEYS.length) % LOCK_KEYS.length; qLockT(L); showToast('LOCK TARGET', LOCK_NAME[lockT[L]], lockT[L] / 9); markEdited(); return; }
+        if (shiftHeld) { acc[7] += delta; if (Math.abs(acc[7]) < 4) return; const d = acc[7] > 0 ? 1 : -1; acc[7] = 0; const L = ln(); lockT[L] = (lockT[L] + d + LOCK_KEYS.length) % LOCK_KEYS.length; if (LOCK_KEYS[lockT[L]] === 'dlt' && !isSpk(pads[L][0])) lockT[L] = (lockT[L] + d + LOCK_KEYS.length) % LOCK_KEYS.length; qLockT(L); showToast('LOCK TARGET', LOCK_NAME[lockT[L]], lockT[L] / 9); markEdited(); return; }
         if (!st[8]) { if (delta < 0) return; st[8] = 64; } else { acc[7] += delta; if (Math.abs(acc[7]) < 5) return; st[8] = clamp(st[8] + (acc[7] > 0 ? 1 : -1) * 2, 0, 127); acc[7] = 0; }
         showToast('LOCK ' + LOCK_NAME[lockT[ln()]], st[8] ? String(Math.round((st[8] - 1) / 126 * 100)) : 'OFF', st[8] / 127);
         heldEdited = true; grpSync(7); qStep(ed[sel], ln(), heldStep); markEdited(); return;
@@ -2182,7 +2194,7 @@ function drumCol(t, k) {                                  /* colour of drum soun
 function inboundActive() { return (typeof shadow_inbound_pad_midi_active === 'function') && shadow_inbound_pad_midi_active(); }
 function selectTrack(t) { drumHeldK = []; padHold = {}; growTrk.fill(false); bank = t >> 2; if (sel !== t) { for (let q = 0; q < NTRK; q++) if (topModes[q] === 3) { liveFxAllOff(); topModes[q] = topPrev[q] !== 3 ? topPrev[q] : 0; markEdited(); }
         let chg = false; for (let q = 0; q < NTRK; q++) if (topModes[q] === 4) { topModes[q] = 0; chg = true; } if (chg) { chordReconcile(); markEdited(); }      /* chord pads are a visit too: every synth track opens with its normal pads */      /* Live FX is a visit: another track = gone until you switch it on again */
-        fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); if (view === 44 && !chordOn()) tabEnter(1); if (kind[sel] && (view === 46 || view === 39 || (view === 38 && fxPage))) tabEnter(38); } needsRedraw = true; }
+        fb = null; kitBackup = null; sel = t; stepPage = 0; heldStep = -1; heldPad = -1; acc.fill(0); syncSel(); if (view === 44 && !chordOn()) tabEnter(1); } needsRedraw = true; }
 function wipeSlot(d) {                                    /* a kit is handed to another track: back to the default kit */
     ensureCs(); const def = defaultPads();
     for (let k = 0; k < 16; k++) {
@@ -2336,7 +2348,8 @@ function recordHit(lane, semi, vel) {
     if (growTrk[track] && len < MAXSTEP && gs - 1 >= len && ((g % len) + len) % len >= len - 2) {      /* from the second pass on, a hit in the last two steps means: keep going */ growLoop(lane, len + 16); len = effLen(lane); }
     const pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw);      /* the hit's exact position, snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
     let tS = Math.floor(pSn + 1e-6), tN = Math.round((pSn - tS) / 0.025); if (tN > NUD_MAX) { tS++; tN = 0; }
-    const target = ((tS % len) + len) % len;
+    let target = ((tS % len) + len) % len;
+    if (!growTrk[track] && len < MAXSTEP && target === len - 1 && trackHasSteps(ed[track], track)) { growLoop(lane, len + 16); len = effLen(lane); }      /* recording again into a clip that already has notes: a note on its very last step carries on - the clip grows by 16 steps (one more bar) */
     const st = steps[ed[track]][lane][target]; st[6] = tN; for (let q = st.length; q < 10; q++) st[q] = 0; st[5] = 0; st[9] = 0;
     st[0] = 1; st[1] = clamp(vel, 1, 127); st[2] = clamp(semi, -64, 63);
     qStep(ed[track], lane, target); lastRec = { c: ed[track], l: lane, i: target, g: g, f: fr }; markEdited();
@@ -2523,8 +2536,8 @@ function drawTabsNew() {
 const GW = { MIDI: 19, FX: 18, SAMPLE: 18, EUCLID: 17, DELAY: 16 };
 function lastTabId() { return trackTabs().indexOf(9) >= 0 ? 9 : 28; }      /* SYNTH ENGINE (second tab of a synth track) or SAMPLE (last tab of the others) */
 const TAB_PARENT = { 43: 2, 50: 38, 39: 46, 47: 9, 49: 27 };      /* second pages belong to a tab: EQ > FILTER, GRAIN > FX, FX BUS 2 > FX BUS */
-function tabIndex(tabs) { return tabs.indexOf(view === 9 ? lastTabId() : (view === 38 && fxPage ? 46 : (TAB_PARENT[view] || view))); }
-function tabPageName(t) { return view === 43 ? 'EQ' : (view === 50 ? 'GRAIN' : (view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
+function tabIndex(tabs) { return tabs.indexOf(view === 9 ? lastTabId() : (view === 38 && fxPage === 1 ? 46 : (TAB_PARENT[view] || view))); }
+function tabPageName(t) { return view === 43 ? 'EQ' : (view === 50 ? 'GRAIN' : (view === 38 && fxPage === 2) ? 'INSERT 2' : (view === 38 && fxPage) ? 'FX BUS 2' : (t === 9 && synPage) ? 'ENGINE 2' : (t === 27 && fxPage) ? 'MIDI FX 2' : TAB_SHORT[t]); }
 function tabPageNum() { return (view === 43 || view === 50 || (view === 38 && fxPage) || (view === 9 && synPage) || (view === 27 && fxPage)) ? '.2' : ''; }
 let synPage = 0, fxPage = 0;
 function tabPg(t) {                                        /* [page, pages] inside the current tile, always shown: tile name top left, page top right */
@@ -2533,7 +2546,7 @@ function tabPg(t) {                                        /* [page, pages] insi
     const two = (t === 2 || t === 38 || t === 46 || t === 27);
     return [tabPageNum() ? 2 : 1, two ? 2 : 1];
 }
-function pg2(v) { return v === 9 && synPage ? 47 : (v === 38 && fxPage ? 39 : (v === 27 && fxPage ? 49 : v)); }      /* second pages (Jog click): ENGINE 2, FX TIME, MIDI FX 2 */
+function pg2(v) { return v === 9 && synPage ? 47 : (v === 38 && fxPage ? (fxPage === 2 ? 53 : 39) : (v === 27 && fxPage ? 49 : v)); }      /* second pages (Jog click): ENGINE 2, FX TIME, MIDI FX 2 */
 function itemsView() { return view === 28 && smpPage ? (smpPage === 1 ? 29 : (smpPage === 3 ? 48 : 32)) : pg2(view); }
 let exitDlg = -1, suspended = false, selfTestT = 0;
 function selfTest() {                                       /* once after start: can Taktile really save, and is the sample folder there? */
@@ -2877,7 +2890,7 @@ function cell(x, y, label, value, f, cw) {
     if (w > 0) fill_rect(x + 3, y + 19, w, 3, 1);
 }
 /* ---- page looks: every kind of page has its own style so they are not all alike ---- */
-const BLOCKS = { 9: [['ENGINE', 4], ['FILTER + VOICES', 4]], 47: [['TONE SHAPE', 4], ['MOVEMENT', 4]], 3: [['RING + PUMP', 4], ['DUCK', 4]], 38: [['INSERT / THIS TRACK', 4], ['SENDS + OUTPUT', 4]], 46: [['DELAY / ALL TRACKS', 4], ['REVERB / ALL TRACKS', 4]], 39: [['DELAY / ALL TRACKS', 2], ['REVERB / ALL TRACKS', 2]] };      /* hardware-style pages: named blocks of four knobs, like OSC / FILTER / ENV on a real synth */
+const BLOCKS = { 9: [['ENGINE', 4], ['FILTER + VOICES', 4]], 47: [['TONE SHAPE', 4], ['MOVEMENT', 4]], 3: [['RING + PUMP', 4], ['DUCK', 4]], 38: [['INSERT / THIS TRACK', 4], ['SENDS / OUTPUT', 4]], 46: [['DELAY / ALL TRACKS', 4], ['REVERB / ALL TRACKS', 4]], 39: [['DELAY / ALL TRACKS', 2], ['REVERB / ALL TRACKS', 2]] };      /* hardware-style pages: named blocks of four knobs, like OSC / FILTER / ENV on a real synth */
 function engTile(x, y, cw, lab, vs, fr, hotE) {               /* the tile of the ENGINE page: small name, bold value, bar */
     const c = 1, bw = cw - 4;      /* the tile you are turning is not filled white any more: its bar is just a little thicker */
     txtS(x + 2, y, String(tr(lab)).substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c);
@@ -3379,7 +3392,7 @@ function fbTree() {
     const byRole = { n: 'BY ROLE', kids: [['BASS', [19, 20, 21, 22, 74, 79]], ['LEAD', [26, 73, 80]], ['PLUCK', [23]], ['PAD + STRINGS', [25, 78]], ['KEYS + ORGAN', [24, 76, 77]], ['BELLS', [27]]].map(r => ({ n: r[0], l: (() => { const l = []; for (let t = 1064; t < TYPE_NAME.length; t++) if (r[1].indexOf(BASE_T[t]) >= 0 && !isSpk(t)) l.push(t); return l; })() })) };
     const dsy = (re) => { const l = []; for (let t = 1064; t < TYPE_NAME.length; t++) if (re.test(TYPE_NAME[t])) l.push(t); return l; };
     const dsyn = { n: 'DRUM SYNTHS', kids: [['KICKS', /^DKick/], ['SNARES', /^DSnr/], ['HATS', /^DHat/], ['CLAPS', /^DClap/], ['TOMS', /^DTom/], ['RIM + METAL', /^D(Rim|Clave|Cow|Metal)/]].map(x => ({ n: x[0], l: dsy(x[1]), init: true })) };
-    const fxA = { n: 'AUDIO FX', fx: 'xfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] };       /* one flat list: turn = you hear it on the sound, click = keep */
+    const fxA = { n: 'AUDIO FX', fx: 'xfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] };       /* one flat list: turn = you hear it on the sound, click = keep */
     const fxM = { n: 'MIDI FX', fx: 'mfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] };
     const fxK = fbWantFx ? [fxA, fxM] : [];
     const drums = { n: 'DRUMS', kindSw: 1, kids: (kitFresh[sel] ? [{ n: 'KITS', kits: true }] : []).concat([fbStyles(), { n: 'BY TYPE', kids: [cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT), cat('PERCUSSION', 3), cat('FX', 4)].concat(nx) }, dsyn]) };
@@ -4495,25 +4508,32 @@ const FMI = TYPE_NAME.indexOf('FmInit');                       /* the plain 2-op
 const ENG_KN = { 6: ['Detune', 'Sub', 'Sync', 'Width'], 7: ['Position', 'Sweep', 'Warp', 'Detune'], 8: ['Index', 'Ratio', 'Feedback', 'Algo'], 9: ['Tilt', 'Odd/Even', 'Stretch', 'Shimmer'], 10: ['Detune', 'Spread', 'Hollow', 'Motion'], 11: ['Bright', 'Pick', 'Damp', 'Excite'], 12: ['Fold', 'Sweep', 'Symmetry', 'Harmonics'] };
 const ENG_ABBR = { Detune: 'Det', Position: 'Pos', Sweep: 'Swp', Width: 'Wid', Feedback: 'Fdbk', 'Odd/Even': 'O/E', Stretch: 'Strc', Shimmer: 'Shim', Spread: 'Sprd', Hollow: 'Holo', Motion: 'Mot', Bright: 'Brt', Excite: 'Exc', Symmetry: 'Sym', Harmonics: 'Harm', Index: 'Idx', Ratio: 'Rat' };      /* every knob name fits its tile in the normal letters */
 const DRM_PG = [['dsw','Sweep','Swp'],['dst','SweepTime','SwpT'],['dnz','Noise','Nse'],['dck','Click','Clk'],['drive','Drive','Drv'],['cut','LPCut','LPF'],['res','Reso','Res'],['locut','HPCut','HPF']];
+const SPK_LET = ['A','E','I','O','U','B','C','D','F','G','H','J','K','L','M','N','P','Q','R','S','T','V','W','X','Y','Z','SH','CH','TH','NG','AE','OE','UE'], SPK_NLET = SPK_LET.length;
+function letIdx(v) { return clamp(Math.round(v * (SPK_NLET - 1)), 0, SPK_NLET - 1); }
+function letLockVal(v) { return 1 + Math.round(v * 126); }          /* the letter as a step's parameter lock (1..127) */
+function letOfLock(lv) { return letIdx((lv - 1) / 126); }
+function spkLetterOn(L) { return isSpk(pads[L][0]) && Math.round(pads[L][PI.dmd]) === 2; }
 const SPK_PG = [['dsw','Speed','Spd'],['dst','Formant','Frmt'],['dnz','Breath','Brth'],['dck','Inflect','Infl'],['dln','Length','Len'],['dmd','Play','Play'],['drive','Drive','Drv'],['cut','LPCut','LPF']];
+const SPK_PG_L = SPK_PG.map(it => it[0] === 'dln' ? ['dlt','Letter','Ltr'] : it);      /* PLAY = LETTER: the Length tile becomes the letter brush */
 const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0], ENG_ABBR[ENG_KN[e][0]]], ['sub', ENG_KN[e][1], ENG_ABBR[ENG_KN[e][1]]], ['fkey', ENG_KN[e][2], ENG_ABBR[ENG_KN[e][2]]], ['fdec', ENG_KN[e][3], ENG_ABBR[ENG_KN[e][3]]], ['drive', 'Drive', 'Drv'], ['cut', 'LPCut', 'LPF'], ['res', 'Reso', 'Res'], ['poly', 'Voices', 'Poly']];
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
 const PG47_ENG = VIEW_ITEMS[47], PG47_SYN = PG47_ENG.map(it => it[0] === 'schp' ? ['drive', 'Drive', 'Drv'] : it);
 const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['xfx', 'Effect', 'FX'] : it);      /* drum sounds have their own insert effects (no shared delay / reverb bus) */
 const FX_SYN = VIEW_ITEMS[38], FX_DRM = [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['x2fx','Effect 2','FX2'],['x2mix','Amount 2','Amt2'],['mono','Output','Out'],['morph','Morph A>B','Mrph']];
-const BLK_FX_SYN = BLOCKS[38], BLK_FX_DRM = [['INSERT 1 / THIS SOUND', 4], ['INSERT 2 + OUTPUT', 4]];
+const BLK_FX_SYN = BLOCKS[38];
+VIEW_ITEMS[53] = [['x2fx','Effect 2','FX2'],['x2mix','Amount 2','Amt2'],['x2rt','Rate 2','Rate'],['x2dp','Depth 2','Dpth']]; BLOCKS[53] = [['INSERT 2 / THIS SOUND', 4]];      /* a drum sound's second insert effect */
 const SND_SPK = [['type', 'Engine'], ['spk', 'Text'], ['tone', 'Tone'], ['tune', 'Tune'], ['drive', 'Drive', 'Drv'], ['pan', 'Pan'], ['poly', 'Voices', 'Poly'], ['vol', 'Vol']];      /* speech: the text takes the place of attack / decay (one shot) */
 const SND_SYN = [['type', 'Engine'], ['att', 'Attack', 'Atk'], ['decay', 'Decay', 'Dcy'], ['tone', 'Tone'], ['tune', 'Tune'], ['pan', 'Pan'], ['poly', 'Voices', 'Poly'], ['vol', 'Vol']];      /* synth: engine + the shaping knobs first */       /* synth: Drive lives on the 2nd SYNTH page; the wave (Saw, Square ...) sits here as a small preset-style box */
 function viewItemsFix() {
     if (favSig !== (chordOn() ? 1 : 0)) favBuild();
     VIEW_ITEMS[3] = kind[sel] ? MOD_DRM : MOD_SYN;
     const t = kind[sel] ? 0 : Math.round(pads[sel][0]), e = nxEng(t);
-    if (kind[sel] && (view === 46 || (view === 38 && fxPage))) { view = 38; fxPage = 0; needsRedraw = true; }      /* drum tracks have no shared FX bus pages */
-    VIEW_ITEMS[38] = kind[sel] ? FX_DRM : FX_SYN; BLOCKS[38] = kind[sel] ? BLK_FX_DRM : BLK_FX_SYN;
+    VIEW_ITEMS[38] = FX_SYN; BLOCKS[38] = BLK_FX_SYN;      /* drum sounds and synths: the same FX page (insert, sends, output); a drum sound's second insert is page 2 */
+    if (!kind[sel] && fxPage === 2) fxPage = 0;
     VIEW_ITEMS[1] = kind[sel] ? SND_DRM : (isSpk(pads[sel][0]) ? SND_SPK : SND_SYN);      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
-    VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : (isDrmEng(pads[ln()][0]) ? DRM_PG : (isSpk(pads[ln()][0]) ? SPK_PG : SYN_PG)));
-    BLOCKS[9] = VIEW_ITEMS[9] === DRM_PG ? [['DRUM ENGINE', 4], ['DRIVE + FILTER', 4]] : (VIEW_ITEMS[9] === SPK_PG ? [['VOICE', 4], ['DRIVE + FILTER', 4]] : [['ENGINE', 4], ['FILTER + VOICES', 4]]);
+    VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : (isDrmEng(pads[ln()][0]) ? DRM_PG : (isSpk(pads[ln()][0]) ? (spkLetterOn(ln()) ? SPK_PG_L : SPK_PG) : SYN_PG)));
+    BLOCKS[9] = VIEW_ITEMS[9] === DRM_PG ? [['DRUM ENGINE', 4], ['DRIVE + FILTER', 4]] : ((VIEW_ITEMS[9] === SPK_PG || VIEW_ITEMS[9] === SPK_PG_L) ? [['VOICE', 4], ['DRIVE + FILTER', 4]] : [['ENGINE', 4], ['FILTER + VOICES', 4]]);
     if (kind[sel] && !isDrmEng(pads[ln()][0]) && view === 9) { tabEnter(1); }      /* a drum sound without an engine has no ENGINE tab */
 }
 
@@ -5141,6 +5161,8 @@ globalThis.onMidiMessageInternal = function (data) {
             let pg;
             if (view === 2) { view = 43; pg = 2; }
             else if (view === 43) { view = 2; pg = 1; }
+            else if (kind[sel] && view === 38 && !fxPage) { fxPage = 2; pg = 2; }
+            else if (kind[sel] && view === 38 && fxPage === 2) { view = 50; fxPage = 0; pg = 3; }
             else if (view === 38 && !fxPage) { view = 50; pg = 2; }
             else if (view === 50) { view = 38; fxPage = 0; pg = 1; }
             else if (view === 46) { view = 38; fxPage = 1; pg = 2; }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.130.0 (18 October 2026)
+- SPEECH: much clearer voice (faster formant transitions, stress per word, slower pace, place cues for P/T/K, doubled letters fixed)
+- SPEECH: S / Z / SH / CH are a clean hiss band instead of noise, voiced Z follows the voice
+- SPEECH: new PLAY = LETTER - pick a letter with the Letter knob, then press a step: that step says the letter (EN + DE, 33 letters and sounds). Hold a step + knob 8 changes its letter
+- REC: recording again into a clip that has notes - a note on the last step grows the clip by 16 steps
+- KEY now only steers the MIDI effects (scale snap, diatonic chord); sounds keep their pitch
+- FX: drum sounds got Delay and Reverb sends, the FX BUS tab and one FX page like synths (Insert 2 on page 2); Granulator removed from the insert list (own GRAIN page); SENDS / OUTPUT block renamed, tiles Delay / Reverb
+
 ## 5.129.0 (18 October 2026)
 - SPEECH: Length (AUTO follows tempo, 1/16 to 2 BARS fits the text to the clip length)
 - SPEECH: Play WHOLE/WORD (one word per note, restarts with the loop, starts on the beat)
