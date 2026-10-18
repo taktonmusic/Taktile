@@ -243,6 +243,9 @@ const edSeen = new Array(16).fill(0);
 let recSwallow = false, shiftHeld = false, copyHeld = false, deleteHeld = false, muteHeld = false;
 let delAge = 0;
 let fbPrev = true;                                           /* browser preview on / off (Up / Down button): on = every sound, kit, synth, sample and effect you scroll to is heard (playing or stopped) */
+function fbSetPrev(v) {                                    /* preview on / off (Up / Down button, knob 1) */
+    if (v === fbPrev) return; fbPrev = v; if (!fbPrev) { fbPend = 0; if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; } } else { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) fbPend = 3; } showToast('PREVIEW', fbPrev ? 'ON' : 'OFF', fbPrev ? 1 : 0); needsRedraw = true;
+}
 let fb = null, fbT = 0, fbOff = null, fbPend = 0;                      /* sound / kit folder browser */
 let heldStep = -1, heldWasOn = false, heldEdited = false, heldGrp = [];      /* heldGrp: more steps held together with the first one: knobs edit all of them */
 let acc = [0,0,0,0,0,0,0,0];
@@ -5127,10 +5130,10 @@ globalThis.onMidiMessageInternal = function (data) {
     }
     if (fb && !menuOpen && exitDlg < 0 && askKind < 0) {      /* folder browser: jog = up / down, click = open / keep, Back = up / cancel, Menu = cancel */
         if (type === 0xB0 && d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { if (shiftHeld && fbSiblings()) { fbAcc += dl; if (Math.abs(fbAcc) >= 2) { fbCat(fbAcc > 0 ? 1 : -1); fbAcc = 0; } return; } fbAcc += dl; if (Math.abs(fbAcc) >= 1) { fbMove(fbAcc > 0 ? 1 : -1); fbAcc = 0; } } return; }      /* one click per entry; Shift + jog = next category */
-        if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbMove(dl, 5); return; }      /* knob 1 = fast scroll, 10 entries per click */
+        if (type === 0xB0 && d1 === CC.KNOB1) { const dl = decodeDelta(d2); if (dl) fbSetPrev(dl > 0); return; }      /* knob 1: turn right = preview ON, turn left = OFF */
         if (type === 0xB0 && d1 === CC.JOGCLICK) { if (d2 > 0) { if (shiftHeld) fbFav(); else fbClick(); } return; }
         if (type === 0xB0 && d1 === CC.BACK) { if (d2 > 0) fbBack(); return; }
-        if (type === 0xB0 && (d1 === CC.UP || d1 === CC.DOWN)) { if (d2 > 0) { fbPrev = !fbPrev; if (!fbPrev) { fbPend = 0; if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; } } else { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) fbPend = 3; } showToast('PREVIEW', fbPrev ? 'ON' : 'OFF', fbPrev ? 1 : 0); needsRedraw = true; } return; }      /* Up / Down: preview on / off */
+        if (type === 0xB0 && (d1 === CC.UP || d1 === CC.DOWN)) { if (d2 > 0) fbSetPrev(!fbPrev); return; }      /* Up / Down: preview on / off */
         if (type === 0xB0 && d1 === CC.MENU) { if (d2 > 0) { while (fb) fbBack(); } return; }
     }
     if (askKind >= 0) {                                       /* first question for every new track: Synth or Drum */

@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.159.0 (18 October 2026)
+- Browser: Regler 1 schaltet die Vorschau (PRV/OFF) ein und aus: nach rechts drehen = ein, nach links = aus (ersetzt das schnelle Scrollen auf Regler 1)
+
 ## 5.158.0 (18 October 2026)
 - Scope: alle Ansichten waehlbar (Jog-Klick): 6 WAVE+16 Baender mit Peak-Kappen, 7 SPECTRUM, 8 STEREO mit Phasenanzeige, 9 WATERFALL, 10 BEAT; DSP liefert 16 Baender, Stereo-Punkte, Phase
 
