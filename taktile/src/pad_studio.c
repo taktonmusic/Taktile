@@ -1794,27 +1794,28 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         if (q[5] > 0.5f) { const float L = (float)((1 << (int)(q[5] + 0.5f)) - 1) * 0.5f; x = floorf(x * L + 0.5f) / L; }
         break; }
     case 5: {                                                       /* DRUM SYNTH: kick, snare, hat, clap, tom, rim, metal -- p: kind, sweep, sweep ms, noise mix, click, drive, noise HP Hz, band Hz */
+        const float *pq5 = s->pp[p]; const float qsw = q[1] + pq5[PP_DET] * 6.0f, qst = q[2] * (1.0f + pq5[PP_SUB] * 3.0f), qnm = clampf(q[3] + pq5[PP_FKEY], 0.0f, 1.0f), qck = clampf(q[4] + (pq5[PP_FDEC] - 0.5f), 0.0f, 1.0f);      /* the engine knobs: Sweep, Sweep time, Noise, Click (Click: 50 = the sound as designed) */
         const int kd = (int)(q[0] + 0.5f); const float t = v->t, f = v->f0;
         const float nz = noise(s);
         { const float xa = TWO_PI * (q[6] > 20.0f ? q[6] : 20.0f) * dt; v->nx[4] += (xa / (1.0f + xa)) * (nz - v->nx[4]); }
         const float hp = nz - v->nx[4];
         float out = 0.0f;
-        const float sw = 1.0f + q[1] * expf(-t / (q[2] * 0.001f + 1e-5f));
+        const float sw = 1.0f + qsw * expf(-t / (qst * 0.001f + 1e-5f));
         switch (kd) {
         case 0: case 4: {                                           /* KICK / TOM: sine with a falling pitch + a click */
             v->ph += f * sw * dt; WRAP(v->ph);
-            out = sin2pi(v->ph) * v->env + nz * expf(-t / 0.0015f) * q[4] * 0.6f + hp * v->env2 * q[3];
+            out = sin2pi(v->ph) * v->env + nz * expf(-t / 0.0015f) * qck * 0.6f + hp * (v->env2 * q[3] + pq5[PP_FKEY] * 0.5f * v->env * expf(-t / 0.03f));      /* Noise on a kick / tom adds a short breath on top of the body */
             break; }
         case 1: {                                                   /* SNARE: two tuned shells + filtered noise */
             v->ph += f * sw * dt; WRAP(v->ph); v->ph2 += f * 1.68f * sw * dt; WRAP(v->ph2);
-            out = (0.62f * sin2pi(v->ph) + 0.38f * sin2pi(v->ph2)) * v->env * (1.0f - 0.5f * q[3]) + hp * v->env2 * q[3] * 1.6f + nz * expf(-t / 0.002f) * q[4] * 0.4f;
+            out = (0.62f * sin2pi(v->ph) + 0.38f * sin2pi(v->ph2)) * v->env * (1.0f - 0.5f * qnm) + hp * v->env2 * qnm * 1.6f + nz * expf(-t / 0.002f) * qck * 0.4f;
             break; }
         case 2: {                                                   /* HAT: six detuned squares (the 808 recipe) + noise, high-passed */
             static const float R[6] = { 1.0f, 1.483f, 1.8f, 2.546f, 2.63f, 3.9f };
             float sq = 0.0f;
             for (int k = 0; k < 6; k++) { v->nx[10 + k] += f * R[k] * dt; if (v->nx[10 + k] >= 1.0f) v->nx[10 + k] -= 1.0f; sq += v->nx[10 + k] < 0.5f ? 1.0f : -1.0f; }
             { const float xa = TWO_PI * 7000.0f * dt; v->nx[5] += (xa / (1.0f + xa)) * (sq - v->nx[5]); }
-            out = ((sq - v->nx[5]) * 0.16f * (1.0f - q[3]) + hp * q[3] * 1.2f) * v->env;
+            out = ((sq - v->nx[5]) * 0.16f * (1.0f - qnm) + hp * qnm * 1.2f) * v->env;
             break; }
         case 3: {                                                   /* CLAP: three quick bursts, then the tail, band-passed noise */
             float be = t < 0.03f ? expf(-fmodf(t, 0.01f) / 0.0016f) : 0.0f;
@@ -1823,7 +1824,7 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             break; }
         case 5: {                                                   /* RIM / CLAVE: two stiff sines + a click */
             v->ph += f * dt; WRAP(v->ph); v->ph2 += f * 2.42f * dt; WRAP(v->ph2);
-            out = (0.7f * sin2pi(v->ph) + 0.4f * sin2pi(v->ph2)) * v->env + nz * expf(-t / 0.001f) * q[4] * 0.5f;
+            out = (0.7f * sin2pi(v->ph) + 0.4f * sin2pi(v->ph2)) * v->env + nz * expf(-t / 0.001f) * qck * 0.5f;
             break; }
         default: {                                                  /* METAL / COWBELL: two squares through a low-pass */
             v->ph += f * dt; WRAP(v->ph); v->ph2 += f * 1.4983f * dt; WRAP(v->ph2);

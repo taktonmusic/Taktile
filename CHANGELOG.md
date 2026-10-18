@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.126.0 (18 October 2026)
+- New drum tracks start with the INIT drum kit: pure synth drums (808 kick, 909 snare, clap, hats, toms, rim, cowbell), no preset needed
+- Drum synth sounds get an ENGINE tab: Sweep, Sweep time, Noise, Click + Drive and filter, edit them like a synth sound
+- The ENGINE tab shows only on drum sounds that have an engine; other drum sounds keep their tabs
+
 ## 5.125.0 (18 October 2026)
 - Attack bei ALLEN Synths identisch: nur der Knopf bestimmt die Zeit; kein Sonderwert pro Preset mehr (Pad und FM starten bei 0 gleich hart)
 - Decay bei Pads/Strings/Lead mit derselben Abfall-Kurve wie FM (Zeitkonstante 0,8 s × Decay-Knopf), nicht nur kürzeres Sustain; ganz oben (≥ 0,97) bleibt der Ton gehalten

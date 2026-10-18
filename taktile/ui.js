@@ -83,19 +83,17 @@ const LAYOUT = [
     [13,.5,.5,0,1,0,0],[16,.5,.5,0,1,0,0],[19,.5,.5,0,1,0,0],[20,.5,.5,0,1,0,0],
     [21,.5,.5,0,1,0,0],[23,.5,.5,0,1,0,0],[24,.5,.5,0,1,0,0],[25,.5,.5,0,1,0,0],
 ];
-const DRUM_LAYOUT = [
-    [0,.5,.5,0,1,0,0],[1,.5,.5,0,1,0,0],[6,.5,.5,0,1,0,.12],[5,.5,.5,0,1,.1,.15],
-    [7,.5,.5,0,1,0,0],[8,.5,.5,0,1,0,0],[9,.5,.5,0,1,0,0],[12,.5,.5,0,1,0,0],
-    [11,.5,.5,0,1,0,.2],[13,.35,.5,0,1,0,0],[13,.7,.5,0,1,0,0],[14,.5,.5,0,1,0,0],
-    [15,.5,.5,0,1,0,0],[10,.5,.5,0,1,0,0],[16,.5,.5,0,1,.15,0],[17,.5,.5,0,1,.3,0],
-];
+const INIT_DRUMS = 'DKick808 DKickHse DSnr909 DClap DHatCl DHatOp DRim DTomMid DHatSoft DHatOp2 DHatTght DTomLo DCowbell DTomHi DClave DCowHi'.split(' ');      /* the INIT drum kit: pure synth drums, every one of them editable like a synth sound */
+const DRUM_LAYOUT = INIT_DRUMS.map(n => [Math.max(0, TYPE_NAME.indexOf(n)), .5, .5, 0, 1, 0, 0]);
 const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
 const TAB_SYM = { 50: 'GRAIN', 43: 'EQ', 1: 'SOUND', 9: 'SYNTH', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD', 38: 'SEND', 39: 'BUS', 27: 'MIDI', 36: 'EUCLID', 46: 'BUS' };
 const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : [1, 3, 2, 38, 36, 27, 28]; if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
+const DRM_ENG_RE = /^D(Kick|Snr|Hat|Clap|Tom|Rim|Clave|Cow|Metal)/;
+function isDrmEng(t) { return DRM_ENG_RE.test(TYPE_NAME[Math.round(t)] || ''); }      /* the drum-synth engine: only these drum sounds have an ENGINE tab */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : (isDrmEng(pads[ln()][0]) ? [1, 9, 3, 2, 38, 36, 27, 28] : [1, 3, 2, 38, 36, 27, 28]); if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -4455,6 +4453,7 @@ const FILT_BASE = VIEW_ITEMS[2], P47_BASE = VIEW_ITEMS[47], SYN_PG = VIEW_ITEMS[
 const FMI = TYPE_NAME.indexOf('FmInit');                       /* the plain 2-operator FM INIT sound: Ratio, Index, Feedback (+ Decay on the sound page) */
 const ENG_KN = { 6: ['Detune', 'Sub', 'Sync', 'Width'], 7: ['Position', 'Sweep', 'Warp', 'Detune'], 8: ['Index', 'Ratio', 'Feedback', 'Algo'], 9: ['Tilt', 'Odd/Even', 'Stretch', 'Shimmer'], 10: ['Detune', 'Spread', 'Hollow', 'Motion'], 11: ['Bright', 'Pick', 'Damp', 'Excite'], 12: ['Fold', 'Sweep', 'Symmetry', 'Harmonics'] };
 const ENG_ABBR = { Detune: 'Det', Position: 'Pos', Sweep: 'Swp', Width: 'Wid', Feedback: 'Fdbk', 'Odd/Even': 'O/E', Stretch: 'Strc', Shimmer: 'Shim', Spread: 'Sprd', Hollow: 'Holo', Motion: 'Mot', Bright: 'Brt', Excite: 'Exc', Symmetry: 'Sym', Harmonics: 'Harm', Index: 'Idx', Ratio: 'Rat' };      /* every knob name fits its tile in the normal letters */
+const DRM_PG = [['det','Sweep','Swp'],['sub','SweepTime','SwpT'],['fkey','Noise','Nse'],['fdec','Click','Clk'],['drive','Drive','Drv'],['cut','LPCut','LPF'],['res','Reso','Res'],['locut','HPCut','HPF']];
 const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0], ENG_ABBR[ENG_KN[e][0]]], ['sub', ENG_KN[e][1], ENG_ABBR[ENG_KN[e][1]]], ['fkey', ENG_KN[e][2], ENG_ABBR[ENG_KN[e][2]]], ['fdec', ENG_KN[e][3], ENG_ABBR[ENG_KN[e][3]]], ['drive', 'Drive', 'Drv'], ['cut', 'LPCut', 'LPF'], ['res', 'Reso', 'Res'], ['poly', 'Voices', 'Poly']];
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
@@ -4470,7 +4469,9 @@ function viewItemsFix() {
     if (kind[sel] && (view === 46 || (view === 38 && fxPage))) { view = 38; fxPage = 0; needsRedraw = true; }      /* drum tracks have no shared FX bus pages */
     VIEW_ITEMS[38] = kind[sel] ? FX_DRM : FX_SYN; BLOCKS[38] = kind[sel] ? BLK_FX_DRM : BLK_FX_SYN;
     VIEW_ITEMS[1] = kind[sel] ? SND_DRM : SND_SYN;      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
-    VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : SYN_PG);
+    VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : (isDrmEng(pads[ln()][0]) ? DRM_PG : SYN_PG));
+    BLOCKS[9] = isDrmEng(pads[ln()][0]) && VIEW_ITEMS[9] === DRM_PG ? [['DRUM ENGINE', 4], ['DRIVE + FILTER', 4]] : [['ENGINE', 4], ['FILTER + VOICES', 4]];
+    if (kind[sel] && !isDrmEng(pads[ln()][0]) && view === 9) { tabEnter(1); }      /* a drum sound without an engine has no ENGINE tab */
 }
 
 /* ---- scope page: master output wave (triggered) and 8 band levels, polled from the DSP ---- */
