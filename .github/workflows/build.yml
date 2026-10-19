@@ -116,6 +116,8 @@ jobs:
             git tag -f latest "${GITHUB_SHA}"
             git push -f origin refs/tags/latest
           fi
+          # the old 1.0.0 release is not used any more: only the rolling release stays
+          gh release delete 1.0.0 --yes --cleanup-tag >/dev/null 2>&1 || true
           if gh release view "${TAG}" >/dev/null 2>&1; then
             gh release upload "${TAG}" taktile-module.tar.gz --clobber
             gh release edit "${TAG}" --title "${TITLE}" --notes-file notes_full.md --latest
