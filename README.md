@@ -10,6 +10,8 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-333333">
 </p>
 
+<p align="center"><a href="../../releases/latest"><b>⬇ Download the latest release</b></a> &nbsp;·&nbsp; <a href="#install">Install</a> &nbsp;·&nbsp; <a href="taktile/docs/Taktile-Manual-EN.pdf">Manual (EN)</a> &nbsp;·&nbsp; <a href="taktile/docs/Taktile-Handbuch-DE.pdf">Handbuch (DE)</a></p>
+
 <p align="center"><b>A groovebox for the Ableton Move: 16 tracks of synths and drums, step sequencer, 1462 sounds, effects and live performance tools – a Schwung overtake module.</b></p>
 
 > [!NOTE]
