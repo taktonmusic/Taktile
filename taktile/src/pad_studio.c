@@ -727,7 +727,7 @@ typedef struct {
     int mic_mon, mic_clip, mic_ok, rfx, rnorm, rfx_cnt; float *rfx_mem; long rfx_cap, rec_in_n; int rfx_dln, rfx_dp, rfx_len[12], rfx_off[12], rfx_cp[12]; float rfx_lp[8]; float mic_gain, mic_thr, mic_peak, ramt, rfx_hx[2], rfx_hy[2], rfx_hold[2];   /* MIC take: monitor flag (level only while the MIC page is open), gain, start threshold, smoothed input peak */
     float sc_w[128], sc_lp[8], sc_env[8]; int sc_i, sc_c;
     float sc_lp2[16], sc_env2[16], sc_sl[64], sc_sr[64], sc_cll, sc_crr, sc_clr; int sc_si;   /* 16-band spectrum, stereo ring and phase correlation for the extra scope pages */            /* master scope ring (decimated) and 8 band levels for the UI scope page */
-    float dk_env[NTRK], dk_c[NTRK], meter[NTRK];                 /* sidechain ducking (kick -> other tracks) and level meters */
+    float dk_env[NLANE], dk_c[NLANE], meter[NTRK];                 /* sidechain ducking (kick -> other tracks) and level meters */
     float semi[NLANE], dm[NLANE], a_tone[NLANE], dg[NLANE], dnorm[NLANE], gain[NLANE], pl[NLANE], pr[NLANE];
     int   isdrum[NTRK], dtrk[4]; float tg[NTRK];       /* drum tracks: dtrk[slot] = track, tg = track gain */
     float a_clap_hp, a_clap_lp, a_snr_hp, a_rim_hp, a_hat_hp, a_shk_hp, a_shk_lp, a_crash_hp;
@@ -1244,7 +1244,7 @@ static void update_pad(inst_t *s, int p) {
     int ty = (int)(q[PP_TYPE] + 0.5f);
     if (ty < 0) ty = 0;
     if (ty >= T_COUNT) ty = T_COUNT - 1;
-    float semis = (q[PP_TUNE] - 0.5f) * 24.0f;
+    float semis = (q[PP_TUNE] - 0.5f) * 48.0f;
     if (is_melodic(ty)) semis = roundf(semis);
     s->semi[p] = semis;
     {   /* decay 0 = a real snap / click (about 1/150 of the natural length), 0.5 = natural length, 1 = 3x: the lowest fifth of the knob ramps down into it (the rest keeps the old curve, so existing sounds stay as they were) */
@@ -1261,9 +1261,9 @@ static void update_pad(inst_t *s, int p) {
     float a = q[PP_PAN] * 1.57079633f;
     s->pl[p] = cosf(a) * 1.41421356f;
     s->pr[p] = sinf(a) * 1.41421356f;
-    if (p < NTRK) {
+    {
         float dtau = 0.03f + q[PP_DUCKR] * q[PP_DUCKR] * 0.55f;
-        s->dk_c[p] = expf(-1.0f / (dtau * s->sr));
+        s->dk_c[p] = expf(-1.0f / (dtau * s->sr));          /* every sound (lane) has its own duck release */
     }
 }
 
@@ -1518,11 +1518,13 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         s->vc[NLANE + gi] = *v; s->vown[NLANE + gi] = p; s->act_dirty = 1;
         if (!v->gk) s->vc[NLANE + gi].gate = 0;
     }
-    if (p < NLANE) {                                          /* a kick (or any hit of a track whose Duck Src = On) ducks every track that has Duck > 0 */
+    if (p < NLANE) {                                          /* SIDECHAIN: every hit of pad 1 (bottom left) of the FIRST drum track ducks every sound that has Duck > 0 (Duck Src: PAD 1 / ALL = every hit of this track / OFF) */
         const int kt = lane_trk(s, p);
-        const int scs = (int)(s->pp[kt][PP_SCS] * 2.0f + 0.5f);      /* 0 Auto (kick family), 1 On (all hits), 2 Off */
-        if (scs == 1 || (scs == 0 && BASE_T[ty] <= T_SUB808))
-        for (int t = 0; t < NTRK; t++) if (t != kt && s->pp[t][PP_DUCK] > 0.01f) s->dk_env[t] = 1.0f;
+        const int scs = (int)(s->pp[p][PP_SCS] * 2.0f + 0.5f), scs_t = (int)(s->pp[kt][PP_SCS] * 2.0f + 0.5f);
+        int bestT = 99, bestSl = -1; for (int sl = 0; sl < 4; sl++) { const int t = s->dtrk[sl]; if (t >= 0 && t < bestT) { bestT = t; bestSl = sl; } }
+        const int first = (bestSl >= 0 && p == NTRK + bestSl * 16);
+        if ((first && scs != 2 && scs_t != 2) || (!first && (scs == 1 || (scs_t == 1 && p < NTRK))))
+        for (int t = 0; t < NLANE; t++) if (t != p && s->pp[t][PP_DUCK] > 0.01f) s->dk_env[t] = 1.0f;
     }
     if (s->pp[p][PP_POLY] <= 0.5f && v->active && (TY[v->type].sus || BASE_T[v->type] == T_E_SPK) && v->env > 0.003f) {   /* mono re-trigger of a held synth note: the old note fades out in a ghost instead of being cut (click) */
         int gi = -1;
@@ -4049,9 +4051,10 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
 
         float rec_l = 0.0f, rec_r = 0.0f;
         /* per-bus effects (a drum sound = one bus, a synth track = one bus); ducking, meters and resampling work per track */
-        float dkg[NTRK], mtr[NTRK];
-        for (int k = 0; k < NTRK; k++) {
-            mtr[k] = 0.0f; dkg[k] = 1.0f;
+        float dkg[NLANE], mtr[NTRK];
+        for (int k = 0; k < NTRK; k++) mtr[k] = 0.0f;
+        for (int k = 0; k < NLANE; k++) {                              /* duck gain per sound (lane) */
+            dkg[k] = 1.0f;
             if (s->dk_env[k] > 0.0005f) { dkg[k] = 1.0f - s->pp[k][PP_DUCK] * s->dk_env[k]; s->dk_env[k] *= s->dk_c[k]; } else s->dk_env[k] = 0.0f;
         }
         float sds = 0.0f, srs = 0.0f;                                 /* summed delay / reverb sends of all buses */
@@ -4062,7 +4065,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             const float L0 = L, R0 = R;
             if (!tact[t] && s->fx_act[t] <= 0) continue;                  /* nothing sounding and no effect tail on this bus */
             const int tk = lane_trk(s, t);
-            if (dkg[tk] < 1.0f) { const float g = dkg[tk]; tl[t] *= g; tr[t] *= g; tsd[t] *= g; tsr[t] *= g; }
+            if (dkg[t] < 1.0f) { const float g = dkg[t]; tl[t] *= g; tr[t] *= g; tsd[t] *= g; tsr[t] *= g; }
             sds += tsd[t]; srs += tsr[t];
             mtr[tk] += fabsf(tl[t]) + fabsf(tr[t]);
             if (tact[t]) s->fx_act[t] = (int)(6.0f * s->sr);
@@ -4234,11 +4237,11 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                         x = s->tp_dl[c][i0 & 2047] * (1.0f - fr) + s->tp_dl[c][i1] * fr;
                     }
                     if (tp > 0.01f) {
-                        const float dg = 1.0f + tp * 5.0f;                        /* soft tape saturation: quiet signals keep their level, loud ones are squashed and thickened */
-                        x = fast_tanh(x * dg) / dg * (1.0f + tp * 0.25f);
+                        const float dg = 1.0f + tp * 9.0f;                        /* soft tape saturation: quiet signals keep their level, loud ones are squashed and thickened */
+                        x = fast_tanh(x * dg) / powf(dg, 0.8f);
                         s->tp_hb[c] += (1.0f - expf(-6.2831853f * 90.0f * s->inv_sr)) * (x - s->tp_hb[c]);
-                        x += s->tp_hb[c] * 0.35f * tp;                            /* head bump: a warm touch around 90 Hz */
-                        const float fc = 16000.0f - 11000.0f * tp;                /* top roll-off 16 kHz -> 5 kHz */
+                        x += s->tp_hb[c] * 0.8f * tp;                            /* head bump: a warm touch around 90 Hz */
+                        const float fc = 16000.0f - 12500.0f * tp;                /* top roll-off 16 kHz -> 3.5 kHz */
                         s->tp_lp[c] += (1.0f - expf(-6.2831853f * fc * s->inv_sr)) * (x - s->tp_lp[c]);
                         x = s->tp_lp[c];
                     }
@@ -4246,7 +4249,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                         s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
                         const float nz = (float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f;
                         s->tp_hn[c] += 0.35f * (nz - s->tp_hn[c]);
-                        x += (nz - s->tp_hn[c]) * 0.016f * hs * sqrtf(hs);           /* the hiss lives in the highs; full = about -45 dB, 25 % is still just audible in quiet parts */
+                        x += (nz - s->tp_hn[c]) * 0.06f * powf(hs, 1.2f);            /* the hiss lives in the highs; full = about -27 dB, 25 % is clearly audible in quiet parts */
                     }
                     io[c] = x;
                 }

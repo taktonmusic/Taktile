@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.0 (19 October 2026)
+- Song page rebuilt around pads: bottom row = your scenes, row 2 = bars/repeat/loop, row 3 = change/tag/move/delete/copy
+- Euclid page simplified: 6 tidy tile pages
+- Duck now listens to pad 1 of the first drum track (per pad lane); fixed for drum kits
+- Tune range is now -24 to +24 semitones (old projects and kits are converted)
+- Main menu scrolls through all tiles, no MORE page
+- Scope: new modes WATERFALL, BEAT, TUNNEL, GRID, SKYLINE, MIRROR, FLOWER
+- Tape and Hiss are much more audible
+
 ## 1.4.0 (19 October 2026)
 - A new clip in a track now starts with the sound (preset) of the clip you came from; you can change it afterwards and every clip keeps its own sound as before
 - New test for this (test_clipsound.js) is part of the build

@@ -197,7 +197,7 @@ const VIEW_ITEMS = {
 };
 /* home / fx / master hubs: tiles you pick with the jogwheel (turn = choose, click = open, Back = up one level) */
 const HUBS = {
-    16: ['HOME', [['SOUND', 1], ['TRACK', 21], ['MIX', 20], ['BUS', 4], ['OPTIONS', -1], ['MORE', 18]]],
+    16: ['HOME', [['SOUND', 1], ['TRACK', 21], ['MIX', 20], ['BUS', 4], ['OPTIONS', -1], ['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['TAPE', 52], ['SCOPE', 42]]],      /* one list: MORE is gone, the jogwheel simply keeps scrolling to the next tiles */
     17: ['FX', [['DELAY', 5], ['REVERB', 6], ['MULTI', 24], ['MIDI', 27], ['DUCK', 30]]],
     18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['TAPE', 52], ['SCOPE', 42]]],
 };
@@ -443,6 +443,7 @@ function qEverything(wipe) {
 function flushQueue(n) { for (let i = 0; i < n && queue.length; i++) { const q = queue.shift(); dspSet(q[1], q[2]); } }
 
 /* ---- persistence ---- */
+const tuneNew = v => clamp(0.5 + (Number(v) - 0.5) / 2, 0, 1);      /* Tune used to span -12..+12 st, now -24..+24 st: values of older saves are converted once */
 function saveState() {
     try {
         if (typeof host_write_file !== 'function') return;
@@ -450,7 +451,7 @@ function saveState() {
         for (let p = 0; p < NPAT; p++) { const row = []; for (let l = 0; l < NLANE; l++) row.push(laneHas(p, l) ? encTrack(p, l) : ''); seqHex.push(row); }
         const keep = {}; for (let t = 0; t < NTRK; t++) { keep[t] = 1; if (slot[t] >= 0) for (let k = 0; k < 16; k++) keep[NTRK + slot[t] * 16 + k] = 1; }
         const cs = csnd.map(row => row.map((r, l) => keep[l] ? r : null));
-        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, tr: tres, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
+        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, tv: 2, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, tr: tres, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
         dirty = false; saveFlash = 30; needsRedraw = true;
     } catch (e) { /* ignore */ }
 }
@@ -469,9 +470,9 @@ function loadState() {
         if (!txt) { freshState = true; return; }
         const o = JSON.parse(txt);
         if (!o || o.v !== 2) { freshState = true; return; }
-        attMig = !(o.av >= 2);
+        attMig = !(o.av >= 2); const tuneMig = !(o.tv >= 2);
         if (Array.isArray(o.pads) && (o.pads.length === NTRK || o.pads.length === NLANE)) {
-            const loaded = o.pads.map((r, li) => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); return neutEng2(a, li); });
+            const loaded = o.pads.map((r, li) => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); if (tuneMig) a[PI.tune] = tuneNew(a[PI.tune]); return neutEng2(a, li); });
             for (let l = 0; l < loaded.length; l++) pads[l] = loaded[l];
         }
         if (Array.isArray(o.ly) && o.ly.length === 2) { layS = clamp(Number(o.ly[0]) | 0, 0, 5); layD = clamp(Number(o.ly[1]) | 0, 0, 1); }
@@ -502,7 +503,7 @@ function loadState() {
             if (h && steps[p][t]) { const w = o.sf === 12 ? 12 : (o.sf === 10 ? 10 : (o.sf === 6 ? 6 : 4)); for (let s = 0; s < Math.min(MAXSTEP, Math.floor(h.length / w)); s++) steps[p][t][s] = w >= 10 ? decStep(h.substr(w * s, w)) : (w === 6 ? decStep(h.substr(6 * s, 6)) : decStepOld(h.substr(4 * s, 4))); }
         }
         if (Array.isArray(o.cs) && o.cs.length === NPAT && o.cs.every(row => Array.isArray(row) && (row.length === NTRK || row.length === NLANE))) {
-            csnd = o.cs.map(row => { const out = []; for (let l = 0; l < NLANE; l++) { const a = row[l]; if (Array.isArray(a)) { const b = a.map(Number); while (b.length < PK.length) b.push(defOf(b.length)); out.push(neutEng2(b, l)); } else out.push(pads[l].slice()); } return out; });
+            csnd = o.cs.map(row => { const out = []; for (let l = 0; l < NLANE; l++) { const a = row[l]; if (Array.isArray(a)) { const b = a.map(Number); while (b.length < PK.length) b.push(defOf(b.length)); if (tuneMig) b[PI.tune] = tuneNew(b[PI.tune]); out.push(neutEng2(b, l)); } else out.push(pads[l].slice()); } return out; });
         }
         if (o.fx !== 2) {                                                    /* older saves: effects were per track; every pad of a drum track starts with a copy */
             for (let t = 0; t < NTRK; t++) if (kind[t] && slot[t] >= 0) for (let k = 0; k < 16; k++) {
@@ -573,7 +574,7 @@ function fmtVal(key, v) {
     if (key === 'satk' || key === 'srel') return String(Math.round(v * 100));
     if (key === 'snorm') return 'TURN >';
     if (key === 'sstr') return Math.abs(v - 0.5) < 0.012 ? 'OFF' : Math.pow(2, (v - 0.5) * 2).toFixed(2) + 'x';
-    if (key === 'scs') return ['AUTO', 'ALL', 'OFF'][Math.round(v * 2)];
+    if (key === 'scs') return ['PAD 1', 'ALL', 'OFF'][Math.round(v * 2)];
     if (key === 'm_eql' || key === 'm_eqm' || key === 'm_eqh' || key === 'eql' || key === 'eqm' || key === 'eqh') { const d = Math.round((v - 0.5) * 24); return (d > 0 ? '+' : '') + d + 'dB'; }
     if (key === 'tsw') return v < 0.52 ? 'OFF' : '+' + Math.round((v - 0.5) * 2 * 25) + '%';
     if (key === 'gsz') { const ms = 4 * Math.pow(1125, v); return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(1) + 's'; }
@@ -624,7 +625,7 @@ function fmtVal(key, v) {
     if (key === 'qstr') return qAmt + '%';
     if (key === 'ci') return ciOn ? 'ON' : 'OFF';
     if (ENUMS[key]) return String(ENUMS[key][clamp(Math.round(v), 0, ENUMS[key].length - 1)]);
-    if (key === 'tune') { const s = Math.round((v - 0.5) * 24); return (s > 0 ? '+' : '') + s + 'st'; }
+    if (key === 'tune') { const s = Math.round((v - 0.5) * 48); return (s > 0 ? '+' : '') + s + 'st'; }
     if (key === 'pan') { const d = Math.round((v - 0.5) * 200); return d === 0 ? 'C' : (d < 0 ? 'L' + (-d) : 'R' + d); }
     return String(Math.round(v * 100));
 }
@@ -744,7 +745,7 @@ function editParam(scope, key, delta, idx) {
         acc[idx] += delta;
         if (Math.abs(acc[idx]) < (FX_TYPE_KEY[key] ? 14 : 6)) return false;                  /* effect types turn even slower; a list value (arp rate, wave ...) needs a longer turn per step, so it no longer jumps */
         v = clamp(Math.round(v) + (acc[idx] > 0 ? 1 : -1), 0, ENUMS[key].length - 1); if ((key === 'xfx' || key === 'x2fx') && v === 11) v = acc[idx] > 0 ? 12 : 10; acc[idx] = 0;
-    } else v = clamp(v + delta * (shiftHeld ? 0.016 : 0.0032), 0, 1);
+    } else v = clamp(v + delta * (shiftHeld ? 0.016 : 0.0032) * (key === 'tune' ? 0.5 : 1), 0, 1);      /* Tune spans -24..+24 st: half the step per click keeps the same pitch step as before */
     if (scope === 'pad') {
         const L = keyLane(key);
         if ((key === 'dly' || key === 'rvb') && L >= NTRK) { showToast('DRUM SOUNDS', 'USE OWN INSERT FX', 0); return false; }
@@ -976,7 +977,7 @@ const HELP = {
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
-    31: ['Steps 1-8 = Szene anhaengen', 'Steps 9-14 = Takte, 15 = Kopie', 'Step 16 / Play = Song an'],
+    31: ['Pads unten = deine Szenen', 'Reihe 2: Takte, Wdh., Loop', 'Reihe 3: Uebergang, Tag, Move'],
     35: ['32 Projekt-Slots', 'New = leeres Projekt', 'Revert = Sicherung'],
     34: ['Kits: 16 Pad-Sounds. Slot 17+ = fertige Kits. Preview: rechts drehen = anhoeren, links = zurueck. Load = behalten.'],
     33: ['Resample nimmt Master', 'oder Track auf', 'Ergebnis = Sample'],
@@ -1011,7 +1012,7 @@ const HELP_EN = {
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
     21: ['Track: type, volume', 'Pads, sound, layout', 'Color'],
-    31: ['Steps 1-8 = add scene', 'Steps 9-14 = bars, 15 = copy', 'Step 16 / Play = song on'],
+    31: ['Bottom pads = your scenes', 'Row 2: bars, repeat, loop', 'Row 3: change, tag, move'],
     35: ['32 project slots', 'New = empty project', 'Revert = backup'],
     34: ['Kits: 16 pad sounds. Slot 17+ = ready-made kits. Preview: turn right = listen, left = back. Load = keep.'],
     33: ['Resample records master', 'or a track', 'Result = sample'],
@@ -2473,7 +2474,7 @@ function onPadCore(idx, on, vel) {
         }
         return;
     }
-    if (view === 31) { if (on) songPad(songPadK(idx)); return; }      /* song: pad = step */
+    if (view === 31) { if (on) songPadNew(idx); return; }      /* song: pad = step */
     if (view === 7) { if (on) clipsPad(idx); return; }       /* session: pick track + launch clip */
     if (!on && lfxHeld[idx]) { liveFxOff(idx); return; }
     if (!on && fillHeld[idx]) { fillHit(idx, false, 0); return; }
@@ -3245,7 +3246,11 @@ function rsTick() {
 /* ---- kits: sounds of a drum track (16 pads) or a synth sound, stored in slots ---- */
 const KIT_FILE = '/data/UserData/schwung/taktile-kits.json';
 let kitSlot = 0, kits = null;
-function kitsLoad() { if (kits) return; kits = {}; try { const t = host_read_file(KIT_FILE); if (t) { const o = JSON.parse(t); if (o && typeof o === 'object') kits = o; } } catch (e) { kits = {}; } }
+function kitsLoad() {
+    if (kits) return; kits = {};
+    try { const t = host_read_file(KIT_FILE); if (t) { const o = JSON.parse(t); if (o && typeof o === 'object') kits = o; } } catch (e) { kits = {}; }
+    if (!kits._tv) { for (const k in kits) { const e = kits[k]; if (e && Array.isArray(e.r)) e.r.forEach(r => { if (Array.isArray(r)) r[PI.tune] = tuneNew(r[PI.tune]); }); } kits._tv = 2; }      /* saved kits: Tune now spans -24..+24 st */
+}
 function kitsSave() { try { host_write_file(KIT_FILE, JSON.stringify(kits)); } catch (e) { /* ignore */ } }
 function soundIdx(i) { return i < 24 || (i >= 41 && i <= 44) || (i >= 47 && i < 61) || (i >= 105 && i < PI.tkey); }      /* the track's own Key / Scale are not part of a sound */
 const FACTORY = [
@@ -3374,7 +3379,7 @@ function kitGet(s) {
         const r = base.slice(), ti = TYPE_NAME.indexOf(f[1][j % 16]); if (ti >= 0) r[0] = ti;
         r[1] = pads[ls[j]][1]; r[2] = pads[ls[j]][2];                       /* Volume and Pan stay as they are */
         const role = KIT_ROLE[j % 16], mod = st[role];                       /* every kit shapes its sounds: drive, tone, decay, crush, room ... per role */
-        if (mod) for (const k in mod) r[PI[k]] = mod[k];
+        if (mod) for (const k in mod) r[PI[k]] = k === 'tune' ? tuneNew(mod[k]) : mod[k];
         rows.push(r);
     }
     return { d: 1, r: rows };
@@ -3991,13 +3996,12 @@ const EU_KEYS = { eon: 1, q0len: 1, q0hit: 1, q0rot: 1, q0not: 1, q0prb: 1, q0hu
 for (const k of ['enot', 'ealt', 'eacn', 'ewlk', 'ewln', 'ernd', 'eoup', 'eodn']) EU_KEYS[k] = 1;
 const EU_PAGES = [
     [['eon', 'Euclid', 'Mode'], ['ehit', 'Hits'], ['erot', 'Rotate', 'Rot'], ['elen', 'Length', 'Len'], ['emut', 'Mutate', 'Mut'], ['evel', 'Velocity', 'Vel'], ['eacc', 'Accent', 'Acc'], ['ehum', 'Human', 'Hum']],
-    [['eprb', 'Prob'], ['egat', 'Gate'], ['erat', 'Ratchet', 'Rat'], ['econd', 'Cond'], ['enud', 'Nudge', 'Nud'], ['erev', 'Reverse', 'Rev'], ['einv', 'Invert', 'Inv'], ['eclr', 'Clear', 'Clr']]];
-const EU_NPG = 7;
+    [['eprb', 'Prob'], ['egat', 'Gate'], ['erat', 'Ratchet', 'Rat'], ['econd', 'Cond'], ['enot', 'Note'], ['ewlk', 'Walk'], ['ernd', 'Random', 'Rand'], ['eclr', 'Clear', 'Clr']]];      /* 6 pages instead of 7: the rarely used tiles (Nudge, Reverse, Invert, Alt, AccNote, WalkLen, OctUp / OctDown, lane Human / Accent) are not shown any more; they keep their values */
+const EU_NPG = 6;
 /* four euclid lanes per sound: every lane has its own length, hits, rotation, note, probability, human and accent; they play together and the pattern repeats after their common length */
 const EU_LF = [['len', 'Length', 'Len'], ['hit', 'Hits', 'Hit'], ['rot', 'Rotate', 'Rot'], ['not', 'Note', 'Note'], ['prb', 'Prob', 'Prob'], ['hum', 'Human', 'Hum'], ['acc', 'Accent', 'Acc'], ['on', 'Lane on', 'On']];
 const EU_LDEF = [[16, 4], [12, 3], [8, 3], [6, 2]];
-EU_PAGES.push([['enot', 'Note'], ['ealt', 'Alt'], ['eacn', 'AccNote'], ['ewlk', 'Walk'], ['ewln', 'WalkLen'], ['ernd', 'Random'], ['eoup', 'OctUp'], ['eodn', 'OctDown']]);
-for (let q = 0; q < 4; q++) EU_PAGES.push(EU_LF.map((f, i) => ['q' + q + f[0], i === 0 ? (q + 1) + ' ' + f[1] : f[1], i === 0 ? (q + 1) + ' ' + f[2] : f[2]]));
+for (let q = 0; q < 4; q++) EU_PAGES.push(EU_LF.filter(f => f[0] !== 'hum' && f[0] !== 'acc').map((f, i) => ['q' + q + f[0], i === 0 ? (q + 1) + ' ' + f[1] : f[1], i === 0 ? (q + 1) + ' ' + f[2] : f[2]]));
 function euQ(L) { const P = euP[L]; if (!Array.isArray(P.q)) P.q = EU_LDEF.map(d => ({ on: 0, len: d[0], hit: d[1], rot: 0, not: 0, prb: 0, hum: 0, acc: 0 })); return P.q; }
 function euLanesOn(L) { const q = euP[L].q; return Array.isArray(q) && q.some(l => l.on); }
 function euGcd(a, b) { while (b) { const t = a % b; a = b; b = t; } return a; }
@@ -4249,14 +4253,42 @@ function songPad(k) {                                           /* pad k = song 
     } else if (k === L && L < SONG_MAX) { songSlot = L - 1; songIns(); }
 }
 function songPadK(i) { return (3 - (i >> 3)) * 8 + (i & 7); }
+/* pad layout of the song page (seen from the top):
+   row 1 = the song chain (8 steps of the page that holds the selected step)   row 2 = BARS 1 2 4 8 16 32 | REPEAT | LOOP
+   row 3 = HARD FILL DRUMS | TAG | MOVE < > | DELETE | COPY                     row 4 = your scenes 1-8 (lit = has notes) */
+const SONG_REP = [1, 2, 4];
+function songPadNew(idx) {
+    const r = 3 - (idx >> 3), c = idx & 7, e = songList[songSlot];
+    if (r === 0) { songPad(Math.floor(songSlot / 8) * 8 + c); return; }
+    if (r === 3) { songStepKey(c); if (!songOn && !playing) launchScene(c, true); return; }
+    if (!e) return;
+    songSent = -1;
+    if (r === 1) {
+        if (c < 6) { e[1] = SONG_BARS[c]; songBlank = false; showToast('SONG ' + p2(songSlot + 1), e[1] + ' BARS', c / 5); }
+        else if (c === 6) { e[2] = SONG_REP[(SONG_REP.indexOf(e[2]) + 1) % SONG_REP.length] || 1; showToast('SONG ' + p2(songSlot + 1), 'REPEAT x' + e[2], e[2] / 4); }
+        else { songLoop = !songLoop; showToast('SONG', songLoop ? 'LOOP' : 'ONCE', songLoop ? 1 : 0); }
+    } else {
+        if (c < 3) { e[4] = c; showToast('SONG ' + p2(songSlot + 1), SONG_TRANS[c], c / 2); }
+        else if (c === 3) { e[5] = (e[5] + 1) % SONG_TAG.length; showToast('SONG ' + p2(songSlot + 1), e[5] ? SONG_TAG[e[5]] : 'NO TAG', e[5] / 7); }
+        else if (c === 4) songMove(-1);
+        else if (c === 5) songMove(1);
+        else if (c === 6) songDel();
+        else songIns();
+    }
+    dirty = true; needsRedraw = true;
+}
 function songLed(i) {
-    const k = songPadK(i), L = songList.length;
+    const r = 3 - (i >> 3), c = i & 7, L = songList.length, e = songList[songSlot] || [0, 4, 1, 0, 0, 0];
+    if (r === 3) return c === e[0] ? 126 : (sceneHas(c) ? 100 : 0);
+    if (r === 1) { if (c < 6) return SONG_BARS[c] === e[1] ? 126 : 85; if (c === 6) return e[2] > 1 ? 126 : 85; return songLoop ? 126 : 20; }
+    if (r === 2) { if (c < 3) return e[4] === c ? 126 : 40; if (c === 3) return e[5] ? TAG_COL[e[5]] : 40; if (c < 7) return 60; return c === 6 ? 12 : 124; }
+    const k = Math.floor(songSlot / 8) * 8 + c;
     if (k > L || k >= SONG_MAX) return 0;
     if (k === L) return 124;
-    const pl = songPlayIdx(), e = songList[k], c = TAG_COL[e[5]];
-    if (k === songNext) return playing && (ledAge & 4) ? 126 : c;
+    const pl = songPlayIdx(), en = songList[k], col = TAG_COL[en[5]];
+    if (k === songNext) return playing && (ledAge & 4) ? 126 : col;
     if (k === pl) return 126;
-    return k === songSlot ? 120 : c;
+    return k === songSlot ? 120 : col;
 }
 /* ---- motion recording: knob moves are stored per clip / lane / parameter in quarter steps and replayed ---- */
 let AUTO = {}, autoLast = {}, autoHold = {};
@@ -4636,7 +4668,7 @@ function drawSong() {
         if (e[5] && 122 - 3 - tw(bs) - 40 > 8) txt(38, y + 1, fit(SONG_TAG[e[5]], 122 - 3 - tw(bs) - 42), c);
         txt(122 - 3 - tw(bs), y + 1, bs, c);
     }
-    if (songBlank && L === 1) { txt(2, 23, 'STEP 1-8 = ADD SCENE', 1); txt(2, 31, 'STEP 9-14 = BARS', 1); txt(2, 39, 'PLAY = START SONG', 1); }
+    if (songBlank && L === 1) { txt(2, 23, 'BOTTOM PADS = SCENES', 1); txt(2, 31, 'PADS 2+3 = OPTIONS', 1); txt(2, 39, 'PLAY = START SONG', 1); }
     if (L > rows) { const h = Math.max(4, Math.round(36 * rows / L)), y = 12 + Math.round(36 * (st / L)); fill_rect(125, 12, 1, 36, 1); fill_rect(124, y, 3, h, 1); }
     { const cur = songList[songSlot] ? songList[songSlot][0] : -1;           /* every scene you built: filled = has notes, frame = empty, thick frame = the selected step's scene (steps 1-8 add it) */
       for (let c = 0; c < 8; c++) { const x = 1 + c * 15, has = sceneHas(c); if (has) fill_rect(x, 49, 13, 7, 1); else draw_rect(x, 49, 13, 7, 1); txtS(x + 5, 50, String(c + 1), has ? 0 : 1); if (c === cur) draw_rect(x - 1, 48, 15, 9, 1); } }
@@ -4692,7 +4724,7 @@ const BUS_TITLE = { 46: ['FX BUS', 'ALL TRACKS'], 39: ['FX BUS 2', 'ALL TRACKS']
 function drawParams() {
     const items = VIEW_ITEMS[pg2(view)], scope = padView(view) ? 'pad' : 'master';
     if (BUS_TITLE[view]) titleBar(BUS_TITLE[view][0], BUS_TITLE[view][1]); else
-    titleBar(scope === 'pad' || view === 36 ? (p2(sel + 1) + ' ' + laneName() + (view === 36 && euPage >= 3 ? ' L' + (euPage - 2) : '')) : (view === 21 ? p2(sel + 1) + ' ' + (kind[sel] ? 'DRUM ' + (slot[sel] + 1) : 'SYNTH') : (view === 8 ? 'OPT' : (view === 44 ? 'FAVORITES' : 'MASTER'))), view === 8 ? 'CPU ' + cpuAvg + '%' : (view === 44 ? 'ALL PAGES' : VIEWS[view]));
+    titleBar(scope === 'pad' || view === 36 ? (p2(sel + 1) + ' ' + laneName() + (view === 36 && euPage >= 2 ? ' L' + (euPage - 1) : '')) : (view === 21 ? p2(sel + 1) + ' ' + (kind[sel] ? 'DRUM ' + (slot[sel] + 1) : 'SYNTH') : (view === 8 ? 'OPT' : (view === 44 ? 'FAVORITES' : 'MASTER'))), view === 8 ? 'CPU ' + cpuAvg + '%' : (view === 44 ? 'ALL PAGES' : VIEWS[view]));
     const ps = PAGE_STYLE[view] || 0;
     if (view === 2) drawFilterCurve();
     if (view === 41 || view === 43) { const g = [0, 1, 2].map(b => { const k = items[b][0]; return (getVal(scopeOf(k), k) - 0.5) * 24; }); drawEqGraph(g, 2, (view === 43 && tabStrip && TAB_NEW) ? 18 : 11, 124, view === 43 ? ((tabStrip && TAB_NEW) ? 16 : 13) : 17, (hot.t > 0 && hot.v === view && hot.i < 3) ? hot.i : -1); }
@@ -4752,7 +4784,7 @@ function drawParams() {
             if (st === cur) fill_rect(x, two ? 56 + rowI * 8 : 63, bw - 1, 1, 1);
         }
         for (let p = 0; p < EU_NPG; p++) { if (p === euPage) fill_rect(102 + p * 4, 50, 3, 3, 1); else draw_rect(102 + p * 4, 50, 3, 3, 1); }
-        if (!two && tabStrip && TAB_NEW) txtS(2, 50, (euPage + 1) + '/' + EU_NPG + ' ' + ['MAIN', 'FEEL', 'NOTES', 'LANE 1', 'LANE 2', 'LANE 3', 'LANE 4'][euPage], 1);
+        if (!two && tabStrip && TAB_NEW) txtS(2, 50, (euPage + 1) + '/' + EU_NPG + ' ' + ['MAIN', 'FEEL + NOTE', 'LANE 1', 'LANE 2', 'LANE 3', 'LANE 4'][euPage], 1);
         
     }
     if (view === 50) drawGrains();
@@ -4796,42 +4828,27 @@ function viewItemsFix() {
 
 /* ---- scope page: master output wave (triggered) and 8 band levels, polled from the DSP ---- */
 let scopeStr = '', scopeMode = 0, scopePoll = 0, animT = 0;
-const SCOPE_NAMES = ['WAVE + BANDS', 'WAVE', 'BANDS', 'DANCE', 'STARS', 'RINGS', 'WAVE + 16', 'SPECTRUM', 'STEREO', 'WATERFALL', 'BEAT'];
-let scPk = new Array(16).fill(0), scSm = new Array(16).fill(0), scWf = [], scPh = 0.5, scSt = [];
+const SCOPE_NAMES = ['WATERFALL', 'BEAT', 'TUNNEL', 'GRID', 'SKYLINE', 'MIRROR', 'FLOWER'];
+let scPk = new Array(16).fill(0), scSm = new Array(16).fill(0), scWf = [], scPh = 0.5, scSt = [], scBass = 0, scKick = 0;
 function sc16(i) { return scopeStr.length >= 338 ? parseInt(scopeStr.substr(144 + i * 2, 2), 16) / 255 : 0; }
-function scopeExtra() {                                          /* peak caps, smoothed spectrum, waterfall rows, stereo points (only with the long data string) */
+function scopeExtra() {                                          /* peak caps, smoothed spectrum, waterfall rows, bass / kick (only with the long data string) */
     if (scopeStr.length < 338) return;
     const row = []; for (let i = 0; i < 16; i++) { const v = sc16(i); row.push(v); scSm[i] = scSm[i] * 0.4 + v * 0.6; scPk[i] = Math.max(v, scPk[i] - 0.025); }
-    if (scopeMode === 9) { scWf.unshift(row); if (scWf.length > 9) scWf.pop(); }
-    scSt = []; for (let i = 0; i < 40; i++) scSt.push([parseInt(scopeStr.substr(176 + i * 4, 2), 16) / 255 * 2 - 1, parseInt(scopeStr.substr(178 + i * 4, 2), 16) / 255 * 2 - 1]);
-    scPh = parseInt(scopeStr.substr(336, 2), 16) / 255;
+    if (scopeMode === 0) { scWf.unshift(row); if (scWf.length > 9) scWf.pop(); }
+    const bass = Math.max(sc16(0), sc16(1), sc16(2), sc16(3)); scKick = (bass > 0.45 && bass > scBass + 0.08) ? 1 : scKick * 0.8; scBass = bass;
 }
+function scPix(x, y) { x = Math.round(x); y = Math.round(y); if (x >= 0 && x < 128 && y >= 11 && y < 64) set_pixel(x, y, 1); }
+function scLine(x0, y0, x1, y1) {                                  /* clipped line */
+    x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let er = dx + dy, n = 0;
+    for (;;) { scPix(x0, y0); if ((x0 === x1 && y0 === y1) || ++n > 400) break; const e2 = 2 * er; if (e2 >= dy) { er += dy; x0 += sx; } if (e2 <= dx) { er += dx; y0 += sy; } }
+}
+function scRect(x0, y0, x1, y1) { scLine(x0, y0, x1, y0); scLine(x1, y0, x1, y1); scLine(x1, y1, x0, y1); scLine(x0, y1, x0, y0); }
+function scBand(f) { f = clamp(f, 0, 15); const k = Math.floor(f), fr = f - k; return scSm[k] + (scSm[Math.min(15, k + 1)] - scSm[k]) * fr; }
 function drawScopeNew() {
-    if (scopeStr.length < 338) { txt(4, 28, 'NO LONG DATA', 1); txt(4, 40, 'FROM THE DSP', 1); return; }
-    const m = scopeMode;
-    if (m === 6) {                                                               /* wave on top, 16 bands with peak caps below */
-        const w = []; for (let i = 0; i < 64; i++) w.push((parseInt(scopeStr.substr(i * 2, 2), 16) / 255) * 2 - 1);
-        let pk = 0; for (const v of w) pk = Math.max(pk, Math.abs(v)); const gn = pk > 0.02 ? clamp(0.95 / pk, 1, 8) : 1, cy = 24; let py = cy;
-        for (let i = 0; i < 64; i++) { const y = clamp(Math.round(cy - w[i] * gn * 11), 12, 36), a = Math.min(y, py), c2 = Math.max(y, py); for (let q = a; q <= c2; q++) { set_pixel(i * 2, q, 1); set_pixel(i * 2 + 1, q, 1); } py = y; }
-        for (let x = 0; x < 128; x += 8) set_pixel(x, cy, 1);
-        if (pk > 0.95) txt(104, 13, 'CLIP', 1);
-        fill_rect(0, 40, 128, 1, 1);
-        for (let i = 0; i < 16; i++) { const x = 4 + i * 7, h = Math.round(clamp(scSm[i], 0, 1) * 21); if (h > 0) fill_rect(x, 62 - h, 5, h, 1); const ph = Math.round(clamp(scPk[i], 0, 1) * 21); fill_rect(x, clamp(62 - ph - 2, 42, 62), 5, 1, 1); }
-    } else if (m === 7) {                                                         /* full smooth spectrum with a peak line and frequency marks */
-        const pts = []; for (let x = 0; x < 124; x++) { const f = x * 15 / 123, k = Math.floor(f), fr = f - k, a = scSm[k], b = scSm[Math.min(15, k + 1)]; pts.push(a + (b - a) * fr); }
-        for (let x = 0; x < 124; x++) { const h = Math.round(clamp(pts[x], 0, 1) * 38); if (h > 0) fill_rect(2 + x, 56 - h, 1, h, 1); const f = x * 15 / 123, k = Math.floor(f), ph = Math.round(clamp(scPk[k] * (1 - (f - k)) + scPk[Math.min(15, k + 1)] * (f - k), 0, 1) * 38); set_pixel(2 + x, clamp(56 - ph - 2, 12, 56), 1); }
-        fill_rect(0, 56, 128, 1, 1);
-        for (const [l, x] of [['100', 20], ['1K', 60], ['10K', 108]]) { fill_rect(x, 57, 1, 2, 1); txtS(x - 5, 59, l, 1); }
-        for (const yy of [20, 32, 44]) for (let x = 0; x < 128; x += 6) set_pixel(x, yy, 1);
-    } else if (m === 8) {                                                         /* stereo vector scope: mid up, side sideways; phase meter at the bottom */
-        const cx = 64, cy = 35; fill_rect(cx - 27, cy, 55, 1, 1); fill_rect(cx, cy - 21, 1, 43, 1);
-        for (let k = -1; k <= 1; k += 2) for (let q = 1; q <= 14; q++) { set_pixel(cx + k * q, cy - k * Math.round(q * 0.8), 1); set_pixel(cx + k * q, cy + k * Math.round(q * 0.8), 1); }
-        let pk = 0; for (const [l, r] of scSt) pk = Math.max(pk, Math.abs(l), Math.abs(r)); const gn = pk > 0.02 ? clamp(0.9 / pk, 1, 6) : 1;
-        for (const [l, r] of scSt) { const x = Math.round(cx + (l - r) * gn * 0.707 * 30), y = Math.round(cy - (l + r) * gn * 0.707 * 17); if (x >= 0 && x < 127 && y >= 11 && y < 56) { set_pixel(x, y, 1); set_pixel(x + 1, y, 1); } }
-        txtS(4, 12, 'L', 1); txtS(120, 12, 'R', 1);
-        draw_rect(4, 57, 120, 6, 1); const px = Math.round(4 + clamp(scPh, 0, 1) * 119); if (px >= 64) fill_rect(64, 59, px - 63, 2, 1); else fill_rect(px, 59, 65 - px, 2, 1); fill_rect(64, 57, 1, 6, 1);
-        txtS(7, 50, '-1', 1); txtS(111, 50, '+1', 1); txtS(52, 50, 'PHASE', 1);
-    } else if (m === 9) {                                                         /* waterfall: newest spectrum in front, older rows behind and higher */
+    if (scopeStr.length < 338) { txt(4, 28, 'NO SIGNAL DATA', 1); txt(4, 40, 'PLAY SOMETHING', 1); return; }
+    const m = scopeMode, t = animT, bass = scBass;
+    if (m === 0) {                                                               /* waterfall: newest spectrum in front, older rows behind and higher */
         for (let row = scWf.length - 1; row >= 0; row--) {
             const base = 58 - row * 4, off = Math.round(row * 3.2), ys = [], r = scWf[row];
             for (let x = 0; x < 96; x++) { const f = x * 15 / 95, k = Math.floor(f), fr = f - k, v = r[k] + (r[Math.min(15, k + 1)] - r[k]) * fr; ys.push(base - Math.round(clamp(v, 0, 1) * 17)); }
@@ -4839,16 +4856,56 @@ function drawScopeNew() {
             for (let x = 1; x < 96; x++) { const X = 6 + x + off; if (X > 127) continue; const a = Math.min(ys[x - 1], ys[x]), b = Math.max(ys[x - 1], ys[x]); fill_rect(X, a, 1, b - a + 1, 1); }
         }
         txtS(6, 59, '100', 1); txtS(52, 59, '1K', 1); txtS(92, 59, '10K', 1);
-    } else {                                                                      /* beat: rings pulse out with the bass, 16 spokes follow the spectrum */
-        const bass = Math.max(sc16(0), sc16(1), sc16(2), sc16(3)) , cx = 64, cy = 37, t = animT;
-        for (let k = 0; k < 3; k++) { const r = ((t * (0.5 + bass * 1.5) + k * 9) % 22) + 3; for (let a = 0; a < 60; a++) { const an = a * 0.1047, x = Math.round(cx + Math.cos(an) * r * 1.5), y = Math.round(cy + Math.sin(an) * r * 0.8); if (x >= 0 && x < 128 && y >= 11 && y < 64) set_pixel(x, y, 1); } }
+    } else if (m === 1) {                                                         /* beat: rings pulse out with the bass, 16 spokes follow the spectrum */
+        const cx = 64, cy = 37;
+        for (let k = 0; k < 3; k++) { const r = ((t * (0.5 + bass * 1.5) + k * 9) % 22) + 3; for (let a = 0; a < 60; a++) { const an = a * 0.1047; scPix(cx + Math.cos(an) * r * 1.5, cy + Math.sin(an) * r * 0.8); } }
         const rr = Math.round(3 + bass * 5); fill_rect(cx - rr, cy - (rr >> 1), rr * 2, rr + 1, 1);
-        for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, h = 2 + Math.round(clamp(scSm[i] * 1.4, 0, 1) * 10), x0 = cx + Math.cos(a) * 36, y0 = cy + Math.sin(a) * 21, x1 = cx + Math.cos(a) * (36 + h * 0.9), y1 = cy + Math.sin(a) * (21 + h * 0.4), n = 6; for (let q = 0; q <= n; q++) { const x = Math.round(x0 + (x1 - x0) * q / n), y = Math.round(y0 + (y1 - y0) * q / n); if (x >= 0 && x < 128 && y >= 11 && y < 64) set_pixel(x, y, 1); } }
+        for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, h = 2 + Math.round(clamp(scSm[i] * 1.4, 0, 1) * 10); scLine(cx + Math.cos(a) * 36, cy + Math.sin(a) * 21, cx + Math.cos(a) * (36 + h * 0.9), cy + Math.sin(a) * (21 + h * 0.5)); }
+    } else if (m === 2) {                                                         /* tunnel: frames fly towards you, faster with the bass; the mids wobble the frames */
+        const cx = 64, cy = 37, sp = 0.012 + bass * 0.05, wob = (scBand(6) + scBand(9)) * 3;
+        for (let k = 0; k < 7; k++) {
+            const d = (((t * sp * 4 + k / 7) % 1) + 1) % 1, z = d * d, w = 3 + z * 80, h = (2 + z * 44), ox = Math.sin(t * 0.07 + k) * wob * z, oy = Math.cos(t * 0.05 + k * 2) * wob * 0.5 * z;
+            scRect(cx - w + ox, cy - h + oy, cx + w + ox, cy + h + oy);
+        }
+        for (let c = 0; c < 4; c++) { const a = c * Math.PI / 2 + Math.PI / 4; scLine(cx + Math.cos(a) * 3, cy + Math.sin(a) * 2, cx + Math.cos(a) * 84, cy + Math.sin(a) * 46); }
+        if (scKick > 0.5) fill_rect(cx - 3, cy - 2, 6, 4, 1);
+    } else if (m === 3) {                                                         /* grid: a synthwave road, a sun that pumps and mountains that follow the spectrum */
+        const hz = 36, sunR = 7 + Math.round(bass * 7);
+        for (let yy = -sunR; yy <= 0; yy++) { if (yy < -2 && ((yy + t * 0.2) % 4 + 4) % 4 < 1) continue; const w = Math.round(Math.sqrt(sunR * sunR - yy * yy)); fill_rect(64 - w, hz + yy - 1, w * 2 + 1, 1, 1); }
+        for (let x = 0; x < 128; x += 2) { const h = Math.round(clamp(scBand(x * 15 / 127), 0, 1) * 15); if (h > 1) fill_rect(x, hz - h, 2, 1, 0), scLine(x, hz - h, x + 2, hz - Math.round(clamp(scBand((x + 2) * 15 / 127), 0, 1) * 15)); }
+        fill_rect(0, hz, 128, 1, 1);
+        const ph = (t * (0.02 + bass * 0.05)) % 1;
+        for (let i = 0; i < 7; i++) { const f = (i + ph) / 7, y = hz + 1 + f * f * 26; scLine(0, y, 127, y); }
+        for (let k = -8; k <= 8; k++) scLine(64 + k * 2, hz + 1, 64 + k * 17, 63);
+    } else if (m === 4) {                                                         /* skyline: 16 buildings, the windows light up with their band */
+        for (let i = 0; i < 16; i++) {
+            const lv = clamp(scSm[i], 0, 1), x = i * 8, h = 8 + Math.round(lv * 36), y0 = 63 - h;
+            fill_rect(x, y0, 7, h, 1);
+            for (let r = 0; r < Math.floor(h / 4) - 0; r++) for (let c = 0; c < 2; c++) { const lit = (((i * 7 + r * 3 + c * 5 + (t >> 4)) % 5) / 5) < lv * 1.1; if (!lit) fill_rect(x + 1 + c * 3, y0 + 2 + r * 4, 2, 2, 0); }
+            const pk = Math.round(clamp(scPk[i], 0, 1) * 36) + 8; fill_rect(x + 2, clamp(63 - pk - 3, 11, 62), 3, 1, 1);
+        }
+        if (scKick > 0.5) for (let q = 0; q < 14; q++) scPix((q * 37 + t * 5) % 128, 12 + (q * 11) % 8);
+        for (let q = 0; q < 6; q++) scPix((q * 53 + 17) % 128, 12 + (q * 7) % 10);
+    } else if (m === 5) {                                                         /* mirror: the spectrum grows up and down from the middle, with falling caps */
+        const cy = 37;
+        for (let x = 0; x < 128; x += 2) {
+            const f = Math.pow(x / 127, 0.8) * 15, v = clamp(scBand(f), 0, 1), h = Math.round(v * 24), pk = Math.round(clamp(scPk[Math.min(15, Math.round(f))], 0, 1) * 24);
+            fill_rect(x, cy - h, 1, 2 * h + 1, 1); if (pk > h + 1) { scPix(x, cy - pk); scPix(x, cy + pk); }
+        }
+        fill_rect(0, cy, 128, 1, 1);
+    } else {                                                                      /* flower: the 16 bands as petals around the middle, the bass opens the centre */
+        const cx = 64, cy = 37, rot = t * 0.015, N = 32; let px = 0, py = 0, fx = 0, fy = 0;
+        for (let i = 0; i <= N; i++) {
+            const bi = i % N, bnd = bi < 16 ? bi : 31 - bi, r = 5 + clamp(scSm[bnd], 0, 1) * 24, a = rot + bi * Math.PI * 2 / N, x = cx + Math.cos(a) * r * 1.7, y = cy + Math.sin(a) * r * 0.95;
+            if (i > 0) scLine(px, py, x, y); else { fx = x; fy = y; } px = x; py = y;
+            if (i % 2 === 0) scLine(cx + Math.cos(a) * 3, cy + Math.sin(a) * 2, x, y);
+        }
+        const rr = Math.round(2 + bass * 6); fill_rect(cx - rr, cy - (rr >> 1), rr * 2, rr + 1, 1);
     }
 }
 function scopeTick() {
     if (view !== 42 || menuOpen) return;
-    if (scopeMode >= 3) { animT++; if (animT % 2 === 0) needsRedraw = true; }
+    animT++; if (animT % 2 === 0) needsRedraw = true;
     if (++scopePoll % 2) return;
     const r = dspGet('scope'); if (typeof r === 'string' && r.length >= 144 && r !== scopeStr) { scopeStr = r; needsRedraw = true; scopeExtra(); }
 }
@@ -4872,54 +4929,9 @@ const SPR_FRG = [".##...##.", "#.#####.#", "#########", "#########", "#.#####.#"
 function spr(x, y, S, fr, sc) {
     for (let r = 0; r < 9; r++) { const row = r === 8 ? S[8][fr] : S[r]; for (let q = 0; q < 9; q++) if (row[q] === '#') fill_rect(x + q * sc, y + r * sc, sc, sc, 1); }
 }
-function drawScopeAnim() {
-    const b = []; for (let i = 0; i < 8; i++) b.push(scopeStr.length >= 144 ? parseInt(scopeStr.substr(128 + i * 2, 2), 16) / 255 : 0);
-    const bass = Math.max(b[0], b[1]), mid = Math.max(b[2], b[3], b[4]), hi = Math.max(b[5], b[6], b[7]), lvl = Math.max(bass, mid, hi);
-    const t = animT, beat = playing ? (gs & 1) : (t >> 3) & 1;
-    if (scopeMode === 3) {
-        const X = [14, 55, 96], S = [SPR_CAT, SPR_BUN, SPR_FRG], E = [bass, mid, hi];
-        for (let k = 0; k < 3; k++) {
-            const up = Math.round(clamp(E[k] * 2, 0, 1) * 14) + (((t >> 2) + k) & 1 ? 2 : 0), fr = ((t >> 3) + k) & 1;
-            const sh = Math.round(Math.sin(t * 0.25 + k * 2) * 2 * clamp(lvl * 3, 0, 1));
-            spr(X[k] + sh, 62 - 18 - up, S[k], fr, 2);
-            fill_rect(X[k] + 2 + sh, 63, 14, 1, 1);
-            if (E[k] > 0.35) { const ny = 14 + ((t + k * 7) % 20); bmp(X[k] + 12, 62 - 22 - up - (ny % 6), ['..#', '..#', '##.', '##.'], 1); }
-        }
-        fill_rect(0, 62, 128, 1, 1);
-    } else if (scopeMode === 4) {
-        const sp = 1 + Math.round(bass * 5) + Math.round(hi * 2);
-        for (let i = 0; i < 28; i++) {
-            const a = i * 2.399, base = ((i * 37 + t * sp * 0.6) % 70) + 1, r = base * base / 60, x = Math.round(64 + Math.cos(a) * r * 1.6), y = Math.round(36 + Math.sin(a) * r * 0.9);
-            if (x < 0 || x > 127 || y < 11 || y > 63) continue; set_pixel(x, y, 1); if (r > 28 && bass > 0.3) { set_pixel(x + 1, y, 1); }
-        }
-    } else {
-        for (let k = 0; k < 4; k++) {
-            const r = ((t * (1 + bass * 3) * 0.5 + k * 9) % 36) + 2, cx = 64, cy = 38;
-            for (let a = 0; a < 48; a++) { const an = a * 0.1309, x = Math.round(cx + Math.cos(an) * r * 1.7), y = Math.round(cy + Math.sin(an) * r * 0.9); if (x >= 0 && x < 128 && y >= 11 && y < 64) set_pixel(x, y, 1); }
-        }
-        const hh = Math.round(4 + lvl * 12); fill_rect(60, 38 - (hh >> 1), 8, hh, 1);
-    }
-}
 function drawScope() {
     titleBar('SCOPE', SCOPE_NAMES[scopeMode]);
-    if (scopeMode >= 6) { drawScopeNew(); return; }
-    if (scopeMode >= 3) { drawScopeAnim(); return; }
-    if (scopeStr.length < 144) { txt(4, 28, 'NO SIGNAL DATA', 1); return; }
-    const w = [], b = [];
-    for (let i = 0; i < 64; i++) w.push((parseInt(scopeStr.substr(i * 2, 2), 16) / 255) * 2 - 1);
-    for (let i = 0; i < 8; i++) b.push(parseInt(scopeStr.substr(128 + i * 2, 2), 16) / 255);
-    let pk = 0; for (const v of w) pk = Math.max(pk, Math.abs(v));
-    const wy0 = 12, wh = scopeMode === 1 ? 50 : (scopeMode === 0 ? 26 : 0);
-    if (wh) {
-        const cy = wy0 + (wh >> 1); fill_rect(0, cy, 128, 1, 1); set_pixel(0, cy, 1);
-        const gn = pk > 0.02 ? clamp(0.95 / pk, 1, 8) : 1;
-        let py = cy; for (let i = 0; i < 64; i++) { const y = clamp(Math.round(cy - w[i] * gn * (wh >> 1) * 0.95), wy0, wy0 + wh - 1), a = Math.min(y, py), c2 = Math.max(y, py); for (let q = a; q <= c2; q++) { set_pixel(i * 2, q, 1); set_pixel(i * 2 + 1, q, 1); } py = y; }
-        if (pk > 0.95) txt(100, wy0 + 1, 'CLIP', 1); else if (gn >= 1.5) txt(110, wy0 + 1, 'x' + Math.floor(gn), 1);
-    }
-    if (scopeMode !== 1) {
-        const by0 = scopeMode === 0 ? 40 : 12, bh = 62 - by0 + 1;
-        for (let i = 0; i < 8; i++) { const h = Math.round(clamp(b[i], 0, 1) * bh); if (h > 0) fill_rect(2 + i * 16, 63 - h, 12, h, 1); else fill_rect(2 + i * 16, 62, 12, 1, 1); }
-    }
+    drawScopeNew();
 }
 /* ---- display options: start animation on/off, idle screen (animation, then black), inverted display ---- */
 let uiMin = true, uiTheme = 9, bigOn = false, slideOn = false;               /* minimal style / big value display / page slide */
@@ -5469,7 +5481,7 @@ globalThis.onMidiMessageInternal = function (data) {
         return; }
     case CC.JOGCLICK:
         if (d2 > 0 && view === 45 && !menuOpen && !fb && !shiftHeld) { devClick(); return; }
-        if (d2 > 0 && view === 42 && !menuOpen && !shiftHeld) { scopeMode = (scopeMode + 1) % 11; needsRedraw = true; return; }
+        if (d2 > 0 && view === 42 && !menuOpen && !shiftHeld) { scopeMode = (scopeMode + 1) % SCOPE_NAMES.length; needsRedraw = true; return; }
         if (d2 > 0 && view === 40 && !menuOpen && !shiftHeld) { if (undoStack.length) histApply(); return; }
         if (d2 > 0 && view === 20 && !menuOpen && !padMenu && !shiftHeld) { mixMode = (mixMode + 1) % 3; needsRedraw = true; showToast('MIX', ['VOLUME', 'DELAY SEND', 'REVERB SEND'][mixMode], mixMode / 2); return; }
         if (d2 > 0 && (view === 0 || view === 1) && !menuOpen && !padMenu && !shiftHeld && askKind < 0 && !fb) { fbOpen(); acc.fill(0); needsRedraw = true; return; }   /* jog click on SEQ/SOUND = preset browser (HOME: Shift + step 3) */

@@ -1,0 +1,20 @@
+/* song page: pads build the chain and set the options */
+const { ctx, run, params } = require('./harness.js');
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+params.pos = '0,0,0,0'; ctx.init && ctx.init(); T(300);
+run('splashOn=false;splashT0=0'); run('view=31;needsRedraw=true'); T(5);
+const pad = (r, c) => run('songPadNew(' + ((3 - r) * 8 + c) + ')');
+pad(3, 2); ok(run('songList.length') === 1 && run('songList[0][0]') === 2, 'bottom pad 3 = scene 3 (first entry)');
+pad(3, 4); ok(run('songList.length') === 2 && run('songList[1][0]') === 4, 'bottom pad 5 appends scene 5');
+pad(1, 3); ok(run('songList[1][1]') === 8, 'row 2 pad 4 = 8 bars');
+pad(1, 6); ok(run('songList[1][2]') === 2, 'repeat pad = x2');
+pad(2, 1); ok(run('songList[1][4]') === 1, 'row 3 pad 2 = FILL');
+pad(2, 3); ok(run('songList[1][5]') === 1, 'tag pad cycles tag');
+pad(2, 4); ok(run('songSlot') === 0 && run('songList[0][0]') === 4, 'move left');
+pad(2, 7); ok(run('songList.length') === 3, 'copy pad duplicates the step');
+pad(2, 6); ok(run('songList.length') === 2, 'delete pad removes the step');
+pad(0, 1); ok(run('songSlot') === 1, 'top row pad selects a step');
+let leds = []; for (let i = 0; i < 32; i++) leds.push(run('songLed(' + i + ')'));
+ok(leds.every(v => v >= 0 && v < 128), 'all LED values valid');
+console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

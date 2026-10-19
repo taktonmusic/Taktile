@@ -37,11 +37,16 @@ jobs:
       - name: New clip sound test
         run: node tools/test/test_clipsound.js
 
-      - name: MIC recording test (native, fake input)
+      - name: Song page test
+        run: node tools/test/test_song.js
+
+      - name: Native tests (MIC recording, Duck, Tape)
         run: |
           ./scripts/fetch-header.sh
-          gcc -O2 -Wno-misleading-indentation -Ibuild/include -o /tmp/mic_test tools/test/mic_test.c src/pad_studio.c -lm
-          /tmp/mic_test
+          for t in mic duck tape; do
+            gcc -O2 -Wno-misleading-indentation -Ibuild/include -o /tmp/${t}_test tools/test/${t}_test.c src/pad_studio.c -lm
+            /tmp/${t}_test
+          done
 
       - name: Native build with sanitizers (compile check)
         run: |
