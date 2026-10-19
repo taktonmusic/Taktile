@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.176.0 (19 October 2026)
+- Repo aufgeraeumt: doppelte Handbuch-PDFs und Vorschaubild im Hauptordner, die zwei falschen deutschen Anleitungs-Kopien (waren englisch) und die alten 5.4-Tests entfernt; Handbuecher liegen nur noch in taktile/docs
+
 ## 5.175.0 (18 October 2026)
 - Browser: Regler scrollen deutlich langsamer (6 Klicks pro Schritt, hoechstens ein Schritt alle 150 ms)
 
