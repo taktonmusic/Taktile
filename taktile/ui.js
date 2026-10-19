@@ -451,7 +451,7 @@ function saveState() {
         for (let p = 0; p < NPAT; p++) { const row = []; for (let l = 0; l < NLANE; l++) row.push(laneHas(p, l) ? encTrack(p, l) : ''); seqHex.push(row); }
         const keep = {}; for (let t = 0; t < NTRK; t++) { keep[t] = 1; if (slot[t] >= 0) for (let k = 0; k < 16; k++) keep[NTRK + slot[t] * 16 + k] = 1; }
         const cs = csnd.map(row => row.map((r, l) => keep[l] ? r : null));
-        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, tv: 2, hv: 2, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, tr: tres, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
+        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, tv: 2, hv: 3, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, tr: tres, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
         dirty = false; saveFlash = 30; needsRedraw = true;
     } catch (e) { /* ignore */ }
 }
@@ -498,7 +498,7 @@ function loadState() {
             for (let t = 0; t < NTRK; t++) if (slot[t] >= 0) ensureSlot(slot[t]);
         }
         if (Array.isArray(o.master) && o.master.length >= 9) { master = o.master.map(Number); while (master.length < MASTER_DEF.length) master.push(MASTER_DEF[master.length]); }
-        if (!(o.hv >= 2) && MI.m_hiss !== undefined) { const h = master[MI.m_hiss]; if (h > 0.01) master[MI.m_hiss] = clamp(0.333 * Math.pow(h, 1.25), 0, 1); }      /* Hiss is much louder since 1.5.0: saved values are lowered so an old project is not noisy */
+        if (o.hv === 2 && MI.m_hiss !== undefined) { const h = master[MI.m_hiss]; if (h > 0.01) master[MI.m_hiss] = clamp(Math.pow(3.75 * Math.pow(h, 1.2), 2 / 3), 0, 1); }      /* 1.5.x lowered Hiss values go back to the original (1.4) scale at the same loudness; older saves are already on it */
         if (Array.isArray(o.seq)) for (let p = 0; p < NPAT; p++) for (let t = 0; t < NLANE; t++) {
             const h = o.seq[p] && o.seq[p][t];
             if (h && steps[p][t]) { const w = o.sf === 12 ? 12 : (o.sf === 10 ? 10 : (o.sf === 6 ? 6 : 4)); for (let s = 0; s < Math.min(MAXSTEP, Math.floor(h.length / w)); s++) steps[p][t][s] = w >= 10 ? decStep(h.substr(w * s, w)) : (w === 6 ? decStep(h.substr(6 * s, 6)) : decStepOld(h.substr(4 * s, 4))); }
@@ -4657,6 +4657,7 @@ function drawSong() {
         }
     }
     fill_rect(0, 56, 128, 1, 1);
+    if (!songOn && L <= 2) { txtS(2, 58, 'PADS = CLIPS  STEP 2 = NEW STEP  PLAY', 1); return; }
     let bw = 0; for (let k = 0; k < L; k++) { const w = Math.max(1, Math.round(126 * songLen(songList[k]) / tot)); if (k === songSlot) fill_rect(1 + bw, 58, w, 5, 1); else if (k === pl) fill_rect(1 + bw, 59, w, 3, 1); else fill_rect(1 + bw, 60, w, 1, 1); bw += w; if (bw > 126) break; }
 }
 let grains = [], grEnv = '', grT = 0;
@@ -5406,7 +5407,8 @@ globalThis.onMidiMessageInternal = function (data) {
             if (shiftHeld) { playing = false; gs = 0; dspSet('play', '0'); dspSet('panic', '1'); showToast('TRANSPORT', 'STOP + RESET + PANIC', 0); }
             else if (!playing && ciBeats > 0) { dspSet('play', '0'); ciBeats = 0; showToast('COUNT-IN', 'CANCELLED', 0); }
             else if (!playing && recArmed && ciOn) { dspSet('play', '2'); showToast('COUNT-IN', '1 BAR', 1); }      /* Rec armed + Play: one bar of clicks, then the recording starts */
-            else { if (view === 31 && !playing && !songOn) { songOn = true; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; } playing = !playing; gs = 0; dspSet('play', playing ? '1' : '0'); showToast('TRANSPORT', playing ? 'PLAY' : 'STOP', playing ? 1 : 0); }
+            else if (view === 31 && !menuOpen && !(playing && songOn)) { songOn = true; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songCl.fill(-9); if (playing) dspSet('play', '0'); playing = true; gs = 0; dspSet('play', '1'); showToast('SONG', 'PLAY FROM STEP 1', 1); }      /* Play in the song page always starts the song from step 1 */
+            else { playing = !playing; gs = 0; dspSet('play', playing ? '1' : '0'); showToast('TRANSPORT', playing ? 'PLAY' : 'STOP', playing ? 1 : 0); }
             needsRedraw = true;
         }
         return;

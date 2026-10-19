@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.3 (19 October 2026)
+- Tape and Hiss are back to the original, finer behaviour: no more jump from 0 to too much at 2% (saved Hiss values are converted to keep their loudness)
+- Song: Play in the song page always starts the song at step 1, a short hint on the page, the song only runs while the song page is open
+
 ## 1.6.2 (19 October 2026)
 - The song only runs while the song page is open (leaving it switches the song off, clips keep playing)
 - Manual: Euclid pages text fixed
