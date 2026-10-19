@@ -9,8 +9,11 @@ pad(0, 3); ok(run('songList[0][6][0]') === 3, 'top row pad 4 = track 1 plays cli
 pad(0, 3); ok(run('songList[0][6][0]') === -1, 'same pad again = track silent');
 pad(1, 5); ok(run('songList[0][6][1]') === 5, 'row 2 = track 2');
 run('songStepKey(1)'); ok(run('songList.length') === 2, 'step button 2 appends a step');
-ok(run('songList[1][6][1]') === 5 && run('songList[0][6]') !== run('songList[1][6]'), 'new step copies clips (own array)');
+ok(run('songList[1][6].every(x => x === -1)'), 'a new step is empty');
 pad(1, 2); ok(run('songList[1][6][1]') === 2 && run('songList[0][6][1]') === 5, 'steps are independent');
+run('songSlot=1;songTag(1)'); ok(run('songList[1][5]') === 1, 'Up = tag (INTRO)');
+run('songSlot=1;loopHeld=true'); run('onMidiMessageInternal([0xB0, CC.JOG, 1])'); run('loopHeld=false'); ok(run('songList[1][1]') === 8, 'Loop + jog changes the bars of the step (4 -> 8)');
+run('muteHeld=true;onPadCore(' + ((3 - 1) * 8 + 0) + ', true, 100);muteHeld=false'); ok(run('songList[1][6][1]') === -1, 'Mute + pad = track silent in this step');
 run('songStepKey(0)'); ok(run('songSlot') === 0, 'step button 1 selects step 1');
 run('bank=1'); pad(0, 6); ok(run('songList[0][6][4]') === 6, 'bank 2 pads = tracks 5-8');
 run('songSlot=0;songStepKey(2)'); ok(run('songList.length') === 3 && run('songSlot') === 2, 'step button 3 appends step 3');

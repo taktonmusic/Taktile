@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.6.7 (19 October 2026)
+- Song page: Loop held + jogwheel = bars of a step, Mute + pad = track silent in this step, Shift + jogwheel = transition, Up/Down = step name, a new step is empty
+
 ## 1.6.6 (19 October 2026)
 - Song: Play starts from step 1 and runs the whole chain (every step button = one step with its own clips per track); pressing a step button while it plays jumps there at the end of the bar
 

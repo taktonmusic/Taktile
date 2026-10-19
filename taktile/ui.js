@@ -978,7 +978,7 @@ const HELP = {
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
-    31: ['Pads: Tracks x Clips 1-8', 'Step-Tasten = Song-Kette', 'Jog: Tracks 1-16'],
+    31: ['Pads: Tracks x Clips', 'Step-Tasten = Kette', 'Jog=Tracks Loop+Jog=Takte'],
     35: ['32 Projekt-Slots', 'New = leeres Projekt', 'Revert = Sicherung'],
     34: ['Kits: 16 Pad-Sounds. Slot 17+ = fertige Kits. Preview: rechts drehen = anhoeren, links = zurueck. Load = behalten.'],
     33: ['Resample nimmt Master', 'oder Track auf', 'Ergebnis = Sample'],
@@ -1013,7 +1013,7 @@ const HELP_EN = {
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
     21: ['Track: type, volume', 'Pads, sound, layout', 'Color'],
-    31: ['Pads: tracks x clips 1-8', 'Step buttons = song chain', 'Jog: tracks 1-16'],
+    31: ['Pads: tracks x clips', 'Step buttons = chain', 'Jog=tracks Loop+Jog=bars'],
     35: ['32 project slots', 'New = empty project', 'Revert = backup'],
     34: ['Kits: 16 pad sounds. Slot 17+ = ready-made kits. Preview: turn right = listen, left = back. Load = keep.'],
     33: ['Resample records master', 'or a track', 'Result = sample'],
@@ -2466,6 +2466,7 @@ function onPad(idx, on, vel) {
 }
 function onPadCore(idx, on, vel) {
     if (askKind >= 0) return;                                 /* the Synth / Drum question is open: pads must not play notes */
+    if (muteHeld && view === 31) { if (on) { muteUsed = true; const t = bank * 4 + (3 - (idx >> 3)), e = songList[songSlot]; if (e && t >= 0 && t < NTRK) { songClips(e)[t] = -1; if (songOn && playing && songPlayIdx() === songSlot) { songCl[t] = -1; songTrk(t, -1); } dirty = true; needsRedraw = true; showToast('STEP ' + p2(songSlot + 1) + ' T' + p2(t + 1), 'SILENT', 0); } } return; }      /* Mute + pad on the song page = that track is silent in this step */
     if (muteHeld || view === 20) {                            /* MUTE + pad (session / mixer: just the pad) = mute without leaving the page */
         if (on) {
             if (view === 7) { muteUsed = true; const t = bank * 4 + (3 - (idx >> 3)); if (t >= 0 && t < NTRK) { if (shiftHeld) soloTrack(t); else toggleMute(t); } }
@@ -4180,6 +4181,12 @@ function songClips(e) { if (!e[6]) { e[6] = []; for (let t = 0; t < NTRK; t++) e
 function songCopy(e) { songClips(e); const n = e.slice(); n[6] = e[6].slice(); return n; }
 function sceneHas(c) { for (let t = 0; t < NTRK; t++) if (trackHasSteps(c, t)) return true; return false; }
 function songLen(e) { return e[1] * (e[2] || 1); }
+function songAdd() {                                           /* a new, empty step after the selected one (same length) */
+    if (songList.length >= SONG_MAX) { showToast('SONG', 'FULL', 1); return; }
+    const e = songList[songSlot] || [0, 4, 1, 0, 0, 0];
+    songList.splice(songSlot + 1, 0, [e[0], e[1], 1, 0, 0, 0, new Array(NTRK).fill(-1)]); songSlot++;
+    showToast('SONG', 'STEP ' + (songSlot + 1) + ' ADDED', songSlot / (SONG_MAX - 1)); dirty = true; needsRedraw = true;
+}
 function songIns() { if (songList.length >= SONG_MAX) { showToast('SONG', 'FULL', 1); return; } const e = songList[songSlot] || [0, 4, 1, 0, 0, 0]; songList.splice(songSlot + 1, 0, songCopy(e)); songSlot++; songSent = -1; songOff = 0; songNext = -1; showToast('SONG', 'STEP ' + (songSlot + 1) + ' ADDED', songSlot / (SONG_MAX - 1)); dirty = true; needsRedraw = true; }
 function songDel() { if (songList.length <= 1) { songList = [[0, 4, 1, 0, 0, 0]]; songSlot = 0; songBlank = true; showToast('SONG', 'CLEARED', 0); } else { songList.splice(songSlot, 1); songSlot = clamp(songSlot, 0, songList.length - 1); showToast('SONG', 'STEP DELETED', 0); } songSent = -1; songOff = 0; songNext = -1; dirty = true; needsRedraw = true; }
 function songMove(d) { const j = songSlot + d; if (j < 0 || j >= songList.length) return; const t = songList[j]; songList[j] = songList[songSlot]; songList[songSlot] = t; songSlot = j; songSent = -1; songOff = 0; songNext = -1; showToast('SONG', 'STEP ' + (j + 1), j / (SONG_MAX - 1)); dirty = true; needsRedraw = true; }
@@ -4255,13 +4262,14 @@ function songPad(k) {                                           /* pad k = song 
         songSlot = k; needsRedraw = true;
         if (songOn && playing) { songNext = k; showToast('SONG', 'NEXT: STEP ' + (k + 1), k / (SONG_MAX - 1)); }
         else showToast('SONG', 'STEP ' + (k + 1) + (songList[k][5] ? ' ' + SONG_TAG[songList[k][5]] : ''), k / (SONG_MAX - 1));
-    } else if (k === L && L < SONG_MAX) { songSlot = L - 1; songIns(); }
+    } else if (k === L && L < SONG_MAX) { songSlot = L - 1; songAdd(); }
 }
 function songPadK(i) { return (3 - (i >> 3)) * 8 + (i & 7); }
 /* pad layout of the song page (seen from the top):
    row 1 = the song chain (8 steps of the page that holds the selected step)   row 2 = BARS 1 2 4 8 16 32 | REPEAT | LOOP
    row 3 = HARD FILL DRUMS | TAG | MOVE < > | DELETE | COPY                     row 4 = your scenes 1-8 (lit = has notes) */
 const SONG_REP = [1, 2, 4];
+function songTag(d) { const e = songList[songSlot]; if (!e) return; e[5] = (e[5] + d + SONG_TAG.length) % SONG_TAG.length; dirty = true; needsRedraw = true; showToast('STEP ' + p2(songSlot + 1), e[5] ? SONG_TAG[e[5]] : 'NO NAME', e[5] / 7); }
 function songPadNew(idx) {                                       /* pads = your tracks (rows) x their clips 1-8 (columns): press = this step plays that clip on that track, press again = track silent */
     const t = bank * 4 + (3 - (idx >> 3)), c = idx & 7, e = songList[songSlot];
     if (!e || t < 0 || t >= NTRK) return;
@@ -4644,7 +4652,7 @@ function drawMix() {
 function songPlayIdx() { if (!songOn || !playing || songSent < 0) return -1; return songEntryAt(Math.max(0, Math.floor((gs - 1) / 16)))[0]; }
 function drawSong() {
     const L = songList.length, e = songList[songSlot] || [0, 4, 1, 0, 0, 0], cl = songClips(e), pl = songPlayIdx(), tot = songTotal();
-    const bs = (e[2] > 1 ? e[1] + 'x' + e[2] : e[1] + ' BARS');
+    const bs = (e[2] > 1 ? e[1] + 'x' + e[2] : e[1] + 'B') + (e[4] === 1 ? ' F' : (e[4] === 2 ? ' D' : ''));
     titleBar((pl === songSlot ? '>' : '') + 'STEP ' + p2(songSlot + 1) + '/' + p2(L) + (e[5] ? ' ' + SONG_TAG[e[5]] : '') + (songOn ? (songLoop ? ' LOOP' : ' ONCE') : ''), bs);
     for (let r = 0; r < 4; r++) {                                   /* tracks as rows, the clip this step plays is filled */
         const t = bank * 4 + r, y = 11 + r * 11, isSel = (t === sel);
@@ -5440,10 +5448,12 @@ globalThis.onMidiMessageInternal = function (data) {
     case CC.RIGHT: if (d2 > 0 && recDown && !playing) { recHead = (recHead + 1) % LL(); recStepUsed = true; showToast('REC HEAD', String(recHead + 1), recHead / MAXSTEP); return; }
     case CC.RIGHT_: if (d2 > 0) { if (shiftHeld) { if (pageCount() > 1) { stepPage = clamp(stepPage + 1, 0, pageCount() - 1); followHold = 180; showToast('STEP PAGE', (stepPage + 1) + '/' + pageCount(), stepPage / Math.max(1, pageCount() - 1)); needsRedraw = true; } } else if (!menuOpen && !fb && askKind < 0 && heldStep < 0 && !projUI) { const nt = clamp(sel + (1), 0, NTRK - 1); if (nt !== sel) { selectTrack(nt); showToast('TRACK ' + p2(nt + 1), kind[nt] ? 'DRUM' : 'SYNTH', nt / (NTRK - 1)); } } } return;
     case CC.CAPTURE: if (d2 > 0) { if (shiftHeld) fillBar(); else doCapture(); } return;
-    case CC.UP:    if (d2 > 0) { if (view === 31) selectTrack(((sel - 4) % NTRK + NTRK) % NTRK); else if (view === 7 || shiftHeld || recDown) stepTrack(-1); else octMove(1); } return;      /* Up / Down = pad octave; Shift + Up / Down (or the clip view) = the track above / below */
-    case CC.DOWN:  if (d2 > 0) { if (view === 31) selectTrack((sel + 4) % NTRK); else if (view === 7 || shiftHeld || recDown) stepTrack(1); else octMove(-1); } return;
+    case CC.UP:    if (d2 > 0) { if (view === 31) songTag(1); else if (view === 7 || shiftHeld || recDown) stepTrack(-1); else octMove(1); } return;      /* Up / Down = pad octave; Shift + Up / Down (or the clip view) = the track above / below */
+    case CC.DOWN:  if (d2 > 0) { if (view === 31) songTag(-1); else if (view === 7 || shiftHeld || recDown) stepTrack(1); else octMove(-1); } return;
     case CC.JOG: {
         const dl = decodeDelta(d2);
+        if (loopHeld && view === 31 && !menuOpen) { const e = songList[songSlot]; if (dl && e) { let i = SONG_BARS.indexOf(e[1]); if (i < 0) i = 2; i = clamp(i + (dl > 0 ? 1 : -1), 0, SONG_BARS.length - 1); e[1] = SONG_BARS[i]; dirty = true; needsRedraw = true; showToast('STEP ' + p2(songSlot + 1), e[1] + (e[1] === 1 ? ' BAR' : ' BARS'), i / (SONG_BARS.length - 1)); } return; }      /* Loop + jog on the song page = how many bars this step lasts */
+        if (view === 31 && shiftHeld && !menuOpen) { const e = songList[songSlot]; if (dl && e) { e[4] = clamp(e[4] + (dl > 0 ? 1 : -1), 0, 2); dirty = true; needsRedraw = true; showToast('STEP ' + p2(songSlot + 1), ['HARD CUT', 'FILL BEFORE', 'DRUMS FIRST'][e[4]], e[4] / 2); } return; }      /* Shift + jog = how the step comes in */
         if (loopHeld && !menuOpen && !fb && view !== 31 && !(view === 28 && broOpen)) { if (dl) setLen(LL() + (dl > 0 ? 1 : -1) * (shiftHeld ? 16 : 1), shiftHeld); return; }   /* Loop + jogwheel = loop length (Shift = whole track), on every page, before anything else */
         if (trkHeld >= 0) { trackVol(trkHeld, dl); return; }                  /* track button held + jogwheel works as well */
         if (isHub(view)) { if (dl) hubMove(dl); return; }
