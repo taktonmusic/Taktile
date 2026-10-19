@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="Taktile: groovebox for Ableton Move">
+<rect width="1200" height="300" rx="18" fill="#000000"/>
+<rect x="70" y="30" width="240" height="240" rx="52.8" fill="#000" stroke="#fff" stroke-width="4"/>
+<rect x="106.0" y="66.0" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="150.4" y="66.0" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="194.8" y="66.0" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="239.2" y="66.0" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="107.5" y="111.9" width="31.8" height="31.8" rx="7.0" fill="#262626" stroke="#4d4d4d" stroke-width="1.5"/>
+<rect x="150.4" y="110.4" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="194.8" y="110.4" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="240.7" y="111.9" width="31.8" height="31.8" rx="7.0" fill="#262626" stroke="#4d4d4d" stroke-width="1.5"/>
+<rect x="107.5" y="156.3" width="31.8" height="31.8" rx="7.0" fill="#262626" stroke="#4d4d4d" stroke-width="1.5"/>
+<rect x="150.4" y="154.8" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="194.8" y="154.8" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="240.7" y="156.3" width="31.8" height="31.8" rx="7.0" fill="#262626" stroke="#4d4d4d" stroke-width="1.5"/>
+<rect x="107.5" y="200.7" width="31.8" height="31.8" rx="7.0" fill="#262626" stroke="#4d4d4d" stroke-width="1.5"/>
+<rect x="150.4" y="199.2" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="194.8" y="199.2" width="34.8" height="34.8" rx="7.0" fill="#fff"/>
+<rect x="240.7" y="200.7" width="31.8" height="31.8" rx="7.0" fill="#262626" stroke="#4d4d4d" stroke-width="1.5"/>
+<g font-family="Helvetica, Arial, sans-serif">
+<text x="380" y="150" font-size="86" font-weight="800" fill="#f4f4f6" letter-spacing="6">TAKTILE</text>
+<text x="384" y="192" font-size="24" fill="#bbbbbb">Overtake groovebox for Ableton Move (Schwung)</text>
+<text x="384" y="232" font-size="18" fill="#888888" font-family="Menlo, Consolas, monospace">16 tracks · step sequencer · synths &amp; drums · live FX</text>
+</g>
+</svg>

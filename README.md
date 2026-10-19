@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="Taktile – overtake groovebox for Ableton Move" width="100%">
+  <img src="assets/taktile-banner.svg" alt="Taktile – overtake groovebox for Ableton Move" width="100%">
 </p>
 
 <p align="center">
