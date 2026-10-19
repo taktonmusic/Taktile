@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.5.1 (19 October 2026)
+- Noise at start fixed: Tape Hiss became much louder in 1.5.0, so projects saved with Hiss on were noisy; saved Hiss values are lowered once (same level as before)
+
 ## 1.5.0 (19 October 2026)
 - Song page rebuilt around pads: bottom row = your scenes, row 2 = bars/repeat/loop, row 3 = change/tag/move/delete/copy
 - Euclid page simplified: 6 tidy tile pages

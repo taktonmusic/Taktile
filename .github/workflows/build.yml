@@ -40,6 +40,9 @@ jobs:
       - name: Song page test
         run: node tools/test/test_song.js
 
+      - name: Hiss migration test
+        run: node tools/test/test_hiss.js
+
       - name: Native tests (MIC recording, Duck, Tape)
         run: |
           ./scripts/fetch-header.sh
