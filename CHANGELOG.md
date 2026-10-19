@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.5 (19 October 2026)
+- Song starts at the step you picked (Play), the jogwheel scrolls through tracks 1-16 on the song page
+- The one GitHub release is now called Taktile 1.0.0 (it always holds the newest version)
+
 ## 1.6.4 (19 October 2026)
 - Song chain on the 16 step buttons: every step button is a song step, the pads above pick the clips for that step (bars per step on the Bars knob, Copy / Delete + step button)
 

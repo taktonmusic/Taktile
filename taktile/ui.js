@@ -978,7 +978,7 @@ const HELP = {
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
-    31: ['Pads: Tracks x Clips 1-8', 'Step-Tasten = Song-Kette', 'Hoch/Runter: naechste 4'],
+    31: ['Pads: Tracks x Clips 1-8', 'Step-Tasten = Song-Kette', 'Jog: Tracks 1-16'],
     35: ['32 Projekt-Slots', 'New = leeres Projekt', 'Revert = Sicherung'],
     34: ['Kits: 16 Pad-Sounds. Slot 17+ = fertige Kits. Preview: rechts drehen = anhoeren, links = zurueck. Load = behalten.'],
     33: ['Resample nimmt Master', 'oder Track auf', 'Ergebnis = Sample'],
@@ -1013,7 +1013,7 @@ const HELP_EN = {
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
     21: ['Track: type, volume', 'Pads, sound, layout', 'Color'],
-    31: ['Pads: tracks x clips 1-8', 'Step buttons = song chain', 'Up/Down: next 4 tracks'],
+    31: ['Pads: tracks x clips 1-8', 'Step buttons = song chain', 'Jog: tracks 1-16'],
     35: ['32 project slots', 'New = empty project', 'Revert = backup'],
     34: ['Kits: 16 pad sounds. Slot 17+ = ready-made kits. Preview: turn right = listen, left = back. Load = keep.'],
     33: ['Resample records master', 'or a track', 'Result = sample'],
@@ -4205,7 +4205,7 @@ function songTick() {
     if (songOn && view !== 31) { songOn = false; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songRestore(); dirty = true; }      /* the song only runs while the song page is open */
     if (!songOn || !playing) { if (!playing) { songSent = -1; songLaunched = -1; songCl.fill(-9); songOff = 0; songFillBar = -1; } songMutePend = false; if (songMuted || songTempoOn) songRestore(); return; }
     const g = Math.max(0, gs - 1), bar = Math.floor(g / 16), st = g % 16;
-    if (songSent < 0 && g <= 1) { songSent = 0; songOff = 0; songNext = -1; songCl.fill(-9); songEnter(0); return; }
+    if (songSent < 0 && g <= 1) { songSent = 0; songNext = -1; songCl.fill(-9); { const k0 = clamp(songSlot, 0, songList.length - 1); songOff = songStart(k0) % songTotal(); songEnter(k0); } return; }      /* the song starts at the step you picked */
     if (songSent < 0) return;
     const nr = songEntryAt(bar + 1), cur = songEntryAt(bar);
     if (st < 12 && songFillBar !== bar) {                         /* the last bar before an entry with FILL: a roll on the drums */
@@ -5402,7 +5402,7 @@ globalThis.onMidiMessageInternal = function (data) {
             if (shiftHeld) { playing = false; gs = 0; dspSet('play', '0'); dspSet('panic', '1'); showToast('TRANSPORT', 'STOP + RESET + PANIC', 0); }
             else if (!playing && ciBeats > 0) { dspSet('play', '0'); ciBeats = 0; showToast('COUNT-IN', 'CANCELLED', 0); }
             else if (!playing && recArmed && ciOn) { dspSet('play', '2'); showToast('COUNT-IN', '1 BAR', 1); }      /* Rec armed + Play: one bar of clicks, then the recording starts */
-            else if (view === 31 && !menuOpen && !(playing && songOn)) { songOn = true; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songCl.fill(-9); if (playing) dspSet('play', '0'); playing = true; gs = 0; dspSet('play', '1'); showToast('SONG', 'PLAY FROM STEP 1', 1); }      /* Play in the song page always starts the song from step 1 */
+            else if (view === 31 && !menuOpen && !(playing && songOn)) { songOn = true; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songCl.fill(-9); if (playing) dspSet('play', '0'); playing = true; gs = 0; dspSet('play', '1'); showToast('SONG', 'PLAY FROM STEP ' + (songSlot + 1), 1); }      /* Play in the song page starts the song at the selected step */
             else { playing = !playing; gs = 0; dspSet('play', playing ? '1' : '0'); showToast('TRANSPORT', playing ? 'PLAY' : 'STOP', playing ? 1 : 0); }
             needsRedraw = true;
         }
@@ -5452,7 +5452,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (padMenu) {
             if (dl) { if (isTab(view)) tabMove(dl); else { tabEnter(1); } }
             return; }
-        if (dl && view === 7 && !menuOpen) { stepTrack(dl > 0 ? 1 : -1); }   /* clip view: jog = scroll through the tracks (right = down) */
+        if (dl && (view === 7 || view === 31) && !menuOpen) { stepTrack(dl > 0 ? 1 : -1); }   /* clip view: jog = scroll through the tracks (right = down) */
         else if (dl && !menuOpen && view === 0) {                          /* SEQ: turning walks through the track pages (SOUND, FILTER, MOD ...), a click opens the preset folders */
             if (shiftHeld) fbOpen();
             else { navStack = [0]; hubReturn = 0; symOpen = -1; tabEnter(1); showToast(TAB_NAME[1], 'TURN = NEXT PAGE', 0); }
