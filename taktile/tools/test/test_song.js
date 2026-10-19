@@ -27,5 +27,9 @@ const saved = JSON.parse(run('JSON.stringify(songList)')); ok(Array.isArray(save
 run('songList=[[0,4,1,0,0,0,null]].map(songNorm)'); ok(run('songClips(songList[0]).length') === 16, 'old song (scene only) gets clips from its scene');
 run('view=0;needsRedraw=true'); T(3); ok(run('songOn')===false,'song switches off when you leave the song page');
 run('view=31;songOn=true;playing=true;songPrev=clipsCur.slice();clipsCur[1]=5;view=0;needsRedraw=true'); T(3); ok(run('songPrev')===null && run('songOn')===false,'leaving the song page switches the song off and brings back the normal clips');
+run('view=31;songSlot=0;loopHeld=true;songStepKey(0);loopHeld=false'); ok(run('songList[0][2]') === 2, 'Loop + step button = repeat x2');
+run('songSlot=0;onMidiMessageInternal([0xB0, CC.JOGCLICK, 127]);onMidiMessageInternal([0xB0, CC.JOGCLICK, 0])'); ok(run('songOv') === true, 'jog click = overview of all 16 tracks'); run('draw()'); run('songOv=false');
+run('shiftHeld=false;songSlot=0;songList[0][4]=3'); run('songOn=true;playing=true;view=31;gs=0;songEnter(0)'); T(3); ok(run('songSweep') >= 0, 'SWEEP step starts the filter sweep'); run('playing=false'); T(3);
+run('chosen.fill(1);askKind=-1;view=31;onPadCore(24,true,100)'); run('songHold.t=1'); T(3); ok(run('view') === 0 && run('songBackTo') === true, 'pad held long opens the clip'); run('noteInput();idleBlank=false'); run('onMidiMessageInternal([0xB0, CC.BACK, 127])'); ok(run('view') === 31, 'Back returns to the song');
 run('draw()'); ok(true, 'draws');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

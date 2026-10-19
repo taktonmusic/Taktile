@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.6.8 (19 October 2026)
+- Song page: progress in the step (3/8), Loop + step button = repeat x1/x2/x4, new SWEEP transition (filter opens over the first bar), jog click = overview of all 16 tracks, hold a pad long = open that clip (Back returns to the song)
+
 ## 1.6.7 (19 October 2026)
 - Song page: Loop held + jogwheel = bars of a step, Mute + pad = track silent in this step, Shift + jogwheel = transition, Up/Down = step name, a new step is empty
 
