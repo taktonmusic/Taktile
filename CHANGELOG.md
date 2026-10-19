@@ -1,64 +1,64 @@
 # Changelog
 
 ## 5.176.0 (19 October 2026)
-- Repo aufgeraeumt: doppelte Handbuch-PDFs und Vorschaubild im Hauptordner, die zwei falschen deutschen Anleitungs-Kopien (waren englisch) und die alten 5.4-Tests entfernt; Handbuecher liegen nur noch in taktile/docs
+- Repo cleanup: removed duplicate manual PDFs and preview image from the root, two mislabelled German guide copies (they were English) and the old 5.4 tests; manuals now live only in taktile/docs
 
 ## 5.175.0 (18 October 2026)
-- Browser: Regler scrollen deutlich langsamer (6 Klicks pro Schritt, hoechstens ein Schritt alle 150 ms)
+- Browser: knobs scroll much slower (6 clicks per step, at most one step every 150 ms)
 
 ## 5.174.0 (18 October 2026)
-- Parametername oben rechts beim Drehen ausgeschrieben (z.B. PROBABILITY statt PROB, GRAIN DENSITY), lange Namen laufen durch
+- Full parameter name top right while turning a knob (e.g. PROBABILITY instead of PROB, GRAIN DENSITY); long names scroll
 
 ## 5.173.0 (18 October 2026)
-- Browser: das Display zeigt immer nur die Ebene des zuletzt gedrehten Reglers (volle Breite); Regler 1 = Hauptordner, jeder weitere Regler oeffnet die naechste Ebene bis zu den Sounds
+- Browser: the display shows only the level of the knob you turned last (full width); knob 1 = main folders, every further knob opens the next level down to the sounds
 
 ## 5.172.0 (18 October 2026)
-- Browser: geteilte Ansicht entfernt, Liste wieder ueber die ganze Breite mit den Kategorie-Kaestchen oben; Bedienung der Ebenen nur ueber die Regler 1-5
+- Browser: split view removed, full-width list with the category boxes on top again; levels are operated with knobs 1-5 only
 
 ## 5.171.0 (18 October 2026)
-- Browser: Regler 1-5 steuern die Ebenen des Baums von oben (Regler 1 Hauptordner, 2 naechste Ebene ..., der letzte die Sounds), Regler 8 = Vorschau OFF/STOP/ALL (Shift+Regler 8 = Lautstaerke)
+- Browser: knobs 1-5 control the tree levels from the top, knob 8 = preview OFF / STOP / ALL (Shift + knob 8 = preview volume)
 
 ## 5.170.0 (18 October 2026)
-- Browser: Regler 1 und 2 scrollen langsamer (Regler 2: 3 Klicks = 1 Eintrag, Regler 1: 4 Klicks = 1 Kategorie, kein schnelles Ueberspringen mehr)
+- Browser: knobs 1 and 2 scroll slower, no fast skipping any more
 
 ## 5.169.0 (18 October 2026)
-- Browser: Regler 1 = linke Spalte (Kategorien), Regler 2 = rechte Spalte (Sounds), Regler 3 = Vorschau AUS / STOP (Standard, nur im Stop) / ALL; Shift+Regler 3 = Vorschau-Lautstaerke
+- Browser: knob 1 = left column (categories), knob 2 = right column (sounds), knob 3 = preview OFF / STOP (default, only while stopped) / ALL; Shift + knob 3 = preview volume
 
 ## 5.168.0 (18 October 2026)
-- Browser: Pfeiltasten links/rechts wechseln die Kategorie (in Ordnerlisten: links = zurueck, rechts = oeffnen); lange Kategorienamen laufen in der linken Spalte durch
+- Browser: arrow keys switch category (folder lists: left = back, right = open); long category names scroll
 
 ## 5.167.0 (18 October 2026)
-- Browser: geteilte Ansicht (Option B3): links die Kategorien, rechts die Sounds; Regler 3 schaltet zwischen SPLIT und TABS
+- Browser: split view (categories left, sounds right); knob 3 switches between SPLIT and TABS
 
 ## 5.166.0 (18 October 2026)
-- Granulator-Seite wie im Bild: grosse Puffer-Anzeige (Wellenform, Lese-Rahmen, Grain-Striche) und die 8 Werte als Text mit Balken darunter statt der Kacheln
+- Granulator page redesigned: large buffer picture (waveform, read frame, grain ticks) and the 8 values as text with bars instead of tiles
 
 ## 5.165.0 (18 October 2026)
-- Browser: Regler 2 = Vorschau-Lautstaerke (10-100 %, Standard 70 %, Anzeige oben rechts, leuchtet mit der Staerke); Design-Themes entfernt: es gibt nur noch das bisherige Standard-Design
+- Browser: knob 2 = preview volume (10-100 %, default 70 %, shown top right, knob lights with the level); design themes removed, the previous default design is the only one
 
 ## 5.164.0 (18 October 2026)
-- Browser: Pad druecken laedt und spielt den markierten Sound sofort, auch bei PRV aus und ohne Jog-Klick (Back macht es rueckgaengig)
+- Browser: a pad press loads and plays the highlighted sound right away, also with preview off and without a jog click (Back undoes it)
 
 ## 5.163.0 (18 October 2026)
-- Browser: schnelles Scrollen auf Regler 2 entfernt, nur Regler 1 (Vorschau) bleibt und leuchtet
+- Browser: fast scrolling on knob 2 removed, only knob 1 (preview) stays and lights up
 
 ## 5.162.0 (18 October 2026)
-- Browser: bei offenem Sound-Browser spielen die Pads nur den Ton, auch bei Record wird nichts in den Clip aufgenommen
+- Browser: with the browser open the pads only play the sound, nothing is recorded into the clip even in record mode
 
 ## 5.161.0 (18 October 2026)
-- Browser: Regler 1 (Vorschau, hell = an, gedimmt = aus) und Regler 2 (schnelles Scrollen) leuchten unter dem Display
+- Browser: knob 1 (preview, bright = on, dim = off) and knob 2 (fast scroll) light up under the display
 
 ## 5.160.0 (18 October 2026)
-- Browser: Sounds, Kits, Samples, Presets und Effekte nach Namen sortiert (A-Z, INIT zuerst); Regler 2 = schnelles Scrollen
+- Browser: sounds, kits, samples, presets and effects sorted by name (A-Z, INIT first); knob 2 = fast scroll
 
 ## 5.159.0 (18 October 2026)
-- Browser: Regler 1 schaltet die Vorschau (PRV/OFF) ein und aus: nach rechts drehen = ein, nach links = aus (ersetzt das schnelle Scrollen auf Regler 1)
+- Browser: knob 1 switches the preview (PRV/OFF) on and off: turn right = on, left = off (replaces fast scrolling on knob 1)
 
 ## 5.158.0 (18 October 2026)
-- Scope: alle Ansichten waehlbar (Jog-Klick): 6 WAVE+16 Baender mit Peak-Kappen, 7 SPECTRUM, 8 STEREO mit Phasenanzeige, 9 WATERFALL, 10 BEAT; DSP liefert 16 Baender, Stereo-Punkte, Phase
+- Scope: all views selectable with a jog click: WAVE+16 bands with peak caps, SPECTRUM, STEREO with phase meter, WATERFALL, BEAT; the DSP delivers 16 bands, stereo points and phase
 
 ## 5.157.0 (18 October 2026)
-- Granulator-Anzeige neu: Puffer-Ansicht mit Wellenform der letzten Sekunden, Lesebereich (Spread) als Klammer, jeder Grain als Strich mit Laengenbalken
+- Granulator display redesigned: buffer view with the waveform of the last seconds, read area (spread) as a bracket, every grain as a tick with a length bar
 
 ## 5.156.0 (18 October 2026)
 - Browser redesign: breadcrumb path in the header (DRUMS>KITS>TECHNO) with PRV/OFF top right, 4-row list with scroll bar, bottom line with position and what the click does

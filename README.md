@@ -24,10 +24,14 @@ Taktile is a pattern-based groove box built for jamming live. It takes over the 
 ## On the display
 
 <p align="center">
-  <img src="taktile/docs/display-preview.png" alt="Preview of the Taktile display pages: sound, filter, mod, FX, master bus, EQ, kit, step and options" width="85%">
+  <img src="taktile/docs/display-preview.png" alt="Preview of the Taktile display pages: sound, filter, FX, Euclid, granulator, sound browser and scope views" width="85%">
 </p>
 
-<p align="center"><sub>Display pages rendered on a desktop (simulator): sound, filter, mod, FX, master bus, master EQ, kit, step parameters and options.</sub></p>
+<p align="center"><sub>Display pages rendered on a desktop (simulator): sound, filter, FX, Euclid, granulator with buffer view, sound browser and the spectrum, stereo and waterfall scope views.</sub></p>
+
+## Videos and updates
+
+Demos, tutorials and progress updates are on the [TaktOnMusic YouTube channel](https://www.youtube.com/@taktonmusic).
 
 ## Features
 

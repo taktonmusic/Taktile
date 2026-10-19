@@ -28,6 +28,9 @@ jobs:
       - name: UI smoke + fuzz test (mocked host)
         run: node tools/test/test_smoke.js
 
+      - name: Browser behaviour test
+        run: node tools/test/test_browser.js
+
       - name: Native build with sanitizers (compile check)
         run: |
           ./scripts/fetch-header.sh
@@ -64,6 +67,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="$v" '$0 ~ "^## "v" " {f=1; next} /^## / {f=0} f' CHANGELOG.md > notes.md
+          { cat notes.md; echo; echo "Unpack and copy the taktile/ folder to /data/UserData/schwung/modules/overtake/ on your Move, then restart Schwung. Full steps: README."; } > notes_full.md
           gh release create "${GITHUB_REF_NAME}" taktile-module.tar.gz \
             --title "Taktile ${GITHUB_REF_NAME}" \
-            --notes "See CHANGELOG.md. Unpack and copy the taktile/ folder to /data/UserData/schwung/modules/overtake/ on your Move, then restart Schwung. Full steps: README."
+            --notes-file notes_full.md
