@@ -4347,20 +4347,20 @@ function sliceApply() {
 function drawSlice() {
     const L = ln(), i = smpIdx(L), ok = smpInfo[i] && smpInfo[i][0] > 0;
     titleBar(p2(sel + 1) + ' ' + laneName(), 'SLICE');
-    const TN = tabStrip && TAB_NEW, ny = TN ? 17 : 10, by0 = TN ? 25 : 19, bh0 = TN ? 6 : 13;
+    const TN = tabStrip && TAB_NEW, ny = TN ? 17 : 10, by0 = TN ? 24 : 19, bh0 = TN ? 8 : 13;
     { const sc = ok && smpInfo[i][1] ? (smpInfo[i][0] / smpInfo[i][1]) : 0, tg = ok ? (slSel + 1) + '/' + slN + ' ' + (sc * ((slSel < slN - 1 ? slm[slSel + 1] : 1) - slm[slSel]) * 1000).toFixed(0) + 'ms' : '';
       txt(1, ny, fit(ok ? smpNames[i] : 'NO SAMPLE (SAMPLE PAGE)', 124 - tw(tg) - 2), 1); if (tg) txt(127 - tw(tg), ny, tg, 1); }
     draw_rect(0, by0, 128, bh0, 1);
     if (ok) {
         if (smpWave[i] === undefined) { const w = dspGet('smpw_' + i); smpWave[i] = typeof w === 'string' ? w : ''; }
         const w = smpWave[i];
-        for (let c = 0; c < w.length && c < 64; c++) { const h = Math.round((w.charCodeAt(c) - 97) / 25 * (TN ? 2 : 5)); fill_rect(c * 2, by0 + (bh0 >> 1) - h, 2, 2 * h + 1, 1); }
+        for (let c = 0; c < w.length && c < 64; c++) { const h = Math.round((w.charCodeAt(c) - 97) / 25 * (TN ? 3 : 5)); fill_rect(c * 2, by0 + (bh0 >> 1) - h, 2, 2 * h + 1, 1); }
     }
     for (let k = 0; k < slN; k++) {
         const x = clamp(Math.round(slm[k] * 127), 0, 126);
         if (k === slSel) { fill_rect(x, by0, 3, bh0, 1); } else fill_rect(x, by0, 1, bh0, 1);
     }
-    miniGrid(VIEW_ITEMS[29], TN ? 32 : 34, (key, v) => key === 'slp' ? v : (key === 'slm' ? slSel / 15 : (key === 'sln' ? (slN - 1) / 15 : fracVal(key, v))));
+    miniGrid(VIEW_ITEMS[29], TN ? 33 : 34, (key, v) => key === 'slp' ? v : (key === 'slm' ? slSel / 15 : (key === 'sln' ? (slN - 1) / 15 : fracVal(key, v))));
 }
 function sampleNormalize() {
     const L = ln(), i = smpIdx(L), r = (smpInfo[i] && smpInfo[i][0]) ? dspGet('smpp_' + i) : null, pk = typeof r === 'string' ? (parseInt(r) || 0) : 0;
@@ -4385,20 +4385,30 @@ function drawSample() {
     const isS = Math.round(pads[L][0]) === 359, nm = ok ? (isS ? smpNames[i] : smpNames[i] + ' (off)') : (smpLoaded().length ? '(Jog: pick sample)' : 'NO WAV FILES');
     const sst = pads[L][PI.sst], sen = pads[L][PI.sen];
     let tag = ''; if (ok) { const sc = smpInfo[i][1] ? (smpInfo[i][0] / smpInfo[i][1]) : 0, md = Math.round(pads[L][PI.smd] * 2); tag = (sc * (sen - sst)).toFixed(2) + 's ' + ['', 'REV', 'LOOP'][md] + (Math.abs(pads[L][PI.sstr] - 0.5) > 0.012 ? ' ST' : ''); }
-    const TN = tabStrip && TAB_NEW, ny = TN ? 17 : 10, by0 = TN ? 25 : 19, bh0 = TN ? 6 : 13, bc = by0 + (bh0 >> 1), bm = TN ? 2 : 5;
+    const TN = tabStrip && TAB_NEW, ny = TN ? 17 : 10, by0 = TN ? 24 : 19, bh0 = TN ? 8 : 13, bc = by0 + (bh0 >> 1), bm = TN ? 3 : 5;
     txt(1, ny, fit(nm, 124 - tw(tag) - 2), 1); if (tag) txt(127 - tw(tag), ny, tag, 1);
     draw_rect(0, by0, 128, bh0, 1);
     if (ok) {
         if (smpWave[i] === undefined) { const w = dspGet('smpw_' + i); smpWave[i] = typeof w === 'string' ? w : ''; }
+        const zi = VIEW_ITEMS[smpPage === 2 ? 32 : 28], zk = (smpPage < 3 && hot.t > 0 && hot.v === 28 && zi[hot.i]) ? zi[hot.i][0] : '';
+        if (zk === 'sst' || zk === 'sen') {         /* turning Start or End: the waveform zooms in (a tenth of the sample around the marker) so you can set it exactly */
+            const cen = zk === 'sst' ? sst : sen, lo = clamp(cen - 0.05, 0, 0.9), p0 = Math.round(lo * 1000), p1 = p0 + 100, zr = dspGet('smpz_' + i + '_' + p0 + '_' + p1), zw = typeof zr === 'string' ? zr : '';
+            for (let c = 0; c < zw.length && c < 64; c++) {
+                const h = Math.round((zw.charCodeAt(c) - 97) / 25 * bm), x = c * 2, f = (p0 + (c + 0.5) / 64 * 100) / 1000;
+                if (f >= sst && f <= sen) fill_rect(x, bc - h, 2, 2 * h + 1, 1); else fill_rect(x, bc, 2, 1, 1);
+            }
+            for (const [mv, thick] of [[sst, zk === 'sst'], [sen, zk === 'sen']]) { const xm = Math.round((mv * 1000 - p0) / 100 * 127); if (xm >= 0 && xm <= 127) { fill_rect(xm, by0, 1, bh0, 1); if (thick) fill_rect(clamp(xm - 1, 0, 126), by0, 3, 1, 1); } }
+        } else {
         const w = smpWave[i], xs = Math.round(sst * 127), xe = Math.round(sen * 127);
         for (let c = 0; c < w.length && c < 64; c++) {
             const h = Math.round((w.charCodeAt(c) - 97) / 25 * bm), x = c * 2;
             if (x >= xs && x <= xe) fill_rect(x, bc - h, 2, 2 * h + 1, 1); else fill_rect(x, bc, 2, 1, 1);
         }
         fill_rect(xs, by0, 1, bh0, 1); fill_rect(xe, by0, 1, bh0, 1);
+        }
     }
     const items = VIEW_ITEMS[smpPage === 2 ? 32 : (smpPage === 3 ? 48 : 28)];
-    miniGrid(items, TN ? 32 : 34, (key, v) => key === 'smp' ? (smpLoaded().length ? smpLoaded().indexOf(i) / Math.max(1, smpLoaded().length - 1) : 0) : fracVal(key, v));
+    miniGrid(items, TN ? 33 : 34, (key, v) => key === 'smp' ? (smpLoaded().length ? smpLoaded().indexOf(i) / Math.max(1, smpLoaded().length - 1) : 0) : fracVal(key, v));
 }
 function drawSeq() {
     if (heldStep >= 0 && !recDown) { drawStepEdit(); return; }
@@ -4695,6 +4705,12 @@ function drawParams() {
                 const ew = Math.round(28 * clamp(fr, 0, 1)); fill_rect(ex + 2, ey + 12, 28, 1, 1); if (ew > 0) fill_rect(ex + 2, ey + 11, ew, 2, 1);
                 continue;
             }
+            if (view === 36 && TN) {         /* Euclid: the same tile look as the MIC / SAMPLE pages (small name, big value, bar), pattern and page name below */
+                const ex = (i & 3) * 32, ey = 17 + (i >> 2) * 16;
+                txtS(ex + 2, ey, String(lab).substring(0, 7).toUpperCase(), 1); txtB(ex + 2, ey + 6, fit(vs, 28), 1);
+                const ew = Math.round(28 * clamp(fr, 0, 1)); fill_rect(ex + 2, ey + 14, 28, 1, 1); if (ew > 0) fill_rect(ex + 2, ey + 12, ew, 2, 1);
+                continue;
+            }
             const cx = (i & 3) * 32, cy = (view === 43 ? (TN ? 27 : 26) : (TN ? 17 : 12)) + (i >> 2) * (TN ? (view === 50 ? 17 : 18) : 19), hotE = hot.t > 0 && hot.v === view && hot.i === i;
             const cc = 1;
             txt(cx + 3, cy + 1, fit(lab, 28), cc); txtB(cx + 3, cy + 9, fit(vs, 28), cc);
@@ -4730,6 +4746,7 @@ function drawParams() {
             if (st === cur) fill_rect(x, two ? 56 + rowI * 8 : 63, bw - 1, 1, 1);
         }
         for (let p = 0; p < EU_NPG; p++) { if (p === euPage) fill_rect(102 + p * 4, 50, 3, 3, 1); else draw_rect(102 + p * 4, 50, 3, 3, 1); }
+        if (!two && tabStrip && TAB_NEW) txtS(2, 50, (euPage + 1) + '/' + EU_NPG + ' ' + ['MAIN', 'FEEL', 'NOTES', 'LANE 1', 'LANE 2', 'LANE 3', 'LANE 4'][euPage], 1);
         
     }
     if (view === 50) drawGrains();

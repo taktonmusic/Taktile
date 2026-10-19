@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0 (19 October 2026)
+- SAMPLE page: turning Start or End zooms the waveform in (a tenth of the sample around the marker) so you can set it exactly
+- SAMPLE and SLICE pages: the waveform box is a little bigger
+- EUCLID pages: same tidy tiles as the sampler (small name, big value, bar) with a page name such as 1/7 MAIN, FEEL, NOTES, LANE 1 to 4
+
 ## 1.2.0 (19 October 2026)
 - MIC page: new vocal effects REVERB and DELAY (recorded into the sample, with a ringing tail after the recording time); the effect list starts with them, then LOW CUT, DRIVE, LO-FI
 - Slower scrolling: the sample list and the MIC knobs need several clicks per step and move at most one step every 150 ms

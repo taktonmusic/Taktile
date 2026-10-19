@@ -3467,6 +3467,20 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
         free(e); free(pos); free(sc);
         return n;
     }
+    if (strncmp(key, "smpz_", 5) == 0) {                /* zoomed waveform: "smpz_<sample>_<from permille>_<to permille>", 64 columns like smpw_ but only for that part of the sample */
+        int i = 0, p0 = 0, p1 = 1000; if (sscanf(key + 5, "%d_%d_%d", &i, &p0, &p1) < 3) return -1;
+        const smp_t *m = smp_get(i); if (!m || buf_len < 66) return -1;
+        if (p0 < 0) p0 = 0; if (p1 > 1000) p1 = 1000; if (p1 <= p0) p1 = p0 + 1;
+        long long b0 = (long long)m->n * p0 / 1000, bn = (long long)m->n * (p1 - p0) / 1000;
+        for (int c = 0; c < 64; c++) {
+            long long a0 = b0 + bn * c / 64, a1 = b0 + bn * (c + 1) / 64, mx = 0; if (a1 <= a0) a1 = a0 + 1; if (a1 > m->n) a1 = m->n;
+            long long stp = (a1 - a0) / 64 + 1;
+            for (long long k = a0; k < a1; k += stp) { int v = m->d[k * m->ch]; if (v < 0) v = -v; if (v > mx) mx = v; }
+            int q = (int)(sqrtf((float)mx / 32768.0f) * 25.0f + 0.5f); if (q > 25) q = 25;
+            buf[c] = (char)('a' + q);
+        }
+        buf[64] = 0; return 64;
+    }
     if (strncmp(key, "smpw_", 5) == 0) {                /* waveform: 64 columns, 'a'..'z' = peak */
         int i = atoi(key + 5); const smp_t *m = smp_get(i);
         if (!m || buf_len < 66) return -1;
