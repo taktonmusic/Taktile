@@ -484,7 +484,7 @@ function loadState() {
         if (Array.isArray(o.fk) && o.fk.length === 8) favK = o.fk.map(String).map(k => FAV_MAP[k] || k).filter(k => PI[k] !== undefined || MI[k] !== undefined); if (favK.length !== 8) favK = ['cut', 'res', 'decay', 'tone', 'drive', 'dly', 'rvb', 'm_filt']; favBuild(); favs = Array.isArray(o.fv) ? o.fv.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length) : []; favOnly = !!o.fo; if (Array.isArray(o.ui)) { splashOn = o.ui[0] !== 0; idleOn = o.ui[1] === 1; dispInv = o.ui[2] === 1; repAllowed = o.ui[3] !== 0; slowKnobs = o.ui[4] === 1; knobLedsOn = o.ui[5] !== 0; uiTheme = 9; uiMin = true;      /* one fixed design (the theme choice was removed) */ uiMin = uiTheme !== 0; bigOn = o.ui[7] === 1; slideOn = o.ui[8] === 1; ciOn = o.ui[9] !== 0; knobLvlOn = o.ui[10] !== 0; btnBright = o.ui[12] === 1; lang = clamp(Math.round(Number(o.ui[13]) || 0), 0, LANGS.length - 1); if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0; } recent = Array.isArray(o.rc) ? o.rc.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length).slice(0, 12) : [];
         if (Array.isArray(o.rn) && o.rn.length === 4) { rndDens = clamp(Number(o.rn[0]) || 0.28, 0.02, 0.9); rndVar = clamp(Number(o.rn[1]) || 0.5, 0, 1); rndKey = o.rn[2] ? 1 : 0; rndRat = clamp(Number(o.rn[3]) || 0, 0, 1); }
         if (typeof o.bp === 'string' && o.bp.charAt(0) === '/' && o.bp.length < 200) broPath = o.bp;
-        if (Array.isArray(o.ep)) for (let i = 0; i < NLANE && i < o.ep.length; i++) { const q = o.ep[i] || {}, d = euDef(); euP[i] = { eo: clamp(q.eo | 0, 0, 2), n0: clamp(q.n0 | 0, -24, 24), alt: clamp(q.alt | 0, -12, 12), an: clamp(q.an | 0, -12, 12), wk: clamp(q.wk | 0, -4, 4), wl: clamp(q.wl | 0, 1, 16) || 4, rn: clamp(q.rn | 0, 0, 12), ou: clamp(q.ou | 0, 0, 100), od: clamp(q.od | 0, 0, 100), keep: q.keep ? 1 : 0, rev: q.rev ? 1 : 0, inv: q.inv ? 1 : 0, acc: clamp(q.acc | 0, 0, 60), hum: clamp(q.hum | 0, 0, 40), mut: clamp(q.mut | 0, 0, 100), nud: clamp((q.nud | 0) * (o.pf === 2 ? 1 : 4), 0, NUD_MAX), prb: clamp((q.prb | 0) * (o.pf === 2 ? 1 : (o.pf === 1 ? 2 : 4)), 0, 31), gat: clamp(q.gat | 0, 0, 6), rat: clamp(q.rat | 0, 0, 3), cond: clamp(q.cond | 0, 0, 7), seed: clamp(q.seed | 0, 1, 9972) || d.seed, q: Array.isArray(q.q) && q.q.length === 4 ? q.q.map((z, k) => { z = z || {}; const ln0 = clamp(z.len | 0, 1, 64) || EU_LDEF[k][0]; return { on: z.on ? 1 : 0, len: ln0, hit: clamp(z.hit | 0, 0, ln0), rot: clamp(z.rot | 0, 0, ln0 - 1), not: clamp(z.not | 0, -24, 24), prb: clamp(z.prb | 0, 0, 31), hum: clamp(z.hum | 0, 0, 40), acc: clamp(z.acc | 0, 0, 60) }; }) : null }; }
+        if (Array.isArray(o.ep)) for (let i = 0; i < NLANE && i < o.ep.length; i++) { const q = o.ep[i] || {}, d = euDef(); euP[i] = { eo: clamp(q.eo | 0, 0, 1), n0: clamp(q.n0 | 0, -24, 24), alt: clamp(q.alt | 0, -12, 12), an: clamp(q.an | 0, -12, 12), wk: clamp(q.wk | 0, -4, 4), wl: clamp(q.wl | 0, 1, 16) || 4, rn: clamp(q.rn | 0, 0, 12), ou: clamp(q.ou | 0, 0, 100), od: clamp(q.od | 0, 0, 100), keep: 0, rev: q.rev ? 1 : 0, inv: q.inv ? 1 : 0, acc: clamp(q.acc | 0, 0, 60), hum: clamp(q.hum | 0, 0, 40), mut: clamp(q.mut | 0, 0, 100), nud: clamp((q.nud | 0) * (o.pf === 2 ? 1 : 4), 0, NUD_MAX), prb: clamp((q.prb | 0) * (o.pf === 2 ? 1 : (o.pf === 1 ? 2 : 4)), 0, 31), gat: clamp(q.gat | 0, 0, 6), rat: clamp(q.rat | 0, 0, 3), cond: clamp(q.cond | 0, 0, 7), seed: clamp(q.seed | 0, 1, 9972) || d.seed, q: Array.isArray(q.q) && q.q.length === 4 ? q.q.map((z, k) => { z = z || {}; const ln0 = clamp(z.len | 0, 1, 64) || EU_LDEF[k][0]; return { on: z.on ? 1 : 0, len: ln0, hit: clamp(z.hit | 0, 0, ln0), rot: clamp(z.rot | 0, 0, ln0 - 1), not: clamp(z.not | 0, -24, 24), prb: clamp(z.prb | 0, 0, 31), hum: clamp(z.hum | 0, 0, 40), acc: clamp(z.acc | 0, 0, 60) }; }) : null }; }
         if (o.au && typeof o.au === 'object') { AUTO = {}; for (const id in o.au) if (/^\d+\|\d+\|[a-z]+$/.test(id) && o.au[id] && typeof o.au[id] === 'object') { const m = {}; for (const k in o.au[id]) { const v = Number(o.au[id][k]); if (isFinite(v)) m[k] = clamp(v, 0, 12); } AUTO[id] = m; } }
         if (o.sg && Array.isArray(o.sg.l) && o.sg.l.length >= 1 && o.sg.l.length <= 32) { songList = o.sg.l.map(songNorm); songOn = !!o.sg.on; songLoop = o.sg.lp === undefined ? true : !!o.sg.lp; songSlot = 0; songBlank = o.sg.l.length === 1 && o.sg.l[0][0] === 0 && o.sg.l[0][1] === 4 && !songOn; }
         if (Array.isArray(o.sm) && o.sm.length >= 1 && o.sm.length <= 16) { slm = o.sm.map(x => clamp(Number(x) || 0, 0, 0.998)).sort((a, b) => a - b); slN = slm.length; slSel = 0; }
@@ -4096,7 +4096,7 @@ function euGet(key) {                                     /* [fraction 0..1, tex
         case 'ernd': return [P.rn / 12, P.rn ? '+-' + P.rn : 'OFF'];
         case 'eoup': return [P.ou / 100, P.ou + '%'];
         case 'eodn': return [P.od / 100, P.od + '%'];
-        case 'eon': return [P.eo / 2, ['OFF', 'ON', 'ADD'][P.eo]];
+        case 'eon': return [P.eo, ['OFF', 'ON'][P.eo]];
         case 'ekeep': return [P.keep, P.keep ? 'ON' : 'OFF'];
         case 'erev': return [P.rev, P.rev ? 'ON' : 'OFF'];
         case 'einv': return [P.inv, P.inv ? 'ON' : 'OFF'];
@@ -4133,7 +4133,7 @@ function euEdit(key, delta, idx) {
     else if (key === 'eacc') P.acc = clamp(P.acc + delta * big, 0, 60);
     else if (key === 'ehum') { P.hum = clamp(P.hum + delta * 2, 0, 40); P.seed = (P.seed * 31 + 11) % 9973; }
     else { const d = stepD(2); if (!d) return false;
-        if (key === 'eon') { P.eo = clamp(P.eo + d, 0, 2); P.keep = P.eo === 2 ? 1 : 0; }
+        if (key === 'eon') { P.eo = clamp(P.eo + d, 0, 1); P.keep = 0; }
         else if (key === 'ekeep') P.keep = d > 0 ? 1 : 0;
         else if (key === 'erev') P.rev = d > 0 ? 1 : 0;
         else if (key === 'einv') P.inv = d > 0 ? 1 : 0;
@@ -4223,11 +4223,19 @@ function songEnter(k) {                                         /* an entry begi
     songMutePend = e[4] === 2;
     if (e[4] === 3) songSweep = gs;                                /* filter sweep: the master filter opens over the first bar of this step */
 }
+function songStart() {                                          /* the song page plays ONLY the song: the clips of step 1 are set before the first note, whatever ran before is silenced */
+    if (!songPrev) songPrev = clipsCur.slice();
+    songOn = true; songLoop = true; songLaunched = -1; songOff = 0; songNext = -1; songMutePend = false; songFillBar = -1; songCl.fill(-9); gs = 0;
+    if (playing) { dspSet('play', '0'); dspSet('panic', '1'); }
+    songSent = 0; songEnter(0);
+    playing = true; dspSet('play', '1'); needsRedraw = true;
+}
 function songFill() { const keep = sel; for (let t = 0; t < NTRK; t++) if (kind[t]) { sel = t; fillBar(true); } sel = keep; }
 function songTick() {
     if (songSweep >= 0 && playing && songOn) { const p = (gs - songSweep) / 16; if (p >= 1) { songSweep = -1; dspSet('m_filt', String(master[MI.m_filt] !== undefined ? master[MI.m_filt] : 0.5)); } else if (p >= 0) { const f = master[MI.m_filt] !== undefined ? master[MI.m_filt] : 0.5, v = 0.18 + (f - 0.18) * p * p; if (Math.round(v * 100) !== songSweepV) { songSweepV = Math.round(v * 100); dspSet('m_filt', v.toFixed(3)); } } }
     if (songHold && songHold.t && Date.now() - songHold.t > 600) songOpenClip();
     if (songOn && view !== 31) { songOn = false; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songRestore(); dirty = true; }      /* the song only runs while the song page is open */
+    if (view === 31 && playing && !songOn && !menuOpen) songStart();      /* the normal sequencer never plays on the song page: a running transport turns into the song */
     if (!songOn || !playing) { if (!playing) { songSent = -1; songLaunched = -1; songCl.fill(-9); songOff = 0; songFillBar = -1; } songMutePend = false; if (songMuted || songTempoOn || songPrev) songRestore(); return; }
     const g = Math.max(0, gs - 1), bar = Math.floor(g / 16), st = g % 16;
     if (songSent < 0 && g <= 1) { songSent = 0; songNext = -1; songCl.fill(-9); songOff = 0; songEnter(0); return; }      /* the song starts at step 1 */
@@ -4250,7 +4258,7 @@ function songTick() {
             songOff = ((songStart(k) - nb) % songTotal() + songTotal()) % songTotal();
             songEnter(k); return;
         }
-        if (!songLoop && nb >= songTotal()) { songOn = false; songSent = -1; songRestore(); showToast('SONG', 'END', 0); dirty = true; return; }
+        if (!songLoop && nb >= songTotal()) { songOn = false; songSent = -1; songRestore(); playing = false; gs = 0; dspSet('play', '0'); dspSet('panic', '1'); showToast('SONG', 'END', 0); dirty = true; return; }
         const r = songEntryAt(nb);
         if (r[1]) songEnter(r[0]);
     }
@@ -5447,7 +5455,7 @@ globalThis.onMidiMessageInternal = function (data) {
             if (shiftHeld) { playing = false; gs = 0; dspSet('play', '0'); dspSet('panic', '1'); showToast('TRANSPORT', 'STOP + RESET + PANIC', 0); }
             else if (!playing && ciBeats > 0) { dspSet('play', '0'); ciBeats = 0; showToast('COUNT-IN', 'CANCELLED', 0); }
             else if (!playing && recArmed && ciOn) { dspSet('play', '2'); showToast('COUNT-IN', '1 BAR', 1); }      /* Rec armed + Play: one bar of clicks, then the recording starts */
-            else if (view === 31 && !menuOpen && !(playing && songOn)) { if (!songPrev) songPrev = clipsCur.slice(); songOn = true; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songCl.fill(-9); if (playing) dspSet('play', '0'); playing = true; gs = 0; dspSet('play', '1'); showToast('SONG', 'PLAY FROM STEP 1', 1); }      /* Play in the song page starts the song at the selected step */
+            else if (view === 31 && !menuOpen && !(playing && songOn)) { songStart(); showToast('SONG', 'PLAY FROM STEP 1', 1); }      /* Play in the song page starts the song at the selected step */
             else { playing = !playing; gs = 0; dspSet('play', playing ? '1' : '0'); showToast('TRANSPORT', playing ? 'PLAY' : 'STOP', playing ? 1 : 0); }
             needsRedraw = true;
         }

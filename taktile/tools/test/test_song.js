@@ -33,4 +33,7 @@ run('draw()'); run('songOv=false');
 run('shiftHeld=false;songSlot=0;songList[0][4]=3'); run('songOn=true;playing=true;view=31;gs=0;songEnter(0)'); T(3); ok(run('songSweep') >= 0, 'SWEEP step starts the filter sweep'); run('playing=false'); T(3);
 run('chosen.fill(1);askKind=-1;view=31;onPadCore(24,true,100)'); run('songHold.t=1'); T(3); ok(run('view') === 0 && run('songBackTo') === true, 'pad held long opens the clip'); run('noteInput();idleBlank=false'); run('onMidiMessageInternal([0xB0, CC.BACK, 127])'); ok(run('view') === 31, 'Back returns to the song');
 run('draw()'); ok(true, 'draws');
+params.pos='1,0,0,0'; run('menuOpen=false;songOn=false;playing=true;view=31;gs=5;songPrev=null'); T(3); params.pos='0,0,0,0';  ok(run('songOn') === true && run('gs') <= 3, 'normal playing + song page = only the song plays (starts at step 1)');
+run('playing=false;view=0'); T(3);
+run('sel=0;euP[ln()].eo=1'); ok(run("euGet('eon')[1]") === 'ON', 'euclid switch: OFF / ON');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

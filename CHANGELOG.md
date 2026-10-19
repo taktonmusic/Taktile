@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.3 (19 October 2026)
+- Song page: only the song plays - a running normal sequencer turns into the song, step 1 clips are set before the first note, a song set to ONCE stops at its end
+- Euclid switch is OFF / ON again (no ADD mode)
+
 ## 1.7.2 (19 October 2026)
 - Speech sound: every step button now gets its own letter (before, all steps said the same letter), a new speech sound starts in LETTER mode, hold a step + jogwheel = letter of that step
 
