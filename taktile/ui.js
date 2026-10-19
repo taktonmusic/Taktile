@@ -4211,7 +4211,7 @@ function songTick() {
     if (songOn && view !== 31) { songOn = false; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songRestore(); dirty = true; }      /* the song only runs while the song page is open */
     if (!songOn || !playing) { if (!playing) { songSent = -1; songLaunched = -1; songCl.fill(-9); songOff = 0; songFillBar = -1; } songMutePend = false; if (songMuted || songTempoOn || songPrev) songRestore(); return; }
     const g = Math.max(0, gs - 1), bar = Math.floor(g / 16), st = g % 16;
-    if (songSent < 0 && g <= 1) { songSent = 0; songNext = -1; songCl.fill(-9); { const k0 = clamp(songSlot, 0, songList.length - 1); songOff = songStart(k0) % songTotal(); songEnter(k0); } return; }      /* the song starts at the step you picked */
+    if (songSent < 0 && g <= 1) { songSent = 0; songNext = -1; songCl.fill(-9); songOff = 0; songEnter(0); return; }      /* the song starts at step 1 */
     if (songSent < 0) return;
     const nr = songEntryAt(bar + 1), cur = songEntryAt(bar);
     if (st < 12 && songFillBar !== bar) {                         /* the last bar before an entry with FILL: a roll on the drums */
@@ -5408,7 +5408,7 @@ globalThis.onMidiMessageInternal = function (data) {
             if (shiftHeld) { playing = false; gs = 0; dspSet('play', '0'); dspSet('panic', '1'); showToast('TRANSPORT', 'STOP + RESET + PANIC', 0); }
             else if (!playing && ciBeats > 0) { dspSet('play', '0'); ciBeats = 0; showToast('COUNT-IN', 'CANCELLED', 0); }
             else if (!playing && recArmed && ciOn) { dspSet('play', '2'); showToast('COUNT-IN', '1 BAR', 1); }      /* Rec armed + Play: one bar of clicks, then the recording starts */
-            else if (view === 31 && !menuOpen && !(playing && songOn)) { if (!songPrev) songPrev = clipsCur.slice(); songOn = true; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songCl.fill(-9); if (playing) dspSet('play', '0'); playing = true; gs = 0; dspSet('play', '1'); showToast('SONG', 'PLAY FROM STEP ' + (songSlot + 1), 1); }      /* Play in the song page starts the song at the selected step */
+            else if (view === 31 && !menuOpen && !(playing && songOn)) { if (!songPrev) songPrev = clipsCur.slice(); songOn = true; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songCl.fill(-9); if (playing) dspSet('play', '0'); playing = true; gs = 0; dspSet('play', '1'); showToast('SONG', 'PLAY FROM STEP 1', 1); }      /* Play in the song page starts the song at the selected step */
             else { playing = !playing; gs = 0; dspSet('play', playing ? '1' : '0'); showToast('TRANSPORT', playing ? 'PLAY' : 'STOP', playing ? 1 : 0); }
             needsRedraw = true;
         }

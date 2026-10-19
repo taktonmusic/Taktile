@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.6.6 (19 October 2026)
+- Song: Play starts from step 1 and runs the whole chain (every step button = one step with its own clips per track); pressing a step button while it plays jumps there at the end of the bar
+
 ## 1.6.5 (19 October 2026)
 - Song page: only the song plays; when the song is off (or you leave the page) your normal clips play again
 - Song starts at the step you picked, the jogwheel scrolls through tracks 1-16
