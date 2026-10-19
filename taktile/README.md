@@ -17,7 +17,6 @@ A pattern-based groove box for the **Ableton Move**, written as an *overtake* mo
 
 ## Documentation
 - English manual: [docs/Taktile-Manual-EN.pdf](docs/Taktile-Manual-EN.pdf) (includes technical notes and open questions for Schwung developers)
-- German manual: [docs/Taktile-Handbuch-DE.pdf](docs/Taktile-Handbuch-DE.pdf)
 
 ## Install
 Download `taktile-module.tar.gz` from the [latest release](../../../releases/latest). With the Move and your computer or phone on the same Wi-Fi, open `http://move.local:7700` and upload the `.tar.gz` (not unpacked) as a custom module. Restart Schwung / the Move if needed.
