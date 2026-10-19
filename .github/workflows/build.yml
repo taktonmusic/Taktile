@@ -54,11 +54,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Tag must match module.json version
-        run: |
-          v=$(grep -m1 '"version"' taktile/module.json | sed -E 's/.*"version": *"([^"]+)".*/\1/')
-          [ "v$v" = "${GITHUB_REF_NAME}" ] || { echo "Tag ${GITHUB_REF_NAME} does not match module.json version v$v"; exit 1; }
-
       - uses: actions/download-artifact@v4
         with:
           name: taktile-module
@@ -67,9 +62,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          v="${GITHUB_REF_NAME#v}"
-          awk -v v="$v" '$0 ~ "^## "v" " {f=1; next} /^## / {f=0} f' CHANGELOG.md > notes.md
-          { cat notes.md; echo; echo "Unpack and copy the taktile/ folder to /data/UserData/schwung/modules/overtake/ on your Move, then restart Schwung. Full steps: README."; } > notes_full.md
+          mv_ver=$(grep -m1 '"version"' taktile/module.json | sed -E 's/.*"version": *"([^"]+)".*/\1/')
+          {
+            echo "Taktile - groovebox for the Ableton Move (Schwung overtake module). Module version: ${mv_ver}."
+            echo
+            echo "**Install:** unpack the download and copy the taktile/ folder to /data/UserData/schwung/modules/overtake/ on your Move, then restart Schwung. Full steps: README."
+            echo
+            echo "Manuals (English and German): taktile/docs. Changes: CHANGELOG.md."
+          } > notes_full.md
           gh release create "${GITHUB_REF_NAME}" taktile-module.tar.gz \
             --title "Taktile ${GITHUB_REF_NAME}" \
             --notes-file notes_full.md
