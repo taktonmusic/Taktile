@@ -79,6 +79,12 @@ jobs:
             echo "### Thanks"
             echo "Big thanks to Neuro... No Neuro (https://www.neurononeuro.net) for testing and honest feedback."
           } > notes_full.md
-          gh release create "${GITHUB_REF_NAME}" taktile-module.tar.gz \
-            --title "Taktile ${GITHUB_REF_NAME}" \
-            --notes-file notes_full.md
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            # release was created by hand first: attach the file and set the notes
+            gh release upload "${GITHUB_REF_NAME}" taktile-module.tar.gz --clobber
+            gh release edit "${GITHUB_REF_NAME}" --title "Taktile ${GITHUB_REF_NAME}" --notes-file notes_full.md
+          else
+            gh release create "${GITHUB_REF_NAME}" taktile-module.tar.gz \
+              --title "Taktile ${GITHUB_REF_NAME}" \
+              --notes-file notes_full.md
+          fi
