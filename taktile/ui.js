@@ -978,7 +978,7 @@ const HELP = {
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
-    31: ['Pads: Tracks x Clips', 'Step-Tasten = Kette', 'Jog=Tracks Loop+Jog=Takte'],
+    31: ['Pads: Tracks x Clips', 'Step-Tasten = Kette', 'Copy+Pad=aus Szene'],
     35: ['32 Projekt-Slots', 'New = leeres Projekt', 'Revert = Sicherung'],
     34: ['Kits: 16 Pad-Sounds. Slot 17+ = fertige Kits. Preview: rechts drehen = anhoeren, links = zurueck. Load = behalten.'],
     33: ['Resample nimmt Master', 'oder Track auf', 'Ergebnis = Sample'],
@@ -1013,7 +1013,7 @@ const HELP_EN = {
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
     21: ['Track: type, volume', 'Pads, sound, layout', 'Color'],
-    31: ['Pads: tracks x clips', 'Step buttons = chain', 'Jog=tracks Loop+Jog=bars'],
+    31: ['Pads: tracks x clips', 'Step buttons = chain', 'Copy+pad=from scene'],
     35: ['32 project slots', 'New = empty project', 'Revert = backup'],
     34: ['Kits: 16 pad sounds. Slot 17+ = ready-made kits. Preview: turn right = listen, left = back. Load = keep.'],
     33: ['Resample records master', 'or a track', 'Result = sample'],
@@ -4284,6 +4284,11 @@ function songPadNew(idx) {                                       /* pads = your 
     const t = bank * 4 + (3 - (idx >> 3)), c = idx & 7, e = songList[songSlot];
     if (!e || t < 0 || t >= NTRK) return;
     const cl = songClips(e); songBlank = false;
+    if (copyHeld) {                                              /* Copy + pad = fill the whole step from that scene (clip column): every track that has notes in it plays it */
+        for (let q = 0; q < NTRK; q++) cl[q] = trackHasSteps(c, q) ? c : -1;
+        if (songOn && playing && songPlayIdx() === songSlot) for (let q = 0; q < NTRK; q++) { songCl[q] = cl[q]; songTrk(q, cl[q]); }
+        showToast('STEP ' + p2(songSlot + 1), 'FROM SCENE ' + (c + 1), c / 7); dirty = true; needsRedraw = true; return;
+    }
     cl[t] = (cl[t] === c || deleteHeld) ? -1 : c;
     if (songOn && playing && songPlayIdx() === songSlot) { songCl[t] = cl[t]; songTrk(t, cl[t]); }
     showToast('STEP ' + p2(songSlot + 1) + ' T' + p2(t + 1), cl[t] < 0 ? 'SILENT' : 'CLIP ' + (cl[t] + 1), (cl[t] + 1) / NPAT);
@@ -4682,7 +4687,10 @@ function drawSong() {
     }
     fill_rect(0, 56, 128, 1, 1);
     if (!songOn && L <= 2) { txtS(2, 58, 'PADS = CLIPS  STEPS = CHAIN  PLAY', 1); return; }
-    let bw = 0; for (let k = 0; k < L; k++) { const w = Math.max(1, Math.round(126 * songLen(songList[k]) / tot)); if (k === songSlot) fill_rect(1 + bw, 58, w, 5, 1); else if (k === pl) fill_rect(1 + bw, 59, w, 3, 1); else fill_rect(1 + bw, 60, w, 1, 1); bw += w; if (bw > 126) break; }
+    { const p0 = Math.floor(songSlot / 16) * 16;                      /* the chain: one box per step button (16 per page), filled = selected, dot = playing, line under = a step with notes */
+      for (let i = 0; i < 16; i++) { const k = p0 + i, x = 1 + i * 8; if (k >= L) { if (k === L && k < SONG_MAX) set_pixel(x + 3, 60, 1); continue; }
+          if (k === songSlot) fill_rect(x, 58, 7, 5, 1); else draw_rect(x, 58, 7, 5, 1);
+          if (k === pl) fill_rect(x + 2, 59 + (k === songSlot ? 0 : 1), 3, k === songSlot ? 3 : 1, k === songSlot ? 0 : 1); } }
 }
 let grains = [], grEnv = '', grT = 0;
 function grainPoll() {                                     /* live picture of the granulator of the selected sound (only asked for while the page is open) */

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.0 (19 October 2026)
+- Song page: Copy + pad fills a step from a scene (every track with notes in that clip column), clearer chain at the bottom (one box per step button, dot = playing)
+
 ## 1.6.9 (19 October 2026)
 - Menu: the TAPE tile now has a symbol (cassette)
 
