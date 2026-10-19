@@ -3997,12 +3997,13 @@ const EU_KEYS = { eon: 1, q0len: 1, q0hit: 1, q0rot: 1, q0not: 1, q0prb: 1, q0hu
 for (const k of ['enot', 'ealt', 'eacn', 'ewlk', 'ewln', 'ernd', 'eoup', 'eodn']) EU_KEYS[k] = 1;
 const EU_PAGES = [
     [['eon', 'Euclid', 'Mode'], ['ehit', 'Hits'], ['erot', 'Rotate', 'Rot'], ['elen', 'Length', 'Len'], ['emut', 'Mutate', 'Mut'], ['evel', 'Velocity', 'Vel'], ['eacc', 'Accent', 'Acc'], ['ehum', 'Human', 'Hum']],
-    [['eprb', 'Prob'], ['egat', 'Gate'], ['erat', 'Ratchet', 'Rat'], ['econd', 'Cond'], ['enot', 'Note'], ['ewlk', 'Walk'], ['ernd', 'Random', 'Rand'], ['eclr', 'Clear', 'Clr']]];      /* 6 pages instead of 7: the rarely used tiles (Nudge, Reverse, Invert, Alt, AccNote, WalkLen, OctUp / OctDown, lane Human / Accent) are not shown any more; they keep their values */
-const EU_NPG = 6;
+    [['eprb', 'Prob'], ['egat', 'Gate'], ['erat', 'Ratchet', 'Rat'], ['econd', 'Cond'], ['enud', 'Nudge', 'Nud'], ['erev', 'Reverse', 'Rev'], ['einv', 'Invert', 'Inv'], ['eclr', 'Clear', 'Clr']]];
+const EU_NPG = 7;
 /* four euclid lanes per sound: every lane has its own length, hits, rotation, note, probability, human and accent; they play together and the pattern repeats after their common length */
 const EU_LF = [['len', 'Length', 'Len'], ['hit', 'Hits', 'Hit'], ['rot', 'Rotate', 'Rot'], ['not', 'Note', 'Note'], ['prb', 'Prob', 'Prob'], ['hum', 'Human', 'Hum'], ['acc', 'Accent', 'Acc'], ['on', 'Lane on', 'On']];
 const EU_LDEF = [[16, 4], [12, 3], [8, 3], [6, 2]];
-for (let q = 0; q < 4; q++) EU_PAGES.push(EU_LF.filter(f => f[0] !== 'hum' && f[0] !== 'acc').map((f, i) => ['q' + q + f[0], i === 0 ? (q + 1) + ' ' + f[1] : f[1], i === 0 ? (q + 1) + ' ' + f[2] : f[2]]));
+EU_PAGES.push([['enot', 'Note'], ['ealt', 'Alt'], ['eacn', 'AccNote'], ['ewlk', 'Walk'], ['ewln', 'WalkLen'], ['ernd', 'Random'], ['eoup', 'OctUp'], ['eodn', 'OctDown']]);
+for (let q = 0; q < 4; q++) EU_PAGES.push(EU_LF.map((f, i) => ['q' + q + f[0], i === 0 ? (q + 1) + ' ' + f[1] : f[1], i === 0 ? (q + 1) + ' ' + f[2] : f[2]]));
 function euQ(L) { const P = euP[L]; if (!Array.isArray(P.q)) P.q = EU_LDEF.map(d => ({ on: 0, len: d[0], hit: d[1], rot: 0, not: 0, prb: 0, hum: 0, acc: 0 })); return P.q; }
 function euLanesOn(L) { const q = euP[L].q; return Array.isArray(q) && q.some(l => l.on); }
 function euGcd(a, b) { while (b) { const t = a % b; a = b; b = t; } return a; }
@@ -4706,7 +4707,7 @@ const BUS_TITLE = { 46: ['FX BUS', 'ALL TRACKS'], 39: ['FX BUS 2', 'ALL TRACKS']
 function drawParams() {
     const items = VIEW_ITEMS[pg2(view)], scope = padView(view) ? 'pad' : 'master';
     if (BUS_TITLE[view]) titleBar(BUS_TITLE[view][0], BUS_TITLE[view][1]); else
-    titleBar(scope === 'pad' || view === 36 ? (p2(sel + 1) + ' ' + laneName() + (view === 36 && euPage >= 2 ? ' L' + (euPage - 1) : '')) : (view === 21 ? p2(sel + 1) + ' ' + (kind[sel] ? 'DRUM ' + (slot[sel] + 1) : 'SYNTH') : (view === 8 ? 'OPT' : (view === 44 ? 'FAVORITES' : 'MASTER'))), view === 8 ? 'CPU ' + cpuAvg + '%' : (view === 44 ? 'ALL PAGES' : VIEWS[view]));
+    titleBar(scope === 'pad' || view === 36 ? (p2(sel + 1) + ' ' + laneName() + (view === 36 && euPage >= 3 ? ' L' + (euPage - 2) : '')) : (view === 21 ? p2(sel + 1) + ' ' + (kind[sel] ? 'DRUM ' + (slot[sel] + 1) : 'SYNTH') : (view === 8 ? 'OPT' : (view === 44 ? 'FAVORITES' : 'MASTER'))), view === 8 ? 'CPU ' + cpuAvg + '%' : (view === 44 ? 'ALL PAGES' : VIEWS[view]));
     const ps = PAGE_STYLE[view] || 0;
     if (view === 2) drawFilterCurve();
     if (view === 41 || view === 43) { const g = [0, 1, 2].map(b => { const k = items[b][0]; return (getVal(scopeOf(k), k) - 0.5) * 24; }); drawEqGraph(g, 2, (view === 43 && tabStrip && TAB_NEW) ? 18 : 11, 124, view === 43 ? ((tabStrip && TAB_NEW) ? 16 : 13) : 17, (hot.t > 0 && hot.v === view && hot.i < 3) ? hot.i : -1); }
@@ -4766,7 +4767,7 @@ function drawParams() {
             if (st === cur) fill_rect(x, two ? 56 + rowI * 8 : 63, bw - 1, 1, 1);
         }
         for (let p = 0; p < EU_NPG; p++) { if (p === euPage) fill_rect(102 + p * 4, 50, 3, 3, 1); else draw_rect(102 + p * 4, 50, 3, 3, 1); }
-        if (!two && tabStrip && TAB_NEW) txtS(2, 50, (euPage + 1) + '/' + EU_NPG + ' ' + ['MAIN', 'FEEL + NOTE', 'LANE 1', 'LANE 2', 'LANE 3', 'LANE 4'][euPage], 1);
+        if (!two && tabStrip && TAB_NEW) txtS(2, 50, (euPage + 1) + '/' + EU_NPG + ' ' + ['MAIN', 'FEEL', 'NOTES', 'LANE 1', 'LANE 2', 'LANE 3', 'LANE 4'][euPage], 1);
         
     }
     if (view === 50) drawGrains();

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.6.1 (19 October 2026)
+- Euclid is back to the original 7 pages (MAIN, FEEL, NOTES, LANE 1-4) with all tiles
+
 ## 1.6.0 (19 October 2026)
 - Song mode reworked: the pads show your tracks as rows and clips 1-8 as columns - per song step you pick which clip each track plays, the steps chain them
 - Song step buttons 1-8 pick a step, Up/Down shows the next 4 tracks, old songs convert automatically
