@@ -64,11 +64,20 @@ jobs:
         run: |
           mv_ver=$(grep -m1 '"version"' taktile/module.json | sed -E 's/.*"version": *"([^"]+)".*/\1/')
           {
-            echo "Taktile - groovebox for the Ableton Move (Schwung overtake module). Module version: ${mv_ver}."
+            echo "## Taktile - groovebox for the Ableton Move"
             echo
-            echo "**Install:** unpack the download and copy the taktile/ folder to /data/UserData/schwung/modules/overtake/ on your Move, then restart Schwung. Full steps: README."
+            echo "16 tracks of synths and drums, step sequencer, 1462 sounds, effects and live performance tools. A Schwung overtake module. Module version: ${mv_ver}."
             echo
-            echo "Manuals (English and German): taktile/docs. Changes: CHANGELOG.md."
+            echo "### Install"
+            echo "1. Download **taktile-module.tar.gz** below. Do not unpack it."
+            echo "2. Put the Move and your computer or phone in the same Wi-Fi and open http://move.local:7700"
+            echo "3. Upload the file as a custom module and restart Schwung if Taktile does not show up."
+            echo
+            echo "### Docs"
+            echo "English and German manuals are in taktile/docs. All changes are in CHANGELOG.md. Please report problems as an issue and name your firmware and Schwung version."
+            echo
+            echo "### Thanks"
+            echo "Big thanks to Neuro... No Neuro (https://www.neurononeuro.net) for testing and honest feedback."
           } > notes_full.md
           gh release create "${GITHUB_REF_NAME}" taktile-module.tar.gz \
             --title "Taktile ${GITHUB_REF_NAME}" \
