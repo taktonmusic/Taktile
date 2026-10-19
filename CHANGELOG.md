@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.0 (19 October 2026)
+- Song mode reworked: the pads show your tracks as rows and clips 1-8 as columns - per song step you pick which clip each track plays, the steps chain them
+- Song step buttons 1-8 pick a step, Up/Down shows the next 4 tracks, old songs convert automatically
+- Song display: track rows with the chosen clips
+
 ## 1.5.1 (19 October 2026)
 - Noise at start fixed: Tape Hiss became much louder in 1.5.0, so projects saved with Hiss on were noisy; saved Hiss values are lowered once (same level as before)
 
