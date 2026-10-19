@@ -978,7 +978,7 @@ const HELP = {
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
-    31: ['Pads: Tracks x Clips 1-8', 'Steps 1-8: Song-Schritt', 'Hoch/Runter: naechste 4'],
+    31: ['Pads: Tracks x Clips 1-8', 'Step-Tasten = Song-Kette', 'Hoch/Runter: naechste 4'],
     35: ['32 Projekt-Slots', 'New = leeres Projekt', 'Revert = Sicherung'],
     34: ['Kits: 16 Pad-Sounds. Slot 17+ = fertige Kits. Preview: rechts drehen = anhoeren, links = zurueck. Load = behalten.'],
     33: ['Resample nimmt Master', 'oder Track auf', 'Ergebnis = Sample'],
@@ -1013,7 +1013,7 @@ const HELP_EN = {
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
     21: ['Track: type, volume', 'Pads, sound, layout', 'Color'],
-    31: ['Pads: tracks x clips 1-8', 'Steps 1-8: song step', 'Up/Down: next 4 tracks'],
+    31: ['Pads: tracks x clips 1-8', 'Step buttons = song chain', 'Up/Down: next 4 tracks'],
     35: ['32 project slots', 'New = empty project', 'Revert = backup'],
     34: ['Kits: 16 pad sounds. Slot 17+ = ready-made kits. Preview: turn right = listen, left = back. Load = keep.'],
     33: ['Resample records master', 'or a track', 'Result = sample'],
@@ -4232,13 +4232,8 @@ function songTick() {
 }
 let songBlank = true, songDelOn = false, songDelUsed = false, songCopySrc = -1;
 const SONG_BARS = [1, 2, 4, 8, 16, 32];
-function songStepKey(i) {                                       /* in the song: steps 1-8 add scene 1-8, 9-14 = bars, 15 = copy, 16 = song on / off */
-    const e = songList[songSlot]; if (!e) return;
-    if (i < 8) { songBlank = false; songPad(Math.floor(songSlot / 8) * 8 + i); return; }
-    else if (i < 14) { e[1] = SONG_BARS[i - 8]; songBlank = false; songSent = -1; showToast('SONG ' + p2(songSlot + 1), e[1] + ' BARS', (i - 8) / 5); }
-    else if (i === 14) { songIns(); }
-    else { songOn = !songOn; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; if (!songOn) songRestore(); showToast('SONG', songOn ? 'ON - LOOP' : 'OFF', songOn ? 1 : 0); }
-    dirty = true; needsRedraw = true;
+function songStepKey(i) {                                       /* the 16 step buttons = the song chain: press = pick that step (an empty one appends a copy of the last) */
+    songBlank = false; songPad(Math.floor(songSlot / 16) * 16 + i);
 }
 function songPad(k) {                                           /* pad k = song step k: select, or (song running) jump there at the end of the bar */
     const L = songList.length;
@@ -4657,7 +4652,7 @@ function drawSong() {
         }
     }
     fill_rect(0, 56, 128, 1, 1);
-    if (!songOn && L <= 2) { txtS(2, 58, 'PADS = CLIPS  STEP 2 = NEW STEP  PLAY', 1); return; }
+    if (!songOn && L <= 2) { txtS(2, 58, 'PADS = CLIPS  STEPS = CHAIN  PLAY', 1); return; }
     let bw = 0; for (let k = 0; k < L; k++) { const w = Math.max(1, Math.round(126 * songLen(songList[k]) / tot)); if (k === songSlot) fill_rect(1 + bw, 58, w, 5, 1); else if (k === pl) fill_rect(1 + bw, 59, w, 3, 1); else fill_rect(1 + bw, 60, w, 1, 1); bw += w; if (bw > 126) break; }
 }
 let grains = [], grEnv = '', grT = 0;
@@ -5088,7 +5083,7 @@ function updateLeds() {
             if (loopHeld) { let pl = false, hs = false; if (i < NPAT) { for (let t = 0; t < NTRK; t++) { if (clipsCur[t] === i) pl = true; if (trackHasSteps(i, t)) hs = true; } } c = i >= NPAT ? 0 : (pl ? 120 : (hs ? 118 : 123)); }
             else c = i === sel ? 120 : (mutes[i] ? 0 : trkCol(i));
         }
-        else if (view === 31) c = i < 8 ? (() => { const k = Math.floor(songSlot / 8) * 8 + i; return k < songList.length ? (k === songSlot ? 126 : (k === songPlayIdx() ? 120 : TAG_COL[songList[k][5]])) : (k === songList.length && k < SONG_MAX ? 124 : 0); })() : (i < 14 ? 118 : (i === 14 ? 123 : (songOn ? 126 : 120)));
+        else if (view === 31) c = (() => { const k = Math.floor(songSlot / 16) * 16 + i; return k < songList.length ? (k === songSlot ? 126 : (k === songPlayIdx() ? 120 : TAG_COL[songList[k][5]])) : (k === songList.length && k < SONG_MAX ? 124 : 0); })();
         else if (askKind >= 0 || exitDlg >= 0 || (view === 28 && broOpen)) c = 0;      /* the steps stay visible in every page, they can be pressed there too */
         else if (s < 0 || s >= LL()) c = 0;
         else if (heldStep >= 0 && heldStep < LL() && s > heldStep && s < heldStep + (steps[ed[sel]][ln()][heldStep][9] || 0)) c = 126;      /* hold a step: the steps it lasts over light up white */

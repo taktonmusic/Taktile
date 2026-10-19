@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.6.4 (19 October 2026)
+- Song chain on the 16 step buttons: every step button is a song step, the pads above pick the clips for that step (bars per step on the Bars knob, Copy / Delete + step button)
+
 ## 1.6.3 (19 October 2026)
 - Tape and Hiss are back to the original, finer behaviour: no more jump from 0 to too much at 2% (saved Hiss values are converted to keep their loudness)
 - Song: Play in the song page always starts the song at step 1, a short hint on the page, the song only runs while the song page is open

@@ -13,7 +13,8 @@ ok(run('songList[1][6][1]') === 5 && run('songList[0][6]') !== run('songList[1][
 pad(1, 2); ok(run('songList[1][6][1]') === 2 && run('songList[0][6][1]') === 5, 'steps are independent');
 run('songStepKey(0)'); ok(run('songSlot') === 0, 'step button 1 selects step 1');
 run('bank=1'); pad(0, 6); ok(run('songList[0][6][4]') === 6, 'bank 2 pads = tracks 5-8');
-run('songStepKey(10)'); ok(run('songList[0][1]') === 4, 'step 11 = 4 bars');
+run('songSlot=0;songStepKey(2)'); ok(run('songList.length') === 3 && run('songSlot') === 2, 'step button 3 appends step 3');
+run('songStepKey(0)'); ok(run('songSlot') === 0, 'step button 1 = first step of the chain');
 let leds = []; for (let i = 0; i < 32; i++) leds.push(run('songLed(' + i + ')'));
 ok(leds.every(v => v >= 0 && v < 128), 'all LED values valid');
 /* running song: second step switches clips */
