@@ -21,5 +21,6 @@ run('songSlot=0;songOn=true;songLoop=true;songSent=-1;playing=true;gs=0'); T(200
 run('JSON.stringify(songList)') ; 
 const saved = JSON.parse(run('JSON.stringify(songList)')); ok(Array.isArray(saved[0][6]) && saved[0][6].length === 16, 'clips are saved with the step');
 run('songList=[[0,4,1,0,0,0,null]].map(songNorm)'); ok(run('songClips(songList[0]).length') === 16, 'old song (scene only) gets clips from its scene');
+run('view=0;needsRedraw=true'); T(3); ok(run('songOn')===false,'song switches off when you leave the song page');
 run('draw()'); ok(true, 'draws');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

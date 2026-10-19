@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.2 (19 October 2026)
+- The song only runs while the song page is open (leaving it switches the song off, clips keep playing)
+- Manual: Euclid pages text fixed
+
 ## 1.6.1 (19 October 2026)
 - Euclid is back to the original 7 pages (MAIN, FEEL, NOTES, LANE 1-4) with all tiles
 
