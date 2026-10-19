@@ -4602,6 +4602,7 @@ function drawGlyph(n, x, y, c) {
     if (n === 'KIT') { for (let a = 0; a < 2; a++) for (let b = 0; b < 3; b++) fill_rect(x + 2 + b * 5, y + a * 5, 4, 4, c); return; }
     if (n === 'PROJ') { draw_rect(x + 2, y + 2, 14, 7, c); fill_rect(x + 2, y, 6, 2, c); return; }
     if (n === 'SYNC') { for (let j = 0; j < 4; j++) { set_pixel(x + 2 + j, y + 1 + j, c); set_pixel(x + 2 + j, y + 7 - j, c); set_pixel(x + 9 + j, y + 1 + j, c); set_pixel(x + 9 + j, y + 7 - j, c); } fill_rect(x + 14, y + 1, 2, 7, c); return; }
+    if (n === 'TAPE') { draw_rect(x + 1, y, 17, 10, c); draw_rect(x + 4, y + 2, 4, 4, c); draw_rect(x + 11, y + 2, 4, 4, c); fill_rect(x + 5, y + 3, 2, 2, c); fill_rect(x + 12, y + 3, 2, 2, c); fill_rect(x + 5, y + 7, 9, 1, c); return; }      /* cassette */
     if (n === 'MIDI') { for (let j = 0; j < 4; j++) { fill_rect(x + 1 + j * 5, y + 7 - j * 2, 3, 2 + j * 2, c); } return; }
     if (n === 'EQ') { const H = [3, 7, 5, 8, 2]; for (let j = 0; j < 5; j++) fill_rect(x + 1 + j * 3, y + 9 - H[j], 2, H[j], c); return; }
     if (n === 'MULTI') { for (let j = 0; j < 3; j++) { fill_rect(x + 3 + j * 5, y + 1, 1, 8, c); fill_rect(x + 1 + j * 5, y + 2 + ((j * 3) % 5), 5, 2, c); } return; }
