@@ -53,9 +53,10 @@ Demos, tutorials and progress updates are on the [TaktOnMusic YouTube channel](h
 
 ## Documentation
 
-| | Manual |
+| Language | Manual |
 |---|---|
 | 🇬🇧 English | [Taktile-Manual-EN.pdf](taktile/docs/Taktile-Manual-EN.pdf) – includes technical notes and open questions for Schwung developers |
+| 🇦🇹 Deutsch | [Taktile-Handbuch-DE.pdf](taktile/docs/Taktile-Handbuch-DE.pdf) |
 
 ## Install
 
