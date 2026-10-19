@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.1 (19 October 2026)
+- Drum tracks: all pads run together with one length (Loop + jog / Loop + step sets the length of the whole track; older single-pad loops are dropped)
+
 ## 1.7.0 (19 October 2026)
 - Song page: Copy + pad fills a step from a scene (every track with notes in that clip column), clearer chain at the bottom (one box per step button, dot = playing)
 

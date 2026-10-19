@@ -6,7 +6,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-333333">
   <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-333333">
   <img alt="Language" src="https://img.shields.io/badge/DSP-C-333333">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.7.0-333333">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.7.1-333333">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-333333">
 </p>
 
@@ -15,7 +15,7 @@
 <p align="center"><b>A groovebox for the Ableton Move: 16 tracks of synths and drums, step sequencer, 1462 sounds, effects and live performance tools – a Schwung overtake module.</b></p>
 
 > [!NOTE]
-> **Status:** Developed by TaktOnMusic together with a real Ableton Move. Release 1.7.0 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
+> **Status:** Developed by TaktOnMusic together with a real Ableton Move. Release 1.7.1 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
 
 ---
 

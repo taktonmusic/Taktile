@@ -378,7 +378,7 @@ function qSeq(p, t) {                                      /* long patterns go o
     for (let o = 0; o < MAXSTEP; o += 16) enqueue('seq' + p + '_' + t + '_' + o, 'seqd', p + ',' + t + ',' + o + ':' + h.substr(12 * o, 192));
 }
 function setLen(n, wholeTrack) {                           /* loop length: a drum sound has its own, otherwise (or with wholeTrack) the track's */
-    growTrk[sel] = false;
+    growTrk[sel] = false; wholeTrack = true;                       /* all pads of a drum track run together: one length for the whole track */
     n = clamp(n, 1, MAXSTEP); const L = ln();
     { const top = undoStack.length ? undoStack[undoStack.length - 1] : null, now = Date.now(); if (!(top && !top.k && top.lt && top.t === L && top.p === ed[sel] && now - top.lt < 1500)) { snap(ed[sel], L); undoStack[undoStack.length - 1].lt = now; } else top.lt = now; }      /* a loop length change is an undo step (turning the wheel merges) */
     if (kind[sel] && !wholeTrack) { llen[L] = n; enqueue('llen' + L, 'llen', L + ',' + n); }
@@ -488,7 +488,7 @@ function loadState() {
         if (o.au && typeof o.au === 'object') { AUTO = {}; for (const id in o.au) if (/^\d+\|\d+\|[a-z]+$/.test(id) && o.au[id] && typeof o.au[id] === 'object') { const m = {}; for (const k in o.au[id]) { const v = Number(o.au[id][k]); if (isFinite(v)) m[k] = clamp(v, 0, 12); } AUTO[id] = m; } }
         if (o.sg && Array.isArray(o.sg.l) && o.sg.l.length >= 1 && o.sg.l.length <= 32) { songList = o.sg.l.map(songNorm); songOn = !!o.sg.on; songLoop = o.sg.lp === undefined ? true : !!o.sg.lp; songSlot = 0; songBlank = o.sg.l.length === 1 && o.sg.l[0][0] === 0 && o.sg.l[0][1] === 4 && !songOn; }
         if (Array.isArray(o.sm) && o.sm.length >= 1 && o.sm.length <= 16) { slm = o.sm.map(x => clamp(Number(x) || 0, 0, 0.998)).sort((a, b) => a - b); slN = slm.length; slSel = 0; }
-        if (Array.isArray(o.ll) && o.ll.length === NLANE) llen = o.ll.map(x => clamp(Number(x) | 0, 0, MAXSTEP));
+        if (Array.isArray(o.ll) && o.ll.length === NLANE) llen = new Array(NLANE).fill(0);      /* 1.7.1: every pad of a drum track follows the track's length (older own loops are dropped) */
         chosen = (Array.isArray(o.ch) && o.ch.length === NTRK) ? o.ch.map(x => x ? 1 : 0) : new Array(NTRK).fill(1);
         if (Array.isArray(o.kd) && o.kd.length === NTRK && Array.isArray(o.sl) && o.sl.length === NTRK) {
             kind = o.kd.map(x => x ? 1 : 0); slot = o.sl.map(x => clamp(Number(x) | 0, -1, 3));
