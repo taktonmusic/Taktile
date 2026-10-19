@@ -34,6 +34,9 @@ jobs:
       - name: MIC page test
         run: node tools/test/test_mic.js
 
+      - name: New clip sound test
+        run: node tools/test/test_clipsound.js
+
       - name: MIC recording test (native, fake input)
         run: |
           ./scripts/fetch-header.sh

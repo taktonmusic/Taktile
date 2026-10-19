@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 (19 October 2026)
+- A new clip in a track now starts with the sound (preset) of the clip you came from; you can change it afterwards and every clip keeps its own sound as before
+- New test for this (test_clipsound.js) is part of the build
+
 ## 1.3.0 (19 October 2026)
 - SAMPLE page: turning Start or End zooms the waveform in (a tenth of the sample around the marker) so you can set it exactly
 - SAMPLE and SLICE pages: the waveform box is a little bigger

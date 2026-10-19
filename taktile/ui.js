@@ -349,7 +349,13 @@ function ensureCs() {
     csnd = []; for (let c = 0; c < NPAT; c++) { const row = []; for (let t = 0; t < NLANE; t++) row.push(pads[t].slice()); csnd.push(row); }
 }
 function sendCs(c, t) { enqueue('cs' + c + '_' + t, 'csnd', c + ',' + t + ':' + padStrL(t, csnd[c][t])); }
-function storeCs(l) { ensureCs(); const t = laneTrk(l); csnd[ed[t]][l] = pads[l].slice(); sendCs(ed[t], l); }
+const csOwn = {};                                          /* clips whose sound was set by hand (or inherited / copied) in this session */
+function storeCs(l) { ensureCs(); const t = laneTrk(l); csnd[ed[t]][l] = pads[l].slice(); csOwn[ed[t] + '_' + t] = 1; sendCs(ed[t], l); }
+function inheritSound(t, p, c) {                            /* a NEW (empty, never edited) clip starts with the sound of the clip you came from; you can change it afterwards */
+    if (p === c || p < 0 || c < 0 || csOwn[c + '_' + t] || trackHasSteps(c, t)) return;
+    ensureCs(); for (const l of lanesOf(t)) { csnd[c][l] = csnd[p][l].slice(); sendCs(c, l); }
+    csOwn[c + '_' + t] = 1;
+}
 function liveOk(t) { return !playing || clipsCur[t] < 0 || clipsCur[t] === ed[t]; }      /* edits reach the engine only while that clip is the one sounding */
 function applyClipSound(t, c) {                         /* UI follows the clip: its sound, track volume + pan kept */
     ensureCs();
@@ -777,14 +783,14 @@ function seqKnob(i, delta) {
     markEdited();
 }
 function launchClip(t, c) {                       /* c = -1 stops the track */
-    if (c >= 0) { ed[t] = c; applyClipSound(t, c); }
+    if (c >= 0) { inheritSound(t, ed[t], c); ed[t] = c; applyClipSound(t, c); }
     dspSet('clip', t + ',' + c);
     clipsQ[t] = playing ? c : -2; if (!playing) clipsCur[t] = c;
     if (c >= 0 && !playing) { playing = true; gs = 0; dspSet('play', '1'); }
     needsRedraw = true; dirty = true;
 }
 function setClip(t, c) {
-    ed[t] = c; launchClip(t, c); showToast('CLIP', 'T' + p2(t + 1) + ' C' + (c + 1), c / (NPAT - 1)); markEdited();
+    launchClip(t, c); showToast('CLIP', 'T' + p2(t + 1) + ' C' + (c + 1), c / (NPAT - 1)); markEdited();
 }
 function launchScene(c, quiet) {
     for (let t = 0; t < NTRK; t++) if (trackHasSteps(c, t)) { ed[t] = c; applyClipSound(t, c); }
@@ -810,7 +816,7 @@ function clipAction(t, c) {
         const dl = lanesOf(t), sl = lanesOf(st0);
         for (let i = 0; i < dl.length; i++) {
             for (let s = 0; s < MAXSTEP; s++) steps[c][dl[i]][s] = steps[sc][sl[i]][s].slice();
-            csnd[c][dl[i]] = csnd[sc][sl[i]].slice(); sendCs(c, dl[i]); qSeq(c, dl[i]);
+            csnd[c][dl[i]] = csnd[sc][sl[i]].slice(); csOwn[c + '_' + t] = 1; sendCs(c, dl[i]); qSeq(c, dl[i]);
         }
         if (ed[t] === c) applyClipSound(t, c);
         copySrc = null; showToast('COPY', 'DONE', 1); markEdited(); return;
