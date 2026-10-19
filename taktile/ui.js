@@ -2588,7 +2588,7 @@ function tabPageNum() { return (view === 43 || view === 50 || (view === 38 && fx
 let synPage = 0, fxPage = 0;
 function tabPg(t) {                                        /* [page, pages] inside the current tile, always shown: tile name top left, page top right */
     if (t === 36) return [euPage + 1, EU_NPG];
-    if (t === 28) return [smpPage + 1, 4];
+    if (t === 28) return [smpPage + 1, 5];
     const two = (t === 2 || t === 38 || t === 46 || t === 27 || (t === 44 && chordOn()));
     return [tabPageNum() ? 2 : 1, two ? 2 : 1];
 }
@@ -3130,6 +3130,72 @@ function drawBro() {
     }
     if (broList.length <= 1) txt(2, 30, broErr ? (broErr === 13 ? 'NO ACCESS' : 'CANNOT OPEN') : '(no WAV files)', 1);
 }
+/* ---- MIC: record the Move's audio input (the built-in mic or line in) into a new sample. The input is only read while this page is open or a take runs ---- */
+const MIC_SEC = [1, 2, 3, 5, 8, 10, 15, 20, 30], MIC_GAIN = [10, 15, 20, 30, 40, 60, 80], MIC_GAIN_DB = ['0', '+3', '+6', '+10', '+12', '+16', '+18'];
+const MIC_THR_PCT = [0, 4, 10, 25], MIC_THR_NAME = ['OFF', 'LOW', 'MID', 'HIGH'];
+let micSecI = 3, micGainI = 0, micThr = 1, micState = 0, micPct = 0, micLvl = 0, micClip = 0, micOk = 1, micPoll = 0, micMon = 0, micLane = 0, micGrace = 0;
+function micPageOn() { return view === 28 && smpPage === 4 && !menuOpen && !padMenu && !broOpen && askKind < 0 && exitDlg < 0 && !fb; }
+function micGo() {
+    if (micState === 2 || micState === 5) { dspSet('micstop', '1'); micPoll = 99; showToast('MIC', micState === 5 ? 'CANCELLED' : 'STOPPED', 0); return; }
+    if (rsState) { showToast('MIC', 'RESAMPLE RUNNING', 0); return; }
+    dspSet('micarm', MIC_SEC[micSecI] + ',' + MIC_THR_PCT[micThr] + ',' + MIC_GAIN[micGainI]);
+    micState = MIC_THR_PCT[micThr] ? 5 : 2; micPct = 0; micLane = ln(); micPoll = 99; micGrace = 24;      /* the DSP may not have seen the command yet: a '0' in the first polls is not the end */
+    showToast('MIC', micState === 5 ? 'WAITING FOR SOUND' : 'RECORDING', 0); needsRedraw = true;
+}
+function micKnob(i, delta) {
+    if (i > 3) return;
+    acc[i] += delta; if (Math.abs(acc[i]) < 2) return;
+    const st = acc[i] > 0 ? 1 : -1; acc[i] = 0;
+    if (i === 3) { if (st > 0) { if (!micState) micGo(); } else if (micState) micGo(); return; }
+    if (micState) { showToast('MIC', 'STOP FIRST', 0); return; }
+    if (i === 0) micSecI = clamp(micSecI + st, 0, MIC_SEC.length - 1);
+    else if (i === 1) { micGainI = clamp(micGainI + st, 0, MIC_GAIN.length - 1); dspSet('micgain', String(MIC_GAIN[micGainI])); }
+    else micThr = clamp(micThr + st, 0, 3);
+    needsRedraw = true;
+}
+function micTick() {
+    const want = micPageOn() ? 1 : 0;
+    if (want !== micMon) { micMon = want; dspSet('micmon', String(want)); if (want) dspSet('micgain', String(MIC_GAIN[micGainI])); micLvl = 0; micClip = 0; micOk = 1; needsRedraw = true; }
+    if (!micMon && !micState) return;
+    if (++micPoll < 5) return; micPoll = 0;
+    if (micMon) {
+        const r = dspGet('micpeak');
+        if (typeof r === 'string') { const a = r.split(',').map(Number), l = a[0] | 0; if (l !== micLvl || (a[1] | 0) !== micClip || (a[2] | 0) !== micOk) { micLvl = l; micClip = a[1] | 0; micOk = a[2] | 0; needsRedraw = true; } }
+    }
+    if (micState) {
+        const r = dspGet('recstate'); if (typeof r !== 'string') return;
+        const a = r.split(',').map(Number), st = a[0] | 0, np = a[1] | 0;
+        if (np !== micPct) { micPct = np; needsRedraw = true; }
+        if (st === 2 && micState !== 2) { micState = 2; showToast('MIC', 'RECORDING', 0); needsRedraw = true; }
+        if (st === 3) {
+            dspSet('recsave', '1');
+            const r2 = dspGet('recstate'), slotN = typeof r2 === 'string' ? (parseInt(r2.split(',')[2]) | 0) : -1;
+            micState = 0; smpRefresh();
+            if (slotN >= 0) { const L = micLane; setLaneP(L, 'type', 359); setLaneP(L, 'smp', slotN / 63); setLaneP(L, 'sst', 0); setLaneP(L, 'sen', 1); setLaneP(L, 'smd', 0); showToast('MIC SAVED', 'SAMPLE ' + (slotN + 1) + ' ON PAD', 1); }
+            else showToast('MIC', 'SAVE FAILED', 0);
+            needsRedraw = true;
+        } else if (st === 0) { if (micGrace > 0) micGrace--; else { micState = 0; needsRedraw = true; } }
+    }
+}
+function drawMic() {
+    const TN = tabStrip && TAB_NEW, y0 = TN ? 17 : 11;
+    titleBar(p2(sel + 1) + ' ' + laneName(), 'MIC ' + smpMem + '%');
+    draw_rect(0, y0, 128, 11, 1);
+    const w = Math.round(124 * clamp(micLvl / 100, 0, 1)); if (w > 0) fill_rect(2, y0 + 2, w, 7, 1);
+    if (MIC_THR_PCT[micThr]) { const x = 2 + Math.round(124 * MIC_THR_PCT[micThr] / 100); fill_rect(x, y0 - 1, 1, 13, 1); }
+    let s1;
+    if (!micOk) s1 = 'NO INPUT FOUND';
+    else if (micState === 5) s1 = 'WAITING FOR SOUND...';
+    else if (micState === 2) s1 = 'REC ' + (MIC_SEC[micSecI] * micPct / 100).toFixed(1) + ' / ' + MIC_SEC[micSecI] + ' S';
+    else s1 = micClip && micLvl > 90 ? 'TOO LOUD: LOWER GAIN' : 'SHIFT+CLICK = RECORD';
+    txt(1, y0 + 14, s1, 1);
+    if (micState === 2) { draw_rect(0, y0 + 24, 128, 3, 1); const pw = Math.round(126 * micPct / 100); if (pw > 0) fill_rect(1, y0 + 25, pw, 1, 1); }
+    const yc = TN ? 45 : 40;
+    cell(0, yc, 'Time', MIC_SEC[micSecI] + ' s', micSecI / (MIC_SEC.length - 1));
+    cell(32, yc, 'Gain', MIC_GAIN_DB[micGainI] + ' dB', micGainI / (MIC_GAIN.length - 1));
+    cell(64, yc, 'Wait', MIC_THR_NAME[micThr], micThr / 3);
+    cell(96, yc, 'Rec', micState ? 'STOP' : 'START', micState ? 1 : 0);
+}
 function sampleRescan() { dspSet('smprescan', '1'); smpRefresh(); const n = smpLoaded().length; showToast('SAMPLES', n + ' FOUND', n / 64); needsRedraw = true; }
 /* ---- own slices: up to 16 start markers (0..1); Jog click applies them to the drum pads ---- */
 /* ---- resampling: record the master (or one track) for N bars into a new sample ---- */
@@ -3137,6 +3203,7 @@ const RS_BARS = [1, 2, 4, 8, 16];
 let rsSrc = 0, rsBarI = 1, rsState = 0, rsPct = 0, rsPoll = 0, rsLane = 0;
 function rsArm() {
     if (rsState) return;
+    if (micState) { showToast('MIC', 'TAKE RUNNING', 0); return; }
     dspSet('recarm', (rsSrc - 1) + ',' + RS_BARS[rsBarI]);
     if (!playing) { dspSet('play', '1'); playing = true; gs = 0; }
     rsState = 1; rsPct = 0; rsLane = ln(); needsRedraw = true; showToast('RESAMPLE', 'WAITING FOR BAR 1', 0);
@@ -4297,6 +4364,7 @@ function miniGrid(items, y0, frFn) {                         /* up to 8 knobs in
     }
 }
 function drawSample() {
+    if (smpPage === 4) { drawMic(); return; }
     const L = ln(), i = smpIdx(L), ok = smpInfo[i] && smpInfo[i][0] > 0;
     titleBar(p2(sel + 1) + ' ' + laneName(), (smpPage === 2 ? 'ENV ' : (smpPage === 3 ? 'TOOLS ' : 'SAMPLE ')) + smpMem + '%');
     const isS = Math.round(pads[L][0]) === 359, nm = ok ? (isS ? smpNames[i] : smpNames[i] + ' (off)') : (smpLoaded().length ? '(Jog: pick sample)' : 'NO WAV FILES');
@@ -4941,6 +5009,7 @@ function knobUse() {                                       /* which of the 8 kno
     if (heldStep >= 0 && stepWinView()) return u.map(() => 1);
     if (loopHeld && view === 0) { u[0] = 1; u[1] = 1; u[2] = 1; return u; }
     if (view === 0 || view === 7 || view === 20) return u.map(() => 1);
+    if (view === 28 && smpPage === 4) { u[0] = u[1] = u[2] = u[3] = 1; return u; }
     const items = VIEW_ITEMS[itemsView()];
     if (items) for (let i = 0; i < items.length && i < 8; i++) u[i] = 1;
     return u;
@@ -4950,6 +5019,7 @@ function knobLevels() {                                    /* value 0..1 of each
     if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) { const o = new Array(8).fill(undefined); o[7] = [0.1, 0.5, 1][fbPm]; return o; }      /* knob 1 glows bright when the preview is on, dim when it is off */
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb || heldStep >= 0 || loopHeld) return null;
     if (view === 0) return seqSnd().map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
+    if (view === 28 && smpPage === 4) return [micSecI / (MIC_SEC.length - 1), micGainI / (MIC_GAIN.length - 1), micThr / 3, micState ? 1 : 0];
     const items = VIEW_ITEMS[itemsView()];
     if (!items) return null;
     const out = [];
@@ -5140,7 +5210,7 @@ globalThis.tick = function () {
         if (np !== playing || ng < gs - 1) tph.fill(0);      /* start / stop / restart: every clip begins at its own step 1 again */
         for (let t = 0; t < NTRK; t++) if (edSeen[t] !== ed[t]) { edSeen[t] = ed[t]; if (!growTrk[t]) tph[t] = 0; }      /* another clip on this track starts at its own step 1 */
         if (np !== playing || ng !== gs) { playing = np; gs = ng; needsRedraw = true; }
-        growTick(); loadTick(); autoPlay(); songTick(); rsTick(); meterTick(); scopeTick(); fillTick(); kitPrevTick(); if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
+        growTick(); loadTick(); autoPlay(); songTick(); rsTick(); micTick(); meterTick(); scopeTick(); fillTick(); kitPrevTick(); if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
         if (playing && followHold > 0) followHold--;
         if (playing && followHold === 0 && heldStep < 0 && LL() > PGN()) {   /* screen + step buttons follow the playing bar */
             const pg = Math.floor(curStep(sel, LL()) / PGN());
@@ -5380,7 +5450,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (d2 > 0 && isTab(view) && view !== 36 && view !== 28 && !menuOpen && !shiftHeld) return;      /* tabs without a second page: the jog click does nothing */
         if (d2 > 0 && view === 36 && !menuOpen && !padMenu && !shiftHeld) { euSetPage(euPage + 1); showToast((euPage + 1) + '/' + EU_NPG, '', 0); toast.ticks = 40; return; }
         if (d2 > 0 && view === 28 && broOpen && !menuOpen) { broClick(); return; }
-        if (d2 > 0 && view === 28 && !menuOpen && !padMenu) { if (shiftHeld) { if (smpPage === 1) sliceApply(); else if (smpPage === 0) broOpenNow(); else sampleRescan(); } else { smpPage = (smpPage + 1) % 4; acc.fill(0); showToast(['SAMPLE', 'SLICE', 'ENVELOPE', 'TOOLS'][smpPage], ['START / END', 'MARKERS', 'GAIN / ATK / REL', 'FIT / HALF / MOVE'][smpPage], smpPage / 3); needsRedraw = true; } return; }
+        if (d2 > 0 && view === 28 && !menuOpen && !padMenu) { if (shiftHeld) { if (smpPage === 1) sliceApply(); else if (smpPage === 0) broOpenNow(); else if (smpPage === 4) micGo(); else sampleRescan(); } else { smpPage = (smpPage + 1) % 5; acc.fill(0); showToast(['SAMPLE', 'SLICE', 'ENVELOPE', 'TOOLS', 'MIC'][smpPage], ['START / END', 'MARKERS', 'GAIN / ATK / REL', 'FIT / HALF / MOVE', 'RECORD A SAMPLE'][smpPage], smpPage / 4); needsRedraw = true; } return; }
         if (d2 > 0 && shiftHeld && view === 10) { tapTempo(); return; }      /* tap tempo lives on the TEMPO page now */
         if (d2 > 0) {
             if (isHub(view)) hubEnter();
@@ -5399,6 +5469,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (view === 7) { sessionKnob(i, delta); return; }
         if (view === 20) { mixKnob(i, delta); return; }
         if (view === 45) devSync();
+        if (view === 28 && smpPage === 4 && !menuOpen && !padMenu && !broOpen) { micKnob(i, delta); return; }
         const items = VIEW_ITEMS[itemsView()];
         if (!items || i >= items.length) return;
         if (!shiftHeld && view === 1 && items[i][0] === 'type') { acc[i] += delta; if (Math.abs(acc[i]) < 3) return; acc[i] = 0; browseSound(delta > 0 ? 1 : -1); return; }       /* sound knob = list that opens and scrolls */

@@ -6,7 +6,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-333333">
   <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-333333">
   <img alt="Language" src="https://img.shields.io/badge/DSP-C-333333">
-  <img alt="Version" src="https://img.shields.io/badge/version-5.176.0-333333">
+  <img alt="Version" src="https://img.shields.io/badge/version-5.177.0-333333">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-333333">
 </p>
 
@@ -15,7 +15,7 @@
 <p align="center"><b>A groovebox for the Ableton Move: 16 tracks of synths and drums, step sequencer, 1462 sounds, effects and live performance tools – a Schwung overtake module.</b></p>
 
 > [!NOTE]
-> **Status:** Developed by TaktOnMusic together with a real Ableton Move. Release 5.176.0 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
+> **Status:** Developed by TaktOnMusic together with a real Ableton Move. Release 5.177.0 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
 
 ---
 
@@ -45,7 +45,7 @@ Demos, tutorials and progress updates are on the [TaktOnMusic YouTube channel](h
 | | |
 |---|---|
 | 🎹 **Tracks** | 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain |
-| 🔊 **Sounds** | 1462 built-in sounds, your own WAV samples (64 slots / 40 MB) on drum tracks, slicing, kits from 16 WAVs, time-stretch, resampling |
+| 🔊 **Sounds** | 1462 built-in sounds, your own WAV samples (64 slots / 40 MB) on drum tracks, recording with the Move's microphone, slicing, kits from 16 WAVs, time-stretch, resampling |
 | 🗂️ **Track tiles** | Synth track: 1 PRESET · 2 SYNTH · 3 MOD · 4 FILTER (+ EQ) · 5 FX (+ GRAIN) · 6 FX TYPE (+ FX TIME) · 7 EUCLID · 8 MIDI FX. Drum tracks have no SYNTH tile but a SAMPLE tile. The header shows the tile top left and the page (e.g. 2/2) top right; jog click switches the page |
 | 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 11 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off) |
 | 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator (switch, off by default), quantize grid 1/4 … 1/32 with strength, auto-growing clips while recording, MIDI clock + note out (USB-A) |

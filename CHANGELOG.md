@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.177.0 (19 October 2026)
+- New MIC page (5th page of the SAMPLE tile on drum tracks): records the Move's microphone / line input into a new sample, with level meter, length 1-30 s, gain, optional wait-for-sound, start/stop with Shift + jog click or knob 4; the take is saved as a WAV and loaded on the pad
+- The input is only read while the MIC page is open or a take runs; the recording itself only copies samples (no measurable CPU load)
+- Tests: test_mic.js and a native recording test with a fake input are part of the build
+
 ## 5.176.0 (19 October 2026)
 - Repo cleanup: removed duplicate manual PDFs and preview image from the root, two mislabelled German guide copies (they were English) and the old 5.4 tests; manuals now live only in taktile/docs
 

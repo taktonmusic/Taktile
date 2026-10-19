@@ -723,7 +723,8 @@ typedef struct {
     float tp_dl[2][2048], tp_lp[2], tp_hb[2], tp_hn[2], tp_ph1, tp_ph2, tp_dr, tp_drv; int tp_w; unsigned tp_rng;   /* master tape: wow / flutter delay, soft saturation, head bump, hiss */
     float root_hz;
     int mo_clk, mo_trk, mo_chn, mo_xp, mo_vp, mo_dn; float mclk; struct { int cnt; uint8_t st, d1; } mo_q[64];   /* MIDI out: clock + notes per track */
-    int16_t *rec_buf; long rec_n, rec_len, rec_max; int rec_state, rec_bars, rec_src; char rec_last[48]; int rec_slot;   /* resampling */
+    int16_t *rec_buf; long rec_n, rec_len, rec_max; int rec_state, rec_bars, rec_src; char rec_last[48]; int rec_slot;   /* resampling (rec_src -2 = the Move's audio input, see mic_block) */
+    int mic_mon, mic_clip, mic_ok; float mic_gain, mic_thr, mic_peak;   /* MIC take: monitor flag (level only while the MIC page is open), gain, start threshold, smoothed input peak */
     float sc_w[128], sc_lp[8], sc_env[8]; int sc_i, sc_c;
     float sc_lp2[16], sc_env2[16], sc_sl[64], sc_sr[64], sc_cll, sc_crr, sc_clr; int sc_si;   /* 16-band spectrum, stereo ring and phase correlation for the extra scope pages */            /* master scope ring (decimated) and 8 band levels for the UI scope page */
     float dk_env[NTRK], dk_c[NTRK], meter[NTRK];                 /* sidechain ducking (kick -> other tracks) and level meters */
@@ -3129,6 +3130,24 @@ static void set_param(void *instance, const char *key, const char *val) {
         return;
     }
     if (strcmp(key, "reccancel") == 0) { s->rec_state = 0; return; }
+    if (strcmp(key, "micgain") == 0) { int gx = atoi(val); if (gx < 10) gx = 10; if (gx > 80) gx = 80; if (s->rec_state != 2) s->mic_gain = (float)gx * 0.1f; return; }
+    if (strcmp(key, "micmon") == 0) { s->mic_mon = atoi(val) ? 1 : 0; s->mic_peak = 0.0f; s->mic_clip = 0; return; }
+    if (strcmp(key, "micarm") == 0) {                /* "seconds,threshold %,gain x10": threshold 0 = start at once, else wait for sound */
+        if (s->rec_state == 1 || s->rec_state == 2 || s->rec_state == 5) return;
+        int sec = atoi(val); const char *c = strchr(val, ','); int thr = c ? atoi(c + 1) : 0; const char *c2 = c ? strchr(c + 1, ',') : NULL; int gx = c2 ? atoi(c2 + 1) : 10;
+        if (sec < 1) sec = 1; if (sec > 30) sec = 30; if (thr < 0) thr = 0; if (thr > 90) thr = 90; if (gx < 10) gx = 10; if (gx > 80) gx = 80;
+        s->rec_max = (long)(s->sr * 40.0f);
+        if (!s->rec_buf) s->rec_buf = (int16_t *)malloc((size_t)s->rec_max * 4);
+        if (!s->rec_buf) return;
+        s->rec_src = -2; s->rec_len = (long)(s->sr * (float)sec); if (s->rec_len > s->rec_max) s->rec_len = s->rec_max;
+        s->rec_n = 0; s->mic_gain = (float)gx * 0.1f; s->mic_thr = (float)thr * 0.01f; s->mic_clip = 0; s->rec_slot = -1;
+        s->rec_state = thr > 0 ? 5 : 2;
+        return;
+    }
+    if (strcmp(key, "micstop") == 0) {               /* stop a running take early: what was recorded so far is kept */
+        if (s->rec_src == -2 && s->rec_state == 2 && s->rec_n >= 64) { s->rec_len = s->rec_n; s->rec_state = 3; } else if (s->rec_src == -2 && (s->rec_state == 2 || s->rec_state == 5)) s->rec_state = 0;
+        return;
+    }
     if (strcmp(key, "midiout") == 0) { s->mo_clk = atoi(val) ? 1 : 0; const char *c = strchr(val, ','); s->mo_trk = c ? (atoi(c + 1) & 0xFFFF) : 0;
         s->mo_chn = 0; s->mo_xp = 0; s->mo_vp = 0; s->mo_dn = 0;
         if (c) { const char *q = strchr(c + 1, ','); int f = 0; while (q && f < 4) { int v = atoi(q + 1);
@@ -3139,7 +3158,13 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "recsave") == 0) {               /* write the take as a WAV file into the sample folder and load it */
         if (s->rec_state != 3 || !s->rec_buf || s->rec_n < 64) { s->rec_state = 0; return; }
         char name[48], path[400]; int k;
-        for (k = 1; k < 1000; k++) { snprintf(name, sizeof name, "resample_%03d.wav", k); snprintf(path, sizeof path, "%s/%s", SMP_DIR, name); FILE *t = fopen(path, "rb"); if (!t) break; fclose(t); }
+        if (s->rec_src == -2) {                        /* mic take: the Move's built-in mic is mono (one side silent): use the louder side for both; short fades hide clicks */
+            double eL = 0, eR = 0; for (long i = 0; i < s->rec_n; i++) { double a = s->rec_buf[2 * i], b = s->rec_buf[2 * i + 1]; eL += a * a; eR += b * b; }
+            if (eL > 0 || eR > 0) { if (eR < eL * 0.02) { for (long i = 0; i < s->rec_n; i++) s->rec_buf[2 * i + 1] = s->rec_buf[2 * i]; } else if (eL < eR * 0.02) { for (long i = 0; i < s->rec_n; i++) s->rec_buf[2 * i] = s->rec_buf[2 * i + 1]; } }
+            long fd = s->rec_n < 256 ? s->rec_n / 2 : 128;
+            for (long i = 0; i < fd; i++) { float f = (float)i / (float)fd; s->rec_buf[2 * i] = (int16_t)(s->rec_buf[2 * i] * f); s->rec_buf[2 * i + 1] = (int16_t)(s->rec_buf[2 * i + 1] * f); long j = s->rec_n - 1 - i; s->rec_buf[2 * j] = (int16_t)(s->rec_buf[2 * j] * f); s->rec_buf[2 * j + 1] = (int16_t)(s->rec_buf[2 * j + 1] * f); }
+        }
+        for (k = 1; k < 1000; k++) { snprintf(name, sizeof name, s->rec_src == -2 ? "mic_%03d.wav" : "resample_%03d.wav", k); snprintf(path, sizeof path, "%s/%s", SMP_DIR, name); FILE *t = fopen(path, "rb"); if (!t) break; fclose(t); }
         FILE *f = fopen(path, "wb");
         if (f) {
             uint32_t dl = (uint32_t)(s->rec_n * 4), sr = (uint32_t)s->sr, br = sr * 4, rl = 36 + dl; uint16_t one = 1, two = 2, bits = 16, ba = 4; uint32_t fl = 16;
@@ -3437,6 +3462,10 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
         }
         buf[64] = 0; return 64;
     }
+    if (strcmp(key, "micpeak") == 0) {              /* "level 0..100, clipped, input found" */
+        int v = (int)(s->mic_peak * 100.0f + 0.5f); if (v > 100) v = 100;
+        return snprintf(buf, (size_t)buf_len, "%d,%d,%d", v, s->mic_clip, s->mic_ok);
+    }
     if (strcmp(key, "recstate") == 0) {
         int pct = (s->rec_state == 2 && s->rec_len > 0) ? (int)(100L * s->rec_n / s->rec_len) : 0;
         return snprintf(buf, (size_t)buf_len, "%d,%d,%d", s->rec_state, pct, s->rec_slot);
@@ -3552,9 +3581,34 @@ static void act_rebuild(inst_t *s) {
     s->act_dirty = 0;
 }
 static void render_block_impl(void *instance, int16_t *out_lr, int frames);
+/* MIC: reads the Move's audio input block (host mailbox, 128 frames, stereo int16). It does nothing at all (one test) unless the MIC page is open
+   (level meter) or a take is running, and then it only measures and copies samples: no filter, no effect, no allocation, nothing is played back. */
+static void mic_block(inst_t *s, int frames) {
+    int taking = (s->rec_src == -2 && (s->rec_state == 2 || s->rec_state == 5));
+    if (!s->mic_mon && !taking) return;
+    const int16_t *in = (g_host && g_host->mapped_memory && g_host->audio_in_offset > 0) ? (const int16_t *)(g_host->mapped_memory + g_host->audio_in_offset) : NULL;
+    if (!in) { s->mic_ok = 0; s->mic_peak = 0.0f; return; }
+    s->mic_ok = 1;
+    int n = frames < 128 ? frames : 128;
+    int pk = 0;
+    for (int i = 0; i < 2 * n; i++) { int a = in[i] < 0 ? -(int)in[i] : (int)in[i]; if (a > pk) pk = a; }
+    float g = s->mic_gain > 0.05f ? s->mic_gain : 1.0f, pv = (float)pk * g * (1.0f / 32768.0f);
+    s->mic_peak = pv > s->mic_peak ? pv : s->mic_peak * 0.96f;
+    if (pv >= 0.97f) s->mic_clip = 1;
+    if (s->rec_state == 5 && s->rec_src == -2 && pv >= s->mic_thr) s->rec_state = 2;          /* waiting for sound: the take starts with the first loud block */
+    if (s->rec_state == 2 && s->rec_src == -2 && s->rec_buf) {
+        for (int i = 0; i < n && s->rec_n < s->rec_len; i++) {
+            float l = in[2 * i] * g, r = in[2 * i + 1] * g;
+            if (l > 32767.0f) l = 32767.0f; if (l < -32768.0f) l = -32768.0f; if (r > 32767.0f) r = 32767.0f; if (r < -32768.0f) r = -32768.0f;
+            s->rec_buf[2 * s->rec_n] = (int16_t)l; s->rec_buf[2 * s->rec_n + 1] = (int16_t)r; s->rec_n++;
+        }
+        if (s->rec_n >= s->rec_len) s->rec_state = 3;
+    }
+}
 static void render_block(void *instance, int16_t *out_lr, int frames) {
     inst_t *s = (inst_t *)instance;
     if (!s) { memset(out_lr, 0, (size_t)frames * 2 * sizeof(int16_t)); return; }
+    mic_block(s, frames);
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
 #if defined(__aarch64__)
@@ -4134,7 +4188,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 pv_pos += (double)(PVW.sr * s->inv_sr);
             }
         }
-        if (s->rec_state == 2 && s->rec_buf) {
+        if (s->rec_state == 2 && s->rec_src != -2 && s->rec_buf) {
             float cl = s->rec_src < 0 ? L : softclip(rec_l * mvol), cr = s->rec_src < 0 ? R : softclip(rec_r * mvol);
             int ci = (int)(cl * 32767.0f), cj = (int)(cr * 32767.0f);
             if (ci > 32767) ci = 32767; if (ci < -32768) ci = -32768; if (cj > 32767) cj = 32767; if (cj < -32768) cj = -32768;
