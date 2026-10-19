@@ -10,16 +10,21 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-333333">
 </p>
 
-<p align="center"><b>16 tracks of synths and drums, a step sequencer, sounds, effects and live performance tools – all running as a Schwung overtake module on the Ableton Move.</b></p>
+<p align="center"><b>A groovebox for the Ableton Move: 16 tracks of synths and drums, step sequencer, 1462 sounds, effects and live performance tools – a Schwung overtake module.</b></p>
 
 > [!NOTE]
-> **Status:** Developed and tested together with a real Ableton Move. Release 5.176.0 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds); please report anything that behaves differently on the device.
+> **Status:** Developed by TaktOnMusic together with a real Ableton Move. Release 5.176.0 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
 
 ---
 
 ## What is Taktile?
 
-Taktile is a pattern-based groove box built for jamming live. It takes over the Move's pads, buttons, knobs and display. All sound comes from its own C DSP (`dsp.so`), so you get a complete instrument rather than a controller for something else.
+Taktile turns the Move into a pattern-based groove box built for jamming live. It takes over the pads, buttons, knobs and display, and all sound comes from its own C DSP (`dsp.so`). You get a complete instrument, not a controller for something else.
+
+- **Play:** synth and drum tracks, 32 pads with scales, repeat, chords and live FX
+- **Program:** up to 128 steps per track, parameter locks, probability, ratchets, Euclid rhythms
+- **Shape:** 1462 sounds, 42 drum kits, your own samples, delay, reverb, insert effects, granulator
+- **Perform:** song mode, 8 clips per track, 32 project slots, undo almost everywhere
 
 ## On the display
 
@@ -150,5 +155,9 @@ Found a bug or have an idea? Open an [issue](../../issues/new/choose). The templ
 - Built on [Schwung](https://github.com/charlesvestal/schwung).
 - `src/wtab.inc` contains 640 single-cycle waveforms derived from the [AKWF-FREE](https://github.com/KristofferKarlAxelEkstrand/AKWF-FREE) collection (CC0 1.0). Details in [NOTICE.md](taktile/NOTICE.md).
 - MIT License – see [LICENSE](taktile/LICENSE).
+
+## Thanks
+
+A big thank you to **[Neuro... No Neuro](https://www.neurononeuro.net)** (microsound composer, graphic designer and animator) for testing Taktile and for the honest feedback. It made the module better.
 
 Made by **TaktOnMusic**.
