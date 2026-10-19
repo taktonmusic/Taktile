@@ -109,13 +109,12 @@ jobs:
             TITLE="Taktile ${GITHUB_REF_NAME}"
           else
             # one rolling release: always the newest version, never a new release per update
-            TAG="1.0.0"
+            TAG="latest"
             TITLE="Taktile 1.0.0"
             git config user.name "github-actions"
             git config user.email "actions@github.com"
-            git tag -f 1.0.0 "${GITHUB_SHA}"
-            git push -f origin refs/tags/1.0.0
-            gh release delete latest --yes --cleanup-tag >/dev/null 2>&1 || true
+            git tag -f latest "${GITHUB_SHA}"
+            git push -f origin refs/tags/latest
           fi
           if gh release view "${TAG}" >/dev/null 2>&1; then
             gh release upload "${TAG}" taktile-module.tar.gz --clobber
