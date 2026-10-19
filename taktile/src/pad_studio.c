@@ -724,7 +724,7 @@ typedef struct {
     float root_hz;
     int mo_clk, mo_trk, mo_chn, mo_xp, mo_vp, mo_dn; float mclk; struct { int cnt; uint8_t st, d1; } mo_q[64];   /* MIDI out: clock + notes per track */
     int16_t *rec_buf; long rec_n, rec_len, rec_max; int rec_state, rec_bars, rec_src; char rec_last[48]; int rec_slot;   /* resampling (rec_src -2 = the Move's audio input, see mic_block) */
-    int mic_mon, mic_clip, mic_ok, rfx, rnorm, rfx_cnt; float mic_gain, mic_thr, mic_peak, ramt, rfx_hx[2], rfx_hy[2], rfx_hold[2];   /* MIC take: monitor flag (level only while the MIC page is open), gain, start threshold, smoothed input peak */
+    int mic_mon, mic_clip, mic_ok, rfx, rnorm, rfx_cnt; float *rfx_mem; long rfx_cap, rec_in_n; int rfx_dln, rfx_dp, rfx_len[12], rfx_off[12], rfx_cp[12]; float rfx_lp[8]; float mic_gain, mic_thr, mic_peak, ramt, rfx_hx[2], rfx_hy[2], rfx_hold[2];   /* MIC take: monitor flag (level only while the MIC page is open), gain, start threshold, smoothed input peak */
     float sc_w[128], sc_lp[8], sc_env[8]; int sc_i, sc_c;
     float sc_lp2[16], sc_env2[16], sc_sl[64], sc_sr[64], sc_cll, sc_crr, sc_clr; int sc_si;   /* 16-band spectrum, stereo ring and phase correlation for the extra scope pages */            /* master scope ring (decimated) and 8 band levels for the UI scope page */
     float dk_env[NTRK], dk_c[NTRK], meter[NTRK];                 /* sidechain ducking (kick -> other tracks) and level meters */
@@ -3126,7 +3126,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         s->rec_max = (long)(s->sr * 40.0f);
         if (!s->rec_buf) s->rec_buf = (int16_t *)malloc((size_t)s->rec_max * 4);
         if (!s->rec_buf) return;
-        s->rec_bars = bars; s->rec_src = src; s->rec_n = 0; s->rec_state = 1;
+        s->rec_bars = bars; s->rec_src = src; s->rec_n = 0; s->rec_state = 1; s->rfx = 0; s->rnorm = 0;      /* a resample never takes over the effect of an earlier MIC take */
         return;
     }
     if (strcmp(key, "reccancel") == 0) { s->rec_state = 0; return; }
@@ -3137,11 +3137,20 @@ static void set_param(void *instance, const char *key, const char *val) {
         int sec = 5, thr = 0, gx = 10, src = -2, fx = 0, am = 50, nm = 1;
         sscanf(val, "%d,%d,%d,%d,%d,%d,%d", &sec, &thr, &gx, &src, &fx, &am, &nm);
         if (sec < 1) sec = 1; if (sec > 30) sec = 30; if (thr < 0) thr = 0; if (thr > 90) thr = 90; if (gx < 10) gx = 10; if (gx > 80) gx = 80;
-        if (src < -2 || src >= NTRK) src = -2; if (fx < 0 || fx > 3) fx = 0; if (am < 0) am = 0; if (am > 100) am = 100;
+        if (src < -2 || src >= NTRK) src = -2; if (fx < 0 || fx > 5) fx = 0; if (am < 0) am = 0; if (am > 100) am = 100;
         s->rec_max = (long)(s->sr * 40.0f);
         if (!s->rec_buf) s->rec_buf = (int16_t *)malloc((size_t)s->rec_max * 4);
         if (!s->rec_buf) return;
         s->rec_src = src; s->rec_len = (long)(s->sr * (float)sec); if (s->rec_len > s->rec_max) s->rec_len = s->rec_max;
+        s->rec_in_n = s->rec_len;
+        if (fx >= 4) {                                  /* DELAY / REVERB: set up the small buffers once, and add a tail after the input so the echoes and the room can ring out */
+            float sc = s->sr / 44100.0f; static const int bl[6] = { 1116, 1188, 1277, 1356, 556, 441 };
+            int tot = 0; s->rfx_dln = (int)(s->sr * 0.30f); tot = 2 * s->rfx_dln;
+            for (int i = 0; i < 12; i++) { s->rfx_len[i] = (int)(bl[i % 6] * sc) + (i >= 6 ? (int)(23 * sc) : 0); s->rfx_off[i] = tot; tot += s->rfx_len[i]; s->rfx_cp[i] = 0; }
+            if (!s->rfx_mem || s->rfx_cap < tot) { free(s->rfx_mem); s->rfx_mem = (float *)calloc((size_t)tot, sizeof(float)); s->rfx_cap = s->rfx_mem ? tot : 0; }
+            if (!s->rfx_mem) fx = 0; else { memset(s->rfx_mem, 0, (size_t)tot * sizeof(float)); s->rfx_dp = 0; for (int i = 0; i < 8; i++) s->rfx_lp[i] = 0.0f;
+                long tail = (long)(s->sr * (fx == 4 ? 1.5f : 2.5f)); s->rec_len += tail; if (s->rec_len > s->rec_max) s->rec_len = s->rec_max; }
+        }
         s->rec_n = 0; s->mic_gain = (float)gx * 0.1f; s->mic_thr = (float)thr * 0.01f; s->mic_clip = 0; s->rec_slot = -1;
         s->rfx = fx; s->ramt = (float)am * 0.01f; s->rnorm = nm ? 1 : 0; s->rfx_cnt = 0;
         s->rfx_hx[0] = s->rfx_hx[1] = s->rfx_hy[0] = s->rfx_hy[1] = s->rfx_hold[0] = s->rfx_hold[1] = 0.0f;
@@ -3608,6 +3617,30 @@ static inline void rec_fx(inst_t *s, float *l, float *r) {
             s->rfx_cnt = 1 + (int)(a * 7.0f + 0.5f);
         }
         s->rfx_cnt--; *l = s->rfx_hold[0]; *r = s->rfx_hold[1];
+    } else if (t == 4) {                            /* DELAY: 0.3 s ping-pong echo, amount = echo level and repeats */
+        int n = s->rfx_dln, p = s->rfx_dp; float *dl = s->rfx_mem, *dr = s->rfx_mem + n;
+        float fb = 0.25f + a * 0.5f, wet = 0.25f + a * 0.5f, xl = *l, xr = *r, yl = dl[p], yr = dr[p];
+        dl[p] = xl + yr * fb; dr[p] = xr + yl * fb;
+        *l = xl + yl * wet; *r = xr + yr * wet;
+        if (++s->rfx_dp >= n) s->rfx_dp = 0;
+    } else if (t == 5) {                            /* REVERB: four damped combs and two allpass filters per side (small room to hall) */
+        float x = (*l + *r) * 0.5f, fb = 0.72f + a * 0.22f, wet = 0.35f + a * 0.65f, out[2];
+        for (int ch = 0; ch < 2; ch++) {
+            float sum = 0.0f;
+            for (int c = 0; c < 4; c++) {
+                int k = ch * 6 + c; float *b = s->rfx_mem + s->rfx_off[k]; int ix = s->rfx_cp[k];
+                float y = b[ix], lp = y * 0.7f + s->rfx_lp[ch * 4 + c] * 0.3f; s->rfx_lp[ch * 4 + c] = lp;
+                b[ix] = x * 0.3f + lp * fb; sum += y;
+                if (++s->rfx_cp[k] >= s->rfx_len[k]) s->rfx_cp[k] = 0;
+            }
+            for (int q = 4; q < 6; q++) {
+                int k = ch * 6 + q; float *b = s->rfx_mem + s->rfx_off[k]; int ix = s->rfx_cp[k];
+                float bo = b[ix], o = -sum + bo; b[ix] = sum + bo * 0.5f; sum = o;
+                if (++s->rfx_cp[k] >= s->rfx_len[k]) s->rfx_cp[k] = 0;
+            }
+            out[ch] = sum;
+        }
+        *l += out[0] * wet; *r += out[1] * wet;
     }
 }
 /* MIC: reads the Move's audio input block (host mailbox, 128 frames, stereo int16). It does nothing at all (one test) unless the MIC page is open
@@ -3628,6 +3661,7 @@ static void mic_block(inst_t *s, int frames) {
     if (s->rec_state == 2 && s->rec_src == -2 && s->rec_buf) {
         for (int i = 0; i < n && s->rec_n < s->rec_len; i++) {
             float l = in[2 * i] * g, r = in[2 * i + 1] * g;
+            if (s->rfx >= 4 && s->rec_n >= s->rec_in_n) { l = 0.0f; r = 0.0f; }          /* tail of a DELAY / REVERB take: no more input, only the effect rings out */
             if (s->rfx > 0) { l *= (1.0f / 32768.0f); r *= (1.0f / 32768.0f); rec_fx(s, &l, &r); l *= 32768.0f; r *= 32768.0f; }
             if (l > 32767.0f) l = 32767.0f; if (l < -32768.0f) l = -32768.0f; if (r > 32767.0f) r = 32767.0f; if (r < -32768.0f) r = -32768.0f;
             s->rec_buf[2 * s->rec_n] = (int16_t)l; s->rec_buf[2 * s->rec_n + 1] = (int16_t)r; s->rec_n++;
@@ -4220,6 +4254,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         }
         if (s->rec_state == 2 && s->rec_src != -2 && s->rec_buf) {
             float cl = s->rec_src < 0 ? L : softclip(rec_l * mvol), cr = s->rec_src < 0 ? R : softclip(rec_r * mvol);
+            if (s->rfx >= 4 && s->rec_n >= s->rec_in_n) { cl = 0.0f; cr = 0.0f; }
             if (s->rfx > 0) rec_fx(s, &cl, &cr);
             int ci = (int)(cl * 32767.0f), cj = (int)(cr * 32767.0f);
             if (ci > 32767) ci = 32767; if (ci < -32768) ci = -32768; if (cj > 32767) cj = 32767; if (cj < -32768) cj = -32768;

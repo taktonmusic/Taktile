@@ -3132,7 +3132,12 @@ function drawBro() {
 }
 /* ---- MIC: record a sample from the Move's audio input (built-in mic or line in), the master or one track. The input is only read while this page is open or a take runs ---- */
 const MIC_SEC = [1, 2, 3, 5, 8, 10, 15, 20, 30], MIC_GAIN = [10, 15, 20, 30, 40, 60, 80], MIC_GAIN_DB = ['0', '+3', '+6', '+10', '+12', '+16', '+18'];
-const MIC_THR_PCT = [0, 4, 10, 25], MIC_THR_NAME = ['OFF', 'LOW', 'MID', 'HIGH'], MIC_FX = ['OFF', 'LOW CUT', 'DRIVE', 'LO-FI'];
+const MIC_THR_PCT = [0, 4, 10, 25], MIC_THR_NAME = ['OFF', 'LOW', 'MID', 'HIGH'], MIC_FX = ['OFF', 'REVERB', 'DELAY', 'LOW CUT', 'DRIVE', 'LO-FI'], MIC_FXC = [0, 5, 4, 1, 2, 3], MIC_TAIL = [0, 2.5, 1.5, 0, 0, 0];      /* the effect list for the player (vocal effects first) and the code the DSP knows; REVERB / DELAY add a tail after the recording time */
+let slowT = 0;
+function slowStep(i, delta, need) {                         /* a knob that scrolls through a list: several clicks per step and at most one step per 150 ms, however fast you turn */
+    acc[i] += delta; if (Math.abs(acc[i]) < need) return 0;
+    const t = Date.now(); const st = acc[i] > 0 ? 1 : -1; acc[i] = 0; if (t - slowT < 150) return 0; slowT = t; return st;
+}
 let micSrcI = 0, micSecI = 3, micGainI = 0, micThr = 1, micFx = 0, micAmt = 5, micNorm = 1;
 let micState = 0, micPct = 0, micLvl = 0, micClip = 0, micOk = 1, micPoll = 0, micMon = 0, micLane = 0, micGrace = 0;
 function micSrcName() { return micSrcI === 0 ? 'INPUT' : (micSrcI === 1 ? 'MASTER' : 'TRK ' + (micSrcI - 1)); }
@@ -3142,20 +3147,19 @@ function micGo() {
     if (micState === 2 || micState === 5) { dspSet('micstop', '1'); micPoll = 99; showToast('MIC', micState === 5 ? 'CANCELLED' : 'STOPPED', 0); return; }
     if (rsState) { showToast('MIC', 'RESAMPLE RUNNING', 0); return; }
     const thr = micIsIn() ? MIC_THR_PCT[micThr] : 0;
-    dspSet('micarm', MIC_SEC[micSecI] + ',' + thr + ',' + MIC_GAIN[micGainI] + ',' + (micSrcI - 2) + ',' + micFx + ',' + (micAmt * 10) + ',' + micNorm);
+    dspSet('micarm', MIC_SEC[micSecI] + ',' + thr + ',' + MIC_GAIN[micGainI] + ',' + (micSrcI - 2) + ',' + MIC_FXC[micFx] + ',' + (micAmt * 10) + ',' + micNorm);
     micState = thr ? 5 : 2; micPct = 0; micLane = ln(); micPoll = 99; micGrace = 24;      /* the DSP may not have seen the command yet: a '0' in the first polls is not the end */
     showToast('MIC', thr ? 'WAITING FOR SOUND' : (micIsIn() ? 'RECORDING' : 'RECORDING ' + micSrcName()), 0); needsRedraw = true;
 }
 function micKnob(i, delta) {
-    acc[i] += delta; if (Math.abs(acc[i]) < 2) return;
-    const st = acc[i] > 0 ? 1 : -1; acc[i] = 0;
+    const st = slowStep(i, delta, 4); if (!st) return;
     if (i === 7) { if (st > 0) { if (!micState) micGo(); } else if (micState) micGo(); return; }
     if (micState) { showToast('MIC', 'STOP FIRST', 0); return; }
     if (i === 0) micSrcI = clamp(micSrcI + st, 0, 17);
     else if (i === 1) micSecI = clamp(micSecI + st, 0, MIC_SEC.length - 1);
     else if (i === 2) { micGainI = clamp(micGainI + st, 0, MIC_GAIN.length - 1); dspSet('micgain', String(MIC_GAIN[micGainI])); }
     else if (i === 3) micThr = clamp(micThr + st, 0, 3);
-    else if (i === 4) micFx = clamp(micFx + st, 0, 3);
+    else if (i === 4) micFx = clamp(micFx + st, 0, MIC_FX.length - 1);
     else if (i === 5) micAmt = clamp(micAmt + st, 0, 10);
     else if (i === 6) micNorm = micNorm ? 0 : 1;
     needsRedraw = true;
@@ -3199,10 +3203,10 @@ function drawMic() {
     engTile(32, y1, 32, 'Time', sec + ' s', micSecI / (MIC_SEC.length - 1), false);
     engTile(64, y1, 32, 'Gain', inn ? (micClip ? 'CLIP!' : MIC_GAIN_DB[micGainI] + ' dB') : '--', inn ? micGainI / (MIC_GAIN.length - 1) : 0, false);
     engTile(96, y1, 32, 'Wait', inn ? MIC_THR_NAME[micThr] : '--', inn ? micThr / 3 : 0, false);
-    engTile(0, y2, 32, 'Effect', MIC_FX[micFx], micFx / 3, false);
+    engTile(0, y2, 32, 'Effect', MIC_FX[micFx], micFx / (MIC_FX.length - 1), false);
     engTile(32, y2, 32, 'Amount', micFx ? micAmt * 10 + '%' : '--', micFx ? micAmt / 10 : 0, false);
     engTile(64, y2, 32, 'Normal', micNorm ? 'ON' : 'OFF', micNorm, false);
-    engTile(96, y2, 32, 'Rec', micState === 5 ? 'WAIT' : (micState === 2 ? (sec * micPct / 100).toFixed(1) + ' s' : 'START'), micState ? 1 : 0, false);
+    engTile(96, y2, 32, 'Rec', micState === 5 ? 'WAIT' : (micState === 2 ? ((sec + MIC_TAIL[micFx]) * micPct / 100).toFixed(1) + ' s' : 'START'), micState ? 1 : 0, false);
 }
 function sampleRescan() { dspSet('smprescan', '1'); smpRefresh(); const n = smpLoaded().length; showToast('SAMPLES', n + ' FOUND', n / 64); needsRedraw = true; }
 /* ---- own slices: up to 16 start markers (0..1); Jog click applies them to the drum pads ---- */
@@ -4343,19 +4347,20 @@ function sliceApply() {
 function drawSlice() {
     const L = ln(), i = smpIdx(L), ok = smpInfo[i] && smpInfo[i][0] > 0;
     titleBar(p2(sel + 1) + ' ' + laneName(), 'SLICE');
+    const TN = tabStrip && TAB_NEW, ny = TN ? 17 : 10, by0 = TN ? 25 : 19, bh0 = TN ? 6 : 13;
     { const sc = ok && smpInfo[i][1] ? (smpInfo[i][0] / smpInfo[i][1]) : 0, tg = ok ? (slSel + 1) + '/' + slN + ' ' + (sc * ((slSel < slN - 1 ? slm[slSel + 1] : 1) - slm[slSel]) * 1000).toFixed(0) + 'ms' : '';
-      txt(1, 10, fit(ok ? smpNames[i] : 'NO SAMPLE (SAMPLE PAGE)', 124 - tw(tg) - 2), 1); if (tg) txt(127 - tw(tg), 10, tg, 1); }
-    draw_rect(0, 19, 128, 13, 1);
+      txt(1, ny, fit(ok ? smpNames[i] : 'NO SAMPLE (SAMPLE PAGE)', 124 - tw(tg) - 2), 1); if (tg) txt(127 - tw(tg), ny, tg, 1); }
+    draw_rect(0, by0, 128, bh0, 1);
     if (ok) {
         if (smpWave[i] === undefined) { const w = dspGet('smpw_' + i); smpWave[i] = typeof w === 'string' ? w : ''; }
         const w = smpWave[i];
-        for (let c = 0; c < w.length && c < 64; c++) { const h = Math.round((w.charCodeAt(c) - 97) / 25 * 5); fill_rect(c * 2, 25 - h, 2, 2 * h + 1, 1); }
+        for (let c = 0; c < w.length && c < 64; c++) { const h = Math.round((w.charCodeAt(c) - 97) / 25 * (TN ? 2 : 5)); fill_rect(c * 2, by0 + (bh0 >> 1) - h, 2, 2 * h + 1, 1); }
     }
     for (let k = 0; k < slN; k++) {
         const x = clamp(Math.round(slm[k] * 127), 0, 126);
-        if (k === slSel) { fill_rect(x, 19, 3, 13, 1); } else fill_rect(x, 19, 1, 13, 1);
+        if (k === slSel) { fill_rect(x, by0, 3, bh0, 1); } else fill_rect(x, by0, 1, bh0, 1);
     }
-    miniGrid(VIEW_ITEMS[29], 34, (key, v) => key === 'slp' ? v : (key === 'slm' ? slSel / 15 : (key === 'sln' ? (slN - 1) / 15 : fracVal(key, v))));
+    miniGrid(VIEW_ITEMS[29], TN ? 32 : 34, (key, v) => key === 'slp' ? v : (key === 'slm' ? slSel / 15 : (key === 'sln' ? (slN - 1) / 15 : fracVal(key, v))));
 }
 function sampleNormalize() {
     const L = ln(), i = smpIdx(L), r = (smpInfo[i] && smpInfo[i][0]) ? dspGet('smpp_' + i) : null, pk = typeof r === 'string' ? (parseInt(r) || 0) : 0;
@@ -4363,12 +4368,14 @@ function sampleNormalize() {
     const g = 0.9 * 32768 / pk, v = clamp(0.5 + Math.log2(g) / 6, 0, 1);
     setLaneP(L, 'sgn', v); showToast('NORMALIZE', (20 * Math.log10(g)).toFixed(1) + ' dB', v);
 }
-function miniGrid(items, y0, frFn) {                         /* up to 8 knobs in two rows of four (label, value, bar) */
+function miniGrid(items, y0, frFn) {                         /* up to 8 knobs in two rows of four: small name, big value, bar (same look as the ENGINE and MIC pages) */
     for (let k = 0; k < items.length && k < 8; k++) {
-        const key = items[k][0], v = getVal(scopeOf(key), key), fr = frFn(key, v);
-        const cx = (k & 3) * 32 + 1, cy = y0 + (k >> 2) * (tabStrip && TAB_NEW ? 14 : 16);
-        txt(cx + 1, cy, fit(items[k][2] || items[k][1], 30), 1); txtB(cx + 1, cy + 7, fit(fmtVal(key, v), 30), 1);
-        fill_rect(cx + 1, cy + 14, 28, 1, 1); const w = Math.round(28 * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 1, cy + 13, w, 2, 1);
+        const key = items[k][0], v = getVal(scopeOf(key), key), fr = frFn(key, v), cx = (k & 3) * 32, cy = y0 + (k >> 2) * 16;
+        const nm = String(items[k][1]).length <= 7 ? items[k][1] : (items[k][2] || items[k][1]);
+        let vs = fmtVal(key, v); if (/TURN/.test(vs)) { vs = 'GO'; }
+        txtS(cx + 2, cy, String(tr(nm)).substring(0, 7).toUpperCase(), 1);
+        txtB(cx + 2, cy + 6, fit(vs, 28), 1);
+        fill_rect(cx + 2, cy + 14, 28, 1, 1); const w = Math.round(28 * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 2, cy + 12, w, 2, 1);
     }
 }
 function drawSample() {
@@ -4378,7 +4385,7 @@ function drawSample() {
     const isS = Math.round(pads[L][0]) === 359, nm = ok ? (isS ? smpNames[i] : smpNames[i] + ' (off)') : (smpLoaded().length ? '(Jog: pick sample)' : 'NO WAV FILES');
     const sst = pads[L][PI.sst], sen = pads[L][PI.sen];
     let tag = ''; if (ok) { const sc = smpInfo[i][1] ? (smpInfo[i][0] / smpInfo[i][1]) : 0, md = Math.round(pads[L][PI.smd] * 2); tag = (sc * (sen - sst)).toFixed(2) + 's ' + ['', 'REV', 'LOOP'][md] + (Math.abs(pads[L][PI.sstr] - 0.5) > 0.012 ? ' ST' : ''); }
-    const TN = tabStrip && TAB_NEW, ny = TN ? 17 : 10, by0 = TN ? 25 : 19, bh0 = TN ? 9 : 13, bc = by0 + (bh0 >> 1), bm = TN ? 3 : 5;
+    const TN = tabStrip && TAB_NEW, ny = TN ? 17 : 10, by0 = TN ? 25 : 19, bh0 = TN ? 6 : 13, bc = by0 + (bh0 >> 1), bm = TN ? 2 : 5;
     txt(1, ny, fit(nm, 124 - tw(tag) - 2), 1); if (tag) txt(127 - tw(tag), ny, tag, 1);
     draw_rect(0, by0, 128, bh0, 1);
     if (ok) {
@@ -4391,7 +4398,7 @@ function drawSample() {
         fill_rect(xs, by0, 1, bh0, 1); fill_rect(xe, by0, 1, bh0, 1);
     }
     const items = VIEW_ITEMS[smpPage === 2 ? 32 : (smpPage === 3 ? 48 : 28)];
-    miniGrid(items, TN ? 35 : 34, (key, v) => key === 'smp' ? (smpLoaded().length ? smpLoaded().indexOf(i) / Math.max(1, smpLoaded().length - 1) : 0) : fracVal(key, v));
+    miniGrid(items, TN ? 32 : 34, (key, v) => key === 'smp' ? (smpLoaded().length ? smpLoaded().indexOf(i) / Math.max(1, smpLoaded().length - 1) : 0) : fracVal(key, v));
 }
 function drawSeq() {
     if (heldStep >= 0 && !recDown) { drawStepEdit(); return; }
@@ -5027,7 +5034,7 @@ function knobLevels() {                                    /* value 0..1 of each
     if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) { const o = new Array(8).fill(undefined); o[7] = [0.1, 0.5, 1][fbPm]; return o; }      /* knob 1 glows bright when the preview is on, dim when it is off */
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb || heldStep >= 0 || loopHeld) return null;
     if (view === 0) return seqSnd().map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
-    if (view === 28 && smpPage === 4) return [micSrcI / 17, micSecI / (MIC_SEC.length - 1), micGainI / (MIC_GAIN.length - 1), micThr / 3, micFx / 3, micAmt / 10, micNorm, micState ? 1 : 0];
+    if (view === 28 && smpPage === 4) return [micSrcI / 17, micSecI / (MIC_SEC.length - 1), micGainI / (MIC_GAIN.length - 1), micThr / 3, micFx / (MIC_FX.length - 1), micAmt / 10, micNorm, micState ? 1 : 0];
     const items = VIEW_ITEMS[itemsView()];
     if (!items) return null;
     const out = [];
@@ -5481,7 +5488,7 @@ globalThis.onMidiMessageInternal = function (data) {
         const items = VIEW_ITEMS[itemsView()];
         if (!items || i >= items.length) return;
         if (!shiftHeld && view === 1 && items[i][0] === 'type') { acc[i] += delta; if (Math.abs(acc[i]) < 3) return; acc[i] = 0; browseSound(delta > 0 ? 1 : -1); return; }       /* sound knob = list that opens and scrolls */
-        if (!shiftHeld && view === 28 && !smpPage && items[i][0] === 'smp') { acc[i] += delta; if (Math.abs(acc[i]) < 2) return; sampleList(acc[i] > 0 ? 1 : -1); acc[i] = 0; return; }
+        if (!shiftHeld && view === 28 && !smpPage && items[i][0] === 'smp') { const st = slowStep(i, delta, 5); if (st) sampleList(st); return; }
         const ts0 = toastSeq;
         lastKnob = items[i][0]; hot = { v: view, i: i, t: 75 };
         if (editParam(scopeOf(items[i][0]), items[i][0], delta, i)) { markEdited(); if (toastSeq !== ts0) return; if (!bigOn && !CURVE_KEYS[items[i][0]]) { needsRedraw = true; return; } const v2 = getVal(scopeOf(items[i][0]), items[i][0]); curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v2), fracVal(items[i][0], v2)); if (toast) toast.nm = 1; }

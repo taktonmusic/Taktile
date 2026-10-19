@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 (19 October 2026)
+- MIC page: new vocal effects REVERB and DELAY (recorded into the sample, with a ringing tail after the recording time); the effect list starts with them, then LOW CUT, DRIVE, LO-FI
+- Slower scrolling: the sample list and the MIC knobs need several clicks per step and move at most one step every 150 ms
+- SAMPLE, SLICE, ENV and TOOLS pages: tidier tiles with larger names and values in the same style as the MIC page (names fit completely, actions show GO, SLICE no longer overlaps the track tabs)
+- A resample no longer takes over the effect of an earlier MIC take
+
 ## 1.1.0 (19 October 2026)
 - MIC page: choose the source (INPUT, MASTER or one of the 16 tracks), effects LOW CUT / DRIVE / LO-FI with amount that are only applied while recording and baked into the sample (no CPU afterwards), optional normalise
 - The Sample button starts and stops a MIC take (also Shift + jog click or knob 8)

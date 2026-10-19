@@ -85,6 +85,17 @@ int main(void) {
           for (int b = 0; b < 400; b++) { for (int i = 0; i < 256; i++) in[i] = 8000; int16_t out[256]; api->render_block(inst, out, 128); }
           sp(inst, "recsave", "1"); FILE *ff = fopen("/tmp/micsmp/mic_008.wav", "rb"); long m = 0; if (ff) { fseek(ff, 44, SEEK_SET); m = (long)fread(d, 2, 44100 * 2, ff) / 2; fclose(ff); }
           OK(m > 40000 && abs(d[2 * 30000]) < 800 && abs(d[2 * 200]) > 1000, "LOW CUT removes a constant offset (start %d, later %d)", abs(d[2 * 200]), abs(d[2 * 30000])); }
+        /* DELAY and REVERB: the take gets a tail (echoes / room ring on after the input has stopped) */
+        { static int16_t e[44100 * 5 * 2]; const char *nm[2] = { "mic_009.wav", "mic_010.wav" }; const char *ar[2] = { "1,0,10,-2,4,60,0", "1,0,10,-2,5,60,0" };
+          for (int k = 0; k < 2; k++) {
+              sp(inst, "micarm", ar[k]); blocks(inst, 1300, 8000, 1, 0); OK(geti(inst, "recstate", 0) == 3, "%s take completes (with tail)", k ? "REVERB" : "DELAY");
+              sp(inst, "recsave", "1"); FILE *ff = fopen(nm[k] [0] ? (k ? "/tmp/micsmp/mic_010.wav" : "/tmp/micsmp/mic_009.wav") : "", "rb"); long m = 0; if (ff) { fseek(ff, 44, SEEK_SET); m = (long)fread(e, 2, 44100 * 5 * 2, ff) / 2; fclose(ff); }
+              long a1 = 0, a2 = 0, a3 = 0; int bad = 0; for (long i = 46000; i < 60000 && i < m; i++) a1 += abs(e[2 * i]); for (long i = 80000; i < 90000 && i < m; i++) a2 += abs(e[2 * i]); for (long i = 0; i < m; i++) if (abs(e[2 * i]) >= 32767) bad++;
+              for (long i = m - 400; i < m; i++) if (i >= 0) a3 += abs(e[2 * i]);
+              OK(m > 44100 * 2 + 20000, "%s take is longer than the 1 s of input (%ld frames)", k ? "REVERB" : "DELAY", m);
+              OK(a1 > 14000L * 300, "%s rings on after the input stopped (energy %ld)", k ? "REVERB" : "DELAY", a1);
+              OK(bad < 50, "%s does not clip (%d hard-clipped samples)", k ? "REVERB" : "DELAY", bad);
+              (void)a2; (void)a3; } }
         sp(inst, "micarm", "1,0,10,-1,0,50,1"); OK(geti(inst, "recstate", 0) == 2, "source MASTER starts at once");
         blocks(inst, 400, 0, 1, 0); OK(geti(inst, "recstate", 0) == 3, "a master take of 1 s completes"); sp(inst, "recsave", "1");
         FILE *ff = fopen("/tmp/micsmp/resample_001.wav", "rb"); OK(ff != NULL, "master take saved as resample_001.wav"); if (ff) fclose(ff);
@@ -95,9 +106,9 @@ int main(void) {
     sp(inst, "micmon", "0"); cost(inst, 2000); double c0 = cost(inst, 20000);
     sp(inst, "micmon", "1"); double c1 = cost(inst, 20000);
     sp(inst, "micmon", "0"); sp(inst, "micarm", "30,0,10,-2,0,50,0"); double c2 = cost(inst, 20000); sp(inst, "micstop", "1");
-    double worst = 0, cf[3]; for (int f = 1; f <= 3; f++) { char a[64]; snprintf(a, sizeof a, "30,0,10,-2,%d,60,0", f); sp(inst, "micarm", a); cf[f - 1] = cost(inst, 20000); sp(inst, "micstop", "1"); sp(inst, "reccancel", "1"); }
-    printf("cpu  recording with effect: low cut +%.2f us, drive +%.2f us, lo-fi +%.2f us per block\n", (cf[0] - c0) * 1e6, (cf[1] - c0) * 1e6, (cf[2] - c0) * 1e6);
-    for (int f = 0; f < 3; f++) if (cf[f] - c0 > worst) worst = cf[f] - c0;
+    double worst = 0, cf[5]; for (int f = 1; f <= 5; f++) { char a[64]; snprintf(a, sizeof a, "30,0,10,-2,%d,60,0", f); sp(inst, "micarm", a); cf[f - 1] = cost(inst, 20000); sp(inst, "micstop", "1"); sp(inst, "reccancel", "1"); }
+    printf("cpu  recording with effect: low cut +%.2f us, drive +%.2f us, lo-fi +%.2f us, delay +%.2f us, reverb +%.2f us per block\n", (cf[0] - c0) * 1e6, (cf[1] - c0) * 1e6, (cf[2] - c0) * 1e6, (cf[3] - c0) * 1e6, (cf[4] - c0) * 1e6);
+    for (int f = 0; f < 5; f++) if (cf[f] - c0 > worst) worst = cf[f] - c0;
     double bud = 128.0 / 44100.0;
     printf("cpu  per block (budget %.0f us): mic idle %.1f us, meter %.1f us (+%.2f us), recording %.1f us (+%.2f us)\n", bud * 1e6, c0 * 1e6, c1 * 1e6, (c1 - c0) * 1e6, c2 * 1e6, (c2 - c0) * 1e6);
     if (c2 - c0 > worst) worst = c2 - c0;
