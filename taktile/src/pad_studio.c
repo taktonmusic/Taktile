@@ -724,7 +724,7 @@ typedef struct {
     float root_hz;
     int mo_clk, mo_trk, mo_chn, mo_xp, mo_vp, mo_dn; float mclk; struct { int cnt; uint8_t st, d1; } mo_q[64];   /* MIDI out: clock + notes per track */
     int16_t *rec_buf; long rec_n, rec_len, rec_max; int rec_state, rec_bars, rec_src; char rec_last[48]; int rec_slot;   /* resampling (rec_src -2 = the Move's audio input, see mic_block) */
-    int mic_mon, mic_clip, mic_ok; float mic_gain, mic_thr, mic_peak;   /* MIC take: monitor flag (level only while the MIC page is open), gain, start threshold, smoothed input peak */
+    int mic_mon, mic_clip, mic_ok, rfx, rnorm, rfx_cnt; float mic_gain, mic_thr, mic_peak, ramt, rfx_hx[2], rfx_hy[2], rfx_hold[2];   /* MIC take: monitor flag (level only while the MIC page is open), gain, start threshold, smoothed input peak */
     float sc_w[128], sc_lp[8], sc_env[8]; int sc_i, sc_c;
     float sc_lp2[16], sc_env2[16], sc_sl[64], sc_sr[64], sc_cll, sc_crr, sc_clr; int sc_si;   /* 16-band spectrum, stereo ring and phase correlation for the extra scope pages */            /* master scope ring (decimated) and 8 band levels for the UI scope page */
     float dk_env[NTRK], dk_c[NTRK], meter[NTRK];                 /* sidechain ducking (kick -> other tracks) and level meters */
@@ -3132,20 +3132,24 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "reccancel") == 0) { s->rec_state = 0; return; }
     if (strcmp(key, "micgain") == 0) { int gx = atoi(val); if (gx < 10) gx = 10; if (gx > 80) gx = 80; if (s->rec_state != 2) s->mic_gain = (float)gx * 0.1f; return; }
     if (strcmp(key, "micmon") == 0) { s->mic_mon = atoi(val) ? 1 : 0; s->mic_peak = 0.0f; s->mic_clip = 0; return; }
-    if (strcmp(key, "micarm") == 0) {                /* "seconds,threshold %,gain x10": threshold 0 = start at once, else wait for sound */
+    if (strcmp(key, "micarm") == 0) {                /* "seconds,threshold %,gain x10,source,effect,amount %,normalize": source -2 = the Move's input, -1 = master, 0..15 = one track; threshold 0 = start at once, else wait for sound (input only) */
         if (s->rec_state == 1 || s->rec_state == 2 || s->rec_state == 5) return;
-        int sec = atoi(val); const char *c = strchr(val, ','); int thr = c ? atoi(c + 1) : 0; const char *c2 = c ? strchr(c + 1, ',') : NULL; int gx = c2 ? atoi(c2 + 1) : 10;
+        int sec = 5, thr = 0, gx = 10, src = -2, fx = 0, am = 50, nm = 1;
+        sscanf(val, "%d,%d,%d,%d,%d,%d,%d", &sec, &thr, &gx, &src, &fx, &am, &nm);
         if (sec < 1) sec = 1; if (sec > 30) sec = 30; if (thr < 0) thr = 0; if (thr > 90) thr = 90; if (gx < 10) gx = 10; if (gx > 80) gx = 80;
+        if (src < -2 || src >= NTRK) src = -2; if (fx < 0 || fx > 3) fx = 0; if (am < 0) am = 0; if (am > 100) am = 100;
         s->rec_max = (long)(s->sr * 40.0f);
         if (!s->rec_buf) s->rec_buf = (int16_t *)malloc((size_t)s->rec_max * 4);
         if (!s->rec_buf) return;
-        s->rec_src = -2; s->rec_len = (long)(s->sr * (float)sec); if (s->rec_len > s->rec_max) s->rec_len = s->rec_max;
+        s->rec_src = src; s->rec_len = (long)(s->sr * (float)sec); if (s->rec_len > s->rec_max) s->rec_len = s->rec_max;
         s->rec_n = 0; s->mic_gain = (float)gx * 0.1f; s->mic_thr = (float)thr * 0.01f; s->mic_clip = 0; s->rec_slot = -1;
-        s->rec_state = thr > 0 ? 5 : 2;
+        s->rfx = fx; s->ramt = (float)am * 0.01f; s->rnorm = nm ? 1 : 0; s->rfx_cnt = 0;
+        s->rfx_hx[0] = s->rfx_hx[1] = s->rfx_hy[0] = s->rfx_hy[1] = s->rfx_hold[0] = s->rfx_hold[1] = 0.0f;
+        s->rec_state = (src == -2 && thr > 0) ? 5 : 2;
         return;
     }
     if (strcmp(key, "micstop") == 0) {               /* stop a running take early: what was recorded so far is kept */
-        if (s->rec_src == -2 && s->rec_state == 2 && s->rec_n >= 64) { s->rec_len = s->rec_n; s->rec_state = 3; } else if (s->rec_src == -2 && (s->rec_state == 2 || s->rec_state == 5)) s->rec_state = 0;
+        if (s->rec_state == 2 && s->rec_n >= 64) { s->rec_len = s->rec_n; s->rec_state = 3; } else if (s->rec_state == 2 || s->rec_state == 5) s->rec_state = 0;
         return;
     }
     if (strcmp(key, "midiout") == 0) { s->mo_clk = atoi(val) ? 1 : 0; const char *c = strchr(val, ','); s->mo_trk = c ? (atoi(c + 1) & 0xFFFF) : 0;
@@ -3163,6 +3167,10 @@ static void set_param(void *instance, const char *key, const char *val) {
             if (eL > 0 || eR > 0) { if (eR < eL * 0.02) { for (long i = 0; i < s->rec_n; i++) s->rec_buf[2 * i + 1] = s->rec_buf[2 * i]; } else if (eL < eR * 0.02) { for (long i = 0; i < s->rec_n; i++) s->rec_buf[2 * i] = s->rec_buf[2 * i + 1]; } }
             long fd = s->rec_n < 256 ? s->rec_n / 2 : 128;
             for (long i = 0; i < fd; i++) { float f = (float)i / (float)fd; s->rec_buf[2 * i] = (int16_t)(s->rec_buf[2 * i] * f); s->rec_buf[2 * i + 1] = (int16_t)(s->rec_buf[2 * i + 1] * f); long j = s->rec_n - 1 - i; s->rec_buf[2 * j] = (int16_t)(s->rec_buf[2 * j] * f); s->rec_buf[2 * j + 1] = (int16_t)(s->rec_buf[2 * j + 1] * f); }
+        }
+        if (s->rnorm) {                                 /* normalise: louder takes stay, quiet ones are brought up to about -1 dB (at most 24 dB, so silence is not turned into noise) */
+            int pk = 0; for (long i = 0; i < 2 * s->rec_n; i++) { int a = s->rec_buf[i] < 0 ? -(int)s->rec_buf[i] : (int)s->rec_buf[i]; if (a > pk) pk = a; }
+            if (pk > 64) { float g = 29000.0f / (float)pk; if (g > 16.0f) g = 16.0f; if (g > 1.02f) for (long i = 0; i < 2 * s->rec_n; i++) { int v = (int)(s->rec_buf[i] * g); s->rec_buf[i] = (int16_t)(v > 32767 ? 32767 : (v < -32768 ? -32768 : v)); } }
         }
         for (k = 1; k < 1000; k++) { snprintf(name, sizeof name, s->rec_src == -2 ? "mic_%03d.wav" : "resample_%03d.wav", k); snprintf(path, sizeof path, "%s/%s", SMP_DIR, name); FILE *t = fopen(path, "rb"); if (!t) break; fclose(t); }
         FILE *f = fopen(path, "wb");
@@ -3581,6 +3589,27 @@ static void act_rebuild(inst_t *s) {
     s->act_dirty = 0;
 }
 static void render_block_impl(void *instance, int16_t *out_lr, int frames);
+/* Effects that are only recorded INTO a take (they run while the take is recorded, never while playing): 1 LOW CUT, 2 DRIVE, 3 LO-FI. Cheap: a few operations per sample. */
+static inline void rec_fx(inst_t *s, float *l, float *r) {
+    int t = s->rfx; if (t <= 0) return;
+    float a = s->ramt;
+    if (t == 1) {                                   /* LOW CUT: one-pole high pass, 40 .. 300 Hz */
+        float k = 1.0f / (1.0f + 6.2831853f * (40.0f + a * 260.0f) * s->inv_sr), xl = *l, xr = *r;
+        s->rfx_hy[0] = k * (s->rfx_hy[0] + xl - s->rfx_hx[0]); s->rfx_hx[0] = xl;
+        s->rfx_hy[1] = k * (s->rfx_hy[1] + xr - s->rfx_hx[1]); s->rfx_hx[1] = xr;
+        *l = s->rfx_hy[0]; *r = s->rfx_hy[1];
+    } else if (t == 2) {                            /* DRIVE: more gain into a soft clipper, level made up a little */
+        float g = 1.0f + a * 7.0f, c = 1.0f / (1.0f + a * 0.6f);
+        *l = softclip(*l * g) * c; *r = softclip(*r * g) * c;
+    } else if (t == 3) {                            /* LO-FI: every n-th sample held (n 1..8), 12 .. 6 bits */
+        if (s->rfx_cnt <= 0) {
+            float lv = (float)(1 << (int)(12.0f - a * 6.0f));
+            s->rfx_hold[0] = floorf(*l * lv + 0.5f) / lv; s->rfx_hold[1] = floorf(*r * lv + 0.5f) / lv;
+            s->rfx_cnt = 1 + (int)(a * 7.0f + 0.5f);
+        }
+        s->rfx_cnt--; *l = s->rfx_hold[0]; *r = s->rfx_hold[1];
+    }
+}
 /* MIC: reads the Move's audio input block (host mailbox, 128 frames, stereo int16). It does nothing at all (one test) unless the MIC page is open
    (level meter) or a take is running, and then it only measures and copies samples: no filter, no effect, no allocation, nothing is played back. */
 static void mic_block(inst_t *s, int frames) {
@@ -3599,6 +3628,7 @@ static void mic_block(inst_t *s, int frames) {
     if (s->rec_state == 2 && s->rec_src == -2 && s->rec_buf) {
         for (int i = 0; i < n && s->rec_n < s->rec_len; i++) {
             float l = in[2 * i] * g, r = in[2 * i + 1] * g;
+            if (s->rfx > 0) { l *= (1.0f / 32768.0f); r *= (1.0f / 32768.0f); rec_fx(s, &l, &r); l *= 32768.0f; r *= 32768.0f; }
             if (l > 32767.0f) l = 32767.0f; if (l < -32768.0f) l = -32768.0f; if (r > 32767.0f) r = 32767.0f; if (r < -32768.0f) r = -32768.0f;
             s->rec_buf[2 * s->rec_n] = (int16_t)l; s->rec_buf[2 * s->rec_n + 1] = (int16_t)r; s->rec_n++;
         }
@@ -4190,6 +4220,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         }
         if (s->rec_state == 2 && s->rec_src != -2 && s->rec_buf) {
             float cl = s->rec_src < 0 ? L : softclip(rec_l * mvol), cr = s->rec_src < 0 ? R : softclip(rec_r * mvol);
+            if (s->rfx > 0) rec_fx(s, &cl, &cr);
             int ci = (int)(cl * 32767.0f), cj = (int)(cr * 32767.0f);
             if (ci > 32767) ci = 32767; if (ci < -32768) ci = -32768; if (cj > 32767) cj = 32767; if (cj < -32768) cj = -32768;
             s->rec_buf[2 * s->rec_n] = (int16_t)ci; s->rec_buf[2 * s->rec_n + 1] = (int16_t)cj;

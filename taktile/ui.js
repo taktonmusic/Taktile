@@ -3130,31 +3130,38 @@ function drawBro() {
     }
     if (broList.length <= 1) txt(2, 30, broErr ? (broErr === 13 ? 'NO ACCESS' : 'CANNOT OPEN') : '(no WAV files)', 1);
 }
-/* ---- MIC: record the Move's audio input (the built-in mic or line in) into a new sample. The input is only read while this page is open or a take runs ---- */
+/* ---- MIC: record a sample from the Move's audio input (built-in mic or line in), the master or one track. The input is only read while this page is open or a take runs ---- */
 const MIC_SEC = [1, 2, 3, 5, 8, 10, 15, 20, 30], MIC_GAIN = [10, 15, 20, 30, 40, 60, 80], MIC_GAIN_DB = ['0', '+3', '+6', '+10', '+12', '+16', '+18'];
-const MIC_THR_PCT = [0, 4, 10, 25], MIC_THR_NAME = ['OFF', 'LOW', 'MID', 'HIGH'];
-let micSecI = 3, micGainI = 0, micThr = 1, micState = 0, micPct = 0, micLvl = 0, micClip = 0, micOk = 1, micPoll = 0, micMon = 0, micLane = 0, micGrace = 0;
+const MIC_THR_PCT = [0, 4, 10, 25], MIC_THR_NAME = ['OFF', 'LOW', 'MID', 'HIGH'], MIC_FX = ['OFF', 'LOW CUT', 'DRIVE', 'LO-FI'];
+let micSrcI = 0, micSecI = 3, micGainI = 0, micThr = 1, micFx = 0, micAmt = 5, micNorm = 1;
+let micState = 0, micPct = 0, micLvl = 0, micClip = 0, micOk = 1, micPoll = 0, micMon = 0, micLane = 0, micGrace = 0;
+function micSrcName() { return micSrcI === 0 ? 'INPUT' : (micSrcI === 1 ? 'MASTER' : 'TRK ' + (micSrcI - 1)); }
+function micIsIn() { return micSrcI === 0; }
 function micPageOn() { return view === 28 && smpPage === 4 && !menuOpen && !padMenu && !broOpen && askKind < 0 && exitDlg < 0 && !fb; }
 function micGo() {
     if (micState === 2 || micState === 5) { dspSet('micstop', '1'); micPoll = 99; showToast('MIC', micState === 5 ? 'CANCELLED' : 'STOPPED', 0); return; }
     if (rsState) { showToast('MIC', 'RESAMPLE RUNNING', 0); return; }
-    dspSet('micarm', MIC_SEC[micSecI] + ',' + MIC_THR_PCT[micThr] + ',' + MIC_GAIN[micGainI]);
-    micState = MIC_THR_PCT[micThr] ? 5 : 2; micPct = 0; micLane = ln(); micPoll = 99; micGrace = 24;      /* the DSP may not have seen the command yet: a '0' in the first polls is not the end */
-    showToast('MIC', micState === 5 ? 'WAITING FOR SOUND' : 'RECORDING', 0); needsRedraw = true;
+    const thr = micIsIn() ? MIC_THR_PCT[micThr] : 0;
+    dspSet('micarm', MIC_SEC[micSecI] + ',' + thr + ',' + MIC_GAIN[micGainI] + ',' + (micSrcI - 2) + ',' + micFx + ',' + (micAmt * 10) + ',' + micNorm);
+    micState = thr ? 5 : 2; micPct = 0; micLane = ln(); micPoll = 99; micGrace = 24;      /* the DSP may not have seen the command yet: a '0' in the first polls is not the end */
+    showToast('MIC', thr ? 'WAITING FOR SOUND' : (micIsIn() ? 'RECORDING' : 'RECORDING ' + micSrcName()), 0); needsRedraw = true;
 }
 function micKnob(i, delta) {
-    if (i > 3) return;
     acc[i] += delta; if (Math.abs(acc[i]) < 2) return;
     const st = acc[i] > 0 ? 1 : -1; acc[i] = 0;
-    if (i === 3) { if (st > 0) { if (!micState) micGo(); } else if (micState) micGo(); return; }
+    if (i === 7) { if (st > 0) { if (!micState) micGo(); } else if (micState) micGo(); return; }
     if (micState) { showToast('MIC', 'STOP FIRST', 0); return; }
-    if (i === 0) micSecI = clamp(micSecI + st, 0, MIC_SEC.length - 1);
-    else if (i === 1) { micGainI = clamp(micGainI + st, 0, MIC_GAIN.length - 1); dspSet('micgain', String(MIC_GAIN[micGainI])); }
-    else micThr = clamp(micThr + st, 0, 3);
+    if (i === 0) micSrcI = clamp(micSrcI + st, 0, 17);
+    else if (i === 1) micSecI = clamp(micSecI + st, 0, MIC_SEC.length - 1);
+    else if (i === 2) { micGainI = clamp(micGainI + st, 0, MIC_GAIN.length - 1); dspSet('micgain', String(MIC_GAIN[micGainI])); }
+    else if (i === 3) micThr = clamp(micThr + st, 0, 3);
+    else if (i === 4) micFx = clamp(micFx + st, 0, 3);
+    else if (i === 5) micAmt = clamp(micAmt + st, 0, 10);
+    else if (i === 6) micNorm = micNorm ? 0 : 1;
     needsRedraw = true;
 }
 function micTick() {
-    const want = micPageOn() ? 1 : 0;
+    const want = (micPageOn() && micIsIn()) ? 1 : 0;
     if (want !== micMon) { micMon = want; dspSet('micmon', String(want)); if (want) dspSet('micgain', String(MIC_GAIN[micGainI])); micLvl = 0; micClip = 0; micOk = 1; needsRedraw = true; }
     if (!micMon && !micState) return;
     if (++micPoll < 5) return; micPoll = 0;
@@ -3178,23 +3185,24 @@ function micTick() {
     }
 }
 function drawMic() {
-    const TN = tabStrip && TAB_NEW, y0 = TN ? 17 : 11;
-    titleBar(p2(sel + 1) + ' ' + laneName(), 'MIC ' + smpMem + '%');
-    draw_rect(0, y0, 128, 11, 1);
-    const w = Math.round(124 * clamp(micLvl / 100, 0, 1)); if (w > 0) fill_rect(2, y0 + 2, w, 7, 1);
-    if (MIC_THR_PCT[micThr]) { const x = 2 + Math.round(124 * MIC_THR_PCT[micThr] / 100); fill_rect(x, y0 - 1, 1, 13, 1); }
-    let s1;
-    if (!micOk) s1 = 'NO INPUT FOUND';
-    else if (micState === 5) s1 = 'WAITING FOR SOUND...';
-    else if (micState === 2) s1 = 'REC ' + (MIC_SEC[micSecI] * micPct / 100).toFixed(1) + ' / ' + MIC_SEC[micSecI] + ' S';
-    else s1 = micClip && micLvl > 90 ? 'TOO LOUD: LOWER GAIN' : 'SHIFT+CLICK = RECORD';
-    txt(1, y0 + 14, s1, 1);
-    if (micState === 2) { draw_rect(0, y0 + 24, 128, 3, 1); const pw = Math.round(126 * micPct / 100); if (pw > 0) fill_rect(1, y0 + 25, pw, 1, 1); }
-    const yc = TN ? 45 : 40;
-    cell(0, yc, 'Time', MIC_SEC[micSecI] + ' s', micSecI / (MIC_SEC.length - 1));
-    cell(32, yc, 'Gain', MIC_GAIN_DB[micGainI] + ' dB', micGainI / (MIC_GAIN.length - 1));
-    cell(64, yc, 'Wait', MIC_THR_NAME[micThr], micThr / 3);
-    cell(96, yc, 'Rec', micState ? 'STOP' : 'START', micState ? 1 : 0);
+    const TN = tabStrip && TAB_NEW, y0 = TN ? 17 : 11, sec = MIC_SEC[micSecI];
+    titleBar(p2(sel + 1) + ' ' + laneName(), 'MIC');
+    draw_rect(0, y0, 128, 9, 1);
+    if (micIsIn()) {
+        const w = Math.round(124 * clamp(micLvl / 100, 0, 1)); if (w > 0) fill_rect(2, y0 + 2, w, 5, 1);
+        if (MIC_THR_PCT[micThr]) fill_rect(2 + Math.round(124 * MIC_THR_PCT[micThr] / 100), y0 - 1, 1, 11, 1);
+        if (!micOk) txt(4, y0 + 1, 'NO INPUT FOUND', 1);
+    } else if (micState === 2) { const pw = Math.round(124 * micPct / 100); if (pw > 0) fill_rect(2, y0 + 2, pw, 5, 1); }
+    else txt(4, y0 + 1, 'PLAY SOMETHING, THEN REC', 1);
+    const y1 = y0 + 11, y2 = y0 + 29, inn = micIsIn();
+    engTile(0, y1, 32, 'Source', micSrcName(), micSrcI / 17, false);
+    engTile(32, y1, 32, 'Time', sec + ' s', micSecI / (MIC_SEC.length - 1), false);
+    engTile(64, y1, 32, 'Gain', inn ? (micClip ? 'CLIP!' : MIC_GAIN_DB[micGainI] + ' dB') : '--', inn ? micGainI / (MIC_GAIN.length - 1) : 0, false);
+    engTile(96, y1, 32, 'Wait', inn ? MIC_THR_NAME[micThr] : '--', inn ? micThr / 3 : 0, false);
+    engTile(0, y2, 32, 'Effect', MIC_FX[micFx], micFx / 3, false);
+    engTile(32, y2, 32, 'Amount', micFx ? micAmt * 10 + '%' : '--', micFx ? micAmt / 10 : 0, false);
+    engTile(64, y2, 32, 'Normal', micNorm ? 'ON' : 'OFF', micNorm, false);
+    engTile(96, y2, 32, 'Rec', micState === 5 ? 'WAIT' : (micState === 2 ? (sec * micPct / 100).toFixed(1) + ' s' : 'START'), micState ? 1 : 0, false);
 }
 function sampleRescan() { dspSet('smprescan', '1'); smpRefresh(); const n = smpLoaded().length; showToast('SAMPLES', n + ' FOUND', n / 64); needsRedraw = true; }
 /* ---- own slices: up to 16 start markers (0..1); Jog click applies them to the drum pads ---- */
@@ -5009,7 +5017,7 @@ function knobUse() {                                       /* which of the 8 kno
     if (heldStep >= 0 && stepWinView()) return u.map(() => 1);
     if (loopHeld && view === 0) { u[0] = 1; u[1] = 1; u[2] = 1; return u; }
     if (view === 0 || view === 7 || view === 20) return u.map(() => 1);
-    if (view === 28 && smpPage === 4) { u[0] = u[1] = u[2] = u[3] = 1; return u; }
+    if (view === 28 && smpPage === 4) return u.map(() => 1);
     const items = VIEW_ITEMS[itemsView()];
     if (items) for (let i = 0; i < items.length && i < 8; i++) u[i] = 1;
     return u;
@@ -5019,7 +5027,7 @@ function knobLevels() {                                    /* value 0..1 of each
     if (fb && !(menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank)) { const o = new Array(8).fill(undefined); o[7] = [0.1, 0.5, 1][fbPm]; return o; }      /* knob 1 glows bright when the preview is on, dim when it is off */
     if (menuOpen || askKind >= 0 || exitDlg >= 0 || monOpen || idleBlank || fb || heldStep >= 0 || loopHeld) return null;
     if (view === 0) return seqSnd().map(k => clamp(fracVal(k, pads[ln()][PI[k]]), 0, 1));
-    if (view === 28 && smpPage === 4) return [micSecI / (MIC_SEC.length - 1), micGainI / (MIC_GAIN.length - 1), micThr / 3, micState ? 1 : 0];
+    if (view === 28 && smpPage === 4) return [micSrcI / 17, micSecI / (MIC_SEC.length - 1), micGainI / (MIC_GAIN.length - 1), micThr / 3, micFx / 3, micAmt / 10, micNorm, micState ? 1 : 0];
     const items = VIEW_ITEMS[itemsView()];
     if (!items) return null;
     const out = [];
@@ -5330,7 +5338,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (d2 > 0 && view === 45 && !menuOpen && !fb) { devClear(); return; } deleteHeld = d2 > 0 && !deleteHeld; delAge = 0; needsRedraw = true; return;      /* pressing again while it seems stuck (lost release) switches it off */
     case CC.LOOP:   loopHeld = d2 > 0; if (d2 > 0) { snapEu = false; showToast('LOOP HELD', 'TURN JOG = LENGTH', LL() / MAXSTEP); } return;
     case CC.UNDO:   if (d2 > 0) { if (shiftHeld) doRedo(); else doUndo(); } return;
-    case CC.SAMPLE: if (d2 > 0) { if (copyHeld) opVary(); else randomize(shiftHeld); } return;
+    case CC.SAMPLE: if (d2 > 0) { if (micPageOn()) { micGo(); return; } if (copyHeld) opVary(); else randomize(shiftHeld); } return;
     case CC.MENU:
         if (d2 > 0 && shiftHeld) { helpOpen = true; needsRedraw = true; return; }
         if (d2 > 0) {                                        /* |||: session / clip view stays until pressed again */

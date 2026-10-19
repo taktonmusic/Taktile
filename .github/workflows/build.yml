@@ -55,7 +55,7 @@ jobs:
           path: taktile/dist/taktile-module.tar.gz
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -72,10 +72,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mv_ver=$(grep -m1 '"version"' taktile/module.json | sed -E 's/.*"version": *"([^"]+)".*/\1/')
+          # newest CHANGELOG entry (from the first "## " line up to the next one)
+          awk '/^## /{n++} n==1' CHANGELOG.md | tail -n +2 > latest_changes.md
           {
             echo "## Taktile - groovebox for the Ableton Move"
             echo
-            echo "16 tracks of synths and drums, step sequencer, 1462 sounds, effects and live performance tools. A Schwung overtake module. Module version: ${mv_ver}."
+            echo "16 tracks of synths and drums, step sequencer, 1462 sounds, effects, sampler with microphone recording and live performance tools. A Schwung overtake module. **Current version: ${mv_ver}**"
+            echo
+            echo "### What is new in ${mv_ver}"
+            cat latest_changes.md
             echo
             echo "### Install"
             echo "1. Download **taktile-module.tar.gz** below. Do not unpack it."
@@ -88,11 +93,21 @@ jobs:
             echo "### Thanks"
             echo "Big thanks to Neuro... No Neuro (https://www.neurononeuro.net) for testing and honest feedback."
           } > notes_full.md
-          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            # release was already published by hand (releases are immutable): nothing to change
-            echo "Release ${GITHUB_REF_NAME} already exists - skipping."
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME}"
+            TITLE="Taktile ${GITHUB_REF_NAME}"
           else
-            gh release create "${GITHUB_REF_NAME}" taktile-module.tar.gz \
-              --title "Taktile ${GITHUB_REF_NAME}" \
-              --notes-file notes_full.md
+            # one rolling release: always the newest version, never a new release per update
+            TAG="latest"
+            TITLE="Taktile ${mv_ver}"
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git tag -f latest "${GITHUB_SHA}"
+            git push -f origin refs/tags/latest
+          fi
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" taktile-module.tar.gz --clobber
+            gh release edit "${TAG}" --title "${TITLE}" --notes-file notes_full.md --latest
+          else
+            gh release create "${TAG}" taktile-module.tar.gz --title "${TITLE}" --notes-file notes_full.md --latest
           fi

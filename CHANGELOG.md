@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 (19 October 2026)
+- MIC page: choose the source (INPUT, MASTER or one of the 16 tracks), effects LOW CUT / DRIVE / LO-FI with amount that are only applied while recording and baked into the sample (no CPU afterwards), optional normalise
+- The Sample button starts and stops a MIC take (also Shift + jog click or knob 8)
+- Version numbering restarts at 1.x (earlier development versions below keep their 5.x numbers)
+- The latest build is published automatically as one release, so there is no new release to create per update
+
 ## 5.177.0 (19 October 2026)
 - New MIC page (5th page of the SAMPLE tile on drum tracks): records the Move's microphone / line input into a new sample, with level meter, length 1-30 s, gain, optional wait-for-sound, start/stop with Shift + jog click or knob 4; the take is saved as a WAV and loaded on the pad
 - The input is only read while the MIC page is open or a take runs; the recording itself only copies samples (no measurable CPU load)

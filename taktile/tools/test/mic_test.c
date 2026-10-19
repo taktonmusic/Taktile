@@ -39,7 +39,7 @@ int main(void) {
     sp(inst, "micgain", "80"); blocks(inst, 30, 8000, 1, 0); OK(geti(inst, "micpeak", 1) == 1, "gain x8 on a loud input reports clipping");
 
     /* a take of 1 s: mono mic on the left side only */
-    sp(inst, "micmon", "0"); sp(inst, "micarm", "1,0,10");
+    sp(inst, "micmon", "0"); sp(inst, "micarm", "1,0,10,-2,0,50,0");
     OK(geti(inst, "recstate", 0) == 2, "micarm 1 s: recording at once");
     blocks(inst, 100, 8000, 1, 0); int pct = geti(inst, "recstate", 1); OK(pct > 20 && pct < 40, "progress %d%% after 100 blocks", pct);
     blocks(inst, 300, 8000, 1, 0); OK(geti(inst, "recstate", 0) == 3, "take is complete after 1 s");
@@ -58,21 +58,50 @@ int main(void) {
     OK(geti(inst, "recstate", 0) == 0, "state is idle again after saving");
 
     /* wait for sound */
-    sp(inst, "micarm", "1,10,10"); OK(geti(inst, "recstate", 0) == 5, "wait mode: state 5");
+    sp(inst, "micarm", "1,10,10,-2,0,50,0"); OK(geti(inst, "recstate", 0) == 5, "wait mode: state 5");
     blocks(inst, 60, 0, 1, 0); OK(geti(inst, "recstate", 0) == 5 && geti(inst, "recstate", 1) == 0, "silence: still waiting");
     blocks(inst, 5, 8000, 1, 0); OK(geti(inst, "recstate", 0) == 2, "sound starts the take");
     blocks(inst, 50, 8000, 1, 0); sp(inst, "micstop", "1"); OK(geti(inst, "recstate", 0) == 3, "early stop keeps what was recorded");
     sp(inst, "recsave", "1"); f = fopen("/tmp/micsmp/mic_002.wav", "rb"); OK(f != NULL, "second take mic_002.wav");
     if (f) { fseek(f, 0, SEEK_END); long sz = ftell(f); fclose(f); OK(sz > 44 + 50 * 128 * 4 && sz < 44 + 70 * 128 * 4, "length of the short take %ld bytes", sz); }
-    sp(inst, "micarm", "5,10,10"); sp(inst, "micstop", "1"); OK(geti(inst, "recstate", 0) == 0, "stop while waiting cancels the take");
+    sp(inst, "micarm", "5,10,10,-2,0,50,0"); sp(inst, "micstop", "1"); OK(geti(inst, "recstate", 0) == 0, "stop while waiting cancels the take");
+
+
+    /* effects inside the take + normalise + other sources */
+    {
+        static int16_t d[44100 * 2 * 2]; long n;
+        #define TAKE(arm, name, ch) do { sp(inst, "micarm", arm); blocks(inst, 400, 8000, 1, 0); sp(inst, "recsave", "1"); FILE *ff = fopen("/tmp/micsmp/" name, "rb"); if (ff) { fseek(ff, 44, SEEK_SET); n = (long)fread(d, 2, 44100 * 2, ff) / 2; fclose(ff); } else n = 0; } while (0)
+        TAKE("1,0,10,-2,0,50,1", "mic_003.wav", 0); int pk = 0; for (long i = 0; i < n * 2; i++) if (abs(d[i]) > pk) pk = abs(d[i]);
+        OK(n > 40000 && pk > 28500 && pk < 29500, "normalise brings the take to about -1 dB (peak %d)", pk);
+        TAKE("1,0,10,-2,2,100,0", "mic_004.wav", 0); pk = 0; for (long i = 0; i < n * 2; i++) if (abs(d[i]) > pk) pk = abs(d[i]);
+        OK(n > 40000 && pk > 12000, "DRIVE makes the take louder / harder (peak %d, input 8000)", pk);
+        TAKE("1,0,10,-2,3,100,0", "mic_005.wav", 0); int held = 0; for (long i = 1000; i < 3000; i++) if (d[2 * i] == d[2 * i - 2]) held++;
+        OK(held > 1500, "LO-FI holds samples (%d of 2000 equal to the previous one)", held);
+        TAKE("1,0,10,-2,0,0,0", "mic_006.wav", 0); int a0 = 0; for (long i = 5000; i < 9000; i += 2) a0 += abs(d[2 * i]); /* reference */
+        TAKE("1,0,10,-2,1,100,0", "mic_007.wav", 0); int a1 = 0; for (long i = 5000; i < 9000; i += 2) a1 += abs(d[2 * i]);
+        OK(a1 > a0 * 8 / 10, "LOW CUT leaves a 1 kHz tone alone (%d vs %d)", a1, a0);
+        /* low cut on a constant (DC) input: it must die away */
+        { int16_t *in = (int16_t *)(mail + MOVE_AUDIO_IN_OFFSET); sp(inst, "micarm", "1,0,10,-2,1,0,0");
+          for (int b = 0; b < 400; b++) { for (int i = 0; i < 256; i++) in[i] = 8000; int16_t out[256]; api->render_block(inst, out, 128); }
+          sp(inst, "recsave", "1"); FILE *ff = fopen("/tmp/micsmp/mic_008.wav", "rb"); long m = 0; if (ff) { fseek(ff, 44, SEEK_SET); m = (long)fread(d, 2, 44100 * 2, ff) / 2; fclose(ff); }
+          OK(m > 40000 && abs(d[2 * 30000]) < 800 && abs(d[2 * 200]) > 1000, "LOW CUT removes a constant offset (start %d, later %d)", abs(d[2 * 200]), abs(d[2 * 30000])); }
+        sp(inst, "micarm", "1,0,10,-1,0,50,1"); OK(geti(inst, "recstate", 0) == 2, "source MASTER starts at once");
+        blocks(inst, 400, 0, 1, 0); OK(geti(inst, "recstate", 0) == 3, "a master take of 1 s completes"); sp(inst, "recsave", "1");
+        FILE *ff = fopen("/tmp/micsmp/resample_001.wav", "rb"); OK(ff != NULL, "master take saved as resample_001.wav"); if (ff) fclose(ff);
+        sp(inst, "micarm", "1,0,10,3,0,50,1"); blocks(inst, 400, 0, 1, 0); OK(geti(inst, "recstate", 0) == 3, "a track take (track 4) completes"); sp(inst, "recsave", "1");
+    }
 
     /* CPU: cost of one block with the mic code idle, level meter on, recording */
     sp(inst, "micmon", "0"); cost(inst, 2000); double c0 = cost(inst, 20000);
     sp(inst, "micmon", "1"); double c1 = cost(inst, 20000);
-    sp(inst, "micmon", "0"); sp(inst, "micarm", "30,0,10"); double c2 = cost(inst, 20000); sp(inst, "micstop", "1");
+    sp(inst, "micmon", "0"); sp(inst, "micarm", "30,0,10,-2,0,50,0"); double c2 = cost(inst, 20000); sp(inst, "micstop", "1");
+    double worst = 0, cf[3]; for (int f = 1; f <= 3; f++) { char a[64]; snprintf(a, sizeof a, "30,0,10,-2,%d,60,0", f); sp(inst, "micarm", a); cf[f - 1] = cost(inst, 20000); sp(inst, "micstop", "1"); sp(inst, "reccancel", "1"); }
+    printf("cpu  recording with effect: low cut +%.2f us, drive +%.2f us, lo-fi +%.2f us per block\n", (cf[0] - c0) * 1e6, (cf[1] - c0) * 1e6, (cf[2] - c0) * 1e6);
+    for (int f = 0; f < 3; f++) if (cf[f] - c0 > worst) worst = cf[f] - c0;
     double bud = 128.0 / 44100.0;
     printf("cpu  per block (budget %.0f us): mic idle %.1f us, meter %.1f us (+%.2f us), recording %.1f us (+%.2f us)\n", bud * 1e6, c0 * 1e6, c1 * 1e6, (c1 - c0) * 1e6, c2 * 1e6, (c2 - c0) * 1e6);
-    OK(c2 - c0 < bud * 0.01, "recording adds less than 1%% of one block's time budget (%.3f%%)", (c2 - c0) / bud * 100);
+    if (c2 - c0 > worst) worst = c2 - c0;
+    OK(worst < bud * 0.02, "recording (with effect) adds less than 2%% of one block's time budget (%.3f%%)", worst / bud * 100);
 
     /* no mailbox: no crash */
     host.mapped_memory = NULL; api->destroy_instance(inst); api = move_plugin_init_v2(&host); inst = api->create_instance(".", "{}");
