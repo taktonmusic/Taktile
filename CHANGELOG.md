@@ -1,6 +1,11 @@
 # Changelog
 
 ## 1.6.5 (19 October 2026)
+- Song page: only the song plays; when the song is off (or you leave the page) your normal clips play again
+- Song starts at the step you picked, the jogwheel scrolls through tracks 1-16
+- The one GitHub release is now called Taktile 1.0.0 (it always holds the newest version)
+
+## 1.6.5 (19 October 2026)
 - Song starts at the step you picked (Play), the jogwheel scrolls through tracks 1-16 on the song page
 - The one GitHub release is now called Taktile 1.0.0 (it always holds the newest version)
 

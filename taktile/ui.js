@@ -4189,7 +4189,13 @@ function songEntryAt(bar) { const tot = songTotal(); let b = (((bar + songOff) %
 function songRestore() {                                       /* tempo and mutes the song changed go back to the project's own */
     if (songTempoOn) { songTempoOn = false; dspSet('bpm', String(bpm)); }
     if (songMuted) { songMuted = false; for (let t = 0; t < NTRK; t++) dspSet('mute', t + ',' + mutes[t]); }
+    if (songPrev) {                                              /* song off: the normal clips you had before the song play again */
+        const pv = songPrev; songPrev = null; songCl.fill(-9);
+        for (let t = 0; t < NTRK; t++) { const c = pv[t]; if (c >= 0) { ed[t] = c; applyClipSound(t, c); } dspSet('clip', t + ',' + c); if (playing) clipsQ[t] = c; else { clipsQ[t] = -2; clipsCur[t] = c; } }
+        needsRedraw = true;
+    }
 }
+let songPrev = null;
 const songCl = new Array(NTRK).fill(-9);
 function songTrk(t, c) { if (c >= 0) { ed[t] = c; applyClipSound(t, c); } dspSet('clip', t + ',' + c); clipsQ[t] = c; needsRedraw = true; }
 function songEnter(k) {                                         /* an entry begins: its scene, its tempo, its way in */
@@ -4203,7 +4209,7 @@ function songEnter(k) {                                         /* an entry begi
 function songFill() { const keep = sel; for (let t = 0; t < NTRK; t++) if (kind[t]) { sel = t; fillBar(true); } sel = keep; }
 function songTick() {
     if (songOn && view !== 31) { songOn = false; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songRestore(); dirty = true; }      /* the song only runs while the song page is open */
-    if (!songOn || !playing) { if (!playing) { songSent = -1; songLaunched = -1; songCl.fill(-9); songOff = 0; songFillBar = -1; } songMutePend = false; if (songMuted || songTempoOn) songRestore(); return; }
+    if (!songOn || !playing) { if (!playing) { songSent = -1; songLaunched = -1; songCl.fill(-9); songOff = 0; songFillBar = -1; } songMutePend = false; if (songMuted || songTempoOn || songPrev) songRestore(); return; }
     const g = Math.max(0, gs - 1), bar = Math.floor(g / 16), st = g % 16;
     if (songSent < 0 && g <= 1) { songSent = 0; songNext = -1; songCl.fill(-9); { const k0 = clamp(songSlot, 0, songList.length - 1); songOff = songStart(k0) % songTotal(); songEnter(k0); } return; }      /* the song starts at the step you picked */
     if (songSent < 0) return;
@@ -5402,7 +5408,7 @@ globalThis.onMidiMessageInternal = function (data) {
             if (shiftHeld) { playing = false; gs = 0; dspSet('play', '0'); dspSet('panic', '1'); showToast('TRANSPORT', 'STOP + RESET + PANIC', 0); }
             else if (!playing && ciBeats > 0) { dspSet('play', '0'); ciBeats = 0; showToast('COUNT-IN', 'CANCELLED', 0); }
             else if (!playing && recArmed && ciOn) { dspSet('play', '2'); showToast('COUNT-IN', '1 BAR', 1); }      /* Rec armed + Play: one bar of clicks, then the recording starts */
-            else if (view === 31 && !menuOpen && !(playing && songOn)) { songOn = true; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songCl.fill(-9); if (playing) dspSet('play', '0'); playing = true; gs = 0; dspSet('play', '1'); showToast('SONG', 'PLAY FROM STEP ' + (songSlot + 1), 1); }      /* Play in the song page starts the song at the selected step */
+            else if (view === 31 && !menuOpen && !(playing && songOn)) { if (!songPrev) songPrev = clipsCur.slice(); songOn = true; songLoop = true; songSent = -1; songLaunched = -1; songOff = 0; songNext = -1; songCl.fill(-9); if (playing) dspSet('play', '0'); playing = true; gs = 0; dspSet('play', '1'); showToast('SONG', 'PLAY FROM STEP ' + (songSlot + 1), 1); }      /* Play in the song page starts the song at the selected step */
             else { playing = !playing; gs = 0; dspSet('play', playing ? '1' : '0'); showToast('TRANSPORT', playing ? 'PLAY' : 'STOP', playing ? 1 : 0); }
             needsRedraw = true;
         }
