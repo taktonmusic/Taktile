@@ -2188,6 +2188,12 @@ function euclidKnob(i, delta) {
 
 /* step-held knobs */
 function setLetLock(L) { const k = LOCK_KEYS.indexOf('dlt'); if (lockT[L] !== k) { lockT[L] = k; qLockT(L); } }
+let letAcc = 0;
+function stepLetter(d) {                                       /* hold a step on a speech sound in LETTER mode: turn = the letter of this step (jogwheel or knob 8) */
+    const L = ln(), st = stepAt(heldStep), cur = st[8] ? letOfLock(st[8]) : letIdx(pads[L][PI.dlt]), ni = clamp(cur + d, 0, SPK_NLET - 1);
+    st[8] = letLockVal(ni / (SPK_NLET - 1)); setLetLock(L); showToast('STEP ' + (heldStep + 1), SPK_LET[ni], ni / (SPK_NLET - 1));
+    heldEdited = true; grpSync(7); qStep(ed[sel], L, heldStep); markEdited(); needsRedraw = true;
+}
 function stepKnob(i, delta) {
     if (delta === 0 || i > 7) return;
     const st = stepAt(heldStep), k = (i === 0 && shiftHeld) ? 4 : 1;
@@ -2535,7 +2541,7 @@ function onStep(i, on) {
         }
         snap(ed[sel], L); heldStep = s; heldEdited = false; heldGrp = [];
         const st = stepAt(s); heldWasOn = !!st[0];
-        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; if (!kind[sel] && lastSemi[sel] !== null && view === 0 && topModes[sel] !== 2) st[2] = lastSemi[sel]; qStep(ed[sel], L, s); markEdited(); if (!playing) launchClip(sel, ed[sel]); }      /* first step set while stopped: playback starts */
+        if (!heldWasOn) { st[0] = 1; if (fullVel) st[1] = 127; if (!kind[sel] && lastSemi[sel] !== null && view === 0 && topModes[sel] !== 2) st[2] = lastSemi[sel]; if (spkLetterOn(L)) { st[8] = letLockVal(pads[L][PI.dlt]); setLetLock(L); showToast('STEP ' + (s + 1), SPK_LET[letIdx(pads[L][PI.dlt])], pads[L][PI.dlt]); } qStep(ed[sel], L, s); markEdited(); if (!playing) launchClip(sel, ed[sel]); }      /* first step set while stopped: playback starts */
     } else if (heldGrp.includes(s)) { heldGrp.splice(heldGrp.indexOf(s), 1); needsRedraw = true;
     } else if (heldStep === s) {
         const L = ln(); heldGrp = [];
@@ -3848,7 +3854,9 @@ let spkTxt = {}, spkUI = null;                              /* spkTxt: lane -> t
 function isSpk(t) { return /^Spk/.test(TYPE_NAME[Math.round(t)] || ''); }
 function spkLang(t) { return /^SpkDe/.test(TYPE_NAME[Math.round(t)] || '') ? 'DE' : 'EN'; }
 function spkSend(l) { enqueue('txt' + l, 'txt' + l, (spkTxt[l] || '').trim() || 'HELLO'); }
-function spkDefault(L, nt) { const d = spkLang(nt) === 'DE' ? 'HALLO WELT' : 'HELLO WORLD'; if (!spkTxt[L] || spkTxt[L] === 'HELLO WORLD' || spkTxt[L] === 'HALLO WELT') spkTxt[L] = d; spkSend(L); }
+function spkDefault(L, nt) { const d = spkLang(nt) === 'DE' ? 'HALLO WELT' : 'HELLO WORLD'; if (!spkTxt[L] || spkTxt[L] === 'HELLO WORLD' || spkTxt[L] === 'HALLO WELT') spkTxt[L] = d; spkSend(L);
+    if (Math.round(pads[L][PI.dmd]) === 0) { pads[L][PI.dmd] = 2; qPad(L); }      /* a new speech sound plays one LETTER per step: hold a step and turn the jogwheel to choose it */
+}
 function spkOpen() {
     const L = ln(), t = (spkTxt[L] || '').toUpperCase(), nm = [];
     for (let k = 0; k < SP_LEN; k++) nm.push(Math.max(0, SP_CHARS.indexOf(t[k] || ' ')));
@@ -5476,6 +5484,7 @@ globalThis.onMidiMessageInternal = function (data) {
     case CC.DOWN:  if (d2 > 0) { if (view === 31) songTag(-1); else if (view === 7 || shiftHeld || recDown) stepTrack(1); else octMove(-1); } return;
     case CC.JOG: {
         const dl = decodeDelta(d2);
+        if (dl && heldStep >= 0 && view === 0 && !menuOpen && !loopHeld && spkLetterOn(ln())) { letAcc += dl; if (Math.abs(letAcc) >= 2) { stepLetter(letAcc > 0 ? 1 : -1); letAcc = 0; } return; }      /* speech: hold a step + jogwheel = its letter */
         if (loopHeld && view === 31 && !menuOpen) { const e = songList[songSlot]; if (dl && e) { let i = SONG_BARS.indexOf(e[1]); if (i < 0) i = 2; i = clamp(i + (dl > 0 ? 1 : -1), 0, SONG_BARS.length - 1); e[1] = SONG_BARS[i]; dirty = true; needsRedraw = true; showToast('STEP ' + p2(songSlot + 1), e[1] + (e[1] === 1 ? ' BAR' : ' BARS'), i / (SONG_BARS.length - 1)); } return; }      /* Loop + jog on the song page = how many bars this step lasts */
         if (view === 31 && shiftHeld && !menuOpen) { const e = songList[songSlot]; if (dl && e) { e[4] = clamp(e[4] + (dl > 0 ? 1 : -1), 0, 3); dirty = true; needsRedraw = true; showToast('STEP ' + p2(songSlot + 1), ['HARD CUT', 'FILL BEFORE', 'DRUMS FIRST', 'FILTER SWEEP'][e[4]], e[4] / 3); } return; }      /* Shift + jog = how the step comes in */
         if (loopHeld && !menuOpen && !fb && view !== 31 && !(view === 28 && broOpen)) { if (dl) setLen(LL() + (dl > 0 ? 1 : -1) * (shiftHeld ? 16 : 1), shiftHeld); return; }   /* Loop + jogwheel = loop length (Shift = whole track), on every page, before anything else */

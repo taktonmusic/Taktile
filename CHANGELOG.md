@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.2 (19 October 2026)
+- Speech sound: every step button now gets its own letter (before, all steps said the same letter), a new speech sound starts in LETTER mode, hold a step + jogwheel = letter of that step
+
 ## 1.7.1 (19 October 2026)
 - Drum tracks: all pads run together with one length (Loop + jog / Loop + step sets the length of the whole track; older single-pad loops are dropped)
 
