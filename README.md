@@ -3,11 +3,11 @@
 </p>
 
 <p align="center">
-  <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-ff4d6d">
-  <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-8d6bff">
-  <img alt="Language" src="https://img.shields.io/badge/DSP-C-2ec4b6">
-  <img alt="Version" src="https://img.shields.io/badge/version-5.176.0-ffb703">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-lightgrey">
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-333333">
+  <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-333333">
+  <img alt="Language" src="https://img.shields.io/badge/DSP-C-333333">
+  <img alt="Version" src="https://img.shields.io/badge/version-5.176.0-333333">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-333333">
 </p>
 
 <p align="center"><b>16 tracks of synths and drums, a step sequencer, sounds, effects and live performance tools – all running as a Schwung overtake module on the Ableton Move.</b></p>
