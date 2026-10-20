@@ -171,7 +171,7 @@ const VIEW_ITEMS = {
     6: [['rvb','Send'],['rvb_size','Size'],['rvb_dark','Dark'],['rvb_mode','Type'],['rvb_wide','Wide'],['rvb_low','LowCut','Low'],['rvb_ret','Return','Ret']],
     8: [['browse','Jog'],['fullvel','FullVel','FVel'],['rqoff','RecSnap','Snap'],['rdens','RndDens','Dens'],['rvar','RndVel','RVel'],['rkey','RndKey','RKey'],['rrat','RndRatch','RRat'],['m_met','Metro','Met']],
     10: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
-    15: [['qstr','Quantize','Qnt'],['qgrid','Grid'],['sgrd','Step Grid','StpG'],['ci','Count-In','CntIn'],['rqoff','RecSnap','Snap'],['m_qnt','Launch','Lnch']],
+    15: [['qstr','Quantize','Qnt'],['qgrid','Grid'],['sgrd','Step Grid','StpG'],['tspd','Track Speed','Speed'],['ci','Count-In','CntIn'],['rqoff','RecSnap','Snap'],['m_qnt','Launch','Lnch']],
     24: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth']],
     49: [['m2fx','MIDI FX 2','FX'],['m2amt','Amount','Amt'],['m2prm','Param','Prm'],['trn','Transp','Xpos'],['mvb','VelBias','VelB'],['vhm','VelHum','VHum'],['vmn','VelMin','VMin'],['vmx','VelMax','VMax']],
     27: [['mfx','MIDI FX','Effect'],['mamt','Amount','Amt'],['mprm','Param','Prm'],['tkey','Track Key','TKey'],['arp','Arp'],['rate','ArpRate','Rate'],['tscl','Track Scale','TScl'],['mch','Prob']],
@@ -207,6 +207,11 @@ let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
 let pads = [], master = MASTER_DEF.slice();
 let steps = [];                 /* [pat][trk][step] = [on, vel, semi, prob] */
 const growTrk = new Array(NTRK).fill(false), growG0 = new Array(NTRK).fill(0);            /* auto length: a clip recorded from empty grows by 16 steps whenever you play into its last beat */
+const SPD = [[1, 8], [1, 6], [1, 5], [1, 4], [1, 3], [3, 8], [2, 5], [1, 2], [3, 5], [2, 3], [3, 4], [4, 5], [1, 1], [5, 4], [4, 3], [3, 2], [5, 3], [7, 4], [2, 1], [5, 2], [3, 1]], SPD_ONE = 12;      /* track speed ratios (steps per beat compared with the project), 1:1 in the middle */
+let tsp = new Array(NTRK).fill(SPD_ONE);
+function SPDV(t) { const a = SPD[tsp[t === undefined ? sel : t]] || SPD[SPD_ONE]; return a[0] / a[1]; }
+function SPDN(i) { const a = SPD[i] || SPD[SPD_ONE]; return a[0] === a[1] ? '1:1' : a[0] + '/' + a[1]; }
+function setSpeed(t, i) { i = clamp(i, 0, SPD.length - 1); if (i === tsp[t]) return; tsp[t] = i; enqueue('tspd' + t, 'tspd', t + ',' + SPD[i][0] + ',' + SPD[i][1]); showToast('TRACK SPEED ' + SPDN(i), i === SPD_ONE ? 'NORMAL' : (SPDV(t) < 1 ? 'SLOWER' : 'FASTER'), i / (SPD.length - 1)); markEdited(); needsRedraw = true; }
 let tres = new Array(NTRK).fill(6);                       /* ticks per step of each track's grid: 6 = 1/16, 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8 */
 let lens = new Array(NTRK).fill(16), mutes = new Array(NTRK).fill(0), lmutes = new Array(NLANE).fill(0), lmSent = new Array(NLANE).fill(0);   /* lmutes = per-sound mute of the drum pads */
 let bpm = 120, swing = 0;
@@ -371,7 +376,7 @@ function qTransport() {
     for (let t = 0; t < NTRK; t++) { enqueue('kind' + t, 'kind', t + ',' + (kind[t] ? slot[t] : -1)); enqueue('tv' + t, 'tvol', t + ',' + (tv[t] * 1.5).toFixed(3)); }
     syncSel();
     if (!clipInit) { clipInit = true; for (let t = 0; t < NTRK; t++) enqueue('clip' + t, 'clip', t + ',' + ed[t]); }
-    for (let t = 0; t < NTRK; t++) { enqueue('len' + t, 'len', t + ',' + lens[t]); enqueue('mute' + t, 'mute', t + ',' + mutes[t]); enqueue('tres' + t, 'tres', t + ',' + tres[t]); }
+    for (let t = 0; t < NTRK; t++) { enqueue('len' + t, 'len', t + ',' + lens[t]); enqueue('mute' + t, 'mute', t + ',' + mutes[t]); enqueue('tres' + t, 'tres', t + ',' + tres[t]); enqueue('tspd' + t, 'tspd', t + ',' + SPD[tsp[t]][0] + ',' + SPD[tsp[t]][1]); }
 }
 function qSeq(p, t) {                                      /* long patterns go out in chunks of 32 steps */
     const h = encTrack(p, t);
@@ -423,7 +428,7 @@ function setGrid(t, nr) {                                    /* change a track's
 function pageCount() { return Math.max(1, Math.ceil(LL() / PGN())); }
 function btnStep(i, pg) { const q = pg === undefined ? stepPage : pg; if (!isTrip()) return q * 16 + i; return (i & 3) === 3 ? -1 : q * 12 + (i >> 2) * 3 + (i & 3); }      /* step button -> step number (-1 = switched off) */
 function stepBtn(s) { if (!isTrip()) return s & 15; const k = s % 12; return Math.floor(k / 3) * 4 + k % 3; }
-function curStep(t, n) { const f = ((gl(t) - 1) * 6 + (posFr || 0) * 0.06) / RES(t); return ((Math.floor(f + 1e-9) % n) + n) % n; }      /* the step of track t that is sounding now */
+function curStep(t, n) { const f = ((gl(t) - 1) * 6 + (posFr || 0) * 0.06) * SPDV(t) / RES(t); return ((Math.floor(f + 1e-9) % n) + n) % n; }      /* the step of track t that is sounding now */
 function qSeqT(p, t) { for (const l of lanesOf(t)) qSeq(p, l); }
 function qStep(p, t, s) { enqueue('st' + p + '_' + t + '_' + s, 'st', p + ',' + t + ',' + s + ',' + encStep(steps[p][t][s])); }
 function qEverything(wipe) {
@@ -451,7 +456,7 @@ function saveState() {
         for (let p = 0; p < NPAT; p++) { const row = []; for (let l = 0; l < NLANE; l++) row.push(laneHas(p, l) ? encTrack(p, l) : ''); seqHex.push(row); }
         const keep = {}; for (let t = 0; t < NTRK; t++) { keep[t] = 1; if (slot[t] >= 0) for (let k = 0; k < 16; k++) keep[NTRK + slot[t] * 16 + k] = 1; }
         const cs = csnd.map(row => row.map((r, l) => keep[l] ? r : null));
-        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, tv: 2, hv: 3, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, tr: tres, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
+        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, tv: 2, hv: 3, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, tr: tres, ts: tsp, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 1 : 0, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
         dirty = false; saveFlash = 30; needsRedraw = true;
     } catch (e) { /* ignore */ }
 }
@@ -528,6 +533,7 @@ function loadState() {
         if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0;
         chBak = (Array.isArray(o.cb) && o.cb.length === NTRK) ? o.cb.map(x => (Array.isArray(x) && x.length === 3) ? x.map(Number) : null) : new Array(NTRK).fill(null); for (let t = 0; t < NTRK; t++) { if (kind[t] || topModes[t] !== 4) { topModes[t] = (topModes[t] === 4 ? 0 : topModes[t]); chBak[t] = null; } chOn[t] = topModes[t] === 4 ? 1 : 0; }
         if (Array.isArray(o.lens)) lens = o.lens.map(Number);
+        tsp = (Array.isArray(o.ts) && o.ts.length === NTRK) ? o.ts.map(x => clamp(Number(x) | 0, 0, SPD.length - 1)) : new Array(NTRK).fill(SPD_ONE);
         tres = (Array.isArray(o.tr) && o.tr.length === NTRK) ? o.tr.map(x => [3, 4, 6, 8, 12].includes(Number(x)) ? Number(x) : 6) : new Array(NTRK).fill(6);      /* older projects have no grid: all 1/16, nothing to convert */
         if (Array.isArray(o.mutes)) mutes = o.mutes.map(Number);
         lmutes = new Array(NLANE).fill(0); if (Array.isArray(o.lm)) for (let l = 0; l < NLANE && l < o.lm.length; l++) lmutes[l] = o.lm[l] ? 1 : 0;
@@ -539,7 +545,7 @@ function markEdited() { needsRedraw = true; dirty = true; ticksSinceEdit = 0; he
 /* ---- value helpers ---- */
 function scopeOf(key) { return PI[key] !== undefined ? 'pad' : (MI[key] !== undefined ? 'master' : 'sys'); }
 function getVal(scope, key) {
-    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'sgrd') return Math.max(0, GRID_RES.indexOf(RES())) / 4; if (key === 'qstr') return qAmt / 100; if (key === 'ci') return ciOn ? 1 : 0; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'repmode') return topModes[sel] === 1 ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return Math.min(1, topModes[sel] / 3); if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
+    if (scope === 'sys') { if (key === 'qgrid') return qGrid / 5; if (key === 'sgrd') return Math.max(0, GRID_RES.indexOf(RES())) / 4; if (key === 'tspd') return tsp[sel] / (SPD.length - 1); if (key === 'qstr') return qAmt / 100; if (key === 'ci') return ciOn ? 1 : 0; if (key === 'qtime') return 0; if (key === 'morph') return morphV; if (key === 'bpm') return (bpm - 40) / 200; if (key === 'swing') return swing / 25; if (key === 'fullvel') return fullVel ? 1 : 0; if (key === 'repmode') return topModes[sel] === 1 ? 1 : 0; if (key === 'browse') return browseAll ? 1 : 0; if (key === 'rqoff') return rqOff; if (key === 'rrate') return repRate / 15; if (key === 'kind') return kind[sel]; if (key === 'tvol') return getTV(sel); if (key === 'pmode') return Math.min(1, topModes[sel] / 3); if (key === 'dsel') return dsel[sel] / 15; if (key === 'lay') return kind[sel] ? layD : layS / 3; if (key === 'snorm') return 0; if (key === 'rsrc') return rsSrc / 16; if (key === 'rbar') return rsBarI / 4; if (key === 'rgo') return rsState ? 1 : 0; if (key === 'rst') return rsPct / 100;
         if (key === 'kslot') return kitSlot / (15 + FACTORY.length); if (key === 'ksave' || key === 'kload' || key === 'psave' || key === 'pload' || key === 'spk') return 0; if (key === 'kinf') return kitInfo() === 'EMPTY' ? 0 : 1;
         if (key === 'rdens') return rndDens; if (key === 'rvar') return rndVar; if (key === 'favo') return favOnly ? 1 : 0; if (key === 'kprev') return 0; if (key === 'rkey') return rndKey; if (key === 'rrat') return rndRat; if (key === 'tcol') return (tcolO[sel] || 0) / 26; if (key === 'pnew' || key === 'prst') return 0; if (key === 'pslot') return projSlot / 31; if (key === 'pinf') return projUsed[projSlot] ? 1 : 0;
         if (EU_KEYS[key]) return euGet(key)[0];
@@ -623,6 +629,7 @@ function fmtVal(key, v) {
     if (key === 'qscale' || key === 'qtime') return 'TURN >';
     if (key === 'qgrid') return Q_GRID[qGrid][0];
     if (key === 'sgrd') return GRID_NAME[Math.max(0, GRID_RES.indexOf(RES()))];
+    if (key === 'tspd') return SPDN(tsp[sel]);
     if (key === 'qstr') return qAmt + '%';
     if (key === 'ci') return ciOn ? 'ON' : 'OFF';
     if (ENUMS[key]) return String(ENUMS[key][clamp(Math.round(v), 0, ENUMS[key].length - 1)]);
@@ -674,6 +681,7 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'qscale') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; opScaleQ(); }
         else if (key === 'qtime') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opTimeQ(); }
         else if (key === 'qgrid') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; qGrid = clamp(qGrid + (acc[idx] > 0 ? 1 : -1), 0, 5); acc[idx] = 0; markEdited(); }
+        else if (key === 'tspd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setSpeed(sel, tsp[sel] + d); }
         else if (key === 'sgrd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const gi = clamp(Math.max(0, GRID_RES.indexOf(RES())) + (acc[idx] > 0 ? 1 : -1), 0, 4); acc[idx] = 0; setGrid(sel, GRID_RES[gi]); }
         else if (key === 'qstr') { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; qAmt = clamp(qAmt + (acc[idx] > 0 ? 5 : -5), 5, 100); acc[idx] = 0; markEdited(); }
         else if (key === 'ci') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; ciOn = acc[idx] > 0; acc[idx] = 0; markEdited(); showToast('COUNT-IN', ciOn ? 'ON (1 BAR)' : 'OFF', ciOn ? 1 : 0); }
@@ -1290,7 +1298,7 @@ function copyTrackFull(a, b) {                              /* Shift + Copy + tr
         for (let c = 0; c < NPAT; c++) { snap(c, lb[j], undoGroup); steps[c][lb[j]] = steps[c][la[j]].map(x => x.slice()); qSeq(c, lb[j]); }
         llen[lb[j]] = llen[la[j]]; enqueue('llen' + lb[j], 'llen', lb[j] + ',' + llen[lb[j]]);
     }
-    tres[b] = tres[a]; enqueue('tres' + b, 'tres', b + ',' + tres[b]);
+    tres[b] = tres[a]; enqueue('tres' + b, 'tres', b + ',' + tres[b]); tsp[b] = tsp[a]; enqueue('tspd' + b, 'tspd', b + ',' + SPD[tsp[b]][0] + ',' + SPD[tsp[b]][1]);
     lens[b] = lens[a]; enqueue('len' + b, 'len', b + ',' + lens[b]);
     showToast('TRACK COPIED', 'T' + p2(a + 1) + ' > T' + p2(b + 1), 1); markEdited(); needsRedraw = true;
 }
@@ -2366,7 +2374,7 @@ function recRelease(key, lane) {                           /* the recorded note 
     const h = recHeldPad[key]; delete recHeldPad[key]; if (!h || !pads[lane]) return;
     let dur = (Date.now() - h.t) / (15000 / bpm);                      /* fallback: the clock of the UI */
     if (playing && h.g !== undefined) { const r = dspGet('pos'); if (typeof r === 'string') { const a = r.split(','), g = parseInt(a[1]) || 0, f = parseInt(a[3]) || 0; const d2 = (g - h.g) + (f - h.f) / 100; if (d2 >= 0 && d2 < 4096) dur = d2; } }
-    dur = dur * 6 / RES(laneTrk(h.l));                                  /* sixteenths -> steps of this track's grid */
+    dur = dur * 6 * SPDV(laneTrk(h.l)) / RES(laneTrk(h.l));                                  /* sixteenths -> steps of this track's grid */
     const st = steps[h.c][h.l][h.i]; if (!st[0]) return;
     for (let q = st.length; q < 10; q++) st[q] = 0;
     const arp = Math.round(pads[lane][PI.arp]) > 0;
@@ -2394,14 +2402,14 @@ function recordHit(lane, semi, vel) {
     const a = r.split(','), g = parseInt(a[1]) || 0, fr = parseInt(a[3]) || 0;
     let len = effLen(lane);
     if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; { const g1 = g - 1; growG0[track] = g1 - (((g1 % 16) + 16) % 16); tph[track] = growG0[track]; dspSet('tph', track + ',' + tph[track]); } }      /* the clip begins at the bar line of this take: its step 1 */
-    const rs = RES(track), pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw, rs === 6 || rs === 12 ? 99 : rs / 6) * 6 / rs;      /* the hit's exact position (in steps of the track's grid), snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
+    const rs = RES(track), pRaw = ((g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100) * SPDV(track), pSn = qSnapPos(pRaw, rs === 6 || rs === 12 ? 99 : rs / 6) * 6 / rs;      /* the hit's exact position (in steps of the track's grid), snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
     let tS = Math.floor(pSn + 1e-6), tN = Math.round((pSn - tS) / 0.025); if (tN > NUD_MAX) { tS++; tN = 0; }
-    const rel = tS - Math.round(tph[track] * 6 / rs);
+    const rel = tS - Math.round(tph[track] * 6 * SPDV(track) / rs);
     if (growTrk[track]) while (len < MAXSTEP && rel >= len) { growLoop(lane, len + barSteps(track)); const l2 = effLen(lane); if (l2 <= len) break; len = l2; }      /* the take always reaches the bar you are playing in, even when the loop did not grow in time */
     const target = ((rel % len) + len) % len;
     const st = steps[ed[track]][lane][target]; st[6] = tN; for (let q = st.length; q < 10; q++) st[q] = 0; st[5] = 0; st[9] = 0;
     st[0] = 1; st[1] = clamp(vel, 1, 127); st[2] = clamp(semi, -64, 63);
-    if (tS > Math.floor(((g - 1) + fr / 100) * 6 / rs + 1e-9)) dspSet('rskip', lane + ',' + tS);      /* the step is still ahead: the pad already sounded, so this pass does not play it a second time */
+    if (tS > Math.floor(((g - 1) + fr / 100) * 6 * SPDV(track) / rs + 1e-9)) dspSet('rskip', lane + ',' + tS);      /* the step is still ahead: the pad already sounded, so this pass does not play it a second time */
     qStep(ed[track], lane, target); lastRec = { c: ed[track], l: lane, i: target, g: g, f: fr }; markEdited();
 }
 let cpPad = -1, cpTrk = -1;
@@ -2920,6 +2928,7 @@ function selInfo(key, v) {                                  /* [number of choice
         case 'm_qnt': return [7, Math.min(6, Math.floor(v * 7))];
         case 'qgrid': return [6, qGrid];
         case 'sgrd': return [5, Math.max(0, GRID_RES.indexOf(RES()))];
+        case 'tspd': return [SPD.length, tsp[sel]];
     }
     return null;
 }
@@ -3958,7 +3967,7 @@ function firstDrum() {                                     /* a new project: tra
 function newProject() {                                    /* empty project: one drum track, every other track asks Synth/Drum when first selected (the old state is kept in the undo slot) */
     saveState(); backupState(); try { const cur = host_read_file(STATE_FILE); if (cur) host_write_file('/data/UserData/schwung/taktile-proj-undo.json', cur); } catch (e) { /* ignore */ }
     if (playing) { dspSet('play', '0'); playing = false; gs = 0; }
-    if (DEF) { chOn.fill(0); chBak.fill(null); lens = DEF.lens.slice(); tres = (DEF.tres || new Array(NTRK).fill(6)).slice(); mutes = DEF.mutes.slice(); kind = DEF.kind.slice(); slot = DEF.slot.slice(); dsel = DEF.dsel.slice(); tv = DEF.tv.slice(); llen = DEF.llen.slice(); ed = DEF.ed.slice(); topModes = DEF.topModes.slice(); master = DEF.master.slice(); bpm = DEF.bpm; swing = DEF.swing; }
+    if (DEF) { chOn.fill(0); chBak.fill(null); lens = DEF.lens.slice(); tres = (DEF.tres || new Array(NTRK).fill(6)).slice(); tsp = (DEF.tsp || new Array(NTRK).fill(SPD_ONE)).slice(); mutes = DEF.mutes.slice(); kind = DEF.kind.slice(); slot = DEF.slot.slice(); dsel = DEF.dsel.slice(); tv = DEF.tv.slice(); llen = DEF.llen.slice(); ed = DEF.ed.slice(); topModes = DEF.topModes.slice(); master = DEF.master.slice(); bpm = DEF.bpm; swing = DEF.swing; }
     lmutes = new Array(NLANE).fill(0); chosen = new Array(NTRK).fill(0); AUTO = {}; autoLast = {}; songOn = false; songLoop = true; songList = [[0, 4, 1, 0, 0, 0]]; songOff = 0; songNext = -1; songMuted = false; songTempoOn = false; songSlot = 0; layS = 0; layD = 0; moClk = 0; moMask = 0; moChn = 0; moXp = 0; moVp = 0; moDn = 0;
     euKL.fill(4); euRL.fill(0); euV = 100; for (let i = 0; i < NLANE; i++) euP[i] = euDef();
     spkTxt = {}; pads = defaultPads(); steps = newSteps(); csnd = null; undoStack = []; redoStack = []; miscLast = null; fillChg = []; tcolO.fill(0); lockT.fill(0); for (const r of fol) r.fill(0);
@@ -4320,7 +4329,7 @@ function songLed(i) {
 /* ---- motion recording: knob moves are stored per clip / lane / parameter in quarter steps and replayed ---- */
 let AUTO = {}, autoLast = {}, autoHold = {};
 function autoSub() { return Math.floor(((posFr || 0)) / 25) & 3; }
-function autoIdx(t, len) { const f = ((gl(t) - 1) * 6 + (posFr || 0) * 0.06) / RES(t); return ((Math.floor(f * 4 + 1e-9) % (len * 4)) + len * 4) % (len * 4); }      /* position inside the loop in quarter steps */
+function autoIdx(t, len) { const f = ((gl(t) - 1) * 6 + (posFr || 0) * 0.06) * SPDV(t) / RES(t); return ((Math.floor(f * 4 + 1e-9) % (len * 4)) + len * 4) % (len * 4); }      /* position inside the loop in quarter steps */
 let posFr = 0;
 function autoRec(L, key, v) {
     const c = ed[laneTrk(L)], id = c + '|' + L + '|' + key, len = effLen(L);
@@ -4561,7 +4570,7 @@ function drawClips() {
             const x = 27 + c * 12, has = trackHasSteps(c, t), cur = clipsCur[t] === c, q = clipsQ[t] === c;
             if (cur) {
                 fill_rect(x, y, 11, 10, 1);
-                if (playing) { const lt = lens[t] * RES(t), prog = Math.round(9 * (((gl(t) * 6) % lt + lt) % lt) / lt); fill_rect(x + 1 + prog, y + 8, 1, 2, 0); }
+                if (playing) { const lt = lens[t] * RES(t), prog = Math.round(9 * (((gl(t) * 6 * SPDV(t)) % lt + lt) % lt) / lt); fill_rect(x + 1 + prog, y + 8, 1, 2, 0); }
                 else { set_pixel(x + 4, y + 3, 0); set_pixel(x + 4, y + 4, 0); set_pixel(x + 4, y + 5, 0); set_pixel(x + 5, y + 4, 0); }
             } else if (q) { draw_rect(x, y, 11, 10, 1); fill_rect(x + 3, y + 3, 5, 4, 1); }
             else if (has) { draw_rect(x, y, 11, 10, 1); clipBars(c, t, x, y); }
@@ -5217,7 +5226,7 @@ function splashLeds(ms) {
 
 globalThis.init = function () {
     crumb('init');
-    DEF = { tres: tres.slice(), lens: lens.slice(), mutes: mutes.slice(), kind: kind.slice(), slot: slot.slice(), dsel: dsel.slice(), tv: tv.slice(), llen: llen.slice(), ed: ed.slice(), topModes: topModes.slice(), master: master.slice(), bpm: bpm, swing: swing };
+    DEF = { tsp: tsp.slice(), tres: tres.slice(), lens: lens.slice(), mutes: mutes.slice(), kind: kind.slice(), slot: slot.slice(), dsel: dsel.slice(), tv: tv.slice(), llen: llen.slice(), ed: ed.slice(), topModes: topModes.slice(), master: master.slice(), bpm: bpm, swing: swing };
     loadState();
     master[MK.indexOf('m_chp')] = 0;                          /* the comp detector high-pass was removed from the menu: always off */
     if (!freshState) backupState();

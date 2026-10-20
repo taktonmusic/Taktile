@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.8.0 (20 October 2026)
+- New: Track Speed on the QUANT page (Shift + Step 3) - every track runs at its own tempo ratio from 1/8 to 3/1, odd fractions too (1/2 = half-time, 2/3, 3/2, 2/1 ...); playhead, recording and MIDI export follow the ratio
+
 ## 1.7.3 (19 October 2026)
 - Song page: only the song plays - a running normal sequencer turns into the song, step 1 clips are set before the first note, a song set to ONCE stops at its end
 - Euclid switch is OFF / ON again (no ADD mode)

@@ -49,7 +49,7 @@ jobs:
       - name: Native tests (MIC recording, Duck, Tape)
         run: |
           ./scripts/fetch-header.sh
-          for t in mic duck tape speech; do
+          for t in mic duck tape speech speed; do
             gcc -O2 -Wno-misleading-indentation -Ibuild/include -o /tmp/${t}_test tools/test/${t}_test.c src/pad_studio.c -lm
             /tmp/${t}_test
           done
