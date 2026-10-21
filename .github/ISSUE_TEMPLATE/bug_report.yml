@@ -7,7 +7,7 @@ body:
     attributes:
       label: Taktile version
       description: Shown in the release name or in module.json
-      placeholder: "5.4.1"
+      placeholder: "1.0.0"
     validations:
       required: true
   - type: input
