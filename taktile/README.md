@@ -2,7 +2,7 @@
 
 A pattern-based groove box for the **Ableton Move**, written as an *overtake* module for [Schwung](https://github.com/charlesvestal/schwung). It takes over pads, buttons, knobs and display; all sound comes from its own C DSP (`dsp.so`).
 
-> **Status:** Developed and tested together with a real Ableton Move. Release 1.8.0 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds).
+> **Status:** Developed and tested together with a real Ableton Move. Release 1.7.3 itself was checked on a desktop (UI simulator, 60,000-event fuzzing, native builds).
 
 ![display preview](docs/display-preview.png)
 
@@ -24,7 +24,7 @@ Download `taktile-module.tar.gz` from the [latest release](../../../releases/lat
 
 Manual alternative: unpack it, copy the `taktile/` folder (`module.json`, `ui.js`, `dsp.so`) to `/data/UserData/schwung/modules/overtake/` and restart Schwung. After building yourself, `scripts/install.sh` copies the build over SSH (`ableton@move.local`, set `DEVICE=user@host` to change it).
 
-Built against Schwung plugin API **v1.8.0** (see the root README, "Compatibility").
+Built against Schwung plugin API **v1.7.3** (see the root README, "Compatibility").
 
 ## Build
 Needs `gcc-aarch64-linux-gnu`.

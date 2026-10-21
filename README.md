@@ -6,7 +6,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-333333">
   <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-333333">
   <img alt="Language" src="https://img.shields.io/badge/DSP-C-333333">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.8.0-333333">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.7.3-333333">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-333333">
 </p>
 
@@ -15,7 +15,7 @@
 <p align="center"><b>A groovebox for the Ableton Move: 16 tracks of synths and drums, step sequencer, 1462 sounds, effects and live performance tools – a Schwung overtake module.</b></p>
 
 > [!NOTE]
-> **Status:** Developed by TaktOnMusic together with a real Ableton Move. Release 1.8.0 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
+> **Status:** Developed by TaktOnMusic together with a real Ableton Move. Release 1.7.3 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
 
 ---
 
@@ -83,7 +83,7 @@ Building it yourself: see below. After a build, `taktile/scripts/install.sh` doe
 | | |
 |---|---|
 | Module format | Schwung overtake module, `api_version` 2 |
-| Built against | Schwung plugin API header from tag **v1.8.0** (`plugin_api_v1.h`, pinned in `fetch-header.sh`) |
+| Built against | Schwung plugin API header from tag **v1.7.3** (`plugin_api_v1.h`, pinned in `fetch-header.sh`) |
 | Move firmware | Not recorded yet. When you report a problem, please name your firmware and Schwung version |
 
 If your Schwung is a different version, build with `SCHWUNG_REF=<tag> ./scripts/fetch-header.sh` first. The header has to match the host exactly.
@@ -105,7 +105,7 @@ Needs `gcc-aarch64-linux-gnu`.
 
 ```bash
 cd taktile
-./scripts/build.sh      # fetches Schwung's plugin_api_v1.h (v1.8.0), builds dist/taktile-module.tar.gz
+./scripts/build.sh      # fetches Schwung's plugin_api_v1.h (v1.7.3), builds dist/taktile-module.tar.gz
 ```
 
 ### Desktop test of the DSP

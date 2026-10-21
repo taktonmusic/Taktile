@@ -36,8 +36,4 @@ run('draw()'); ok(true, 'draws');
 params.pos='1,0,0,0'; run('menuOpen=false;songOn=false;playing=true;view=31;gs=5;songPrev=null'); T(3); params.pos='0,0,0,0';  ok(run('songOn') === true && run('gs') <= 3, 'normal playing + song page = only the song plays (starts at step 1)');
 run('playing=false;view=0'); T(3);
 run('sel=0;euP[ln()].eo=1'); ok(run("euGet('eon')[1]") === 'ON', 'euclid switch: OFF / ON');
-run('view=15;sel=1;needsRedraw=true'); T(3); run('draw()'); ok(run("SPDN(tsp[1])") === '1:1', 'track speed starts at 1:1');
-run('setSpeed(1, SPD_ONE - 5)'); ok(run('SPDV(1)') === 0.5 || Math.abs(run('SPDV(1)') - 0.5) < 1e-9, 'track speed 1/2 = half time'); ok(run('SPDV(0)') === 1, 'the other tracks keep 1:1');
-ok(run("setSpeed(1, 15), SPDN(tsp[1])") === '3/2', 'odd ratio 3/2'); run('draw()');
-run('setSpeed(1, SPD_ONE)'); run('view=0');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);
