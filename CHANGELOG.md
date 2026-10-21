@@ -1,30 +1,5 @@
 # Changelog
 
-## 1.7.3 (19 October 2026)
-- Song page: only the song plays - a running normal sequencer turns into the song, step 1 clips are set before the first note, a song set to ONCE stops at its end
-- Euclid switch is OFF / ON again (no ADD mode)
-
-## 1.7.2 (19 October 2026)
-- Speech sound: every step button now gets its own letter (before, all steps said the same letter), a new speech sound starts in LETTER mode, hold a step + jogwheel = letter of that step
-
-## 1.7.1 (19 October 2026)
-- Drum tracks: all pads run together with one length (Loop + jog / Loop + step sets the length of the whole track; older single-pad loops are dropped)
-
-## 1.7.0 (19 October 2026)
-- Song page: Copy + pad fills a step from a scene (every track with notes in that clip column), clearer chain at the bottom (one box per step button, dot = playing)
-
-## 1.6.9 (19 October 2026)
-- Menu: the TAPE tile now has a symbol (cassette)
-
-## 1.6.8 (19 October 2026)
-- Song page: progress in the step (3/8), Loop + step button = repeat x1/x2/x4, new SWEEP transition (filter opens over the first bar), jog click = overview of all 16 tracks, hold a pad long = open that clip (Back returns to the song)
-
-## 1.6.7 (19 October 2026)
-- Song page: Loop held + jogwheel = bars of a step, Mute + pad = track silent in this step, Shift + jogwheel = transition, Up/Down = step name, a new step is empty
-
-## 1.6.6 (19 October 2026)
-- Song: Play starts from step 1 and runs the whole chain (every step button = one step with its own clips per track); pressing a step button while it plays jumps there at the end of the bar
-
 ## 1.6.5 (19 October 2026)
 - Song page: only the song plays; when the song is off (or you leave the page) your normal clips play again
 - Song starts at the step you picked, the jogwheel scrolls through tracks 1-16
