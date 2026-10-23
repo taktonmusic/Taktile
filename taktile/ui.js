@@ -5255,7 +5255,7 @@ function updateLeds() {
         }
         else if (view === 20) c = i < NTRK ? (mutes[i] ? dimCol(trkCol(i)) : trkCol(i)) : 0;        /* mixer: the first 16 pads are the track mutes */
         else if (askKind >= 0) c = (i & 7) < 4 ? trkCol(sel) : 1;
-        else c = mutes[sel] ? dimCol(trkCol(sel)) : padLed(i);
+        else c = padLed(i);      /* a muted track still shows its pads (drum sounds / notes); the display shows M */
         led(PAD_FIRST + i, c);
     }
     for (let i = 0; i < 16; i++) {
