@@ -67,7 +67,8 @@ ok(run('scopeLatch') === true && run('view') === 0, 'Shift + jog click in the sc
 run('chosen[1] = 1; askKind = -1'); T(2);
 cc(49, 127); cc(3, 127); cc(3, 0); cc(49, 0); T(2);
 ok(run('scopeLatch') === false, 'Shift + jog click switches the latch off');
-run('chosen[4] = 1; setKind(4, 1); selectTrack(4); askKind = -1; view = 0; for (let c = 0; c < NPAT; c++) for (const l of lanesOf(4)) steps[c][l] = steps[c][l].map(() => [0, 100, 0, 0]); lens[4] = 64; recArmed = true; playing = false; recordHit(lanesOf(4)[0], 0, 100)');
-ok(run('lens[4]') === 16 && run('growTrk[4]') === true, 'first take in an empty drum track starts with one bar, not the old length (' + run('lens[4]') + ')');
-run('recArmed = false; playing = false; growTrk[4] = false');
+run('view = 31; songBlank = false; songList = [[0,4,1,0,0,0]]; songSlot = 0; bank = 0; steps[6][3] = steps[6][3].map(() => [0, 100, 0, 0]); kind[3] = 0'); T(2);
+run('songClips(songList[0])[3] = -1; songPadNew(6)'); ok(run('songList[0][6][3]') === -1, 'song: an empty pad does not pick or create a clip');
+run('steps[6][3][0] = [1, 100, 0, 0]; songPadNew(6)'); ok(run('songList[0][6][3]') === 6, 'song: a pad with a clip picks it');
+run('view = 0');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

@@ -2528,7 +2528,7 @@ function recordHit(lane, semi, vel, at) {
     if (!recArmed) return;
     if (!playing) {                                   /* arm + first hit starts the clip recorder */
         recUndo(track, lane);
-        playing = true; gs = 0; dspSet('play', '1'); growTrk[track] = !trackHasSteps(ed[track], track); if (growTrk[track] && !trackAnyNotes(track)) { resetLen(track); growTrk[track] = true; } growG0[track] = 0; growP0[track] = 0; growMax[track] = 1;
+        playing = true; gs = 0; dspSet('play', '1'); growTrk[track] = !trackHasSteps(ed[track], track); growG0[track] = 0; growP0[track] = 0; growMax[track] = 1;
         const st0 = steps[ed[track]][lane][0]; st0[0] = 1; st0[1] = clamp(vel, 1, 127); st0[2] = clamp(semi, -64, 63);
         dspSet('rskip', lane + ',0'); qStep(ed[track], lane, 0); lastRec = { c: ed[track], l: lane, i: 0, g: 1, f: 0 }; showToast('REC', 'T' + p2(track + 1) + ' C' + (ed[track] + 1), 1); markEdited(); return;
     }
@@ -2537,7 +2537,7 @@ function recordHit(lane, semi, vel, at) {
     if (typeof r !== 'string') return;
     const a = at ? [0, at.g, 0, at.f] : r.split(','), g = parseInt(a[1]) || 0, fr = parseInt(a[3]) || 0;
     let len = effLen(lane);
-    if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; if (!trackAnyNotes(track)) { resetLen(track); growTrk[track] = true; } { const g1 = g - 1; growG0[track] = g1 - (((g1 % 16) + 16) % 16); tph[track] = growG0[track]; dspSet('tph', track + ',' + tph[track]); growP0[track] = (g - 1) + fr / 100; growMax[track] = 1; } }      /* the clip begins at the bar line of this take: its step 1 */
+    if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; { const g1 = g - 1; growG0[track] = g1 - (((g1 % 16) + 16) % 16); tph[track] = growG0[track]; dspSet('tph', track + ',' + tph[track]); growP0[track] = (g - 1) + fr / 100; growMax[track] = 1; } }      /* the clip begins at the bar line of this take: its step 1 */
     const rs = RES(track), pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw, rs === 6 || rs === 12 ? 99 : rs / 6) * 6 / rs;      /* the hit's exact position (in steps of the track's grid), snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
     let tS = Math.floor(pSn + 1e-6), tN = Math.round((pSn - tS) / 0.025); if (tN > NUD_MAX) { tS++; tN = 0; }
     const rel = tS - Math.round(tph[track] * 6 / rs);
@@ -4429,7 +4429,9 @@ const SONG_REP = [1, 2, 4];
 function songPadNew(idx) {                                       /* pads = your tracks (rows) x their clips 1-8 (columns): press = this step plays that clip on that track, press again = track silent */
     const t = bank * 4 + (3 - (idx >> 3)), c = idx & 7, e = songList[songSlot];
     if (!e || t < 0 || t >= NTRK) return;
-    const cl = songClips(e); songBlank = false;
+    const cl = songClips(e);
+    if (cl[t] !== c && !deleteHeld && !trackHasSteps(c, t)) { showToast('CLIP ' + (c + 1) + ' IS EMPTY', 'MAKE IT IN CLIP VIEW', 0); return; }      /* the song only picks clips that exist in the clip view; an empty pad never creates one */
+    songBlank = false;
     cl[t] = (cl[t] === c || deleteHeld) ? -1 : c;
     if (songOn && playing && songPlayIdx() === songSlot) { songCl[t] = cl[t]; songTrk(t, cl[t]); }
     showToast('STEP ' + p2(songSlot + 1) + ' T' + p2(t + 1), cl[t] < 0 ? 'SILENT' : 'CLIP ' + (cl[t] + 1), (cl[t] + 1) / NPAT);
@@ -5255,7 +5257,7 @@ function updateLeds() {
         }
         else if (view === 20) c = i < NTRK ? (mutes[i] ? dimCol(trkCol(i)) : trkCol(i)) : 0;        /* mixer: the first 16 pads are the track mutes */
         else if (askKind >= 0) c = (i & 7) < 4 ? trkCol(sel) : 1;
-        else c = mutes[sel] ? dimCol(trkCol(sel)) : padLed(i);
+        else c = padLed(i);      /* a muted track still shows its pads (drum sounds / notes); the display shows M */
         led(PAD_FIRST + i, c);
     }
     for (let i = 0; i < 16; i++) {
