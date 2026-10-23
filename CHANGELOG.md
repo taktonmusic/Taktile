@@ -30,6 +30,9 @@
 - Six new human voices: Granny, Grandson, Mother, Father, Kid, Teenager (456 sounds)
 - Song mode: song pads no longer play the synth in the background; copying clips works
 - Note Repeat is recorded when Rec is pressed while Note Repeat is held (drum and synth)
+- Mixer pads: a tap mutes / unmutes at once, a muted track is dimmed (not dark), Shift + pad opens that track; clip view shows muted tracks dimmed too
+- Drum FX page: page 1 = Delay and Reverb sends + Insert 1, Jog click = Insert 2
+- Filter knobs (LPCut, Reso, HPCut) turn a little faster
 
 ## Development history (steps before 1.0.0)
 
