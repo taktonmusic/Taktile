@@ -2469,6 +2469,7 @@ function delNote(L, semi) {                                 /* Delete + note pad
     if (n) { qSeq(c, L); markEdited(); }
     showToast(n ? 'NOTE DELETED' : 'NO NOTE HERE', n ? n + ' STEPS' : '', 0);
 }
+const padDn = {};
 function onPad(idx, on, vel) {
     if (fb && askKind < 0 && on) {                          /* browser: the pads play at the preview volume */
         fbEnsure(); const fv = fullVel; vel = Math.max(1, Math.round((fv ? 127 : vel) * fbVol)); fullVel = false;
@@ -5365,7 +5366,11 @@ globalThis.onMidiMessageInternal = function (data) {
     if (type === 0x90 || type === 0x80) {
         delAge = 0;
         const on = type === 0x90 && d2 > 0;
-        if (d1 >= PAD_FIRST && d1 <= PAD_LAST) onPad(d1 - PAD_FIRST, on, d2);
+        if (d1 >= PAD_FIRST && d1 <= PAD_LAST) {
+            const now = Date.now();                                  /* a pad that sends its note-on again while it is still held (a deeper press) must not trigger twice */
+            if (on) { if (padDn[d1] && now - padDn[d1] < 1200) return; padDn[d1] = now; } else padDn[d1] = 0;
+            onPad(d1 - PAD_FIRST, on, d2);
+        }
         else if (d1 >= STEP_FIRST && d1 <= STEP_LAST && !menuOpen) onStep(d1 - STEP_FIRST, on);
         return;
     }

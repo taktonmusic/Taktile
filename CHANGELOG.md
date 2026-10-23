@@ -10,6 +10,7 @@
 - Safe start: if the last start did not finish, Taktile opens an empty project and keeps the old file as a copy
 - Tape hiss is mono
 - Euclid sequencer: OFF / ON again (the ADD mode is gone, so it can be switched off)
+- Pads: a pad that sends its note-on again while it is still held (a deeper press) no longer triggers the sound a second time
 - No Track Speed
 - Fixed: sustained sounds (Strings, Pad, Lead, Organ ...) no longer sound a second time when the pad is released
 

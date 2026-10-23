@@ -810,6 +810,7 @@ typedef struct {
     int   llen[NLANE];                      /* own loop length of one lane (0 = follow the track) */
     int   playing, cur_pat, sel_track, gs;
     int   sub;                              /* tick inside the current 1/16 (0..5): the grid is 6 ticks per 1/16 so 1/32 and triplets are real steps */
+    unsigned pd_blk, pd_on[128];                                        /* pad note-ons seen (block counter): a pad that sends its note-on again while held (deeper press) does not trigger twice */
     int   tres[NTRK];                       /* ticks per step of a track's grid: 6 = 1/16 (default), 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8 */
     int   clip[NTRK], qclip[NTRK];   /* active clip per track (-1 = stopped), pending (-2 = none) */
     int   scq[NPAT], pend_on, pend_qm;   /* launch quantisation of one scene (0 = global setting) and the one used by the pending scene launch */
@@ -3005,6 +3006,10 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
     if (!s || len < 3) return;
     uint8_t st = msg[0] & 0xF0;
     if (st != 0x90 && st != 0x80) return;
+    if (msg[1] < 128) {                                                  /* a note-on for a pad that is still held (a harder press sends it again): ignore it for 1.2 s */
+        if (st == 0x90 && msg[2] > 0) { if (s->pd_on[msg[1]] && s->pd_blk - (s->pd_on[msg[1]] - 1) < 413u) return; s->pd_on[msg[1]] = s->pd_blk + 1; }
+        else s->pd_on[msg[1]] = 0;
+    }
     int p = note_to_pad(msg[1]);
     if (p < 0) return;
     const int rcol = p & 7;
@@ -3902,6 +3907,7 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
     *outL = oL; *outR = oR;
 }
 static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
+    { inst_t *s0 = (inst_t *)instance; if (s0) s0->pd_blk++; }
     inst_t *s = (inst_t *)instance;
 
     /* shared delay time for this block */
