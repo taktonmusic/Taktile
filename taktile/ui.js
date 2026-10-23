@@ -791,7 +791,7 @@ function seqShort() { return kind[sel] ? SEQ_DRM_S : SEQ_SYN_S; }
 function seqKnob(i, delta) {
     if (delta === 0) return;
     const big = shiftHeld ? 5 : 1;
-    if (!shiftHeld || i > 3) { const k = seqSnd()[i], r = editParam('pad', k, delta, i); if (r) showToast(k.toUpperCase(), fmtVal(k, r.v), fracVal(k, r.v)); markEdited(); return; }
+    { const k = seqSnd()[i], r = editParam('pad', k, delta, i); if (r) showToast(k.toUpperCase(), fmtVal(k, r.v), fracVal(k, r.v)); markEdited(); return; }
     switch (i) {
     case 0: pSnap('sys', 0, 'bpm'); bpm = clamp(bpm + delta * big, 40, 240); enqueue('bpm', 'bpm', String(bpm)); break;
     case 1: pSnap('sys', 0, 'swing'); swing = clamp(swing + delta, 0, 25); enqueue('swing', 'swing', (0.5 + swing / 100).toFixed(3)); break;
@@ -2086,7 +2086,6 @@ const MENU_ITEMS = [
 function knobTouch(i) {
     if (menuOpen) return;
     if (view === 0 && heldStep < 0) {
-        if (shiftHeld && i < 4) { const L = [['BPM', String(bpm), (bpm - 40) / 200], ['SWING', String(50 + swing), swing / 25], ['LEN', String(LL()), LL() / MAXSTEP], ['CLIP', String(ed[sel] + 1), ed[sel] / 7]]; showToast(L[i][0], L[i][1], L[i][2]); return; }
         const k = seqSnd()[i], v = pads[ln()][PI[k]]; showToast((LONG_NAME[k] || k).toUpperCase(), fmtVal(k, v), fracVal(k, v)); return;
     }
     if (view === 7) { const t = bank * 4 + (i & 3), k = i >= 4 ? 'pan' : 'vol', tvv = k === 'pan' ? pads[t][PI.pan] : getTV(t); showToast(k === 'pan' ? 'PAN' : 'VOLUME', kind[t] && k === 'pan' ? 'PER SOUND' : fmtVal(k, tvv), tvv); return; }

@@ -3828,8 +3828,8 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
             s->dly_z[1] += aa * (yr - s->dly_z[1]);
             float fa = s->dly_z[0], fb = s->dly_z[1];
             if (dm == 2) {
-                s->dly_hp[0] += 0.02f * (fa - s->dly_hp[0]); fa -= s->dly_hp[0];
-                s->dly_hp[1] += 0.02f * (fb - s->dly_hp[1]); fb -= s->dly_hp[1];
+                s->dly_hp[0] += 0.006f * (fa - s->dly_hp[0]); fa -= s->dly_hp[0];
+                s->dly_hp[1] += 0.006f * (fb - s->dly_hp[1]); fb -= s->dly_hp[1];
             }
             fa = fast_tanh(fa * 1.4f) * 0.714f; fb = fast_tanh(fb * 1.4f) * 0.714f;
             s->dlL[s->dw] = sd + fb * dfb;

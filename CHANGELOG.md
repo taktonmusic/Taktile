@@ -35,6 +35,8 @@
 - Filter knobs (LPCut, Reso, HPCut) turn a little faster
 - Song page like the clip view: Mute + pad (Shift = solo) mutes a track, muted tracks are dimmed and marked, the playing clip shows its progress
 - Pad switch to the UI is sent at once when a page changes (mixer, clips, song)
+- Shift + knobs 1-4 no longer change BPM / Swing / Length / Clip on the SEQ page (Shift is only a modifier again)
+- Delay type DUB keeps more low end in the echoes (808 and sub sounds no longer fade out)
 
 ## Development history (steps before 1.0.0)
 
