@@ -1572,7 +1572,7 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         if ((first && scs != 2 && scs_t != 2) || (!first && (scs == 1 || (scs_t == 1 && p < NTRK))))
         for (int t = 0; t < NLANE; t++) if (t != p && s->pp[t][PP_DUCK] > 0.01f) s->dk_env[t] = 1.0f;
     }
-    if (s->pp[p][PP_POLY] <= 0.5f && v->active && (TY[v->type].sus || BASE_T[v->type] == T_E_SPK) && v->env > 0.003f) {   /* mono re-trigger of a held synth note: the old note fades out in a ghost instead of being cut (click) */
+    if (s->pp[p][PP_POLY] <= 0.5f && v->active && v->env > 0.003f) {   /* mono re-trigger of a held synth note: the old note fades out in a ghost instead of being cut (click) */
         int gi = -1;
         for (int i = 0; i < NGH; i++) if (!s->vc[NLANE + i].active) { gi = i; break; }
         if (gi < 0) { gi = s->gnext; s->gnext = (s->gnext + 1) % NGH; }

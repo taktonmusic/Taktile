@@ -47,6 +47,8 @@ jobs:
         run: node tools/test/test_groove.js
       - name: Safe start test
         run: node tools/test/test_safestart.js
+      - name: Nudge keys test
+        run: node tools/test/test_nudge.js
       - name: Preset list test
         run: node tools/test/test_presets.js
 

@@ -5,14 +5,17 @@
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms)
 - Presets cut from 1468 to 420 clearly different sounds plus the 30 new sounds = 450; sounds of old projects, favorites and kits become the most similar kept sound of the same synth; levels evened out inside every synth
 - Sound browser: the melodic synths are grouped into 6 groups
-- Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with Groove Amt on the SWING page
+- Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with Groove Amt on the SWING page (Shift + step 7)
 - Master pages (TEMPO, QUANT, OPTIONS, PROJECT, DESIGN ...) use tiles instead of round knobs
 - Safe start: if the last start did not finish, Taktile opens an empty project and keeps the old file as a copy
 - Tape hiss is mono
 - Euclid sequencer: OFF / ON again (the ADD mode is gone, so it can be switched off)
 - Pads: a pad that sends its note-on again while it is still held (a deeper press) no longer triggers the sound a second time
-- No Track Speed
 - Fixed: sustained sounds (Strings, Pad, Lead, Organ ...) no longer sound a second time when the pad is released
+- Hold a step button + left / right arrow = nudge of that step
+- Button lights (Mute, Copy, Delete, Back, Sample, Loop, arrows) glow softly by default
+- Fast repeated drum sounds (kicks in sixteenths) no longer click: the old tail fades out in 10 ms instead of being cut
+- No Track Speed
 
 ## Development history (steps before 1.0.0)
 
