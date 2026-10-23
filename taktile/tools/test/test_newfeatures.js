@@ -55,4 +55,8 @@ run('kind[2] = 1; selectTrack(2); view = 38; fxPage = 0; viewItemsFix()');
 ok(run('VIEW_ITEMS[38][0][0]') === 'dly' && run('VIEW_ITEMS[38][1][0]') === 'rvb', 'drum FX page 1 starts with the two sends');
 run('fxPage = 1; viewItemsFix()'); ok(run('pg2(38)') === 39 && run('VIEW_ITEMS[39][0][0]') === 'x2fx', 'drum FX page 2 = insert 2');
 run('kind[2] = 0; fxPage = 0; view = 0; viewItemsFix()');
+run('view = 31; songBlank = false; songList = [[0,4,1,0,0,0]]; songSlot = 0; mutes[1] = 0; bank = 0'); T(2);
+ctx.onMidiMessageInternal([0x90 + 0, 0, 0]); cc(88, 127); ctx.onMidiMessageInternal([0x90, 68 + 8, 100]); ctx.onMidiMessageInternal([0x80, 68 + 8, 0]); cc(88, 0); T(2);
+ok(run('mutes[2] || mutes[1]') === 1, 'song page: Mute + pad mutes the track');
+run('mutes.fill(0); view = 0; muteHeld = false');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

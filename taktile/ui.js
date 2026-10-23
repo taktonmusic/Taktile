@@ -1603,7 +1603,7 @@ function shiftStep(i) {
 }
 const SYM_VIEW_SET = {}; Object.keys(SYM_VIEW).forEach(k => SYM_VIEW_SET[SYM_VIEW[k]] = true);
 
-function setView(v) { if (v === 39) { v = 38; fxPage = 1; } view = v; acc.fill(0); needsRedraw = true; }
+function setView(v) { if (v === 39) { v = 38; fxPage = 1; } view = v; acc.fill(0); needsRedraw = true; if (typeof syncPadsOff === 'function') syncPadsOff(); }
 /* ---- FAVORITES: 8 knobs you choose yourself (any parameter from any page) ---- */
 let favK = ['cut', 'res', 'decay', 'tone', 'drive', 'dly', 'rvb', 'm_filt'], favNext = 0, lastKnob = '';
 let KEYNAME = null;
@@ -2620,6 +2620,7 @@ function onPadCore(idx, on, vel) {
     if (muteHeld || view === 20) {                            /* MUTE + pad (session / mixer: just the pad) = mute without leaving the page */
         if (on) {
             if (view === 7) { muteUsed = true; const t = bank * 4 + (3 - (idx >> 3)); if (t >= 0 && t < NTRK) { if (shiftHeld) soloTrack(t); else toggleMute(t); } }
+            else if (view === 31) { muteUsed = true; const t = bank * 4 + (3 - (idx >> 3)); if (t >= 0 && t < NTRK) { if (shiftHeld) soloTrack(t); else toggleMute(t); } }
             else if (view === 20) { if (idx < NTRK) { if (shiftHeld) { selectTrack(idx); setView(0); prevView = 0; } else toggleMute(idx); } }
             else if (kind[sel] && soundArea(idx & 7)) { muteUsed = true; toggleLaneMute(laneOf(sel, (idx >> 3) * 4 + ((idx & 7) & 3))); }
             else if (muteHeld) { muteUsed = true; toggleMute(sel); }
@@ -4437,7 +4438,8 @@ function songLed(i) {
     const t = bank * 4 + (3 - (i >> 3)), c = i & 7, e = songList[songSlot];
     if (!e) return 0;
     const cl = songClips(e), has = trackHasSteps(c, t), tc = trkCol(t);
-    if (cl[t] === c) return (songOn && playing && songPlayIdx() === songSlot && clipsCur[t] === c) ? 120 : tc;
+    const mu = mutes[t] ? dimCol : (x => x);
+    if (cl[t] === c) return (songOn && playing && songPlayIdx() === songSlot && clipsCur[t] === c) ? 120 : mu(tc);
     return has ? dimCol(tc) : 123;
 }
 /* ---- motion recording: knob moves are stored per clip / lane / parameter in quarter steps and replayed ---- */
@@ -4815,9 +4817,10 @@ function drawSong() {
         const t = bank * 4 + r, y = 11 + r * 11, isSel = (t === sel);
         const nm = kind[t] ? 'DRM' + (slot[t] + 1) : 'S' + p2(t + 1);
         if (isSel) { fill_rect(0, y, 25, 10, 1); txt(1, y + 1, nm, 0); } else txt(1, y + 1, nm, 1);
+        if (mutes[t]) fill_rect(0, y + 4, 25, 1, isSel ? 0 : 1);
         for (let c = 0; c < NPAT; c++) {
             const x = 27 + c * 12, has = trackHasSteps(c, t), ch = cl[t] === c;
-            if (ch) { fill_rect(x, y, 11, 9, 1); if (pl === songSlot && clipsCur[t] === c) fill_rect(x + 3, y + 7, 5, 1, 0); }
+            if (ch) { fill_rect(x, y, 11, 9, 1); if (pl === songSlot && clipsCur[t] === c) { if (playing) { const lt = lens[t] * RES(t), prog = Math.round(9 * (((gl(t) * 6) % lt + lt) % lt) / lt); fill_rect(x + 1 + prog, y + 7, 1, 2, 0); } else fill_rect(x + 3, y + 7, 5, 1, 0); } }
             else if (has) { draw_rect(x, y, 11, 9, 1); clipBars(c, t, x, y - 1); }
             else { set_pixel(x + 5, y + 4, 1); }
         }

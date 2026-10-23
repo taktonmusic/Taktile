@@ -33,6 +33,8 @@
 - Mixer pads: a tap mutes / unmutes at once, a muted track is dimmed (not dark), Shift + pad opens that track; clip view shows muted tracks dimmed too
 - Drum FX page: page 1 = Delay and Reverb sends + Insert 1, Jog click = Insert 2
 - Filter knobs (LPCut, Reso, HPCut) turn a little faster
+- Song page like the clip view: Mute + pad (Shift = solo) mutes a track, muted tracks are dimmed and marked, the playing clip shows its progress
+- Pad switch to the UI is sent at once when a page changes (mixer, clips, song)
 
 ## Development history (steps before 1.0.0)
 
