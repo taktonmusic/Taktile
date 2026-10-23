@@ -2,8 +2,6 @@
 
 ## 1.0.0 (23 October 2026)
 - Design themes are back: Menu → DESIGN → Design theme (14 themes, changes live while you scroll, saved with the project)
-
-## 1.0.0 (23 October 2026)
 - Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with Groove Amt on the SWING page; Swing stays and works on top
 - Safe start: if the last start did not finish, Taktile opens an empty project and keeps the old file as a copy
 - Native groove test and UI tests added to CI
