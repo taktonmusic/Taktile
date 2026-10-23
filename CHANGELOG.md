@@ -1,6 +1,9 @@
 # Changelog
 
 ## 1.0.0 (23 October 2026)
+- Drum tracks: each pad keeps its own loop length again (the shared-length change was taken out)
+
+## 1.0.0 (23 October 2026)
 - Menu: no leftover message on top of the menu title, shorter names where they were cut off (Btn lights, Scene Lnch, Pin knob to FAV), longer group titles, exit window title fits
 - Design themes are back: Menu → DESIGN → Design theme (14 themes, changes live while you scroll, saved with the project)
 - Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with Groove Amt on the SWING page; Swing stays and works on top
