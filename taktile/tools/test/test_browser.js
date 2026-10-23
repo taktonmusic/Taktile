@@ -42,6 +42,7 @@ run('playing = false; fbSetPm(0)');
 run('fbOpen(); while (fb.st.length > 1 && !fbIsLeaf(fb.st[fb.st.length - 1].node)) fbClick();');
 run('fbMove(1, 1)'); const typeBefore = run('Math.round(pads[ln()][0])'); const target = run('fbItems(fb.st[fb.st.length - 1].node)[fb.st[fb.st.length - 1].i].val');
 const stepsBefore = run('JSON.stringify(steps)'); run('recArmed = true; playing = true'); setCalls.length = 0;
+run('splashT0 = 0; idleBlank = false; for (const k in padDn) padDn[k] = 0');
 ctx.onMidiMessageInternal([0x90, 68, 100]); T(2); ctx.onMidiMessageInternal([0x90, 68, 0]); T(2);
 ok(run('JSON.stringify(steps)') === stepsBefore, 'pad pressed while browsing in record mode: nothing is recorded');
 ok(run('Math.round(pads[ln()][0])') === target, 'pad press with preview OFF loads the highlighted sound (' + typeBefore + ' -> ' + target + ')');
