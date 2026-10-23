@@ -3,8 +3,6 @@
 ## 1.0.0 (23 October 2026)
 - Tape hiss is mono now (the same noise on left and right), the settings stay as they are
 - Sound levels evened out: every sound is measured and trimmed so the sounds of one synth are about equally loud (spread inside a synth 5.2 dB -> 1.5 dB)
-
-## 1.0.0 (23 October 2026)
 - Drum tracks: each pad keeps its own loop length again (the shared-length change was taken out)
 - Menu: no leftover message on top of the menu title, shorter names where they were cut off (Btn lights, Scene Lnch, Pin knob to FAV), longer group titles, exit window title fits
 - Design themes are back: Menu → DESIGN → Design theme (14 themes, changes live while you scroll, saved with the project)
