@@ -45,9 +45,9 @@ jobs:
 
       - name: Speech letters test
         run: node tools/test/test_speech.js
-      - name: Sroove letters test
+      - name: Groove test
         run: node tools/test/test_groove.js
-      - name: Safe start letters test
+      - name: Safe start test
         run: node tools/test/test_safestart.js
 
       - name: Native tests (MIC recording, Duck, Tape)

@@ -291,6 +291,7 @@ typedef struct {
     float att;       /* attack time for sustained types (s) */
 } ty_t;
 
+#include "trim_table.inc"
 static ty_t TY[T_COUNT] = {
     /* f0    oct   tau1   tau2    pet    trim   sus att */
     { 48,    0,    0.26f, 0.003f, 0.030f, 0.60f, 0, 0 },     /* Kick     */
@@ -520,6 +521,7 @@ static void init_types(void) {
         ty_t t = { w->f0, w->oct, w->tau1, w->tau2, 0.0f, w->trim, w->sus, w->att };
         TY[ti] = t; BASE_T[ti] = T_E_MODAL + w->eng; memset(&SYT[ti], 0, sizeof SYT[ti]);
     }
+    for (int i = 0; i < T_COUNT; i++) if (TRIM_HDB[i]) TY[i].trim *= powf(10.0f, (float)TRIM_HDB[i] * 0.5f / 20.0f);      /* equal loudness inside every synth */
 }
 
 /* ---------------- sample bank: WAV files from /data/UserData/schwung/taktile-samples ---------------- */
@@ -4278,6 +4280,13 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                     if (dly < 2.0f) dly = 2.0f; if (dly > 2040.0f) dly = 2040.0f;
                 }
                 const int w = s->tp_w;
+                float hz = 0.0f;                                              /* the hiss is ONE noise for both channels (mono): tape hiss does not widen the picture */
+                if (hs > 0.01f) {
+                    s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
+                    const float nz = (float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f;
+                    s->tp_hn[0] += 0.35f * (nz - s->tp_hn[0]);
+                    hz = (nz - s->tp_hn[0]) * 0.016f * hs * sqrtf(hs);            /* the hiss lives in the highs; full = about -45 dB, 25 % is still just audible in quiet parts */
+                }
                 for (int c = 0; c < 2; c++) {
                     float x = io[c];
                     if (ww > 0.01f) {
@@ -4295,12 +4304,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                         s->tp_lp[c] += (1.0f - expf(-6.2831853f * fc * s->inv_sr)) * (x - s->tp_lp[c]);
                         x = s->tp_lp[c];
                     }
-                    if (hs > 0.01f) {
-                        s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
-                        const float nz = (float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f;
-                        s->tp_hn[c] += 0.35f * (nz - s->tp_hn[c]);
-                        x += (nz - s->tp_hn[c]) * 0.016f * hs * sqrtf(hs);            /* the hiss lives in the highs; full = about -45 dB, 25 % is still just audible in quiet parts */
-                    }
+                    x += hz;
                     io[c] = x;
                 }
                 s->tp_w = (w + 1) & 2047;
