@@ -70,4 +70,5 @@
     "AcdDrive","AcdBurp","AcdTranc","AcdGoa","SwmInit","SwmFat",
     "SwmDrift","SwmCloud","SwmSwirl","SwmPad","SwmBass","SwmLead",
     "SwmChoir","SwmStab","DxInit","DxEPiano","DxBass","DxBrass",
-    "DxBell","DxMarimba","DxOrgan","DxPad","DxLead","DxReese"
+    "DxBell","DxMarimba","DxOrgan","DxPad","DxLead","DxReese",
+    "Granny","Grandson","Mother","Father","Kid","Teenager"

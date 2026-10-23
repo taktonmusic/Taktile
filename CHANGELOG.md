@@ -3,7 +3,7 @@
 ## 1.0.0 (23 October 2026)
 - Back to the proven 1.6.5 program with only these changes
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms)
-- Presets cut from 1468 to 420 clearly different sounds plus the 30 new sounds = 450; sounds of old projects, favorites and kits become the most similar kept sound of the same synth; levels evened out inside every synth
+- Presets cut from 1468 to 420 clearly different sounds plus 36 new sounds = 456; sounds of old projects, favorites and kits become the most similar kept sound of the same synth; levels evened out inside every synth
 - Sound browser: the melodic synths are grouped into 6 groups
 - Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with Groove Amt on the SWING page (Shift + step 7)
 - Master pages (TEMPO, QUANT, OPTIONS, PROJECT, DESIGN ...) use tiles instead of round knobs
@@ -18,6 +18,18 @@
 - Master output: the limiter is never fully off (ceiling 95 %) and a sum above 85 % is rounded off softly, so two loud sounds together no longer clip
 - Drum tracks: Delay and Reverb sends on the FX page (Output moved to the SOUND page)
 - No Track Speed
+- New LFO page: 4 LFOs per track (last tab) with assignable targets, rate, depth and shape
+- Shift + Menu opens the Mixer; Mix Vol knobs turn slower and finer
+- Duplicate a whole track (simple copy of all clips and sound)
+- Recording: clip length is taken from the first note, a second Rec press within 16 steps no longer jumps to 32 steps; the header shows bars instead of steps
+- Chord mode: what you played with chords stays recorded after leaving chord mode
+- Granular Pitch can now go down as well (+-24 semitones)
+- New GUIDE in the main menu: an easy step-by-step guide
+- Rename menu can be left with Back
+- Delay and Reverb are only sends now and removed from the Insert FX in all tracks (old projects convert)
+- Six new human voices: Granny, Grandson, Mother, Father, Kid, Teenager (456 sounds)
+- Song mode: song pads no longer play the synth in the background; copying clips works
+- Note Repeat is recorded when Rec is pressed while Note Repeat is held (drum and synth)
 
 ## Development history (steps before 1.0.0)
 

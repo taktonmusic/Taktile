@@ -85,7 +85,7 @@ static inline float sin2pi(float ph) { ph -= floorf(ph); return sin2pi_raw(ph); 
 #include "variants_n.h"
 #include "variants3_n.h"
 #include "variants4_n.h"
-enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_DSW, PP_DST, PP_DNZ, PP_DCK, PP_DLN, PP_DMD, PP_DLT, PP_TKEY, PP_TSCL, PP_N };
+enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_DSW, PP_DST, PP_DNZ, PP_DCK, PP_DLN, PP_DMD, PP_DLT, PP_TKEY, PP_TSCL, PP_GTR, PP_L1T, PP_L1S, PP_L1R, PP_L1Y, PP_L1D, PP_L1P, PP_L2T, PP_L2S, PP_L2R, PP_L2Y, PP_L2D, PP_L2P, PP_L3T, PP_L3S, PP_L3R, PP_L3Y, PP_L3D, PP_L3P, PP_L4T, PP_L4S, PP_L4R, PP_L4Y, PP_L4D, PP_L4P, PP_N };
 #define NGH 24                       /* ghost voices: released tails of retriggered notes in POLY mode */
 
 enum {
@@ -184,6 +184,11 @@ static const pd_t PD[PP_N] = {
     { "dtn", "D Tone", 0, 0.5f }, { "dwd", "D Width", 0, 0.5f }, { "rwd", "R Width", 0, 0.5f }, { "rlc", "R LowCut", 0, 0.0f },
     { "gdn", "GrDens", 0, 0.4f }, { "grv", "GrRev", 0, 0.0f }, { "gfz", "GrFreeze", 0, 0.0f }, { "gtn", "GrTone", 0, 1.0f },
     { "dsw", "DrmSweep", 0, 0.5f }, { "dst", "DrmSwpTime", 0, 0.5f }, { "dnz", "DrmNoise", 0, 0.5f }, { "dck", "DrmClick", 0, 0.5f }, { "dln", "SpkLength", 0, 0.0f }, { "dmd", "SpkPlay", 0, 0.0f }, { "dlt", "SpkLetter", 0, 0.0f }, { "tkey", "TrkKey", 0, 0.0f }, { "tscl", "TrkScale", 0, 0.0f },      /* drum synth engine knobs, 0.5 = the sound as designed */
+    { "gtr", "GrTune", 0, 0.5f },
+    { "l1t", "LFO1t", 17, 0.0f }, { "l1s", "LFO1s", 8, 0.0f }, { "l1r", "LFO1r", 0, 0.4f }, { "l1y", "LFO1y", 13, 0.0f }, { "l1d", "LFO1d", 0, 0.5f }, { "l1p", "LFO1p", 0, 0.0f },
+    { "l2t", "LFO2t", 17, 0.0f }, { "l2s", "LFO2s", 8, 0.0f }, { "l2r", "LFO2r", 0, 0.4f }, { "l2y", "LFO2y", 13, 0.0f }, { "l2d", "LFO2d", 0, 0.5f }, { "l2p", "LFO2p", 0, 0.0f },
+    { "l3t", "LFO3t", 17, 0.0f }, { "l3s", "LFO3s", 8, 0.0f }, { "l3r", "LFO3r", 0, 0.4f }, { "l3y", "LFO3y", 13, 0.0f }, { "l3d", "LFO3d", 0, 0.5f }, { "l3p", "LFO3p", 0, 0.0f },
+    { "l4t", "LFO4t", 17, 0.0f }, { "l4s", "LFO4s", 8, 0.0f }, { "l4r", "LFO4r", 0, 0.4f }, { "l4y", "LFO4y", 13, 0.0f }, { "l4d", "LFO4d", 0, 0.5f }, { "l4p", "LFO4p", 0, 0.0f },
 };
 
 static const char *TYPE_NAME[T_COUNT] = {
@@ -802,6 +807,8 @@ typedef struct {
 
     /* sequencer */
     uint8_t stp[NPAT][NLANE][MAXSTEP][7];   /* a = on<<7 | vel, b = probability 0..7, c = semi + 64, d = ratchet | gate<<2 | cond<<5, e = nudge 0..7, f = parameter lock value 0 (none) .. 127 */
+    double lfx_ph[NTRK][4]; long lfx_cyc[NTRK][4]; float lfx_r0[NTRK][4], lfx_r1[NTRK][4], lm_w[NLANE][4], lfx_b[NLANE][4]; uint8_t lm_t[NLANE][4]; unsigned lfx_rng;   /* the four LFOs of every track: phase, random values, and what was written to each lane (so it can be taken back exactly) */
+    int rh_on, rh_n, rh_l[16], rh_semi[16], rh_vel[16], rh_g[16], rh_fr[16];   /* note repeat while recording: every repeated hit is reported to the UI so it can be written into the clip */
     uint8_t plk_t[NLANE]; float plk_b[NLANE]; float cdet_z[2];   /* per-lane lock target (PP index, 0 = none), its base value, compressor detector HPF state */
     int   seqlen[NTRK], mute[NTRK]; uint8_t rechold[NTRK];
     int tph[NTRK];      /* a clip that was recorded from a bar line in the middle of the run starts at that bar line: its own step 0 = this global step */
@@ -839,6 +846,15 @@ typedef struct {
     int spk_wi[NLANE];                                             /* SPEECH, one word per note: the next word of every lane (back to the first at every loop start) */
     char spk_txt[NLANE][48];                                       /* SPEECH engine: the text of every lane */
 } inst_t;
+static void pos_calc(const inst_t *s, int *gsr_o, int *fr_o) {            /* where the sequencer is: step (1-based) and 0..99 of it */
+    double span = s->next_time - s->last_time;
+    int fr = (s->playing && span > 1.0) ? (int)(100.0 * (s->tsamp - s->last_time) / span) : 0;
+    if (fr < 0) fr = 0; if (fr > 99) fr = 99;
+    int gsr = s->gs;
+    if (s->playing && (s->gs > 0 || s->sub > 0)) { const long done = (long)s->gs * 6 + s->sub - 1; gsr = (int)(done / 6) + 1; fr = (int)(((done % 6) * 100 + fr) / 6); }
+    *gsr_o = gsr; *fr_o = fr;
+}
+
 /* LIVE FX (master bus, held pad = effect on, release = fade back):
  * 1-4 REPEAT 1/4 1/8 1/16 1/32   5 ROLL (repeats get shorter)   6 TRIPLET   7 REVERSE   8 TAPE STOP   9-10 GATE 1/8 1/16
  * 11 LOW SWEEP   12 HIGH SWEEP   13 CRUSH   14 FREEZE   15 ECHO THROW (the tail rings on after release) */
@@ -891,6 +907,7 @@ static void gran_proc(inst_t *s, int t, const float *q, float *Lp, float *Rp) {
             float ratio = 1.0f;
             if (r2 < pi) ratio = r2 < pi * 0.3f ? 2.0f : (r2 < pi * 0.6f ? 0.5f : (r2 < pi * 0.8f ? 1.5f : 0.75f));
             else if (pi > 0.05f) ratio = 1.0f + (r1 - 0.5f) * 0.04f * pi;
+            { const float gt = roundf((q[PP_GTR] - 0.5f) * 48.0f); if (gt != 0.0f) ratio *= exp2f(gt / 12.0f); }      /* Pitch: -24 .. +24 semitones, 0.5 = as played */
             if ((float)((G->rng >> 10) & 1023) / 1023.0f < q[PP_GRV]) ratio = -ratio;                    /* some grains play backwards */
             int back = glen + 64 + (int)(r1 * q[PP_GSP] * (float)(GRN_SZ - 2 * glen - 200));
             if (back > GRN_SZ - 64) back = GRN_SZ - 64;
@@ -3058,6 +3075,7 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
         else if (k == PP_DLN) { v = clampf((float)atof(val), 0.0f, 6.0f); }
         else if (k == PP_TKEY) { v = clampf((float)atof(val), 0.0f, 12.0f); }
         else if (k == PP_TSCL) { v = clampf((float)atof(val), 0.0f, (float)NSC); }
+        else if (k >= PP_L1T) { static const float cap[6] = { 16.0f, 7.0f, 1.0f, 12.0f, 1.0f, 1.0f }; v = clampf((float)atof(val), 0.0f, cap[(k - PP_L1T) % 6]); }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         s->pp[p][k] = v;
         if (s->plk_t[p] == k) s->plk_b[p] = v;
@@ -3341,6 +3359,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         if (c && t >= 0 && t < NTRK) { int g = atoi(c + 1); s->tph[t] = g < 0 ? 0 : g; }
         return;
     }
+    if (strcmp(key, "rhrec") == 0) { s->rh_on = atoi(val) != 0; s->rh_n = 0; return; }
     if (strcmp(key, "rskip") == 0) {               /* "lane,step": skip that one step once (it was just played live by the pad) */
         int l = atoi(val); const char *c = strchr(val, ',');
         if (c && l >= 0 && l < NLANE) s->rskip[l] = atoi(c + 1) + 1;
@@ -3383,7 +3402,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         int l = atoi(val); const char *c = strchr(val, ','); if (!c || l < 0 || l >= NLANE) return;
         int k = atoi(c + 1);
         if (s->plk_t[l] > 0) { s->pp[l][s->plk_t[l]] = s->plk_b[l]; update_pad(s, l); }       /* put the old target back to its base value */
-        if (k < 1 || k >= PP_N || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX || k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DLN || k == PP_DMD || k == PP_TKEY || k == PP_TSCL) k = 0;
+        if (k < 1 || k >= PP_L1T || k == PP_TYPE || k == PP_ARP || k == PP_RATE || k == PP_WAVE || k == PP_POLY || k == PP_DTIME || k == PP_XFX || k == PP_MFX || k == PP_X2FX || k == PP_M2FX || k == PP_DMODE || k == PP_RMODE || k == PP_MONO || k == PP_DLN || k == PP_DMD || k == PP_TKEY || k == PP_TSCL) k = 0;
         s->plk_t[l] = (uint8_t)k; if (k) s->plk_b[l] = s->pp[l][k];
         return;
     }
@@ -3415,6 +3434,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
             else if (k == PP_TKEY) v = clampf(v, 0.0f, 12.0f);
             else if (k == PP_TSCL) v = clampf(v, 0.0f, (float)NSC);
+            else if (k >= PP_L1T) { static const float cap[6] = { 16.0f, 7.0f, 1.0f, 12.0f, 1.0f, 1.0f }; v = clampf(v, 0.0f, cap[(k - PP_L1T) % 6]); }
             else v = clampf(v, 0.0f, 1.0f);
             s->cpp[c][t][k] = v;
             q = (*end == ',') ? end + 1 : end;
@@ -3440,6 +3460,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
             else if (k == PP_TKEY) v = clampf(v, 0.0f, 12.0f);
             else if (k == PP_TSCL) v = clampf(v, 0.0f, (float)NSC);
+            else if (k >= PP_L1T) { static const float cap[6] = { 16.0f, 7.0f, 1.0f, 12.0f, 1.0f, 1.0f }; v = clampf(v, 0.0f, cap[(k - PP_L1T) % 6]); }
             else v = clampf(v, 0.0f, 1.0f);
             s->pp[n - 1][k] = v;
             q = (*end == ',') ? end + 1 : end;
@@ -3475,16 +3496,14 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
     if (!s) return -1;
     if (strcmp(key, "focused_pad") == 0) return snprintf(buf, (size_t)buf_len, "%d", s->focused);
     if (strcmp(key, "live_press") == 0) return snprintf(buf, (size_t)buf_len, "0");
+    if (strcmp(key, "rephits") == 0) {                 /* drain: "n;lane,semi,vel,g,fr;..." */
+        int o = snprintf(buf, (size_t)buf_len, "%d", s->rh_n);
+        for (int i = 0; i < s->rh_n && o < buf_len - 40; i++) o += snprintf(buf + o, (size_t)(buf_len - o), ";%d,%d,%d,%d,%d", s->rh_l[i], s->rh_semi[i], s->rh_vel[i], s->rh_g[i], s->rh_fr[i]);
+        s->rh_n = 0; return o;
+    }
     if (strcmp(key, "pos") == 0)
     {
-        double span = s->next_time - s->last_time;
-        int fr = (s->playing && span > 1.0) ? (int)(100.0 * (s->tsamp - s->last_time) / span) : 0;
-        if (fr < 0) fr = 0; if (fr > 99) fr = 99;
-        int gsr = s->gs;
-        if (s->playing && (s->gs > 0 || s->sub > 0)) {              /* old meaning: steps started so far; the tick in progress adds to the fraction */
-            const long done = (long)s->gs * 6 + s->sub - 1; gsr = (int)(done / 6) + 1;
-            fr = (int)(((done % 6) * 100 + fr) / 6);
-        }
+        int gsr, fr; pos_calc(s, &gsr, &fr);
         return snprintf(buf, (size_t)buf_len, "%d,%d,%d,%d,%d", s->playing, gsr, s->cur_pat, fr, s->ci_left > 0 ? (s->ci_left + s->ci_b - 1) / s->ci_b : 0);
     }
     if (strcmp(key, "brn") == 0) return snprintf(buf, (size_t)buf_len, "%d", br_n);
@@ -3906,9 +3925,62 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
     }
     *outL = oL; *outR = oR;
 }
+
+/* ---- LFOs: four per track. Every block each one moves its target parameter around the value the knob has; the next block takes it back first, so a knob turn is never lost. ---- */
+static const uint8_t LFO_TGT[17] = { 0, PP_CUT, PP_RES, PP_TUNE, PP_VOL, PP_PAN, PP_DRIVE, PP_TONE, PP_DECAY, PP_DET, PP_DLY, PP_RVB, PP_XMIX, PP_XRT, PP_FENV, PP_CRUSH, PP_RING };
+static const float LFO_RNG[17] = { 0.0f, 0.5f, 0.4f, 0.08f, 0.5f, 0.5f, 0.5f, 0.5f, 0.4f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
+static const double LFO_BEATS[13] = { 0.0, 32.0, 16.0, 8.0, 4.0, 2.0, 1.0, 0.5, 0.25, 1.0 / 3.0, 1.0 / 6.0, 0.125, 2.0 / 3.0 };
+static inline float lfo_rnd(inst_t *s) { unsigned x = s->lfx_rng ? s->lfx_rng : 2463534242u; x ^= x << 13; x ^= x >> 17; x ^= x << 5; s->lfx_rng = x; return (float)(x & 0xFFFFFF) / 8388608.0f - 1.0f; }
+static float lfo_wave(inst_t *s, int t, int i, int sh, double tot) {
+    const double fl = floor(tot); const float ph = (float)(tot - fl); const long cyc = (long)fl;
+    if ((sh == 5 || sh == 6) && cyc != s->lfx_cyc[t][i]) { s->lfx_cyc[t][i] = cyc; s->lfx_r0[t][i] = s->lfx_r1[t][i]; s->lfx_r1[t][i] = lfo_rnd(s); }
+    switch (sh) {
+    case 0: return sinf(6.2831853f * ph);
+    case 1: return ph < 0.5f ? 4.0f * ph - 1.0f : 3.0f - 4.0f * ph;
+    case 2: return 2.0f * ph - 1.0f;
+    case 3: return 1.0f - 2.0f * ph;
+    case 4: return ph < 0.5f ? 1.0f : -1.0f;
+    case 5: return s->lfx_r1[t][i];
+    case 6: { const float u = ph * ph * (3.0f - 2.0f * ph); return s->lfx_r0[t][i] + (s->lfx_r1[t][i] - s->lfx_r0[t][i]) * u; }
+    default: { const float u = 1.0f - ph; return 2.0f * u * u - 1.0f; }
+    }
+}
+static void lfo_run(inst_t *s, int frames) {
+    for (int l = 0; l < NLANE; l++) for (int i = 3; i >= 0; i--) {                    /* take the last block's movement back */
+        const int k = s->lm_t[l][i]; if (!k) continue;
+        if (fabsf(s->pp[l][k] - s->lm_w[l][i]) < 1e-6f) { s->pp[l][k] = s->lfx_b[l][i]; update_pad(s, l); }
+        s->lm_t[l][i] = 0;
+    }
+    const double adv = (double)frames * (double)s->inv_sr;
+    for (int t = 0; t < NTRK; t++) {
+        const float *q = s->pp[t];
+        for (int i = 0; i < 4; i++) {
+            const int ti = (int)(q[PP_L1T + 6 * i] + 0.5f); const float dp = q[PP_L1D + 6 * i];
+            if (ti <= 0 || ti > 16 || dp < 0.002f) continue;
+            const int sy = (int)(q[PP_L1Y + 6 * i] + 0.5f), sh = (int)(q[PP_L1S + 6 * i] + 0.5f);
+            double tot;
+            if (sy > 0 && sy <= 12) {
+                const double bt = LFO_BEATS[sy];
+                if (s->playing) tot = ((double)s->gs + (double)s->sub / 6.0) / 4.0 / bt; else { s->lfx_ph[t][i] += adv * (double)s->bpm / 60.0 / bt; tot = s->lfx_ph[t][i]; }
+            } else { s->lfx_ph[t][i] += adv * 0.05 * (double)powf(600.0f, q[PP_L1R + 6 * i]); tot = s->lfx_ph[t][i]; }
+            if (s->lfx_ph[t][i] > 1.0e6) s->lfx_ph[t][i] = 0.0;
+            tot += (double)q[PP_L1P + 6 * i];
+            const float delta = lfo_wave(s, t, i, sh, tot) * dp * LFO_RNG[ti]; const int kk = LFO_TGT[ti];
+            for (int l = t; l < NLANE; l = (l == t) ? NTRK : l + 1) {
+                if (l >= NTRK && s->dtrk[(l - NTRK) >> 4] != t) { l = NTRK + (((l - NTRK) >> 4) + 1) * 16 - 1; continue; }
+                if (s->plk_t[l] == kk) continue;
+                const float b = s->pp[l][kk], nv = clampf(b + delta, 0.0f, 1.0f);
+                s->lfx_b[l][i] = b; s->lm_w[l][i] = nv; s->lm_t[l][i] = (uint8_t)kk; s->pp[l][kk] = nv;
+                update_pad(s, l);
+            }
+        }
+    }
+}
+
 static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
     { inst_t *s0 = (inst_t *)instance; if (s0) s0->pd_blk++; }
     inst_t *s = (inst_t *)instance;
+    lfo_run(s, frames);
 
     /* shared delay time for this block */
     int dlen_g;
@@ -3975,6 +4047,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             s->rp_cnt[ri] -= 1.0f;
             if (s->rp_cnt[ri] <= 0.0f) {
                 trig(s, s->rp_t[ri], s->rp_vel[ri], (int)s->rp_semi[ri], 1); s->rp_cnt[ri] += rep_step_samples_r(s, s->rp_rate[ri]);
+                if (s->rh_on && s->playing && s->rh_n < 16) { const int i = s->rh_n++; int g, f; pos_calc(s, &g, &f); s->rh_l[i] = s->rp_t[ri]; s->rh_semi[i] = (int)s->rp_semi[ri]; s->rh_vel[i] = (int)(s->rp_vel[ri] * 127.0f + 0.5f); s->rh_g[i] = g; s->rh_fr[i] = f; }
                 if (s->rp_ramp[ri] == 1 || s->rp_ramp[ri] == 2) { s->rp_vel[ri] *= s->rp_ramp[ri] == 1 ? 1.05f : 1.12f; if (s->rp_vel[ri] > s->rp_cap[ri]) s->rp_vel[ri] = s->rp_cap[ri]; }
                 else if (s->rp_ramp[ri] == 3) { s->rp_vel[ri] *= 0.93f; if (s->rp_vel[ri] < 0.3f * s->rp_cap[ri]) s->rp_vel[ri] = 0.3f * s->rp_cap[ri]; }
             }

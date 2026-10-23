@@ -49,13 +49,15 @@ jobs:
         run: node tools/test/test_safestart.js
       - name: Nudge keys test
         run: node tools/test/test_nudge.js
+      - name: New features test (mixer, duplicate track, LFO tab, chord, record length)
+        run: node tools/test/test_newfeatures.js
       - name: Preset list test
         run: node tools/test/test_presets.js
 
       - name: Native tests (MIC recording, Duck, Tape)
         run: |
           ./scripts/fetch-header.sh
-          for t in mic duck tape groove preset newsynth; do
+          for t in mic duck tape groove preset newsynth lfo; do
             gcc -O2 -Wno-misleading-indentation -Ibuild/include -o /tmp/${t}_test tools/test/${t}_test.c src/pad_studio.c -lm
             /tmp/${t}_test
           done
