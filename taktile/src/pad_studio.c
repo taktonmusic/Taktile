@@ -1614,6 +1614,10 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
     v->c1 = T->tau1 > 0.0f ? expf(-1.0f / (T->tau1 * dm * s->sr)) : 0.0f;
     v->c2 = T->tau2 > 0.0f ? expf(-1.0f / (T->tau2 * dm * s->sr)) : 0.0f;
     v->pek = T->pet > 0.0f ? expf(-1.0f / (T->pet * s->sr)) : 0.0f;
+    if (T->oct == 0.0f && BASE_T[ty] < T_E_MODAL && BASE_T[ty] != T_SAMPLE) {      /* every drum sound shares the DRUM ENGINE knobs: Sweep = depth of the pitch drop, SweepTime = how long it lasts (middle = the sound as it was) */
+        v->pe *= powf(2.0f, (s->pp[p][PP_DSW] - 0.5f) * 3.0f);
+        if (T->pet > 0.0f) v->pek = expf(-1.0f / (T->pet * powf(2.0f, (s->pp[p][PP_DST] - 0.5f) * 3.0f) * s->sr));
+    }
     v->third = powf(2.0f, (float)SCALE_TBL[eff_scale(s, p)][1] / 12.0f);
     if (BASE_T[ty] >= T_E_MODAL) nx_init(s, v, p, ty);
     if (BASE_T[ty] == T_HATCL || (BASE_T[ty] == T_E_AC && ac_hat(ty) == 1)) {                         /* choke every open hat */
@@ -2605,6 +2609,11 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         break; }
     case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: case T_E_SPK: x = nx_render(s, v, p); break;
     default: v->active = 0; break;
+    }
+    if (TY[v->type].oct == 0.0f && BASE_T[v->type] < T_E_MODAL && BASE_T[v->type] != T_SAMPLE && v->active) {      /* Click / Noise: from the middle upwards every drum sound gets a click at the start and a noise tail (middle = the sound as it was) */
+        const float ck = (s->pp[p][PP_DCK] - 0.5f) * 2.0f, nz = (s->pp[p][PP_DNZ] - 0.5f) * 2.0f;
+        if (ck > 0.02f && v->t < 0.012f) x += noise(s) * expf(-v->t / 0.0015f) * ck * 0.5f;
+        if (nz > 0.02f) x += noise(s) * v->env * nz * 0.35f;
     }
     if (p < NTRK && v->gate && TY[v->type].sus) {                    /* Decay on sustained sounds: the same slope as the FM sound (time constant 0.8 s x the Decay knob law), so a pad and an FM voice answer the knob alike; the very top of the knob (>= 0.97) holds the note */
         const float dv = s->pp[p][PP_DECAY];

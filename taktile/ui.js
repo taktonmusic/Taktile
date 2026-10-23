@@ -101,7 +101,7 @@ const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
 const DRM_ENG_RE = /^D(Kick|Snr|Hat|Clap|Tom|Rim|Clave|Cow|Metal)/;
-function isDrmEng(t) { return DRM_ENG_RE.test(TYPE_NAME[Math.round(t)] || ''); }      /* the drum-synth engine: only these drum sounds have an ENGINE tab */
+function isDrmEng(t) { t = Math.round(t); return DRM_ENG_RE.test(TYPE_NAME[t] || '') || (t >= 0 && t < TYPE_NAME.length && BASE_T[t] !== 359 && catOf(t) <= 3); }      /* every drum sound (kick, snare, hats, percussion) has the same ENGINE tab: Sweep, SweepTime, Noise, Click, Drive, filter */
 function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : (isDrmEng(pads[ln()][0]) ? [1, 9, 3, 2, 38, 36, 27, 28] : [1, 3, 2, 38, 36, 27, 28]); if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
@@ -998,7 +998,7 @@ const HELP = {
     18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
-    31: ['Pads: Tracks x Clips', 'Step-Tasten = Kette', 'Copy+Pad=aus Szene'],
+    31: ['Pads: Tracks x Clips', 'Step-Tasten = Kette', 'Copy+Step=kopieren', 'Shift+Copy+Step=verschieben', 'Loop+Shift+Jog=Tempo'],
     35: ['32 Projekt-Slots', 'New = leeres Projekt', 'Revert = Sicherung'],
     34: ['Kits: 16 Pad-Sounds. Slot 17+ = fertige Kits. Preview: rechts drehen = anhoeren, links = zurueck. Load = behalten.'],
     33: ['Resample nimmt Master', 'oder Track auf', 'Ergebnis = Sample'],
@@ -1033,7 +1033,7 @@ const HELP_EN = {
     18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
     21: ['Track: type, volume', 'Pads, sound, layout', 'Color'],
-    31: ['Pads: tracks x clips', 'Step buttons = chain', 'Copy+pad=from scene'],
+    31: ['Pads: tracks x clips', 'Step buttons = chain', 'Copy+step = copy', 'Shift+Copy+step = move', 'Loop+Shift+Jog = tempo'],
     35: ['32 project slots', 'New = empty project', 'Revert = backup'],
     34: ['Kits: 16 pad sounds. Slot 17+ = ready-made kits. Preview: turn right = listen, left = back. Load = keep.'],
     33: ['Resample records master', 'or a track', 'Result = sample'],
@@ -3499,7 +3499,8 @@ function fbSynGroups() {
         for (const r of SYN_RULES) if (r[2].test(n) && ((r[0] === 'BASS') === (c === 5)) && ((r[0] === 'LEAD' || r[0] === 'ARP' || r[0] === 'PLUCK') === (c === 6) || (c === 7 && r[0] !== 'BASS' && r[0] !== 'LEAD' && r[0] !== 'ARP' && r[0] !== 'PLUCK'))) { put(r[0], r[1], t); done = true; break; }
         if (!done) { if (c === 5) put('BASS', 'SYNTH BASS', t); else if (c === 6) put('LEAD', 'LEAD', t); else put('CHORDS', 'OTHER', t); }
     }
-    synTreeCache = SYN_ORDER.map(n => ({ n: n, kids: Object.keys(g[n]).map(k => ({ n: k, l: g[n][k] })) })).filter(x => x.kids.length);
+    const SYN_MERGE = [['BASS', ['BASS']], ['LEAD', ['LEAD', 'ARP', 'SUPERSAW']], ['PLUCK + STABS', ['PLUCK', 'STABS']], ['PADS + CHORDS', ['CHORDS', 'PADS', 'ATMOS', 'STRINGS', 'CHOIR']], ['KEYS + BELLS', ['KEYS', 'ORGAN', 'BELLS', 'MALLET']], ['BRASS', ['BRASS']]];      /* 16 similar groups became 6 */
+    synTreeCache = SYN_MERGE.map(m => ({ n: m[0], kids: [].concat(...m[1].map(n => Object.keys(g[n]).map(k => ({ n: m[1].length > 1 && k === n ? k : (m[1].length > 1 ? k : k), l: g[n][k] })))) })).filter(x => x.kids.length);
     synTreeN = TYPE_NAME.length; return synTreeCache;
 }
 function fbKitTree() {                                      /* KITS > category > kit; own saved kits in USER KITS */
@@ -3576,7 +3577,7 @@ function fbTree() {
     const fxK = fbWantFx ? [fxA, fxM] : [];
     const drums = { n: 'DRUMS', kindSw: 1, kids: [fbKitTree()].concat([fbStyles(), { n: 'BY TYPE', kids: [cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT), cat('PERCUSSION', 3), cat('FX', 4)].concat(nx) }, dsyn]) };
     const all = [{ n: 'ALL SOUNDS', l: TYPE_NAME.map((x, k) => k).filter(k => BASE_T[k] !== 359) }];
-    const roleMap = { 'BASS': 'BASS', 'LEAD': 'LEAD', 'PLUCK': 'PLUCK', 'PAD + STRINGS': 'PADS', 'KEYS + ORGAN': 'KEYS', 'BELLS': 'BELLS' };
+    const roleMap = { 'BASS': 'BASS', 'LEAD': 'LEAD', 'PLUCK': 'PLUCK + STABS', 'PAD + STRINGS': 'PADS + CHORDS', 'KEYS + ORGAN': 'KEYS + BELLS', 'BELLS': 'KEYS + BELLS' };
     const typed = fbSynGroups().map(g => ({ n: g.n, kids: g.kids.slice() }));      /* sorted by sound type (pad, lead, bass ...), not by genre: the new engines join each type as a NEW folder */
     byRole.kids.forEach(r => { const tg = typed.find(g => g.n === roleMap[r.n]); if (tg && r.l.length) tg.kids.push({ n: 'NEW ENGINES', l: r.l }); else if (r.l.length) typed.push({ n: r.n, kids: [{ n: 'NEW ENGINES', l: r.l }] }); });
     const sounds = { n: 'SOUNDS', kindSw: 0, kids: typed.concat([{ n: 'MORE', kids: nx.concat([cat('FX', 4), cat('PERCUSSION', 3), cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT)], all) }]) };
@@ -4299,6 +4300,11 @@ function songPad(k) {                                           /* pad k = song 
     if (deleteHeld && k < L) { songDelUsed = true; songSlot = k; songDel(); return; }
     if (copyHeld && k <= L) {                                      /* Copy + step pad: pick a step, then Copy + another pad pastes a copy there (the others move along) */
         if (songCopySrc < 0 || songCopySrc >= L) { if (k < L) { songCopySrc = k; showToast('SONG', 'COPY STEP ' + (k + 1) + ' > PICK SPOT', 0.5); } return; }
+        if (shiftHeld) {                                          /* Shift + Copy: MOVE the picked step to the new spot (the others move along) */
+            if (k >= L || k === songCopySrc) { showToast('SONG', 'PICK ANOTHER STEP', 0); return; }
+            const mv = songList.splice(songCopySrc, 1)[0]; songList.splice(k, 0, mv); songSlot = k; songCopySrc = -1; songSent = -1; songOff = 0; songNext = -1; songBlank = false; dirty = true; needsRedraw = true;
+            showToast('SONG', 'MOVED TO STEP ' + (k + 1), k / (SONG_MAX - 1)); return;
+        }
         if (L >= SONG_MAX) { showToast('SONG', 'FULL', 1); return; }
         songList.splice(k, 0, songCopy(songList[songCopySrc])); songSlot = k; songSent = -1; songOff = 0; songNext = -1; songBlank = false; dirty = true; needsRedraw = true;
         showToast('SONG', 'PASTED AT STEP ' + (k + 1), k / (SONG_MAX - 1)); return;
@@ -4711,7 +4717,7 @@ function drawSong() {
     const L = songList.length, e = songList[songSlot] || [0, 4, 1, 0, 0, 0], cl = songClips(e), pl = songPlayIdx(), tot = songTotal();
     const bs = (e[2] > 1 ? e[1] + 'x' + e[2] : e[1] + 'B') + (e[4] === 1 ? ' F' : (e[4] === 2 ? ' D' : (e[4] === 3 ? ' S' : '')));
     let prog = ''; if (pl >= 0 && pl === songSlot) { const tt = songTotal(), b0 = (((Math.floor((gs - 1) / 16) + songOff) % tt) + tt) % tt - songStart(pl); prog = (b0 + 1) + '/' + songLen(e) + ' '; }
-    titleBar((pl === songSlot ? '>' : '') + 'STEP ' + p2(songSlot + 1) + '/' + p2(L) + (e[5] ? ' ' + SONG_TAG[e[5]] : '') + (songOn ? (songLoop ? ' LOOP' : ' ONCE') : ''), prog + bs);
+    titleBar((pl === songSlot ? '>' : '') + p2(songSlot + 1) + '/' + p2(L) + (e[5] ? ' ' + SONG_TAG[e[5]] : '') + (songOn && !e[3] ? (songLoop ? ' LOOP' : ' ONCE') : ''), prog + bs + (e[3] ? ' ' + e[3] : ''));      /* step / steps, tag; right: the bar you are in, bars, how it comes in (F / D / S), the step's own tempo */
     if (songOv) {                                                   /* all 16 tracks at a glance: a filled box = the clip this step plays */
         for (let t = 0; t < NTRK; t++) { const y = Math.round(11 + t * 2.75); if (t === sel) fill_rect(0, y, 4, 2, 1); for (let c = 0; c < NPAT; c++) { const x = 8 + c * 15; if (cl[t] === c) fill_rect(x, y, 13, 2, 1); else if (trackHasSteps(c, t)) set_pixel(x + 6, y, 1); } }
     } else
@@ -5522,6 +5528,7 @@ globalThis.onMidiMessageInternal = function (data) {
     case CC.JOG: {
         const dl = decodeDelta(d2);
         if (dl && heldStep >= 0 && view === 0 && !menuOpen && !loopHeld && spkLetterOn(ln())) { letAcc += dl; if (Math.abs(letAcc) >= 2) { stepLetter(letAcc > 0 ? 1 : -1); letAcc = 0; } return; }      /* speech: hold a step + jogwheel = its letter */
+        if (loopHeld && shiftHeld && view === 31 && !menuOpen) { const e = songList[songSlot]; if (dl && e) { const st = dl > 0 ? 1 : -1; let v = e[3] ? e[3] + st : (st > 0 ? bpm : 0); if (e[3] && v < 40) v = 0; e[3] = v ? clamp(v, 40, 240) : 0; songSent = songSent; dirty = true; needsRedraw = true; showToast('STEP ' + p2(songSlot + 1), e[3] ? e[3] + ' BPM' : 'TEMPO: KEEP', e[3] ? (e[3] - 40) / 200 : 0); } return; }      /* Loop + Shift + jog = the tempo of this step (below 40 = keep the song tempo) */
         if (loopHeld && view === 31 && !menuOpen) { const e = songList[songSlot]; if (dl && e) { let i = SONG_BARS.indexOf(e[1]); if (i < 0) i = 2; i = clamp(i + (dl > 0 ? 1 : -1), 0, SONG_BARS.length - 1); e[1] = SONG_BARS[i]; dirty = true; needsRedraw = true; showToast('STEP ' + p2(songSlot + 1), e[1] + (e[1] === 1 ? ' BAR' : ' BARS'), i / (SONG_BARS.length - 1)); } return; }      /* Loop + jog on the song page = how many bars this step lasts */
         if (view === 31 && shiftHeld && !menuOpen) { const e = songList[songSlot]; if (dl && e) { e[4] = clamp(e[4] + (dl > 0 ? 1 : -1), 0, 3); dirty = true; needsRedraw = true; showToast('STEP ' + p2(songSlot + 1), ['HARD CUT', 'FILL BEFORE', 'DRUMS FIRST', 'FILTER SWEEP'][e[4]], e[4] / 3); } return; }      /* Shift + jog = how the step comes in */
         if (loopHeld && !menuOpen && !fb && view !== 31 && !(view === 28 && broOpen)) { if (dl) setLen(LL() + (dl > 0 ? 1 : -1) * (shiftHeld ? 16 : 1), shiftHeld); return; }   /* Loop + jogwheel = loop length (Shift = whole track), on every page, before anything else */

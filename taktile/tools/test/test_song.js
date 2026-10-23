@@ -40,4 +40,15 @@ run('view=15;sel=1;needsRedraw=true'); T(3); run('draw()'); ok(run("SPDN(tsp[1])
 run('setSpeed(1, SPD_ONE - 5)'); ok(run('SPDV(1)') === 0.5 || Math.abs(run('SPDV(1)') - 0.5) < 1e-9, 'track speed 1/2 = half time'); ok(run('SPDV(0)') === 1, 'the other tracks keep 1:1');
 ok(run("setSpeed(1, 15), SPDN(tsp[1])") === '3/2', 'odd ratio 3/2'); run('draw()');
 run('setSpeed(1, SPD_ONE)'); run('view=0');
+/* tempo per step + move + project save */
+run('view=31;menuOpen=false;songList.length=1;songList[0][3]=0;songSlot=0;bpm=120');
+run('loopHeld=true;shiftHeld=true'); run('onMidiMessageInternal([0xB0, CC.JOG, 1])'); run('loopHeld=false;shiftHeld=false');
+ok(run('songList[0][3]') === 120, 'Loop + Shift + jog: the step gets its own tempo (starts at the song tempo)');
+run('loopHeld=true;shiftHeld=true'); run('onMidiMessageInternal([0xB0, CC.JOG, 1])'); run('loopHeld=false;shiftHeld=false');
+ok(run('songList[0][3]') === 121, 'jog up = 121 BPM');
+run('songStepKey(1);songStepKey(2);songStepKey(3)'); run('songList[1][5]=1;songList[2][5]=2;songList[3][5]=3'); T(2);
+run('copyHeld=true;shiftHeld=true'); run('songPad(1)'); run('songPad(3)'); run('copyHeld=false;shiftHeld=false;songCopySrc=-1');
+ok(run('songList.map(e => e[5]).join()') === '0,2,3,1' && run('songSlot') === 3, 'Shift + Copy: step 2 moved to the end, the others moved along');
+ok(run('songList.length') === 4, 'moving does not add a step');
+run('view=31;needsRedraw=true;draw && draw()'); ok(true, 'song page draws with a tempo');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);
