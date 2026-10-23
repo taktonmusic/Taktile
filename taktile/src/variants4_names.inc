@@ -65,4 +65,9 @@
     "TnVibes","TnGlock","TnBell","TnSteel","TnFmPluk","TnFmBass",
     "TnFmBell","TnFoldPl","TnFoldBs","DKickThmp","DKickClk","DKickGrit",
     "DKickBoom","DKickRnd",
-    "SpkEn","SpkEnLo","SpkEnHi","SpkDe","SpkDeLo","SpkDeHi"
+    "SpkEn","SpkEnLo","SpkEnHi","SpkDe","SpkDeLo","SpkDeHi",
+    "AcdInit","Acd303","AcdSqr","AcdSquel","AcdDeep","AcdRez",
+    "AcdDrive","AcdBurp","AcdTranc","AcdGoa","SwmInit","SwmFat",
+    "SwmDrift","SwmCloud","SwmSwirl","SwmPad","SwmBass","SwmLead",
+    "SwmChoir","SwmStab","DxInit","DxEPiano","DxBass","DxBrass",
+    "DxBell","DxMarimba","DxOrgan","DxPad","DxLead","DxReese"

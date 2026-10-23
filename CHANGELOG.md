@@ -1,6 +1,9 @@
 # Changelog
 
 ## 1.0.0 (23 October 2026)
+- Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms); 450 sounds in total
+
+## 1.0.0 (23 October 2026)
 - Drum sounds: every drum sound has the same ENGINE page (Sweep, SweepTime, Noise, Click, Drive, filter); the knobs now work on the classic drums too, the middle position is the sound as it was
 - Sound browser: the melodic synths are grouped into 6 groups (Bass, Lead, Pluck + Stabs, Pads + Chords, Keys + Bells, Brass) instead of 16
 - Song: tempo per step (Loop + Shift + jog, shown in the title), Shift + Copy + step moves a step, the title line is shorter

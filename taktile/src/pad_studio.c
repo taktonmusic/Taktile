@@ -395,7 +395,7 @@ static const v2_t VAR2[N_V2] = {
 static const v2_t VAR3[N_V3] = {
 #include "variants3.inc"
 };
-enum { T_E_MODAL = 4000, T_E_FM, T_E_VOX, T_E_CHIP, T_E_MORPH, T_E_DRUM, T_E_ANA, T_E_WT, T_E_FM4, T_E_ADD, T_E_PAD, T_E_STR, T_E_FLD, T_E_AC, T_E_FXE, T_E_SPK };
+enum { T_E_MODAL = 4000, T_E_FM, T_E_VOX, T_E_CHIP, T_E_MORPH, T_E_DRUM, T_E_ANA, T_E_WT, T_E_FM4, T_E_ADD, T_E_PAD, T_E_STR, T_E_FLD, T_E_AC, T_E_FXE, T_E_SPK, T_E_303, T_E_SWM, T_E_DX };
 typedef struct { int eng; float f0, oct, tau1, tau2, att, trim; int sus; float p[10]; } nx_t;
 static const nx_t VAR4[N_V4] = {
 #include "variants4.inc"
@@ -725,7 +725,7 @@ typedef struct {
     float cr_hold, cr_cnt, hp_z, ring_ph, svf_lp, svf_bp, fenv, fkoff, pk_lp, pk_bp;   /* crush + low-cut state */
     int   fol, fgen;               /* ghost layer of a MIDI effect: follows the owner's note (fgen = trigger generation) */
     float ks[1024]; int ksi, ksn; float ksz1, ksz2;                     /* string engine: delay line */
-    float nx[64]; int ni[2];                                           /* NEW ENGINES: modal / FM / vocal / chip / morph state */
+    float nx[96]; int ni[2];                                           /* NEW ENGINES: modal / FM / vocal / chip / morph state */
     int   sw, gk; float sdet, ssub, satt;                              /* synth family options */
     double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode; float srate, sgain, satk_inc, srel_c, sgate_env;                   /* sample playback */
     float nze, trp;                  /* noise follower, tremolo / auto-pan phase */
@@ -1442,6 +1442,15 @@ static void ac_modes(inst_t *s, vc_t *v, int set, float f0, float tau, float til
 #include "speech.inc"
 static int ac_hat(int ty) { const nx_t *n = &VAR4[ty - T_V4]; return (n->eng == 13 && (int)(n->p[0] + 0.5f) == 3) ? (int)(n->p[9] + 0.5f) : 0; }
 
+/* polyBLEP: removes the aliasing step of saw / square edges */
+static inline float blep(float t, float d) {
+    if (t < d) { t /= d; return t + t - t * t - 1.0f; }
+    if (t > 1.0f - d) { t = (t - 1.0f) / d; return t * t + t + t + 1.0f; }
+    return 0.0f;
+}
+/* cheap sine for the oscillator banks: 2048-entry table with linear interpolation (error below -90 dB); the table is filled once at load */
+static inline float fsin01(float ph) { const float x = ph * 2048.0f; const int i = (int)x; const float fr = x - (float)i; const float a = g_sintab[i & 2047]; return a + (g_sintab[(i & 2047) + 1] - a) * fr; }
+#include "newsynth.inc"
 /* ---------------- NEW ENGINES: voice start ---------------- */
 static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
     const nx_t *n = &VAR4[ty - T_V4]; const float *q = n->p; const float sr = s->sr;
@@ -1514,6 +1523,9 @@ static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
         v->nx[49] = onepole_a(kd == 6 ? clampf(q[6] * 3.0f, 800.0f, 9000.0f) : (kd == 0 ? 320.0f : 11000.0f), sr);    /* noise: low-pass corner */
         v->ph = 0.0f; break; }
     case 15: spk_start(s, v, p, n); break;                         /* SPEECH */
+    case 16: ac3_init(s, v, p, n); break;                          /* ACID 303 */
+    case 17: swm_init(s, v, p, n); break;                          /* SWARM */
+    case 18: dx_init(s, v, p, n); break;                           /* DX 6-OP FM */
     case 14: {                                                      /* EFFECT: p = length s, tone Hz start, tone Hz end, filter Hz start, filter Hz end, resonance, noise, tone level, peak position, filter type (0 LP, 1 BP, 2 HP) */
         for (int k = 0; k < 64; k++) v->nx[k] = 0.0f;
         const float L = clampf(q[0] * dm, 0.03f, 20.0f);
@@ -1791,15 +1803,8 @@ static inline float wf(float ph, int w) {
 static inline float bsin(const vc_t *v) { return v->sw >= 100 ? wt_at(v->ph, v->sw - 100) : sin2pi(v->ph); }      /* body oscillator: sine, or the preset's own wavetable */
 
 
-/* polyBLEP: removes the aliasing step of saw / square edges */
-static inline float blep(float t, float d) {
-    if (t < d) { t /= d; return t + t - t * t - 1.0f; }
-    if (t > 1.0f - d) { t = (t - 1.0f) / d; return t * t + t + t + 1.0f; }
-    return 0.0f;
-}
 /* ---------------- NEW ENGINES: one sample ---------------- */
 /* cheap sine for the oscillator banks: 2048-entry table with linear interpolation (error below -90 dB); the table is filled once at load */
-static inline float fsin01(float ph) { const float x = ph * 2048.0f; const int i = (int)x; const float fr = x - (float)i; const float a = g_sintab[i & 2047]; return a + (g_sintab[(i & 2047) + 1] - a) * fr; }
 static float nx_render(inst_t *s, vc_t *v, int p) {
     const nx_t *n = &VAR4[v->type - T_V4]; const float *q = n->p; const ty_t *T = &TY[v->type]; const float dt = s->inv_sr;
     float x = 0.0f;
@@ -2211,6 +2216,9 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
         x = (tone * q[7] + fl * q[6] * 1.5f) * env;
         break; }
     case 15: x = spk_render(s, v, p, n); break;                    /* SPEECH */
+    case 16: x = ac3_render(s, v, p, n); break;
+    case 17: x = swm_render(s, v, p, n); break;
+    case 18: x = dx_render(s, v, p, n); break;
     default: {                                                      /* MORPH: two real wavetables crossfaded over time */
         const float f = v->f0;
         v->nx[3] += q[4] * dt; if (v->nx[3] >= 1.0f) v->nx[3] -= 1.0f;
@@ -2607,7 +2615,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         else { pos += step; if (pos >= (double)v->s1) { if (loop && v->gate) pos -= (double)(v->s1 - v->s0); else v->active = 0; } }
         v->sp = pos;
         break; }
-    case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: case T_E_SPK: x = nx_render(s, v, p); break;
+    case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: case T_E_SPK: case T_E_303: case T_E_SWM: case T_E_DX: x = nx_render(s, v, p); break;
     default: v->active = 0; break;
     }
     if (TY[v->type].oct == 0.0f && BASE_T[v->type] < T_E_MODAL && BASE_T[v->type] != T_SAMPLE && v->active) {      /* Click / Noise: from the middle upwards every drum sound gets a click at the start and a noise tail (middle = the sound as it was) */

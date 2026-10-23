@@ -7,7 +7,7 @@ plugin_api_v2_t *move_plugin_init_v2(const host_api_v1_t *host);
 int main(void) {
     host_api_v1_t h; memset(&h, 0, sizeof h); h.sample_rate = 44100; plugin_api_v2_t *api = move_plugin_init_v2(&h);
     void *inst = api->create_instance(".", "{}"); char buf[128]; int failed = 0, tested = 0;
-    for (int i = 0; i < 1468; i += 7) {
+    for (int i = 0; i < 1498; i += 7) {
         char v[16]; snprintf(v, sizeof v, "%d", i); api->set_param(inst, "p01_type", v);
         if (api->get_param(inst, "p01_type", buf, sizeof buf) < 0) continue;
         tested++; char v2[16]; snprintf(v2, sizeof v2, "%s", buf); api->set_param(inst, "p01_type", v2);
