@@ -292,6 +292,7 @@ typedef struct {
 } ty_t;
 
 #include "trim_table.inc"
+#include "type_map.inc"
 static ty_t TY[T_COUNT] = {
     /* f0    oct   tau1   tau2    pet    trim   sus att */
     { 48,    0,    0.26f, 0.003f, 0.030f, 0.60f, 0, 0 },     /* Kick     */
@@ -1365,7 +1366,7 @@ static const lay_t LAYOUT[NPADS] = {
 static void reset_pad(inst_t *s, int p) {
     for (int k = 0; k < PP_N; k++) s->pp[p][k] = PD[k].def;
     const lay_t *l = &LAYOUT[p < NTRK ? p : NTRK + ((p - NTRK) & 15)];
-    s->pp[p][PP_TYPE] = (float)l->type;
+    s->pp[p][PP_TYPE] = (float)TYPE_MAP[(l->type >= 0 && l->type < T_COUNT) ? l->type : 0];
     s->pp[p][PP_TUNE] = l->tune;
     s->pp[p][PP_DECAY] = l->decay;
     s->pp[p][PP_ARP] = (float)l->arp;
@@ -3040,7 +3041,7 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
     for (int k = 0; k < PP_N; k++) {
         if (strcmp(name, PD[k].key) != 0) continue;
         float v;
-        if (k == PP_TYPE)      { int e = enum_index(val, TYPE_NAME, T_COUNT); if (e < 0) return; v = (float)e; }
+        if (k == PP_TYPE)      { int e = enum_index(val, TYPE_NAME, T_COUNT); if (e < 0) return; v = (float)TYPE_MAP[e]; }
         else if (k == PP_ARP)  { int e = enum_index(val, ARP_NAME, 6);        if (e < 0) return; v = (float)e; }
         else if (k == PP_RATE) { int e = enum_index(val, RATE_NAME, 4);       if (e < 0) return; v = (float)e; }
         else if (k == PP_WAVE) { int e = enum_index(val, WAVE_NAME, 16);      if (e < 0) return; v = (float)e; }
@@ -3402,7 +3403,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         for (int k = 0; k < PP_N && *q; k++) {
             char *end; float v = strtof(q, &end);
             if (end == q) break;
-            if (k == PP_TYPE) v = clampf(v, 0.0f, (float)(T_COUNT - 1));
+            if (k == PP_TYPE) v = (float)TYPE_MAP[(int)clampf(v + 0.5f, 0.0f, (float)(T_COUNT - 1))];
             else if (k == PP_ARP) v = clampf(v, 0.0f, 5.0f);
             else if (k == PP_RATE) v = clampf(v, 0.0f, 3.0f);
             else if (k == PP_WAVE) v = clampf(v, 0.0f, 15.0f);
@@ -3427,7 +3428,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         for (int k = 0; k < PP_N && *q; k++) {
             char *end; float v = strtof(q, &end);
             if (end == q) break;
-            if (k == PP_TYPE) v = clampf(v, 0.0f, (float)(T_COUNT - 1));
+            if (k == PP_TYPE) v = (float)TYPE_MAP[(int)clampf(v + 0.5f, 0.0f, (float)(T_COUNT - 1))];
             else if (k == PP_ARP) v = clampf(v, 0.0f, 5.0f);
             else if (k == PP_RATE) v = clampf(v, 0.0f, 3.0f);
             else if (k == PP_WAVE) v = clampf(v, 0.0f, 15.0f);
