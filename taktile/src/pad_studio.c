@@ -2613,9 +2613,12 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
     case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: case T_E_SPK: case T_E_303: case T_E_SWM: case T_E_DX: x = nx_render(s, v, p); break;
     default: v->active = 0; break;
     }
-    if (p < NTRK && v->gate && TY[v->type].sus) {                    /* Decay on sustained sounds: the same slope as the FM sound (time constant 0.8 s x the Decay knob law), so a pad and an FM voice answer the knob alike; the very top of the knob (>= 0.97) holds the note */
-        const float dv = s->pp[p][PP_DECAY];
-        if (dv < 0.97f) { float td = 0.8f * s->dm[p]; if (td < 0.002f) td = 0.002f; v->hd *= expf(-dt / td); x *= v->hd; }
+    if (p < NTRK && TY[v->type].sus) {                    /* Decay on sustained sounds: the same slope as the FM sound (time constant 0.8 s x the Decay knob law), so a pad and an FM voice answer the knob alike; the very top of the knob (>= 0.97) holds the note. The decayed level is kept after the release (no jump back to full level = no second note when the pad is let go) */
+        if (v->gate) {
+            const float dv = s->pp[p][PP_DECAY];
+            if (dv < 0.97f) { float td = 0.8f * s->dm[p]; if (td < 0.002f) td = 0.002f; v->hd *= expf(-dt / td); }
+        }
+        x *= v->hd;
     }
     if (v->aenv < 1.0f) { v->aenv += (1.0f - v->aenv) * v->ac * 3.0f; if (v->aenv > 0.995f) v->aenv = 1.0f; x *= v->aenv; }
     v->t += dt;
