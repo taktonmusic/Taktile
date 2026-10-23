@@ -42,6 +42,7 @@
 - A muted track still shows its normal pad colours in the drum / synth pad modes (the display shows M)
 - Song page: a pad of an empty clip no longer creates or picks anything - the song only picks clips that exist in the clip view
 - Safer running: a failing part of the update loop no longer stops the rest; the error screen shows the line number (ERR ... Lnnn), repeated note-repeat hits are checked before they are recorded
+- Recording into an empty drum or synth track starts with one bar and grows with what you play (no more leftover length like 64 steps from an earlier clip)
 
 ## Development history (steps before 1.0.0)
 

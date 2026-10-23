@@ -71,4 +71,7 @@ run('view = 31; songBlank = false; songList = [[0,4,1,0,0,0]]; songSlot = 0; ban
 run('songClips(songList[0])[3] = -1; songPadNew(6)'); ok(run('songList[0][6][3]') === -1, 'song: an empty pad does not pick or create a clip');
 run('steps[6][3][0] = [1, 100, 0, 0]; songPadNew(6)'); ok(run('songList[0][6][3]') === 6, 'song: a pad with a clip picks it');
 run('view = 0');
+run('chosen[4] = 1; setKind(4, 1); selectTrack(4); askKind = -1; view = 0; for (let c = 0; c < NPAT; c++) for (const l of lanesOf(4)) steps[c][l] = steps[c][l].map(() => [0, 100, 0, 0]); lens[4] = 64; recArmed = true; playing = false; recordHit(lanesOf(4)[0], 0, 100)');
+ok(run('lens[4]') === 16 && run('growTrk[4]') === true, 'first take in an empty drum track starts with one bar, not the old length (' + run('lens[4]') + ')');
+run('recArmed = false; playing = false; growTrk[4] = false');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);
