@@ -4357,6 +4357,12 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                 s->sc_env[b] += (fabsf(band) - s->sc_env[b]) * (s->sc_env[b] < fabsf(band) ? 0.01f : 0.0006f);
             }
         }
+        {   /* safety: a sum above 0.85 is rounded off softly instead of being cut flat at the converter (a flat cut is the harsh 'clip' crack); below 0.85 nothing changes */
+            const float ka = 0.85f, kr = 0.15f;
+            float aL = fabsf(L), aR = fabsf(R);
+            if (aL > ka) { const float u = (aL - ka) / kr; L = (L < 0.0f ? -1.0f : 1.0f) * (ka + kr * (u / (1.0f + u))); }
+            if (aR > ka) { const float u = (aR - ka) / kr; R = (R < 0.0f ? -1.0f : 1.0f) * (ka + kr * (u / (1.0f + u))); }
+        }
         int li = (int)(L * 32767.0f), ri = (int)(R * 32767.0f);
         if (li > 32767) li = 32767; if (li < -32768) li = -32768;
         if (ri > 32767) ri = 32767; if (ri < -32768) ri = -32768;

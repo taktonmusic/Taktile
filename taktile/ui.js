@@ -761,7 +761,6 @@ function editParam(scope, key, delta, idx) {
     } else v = clamp(v + delta * (shiftHeld ? 0.016 : 0.0032) * (key === 'tune' ? 0.5 : 1), 0, 1);      /* Tune spans -24..+24 st: half the step per click keeps the same pitch step as before */
     if (scope === 'pad') {
         const L = keyLane(key);
-        if ((key === 'dly' || key === 'rvb') && L >= NTRK) { showToast('DRUM SOUNDS', 'USE OWN INSERT FX', 0); return false; }
         if (deleteHeld) { autoClear(L, key); return { v: pads[L][PI[key]] }; }
         pSnap('pad', L, key); pads[L][PI[key]] = v;
         if (recArmed && playing && PI[key] !== 0) autoRec(L, key, v);
@@ -4819,9 +4818,9 @@ const ENG_PG = {}; for (const e in ENG_KN) ENG_PG[e] = [['det', ENG_KN[e][0], EN
 function nxEng(t) { for (let i = 0; i < NX_ENG.length; i++) if (t >= NX_ENG[i][0] && t <= NX_ENG[i][1]) return NX_ENG[i][2]; return 0; }
 function nxList(e) { const l = []; for (let i = 0; i < NX_ENG.length; i++) if (NX_ENG[i][2] === e) for (let t = NX_ENG[i][0]; t <= NX_ENG[i][1]; t++) l.push(t); return l; }
 const PG47_ENG = VIEW_ITEMS[47], PG47_SYN = PG47_ENG.map(it => it[0] === 'schp' ? ['drive', 'Drive', 'Drv'] : it);
-const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['xfx', 'Effect', 'FX'] : it);      /* drum sounds have their own insert effects (no shared delay / reverb bus) */
-const FX_SYN = VIEW_ITEMS[38], FX_DRM = [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['x2fx','Effect 2','FX2'],['x2mix','Amount 2','Amt2'],['mono','Output','Out'],['morph','Morph A>B','Mrph']];
-const BLK_FX_SYN = BLOCKS[38], BLK_FX_DRM = [['INSERT 1 / THIS SOUND', 4], ['INSERT 2 + OUTPUT', 4]];
+const SND_ALL = VIEW_ITEMS[1], SND_DRM = SND_ALL.map(it => it[0] === 'poly' ? ['mono', 'Output', 'Out'] : it);      /* drum sounds have their own insert effects (no shared delay / reverb bus) */
+const FX_SYN = VIEW_ITEMS[38], FX_DRM = [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth'],['dly','Delay','Delay'],['rvb','Reverb','Reverb'],['x2fx','Effect 2','FX2'],['x2mix','Amount 2','Amt2']];
+const BLK_FX_SYN = BLOCKS[38], BLK_FX_DRM = [['INSERT 1 / THIS SOUND', 4], ['SENDS + INSERT 2', 4]];
 const SND_SPK = [['type', 'Engine'], ['spk', 'Text'], ['tone', 'Tone'], ['tune', 'Tune'], ['drive', 'Drive', 'Drv'], ['pan', 'Pan'], ['poly', 'Voices', 'Poly'], ['vol', 'Vol']];      /* speech: the text takes the place of attack / decay (one shot) */
 const SND_SYN = [['type', 'Engine'], ['att', 'Attack', 'Atk'], ['decay', 'Decay', 'Dcy'], ['tone', 'Tone'], ['tune', 'Tune'], ['pan', 'Pan'], ['poly', 'Voices', 'Poly'], ['vol', 'Vol']];      /* synth: engine + the shaping knobs first */       /* synth: Drive lives on the 2nd SYNTH page; the wave (Saw, Square ...) sits here as a small preset-style box */
 function viewItemsFix() {
