@@ -5,8 +5,6 @@
 - Sound browser: the melodic synths are grouped into 6 groups (Bass, Lead, Pluck + Stabs, Pads + Chords, Keys + Bells, Brass) instead of 16
 - Song: tempo per step (Loop + Shift + jog, shown in the title), Shift + Copy + step moves a step, the title line is shorter
 - README: sound count, Groove and Track Speed
-
-## 1.0.0 (23 October 2026)
 - Presets cut from 1468 to 420 clearly different sounds (10 per synth plus the sounds Taktile needs itself); sounds of old projects become the most similar kept sound of the same synth, favorites and kits too
 - Tape hiss is mono now (the same noise on left and right), the settings stay as they are
 - Sound levels evened out: every sound is measured and trimmed so the sounds of one synth are about equally loud (spread inside a synth 5.2 dB -> 1.5 dB)
