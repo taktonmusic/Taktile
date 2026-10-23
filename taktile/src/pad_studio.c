@@ -216,7 +216,35 @@ static const float DT_BEATS[5] = { 0.25f, 0.5f, 0.75f, 1.0f, 2.0f };
 static const int   SCALE_TBL[NSC][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 } , { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 5, 7, 12, 17, 19 }, { 0, 5, 6, 12, 17, 18 }, { 0, 5, 7, 12, 17, 19 }, { 0, 4, 8, 12, 16, 20 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 6, 12, 15, 18 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 6, 12, 16, 18 }, { 0, 4, 6, 12, 16, 18 } };
 
 /* ---------------- global parameters ---------------- */
-enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_N };
+enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_GRV, G_GAM, G_N };
+/* GROOVE templates: for each of the 16 sixteenths of a bar a delay (in steps, never early) and a velocity factor; the amount knob blends them in. Swing stays as it is and works on top. */
+static const char *const GRV_NAME[11] = { "OFF", "MPC", "SHUFFLE", "LAIDBACK", "DILLA", "DRUNK", "PUSH", "FUNK", "GHOST", "HUMAN", "ROLL" };
+static const float GRV_T[11][16] = {
+    { 0 },
+    { 0, .16f, 0, .16f, 0, .16f, 0, .16f, 0, .16f, 0, .16f, 0, .16f, 0, .16f },
+    { 0, .33f, 0, .33f, 0, .33f, 0, .33f, 0, .33f, 0, .33f, 0, .33f, 0, .33f },
+    { .04f, .06f, .05f, .06f, .14f, .06f, .05f, .06f, .04f, .06f, .05f, .06f, .14f, .06f, .05f, .08f },
+    { 0, .22f, .05f, .30f, .12f, .20f, .02f, .28f, .10f, .24f, .04f, .32f, .14f, .18f, .06f, .26f },
+    { .03f, .17f, .08f, .02f, .12f, .20f, .00f, .15f, .06f, .19f, .11f, .01f, .16f, .09f, .18f, .05f },
+    { .04f, .10f, .10f, .10f, 0, .10f, .10f, .10f, .04f, .10f, .10f, .10f, 0, .10f, .10f, .10f },
+    { 0, .12f, 0, .12f, 0, .12f, 0, .12f, 0, .12f, 0, .12f, 0, .12f, 0, .12f },
+    { 0, .10f, 0, .10f, 0, .10f, 0, .10f, 0, .10f, 0, .10f, 0, .10f, 0, .10f },
+    { .02f, .06f, 0, .05f, .03f, .07f, .01f, .05f, .02f, .06f, 0, .05f, .03f, .07f, .01f, .05f },
+    { 0, .08f, .16f, .24f, 0, .08f, .16f, .24f, 0, .08f, .16f, .24f, 0, .08f, .16f, .24f },
+};
+static const float GRV_V[11][16] = {
+    { 1 },
+    { 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f },
+    { 1.0f, .85f, .95f, .85f, 1.0f, .85f, .95f, .85f, 1.0f, .85f, .95f, .85f, 1.0f, .85f, .95f, .85f },
+    { 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f },
+    { 1.0f, .70f, .90f, .75f, 1.0f, .70f, .90f, .80f, 1.0f, .70f, .90f, .75f, 1.0f, .70f, .95f, .80f },
+    { .95f, .80f, 1.0f, .75f, .90f, 1.0f, .70f, .85f, 1.0f, .80f, .75f, .95f, .85f, 1.0f, .78f, .90f },
+    { 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f },
+    { 1.0f, .60f, .80f, .60f, 1.0f, .60f, .80f, .65f, 1.0f, .60f, .80f, .60f, 1.0f, .65f, .85f, .70f },
+    { 1.0f, .55f, .75f, .55f, 1.0f, .55f, .75f, .55f, 1.0f, .55f, .75f, .55f, 1.0f, .55f, .75f, .55f },
+    { 1.0f, .90f, .95f, .90f, .95f, .90f, 1.0f, .90f, 1.0f, .90f, .95f, .90f, .95f, .90f, 1.0f, .90f },
+    { 1.0f, .80f, .90f, .70f, 1.0f, .80f, .90f, .70f, 1.0f, .80f, .90f, .70f, 1.0f, .80f, .90f, .70f },
+};
 static const pd_t GD[G_N] = {
     { "m_vol",    "Volume", 0, 0.80f },
     { "key",      "Key",    12, 5.0f },
@@ -248,6 +276,8 @@ static const pd_t GD[G_N] = {
     { "m_tape",   "Tape",   0, 0.00f },
     { "m_hiss",   "Hiss",   0, 0.00f },
     { "m_wow",    "Wow",    0, 0.00f },
+    { "m_grv",    "Groove", 11, 0.0f },
+    { "m_gam",    "GrvAmt", 0, 0.70f },
 };
 
 /* ---------------- sound types ---------------- */
@@ -2785,6 +2815,9 @@ static void seq_step(inst_t *s) {
             hv *= 1.0f + s->g[G_HUM] * 0.6f * ((float)(s->rng & 0xFFFF) / 65536.0f - 0.5f);
             if (hv > 1.0f) hv = 1.0f; if (hv < 0.05f) hv = 0.05f;
         }
+        int grv = (int)(s->g[G_GRV] + 0.5f); if (grv < 0 || grv > 10) grv = 0;
+        const int gp = (int)(gl6 % 96); const int grv_on = grv > 0 && (gp % 6) == 0;
+        if (grv_on) { hv *= 1.0f + (GRV_V[grv][gp / 6] - 1.0f) * s->g[G_GAM]; if (hv > 1.0f) hv = 1.0f; if (hv < 0.05f) hv = 0.05f; }
         {
             static const float GT[8] = { 0.0f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 8.0f };
             int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7;
@@ -2795,6 +2828,7 @@ static void seq_step(inst_t *s) {
             s->act_dirty = 1; s->rt_n[t] = n; s->rt_int[t] = iv; s->rt_semi[t] = semi; s->rt_vel[t] = hv; s->rt_gate[t] = (int)gs_;
             s->rt_cnt[t] = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * Ls;      /* nudge: delay up to 70 % of a step in 2.5 % steps (older saves: 10 % steps) */
             if (sn != sd) s->rt_cnt[t] += (float)(gl6 * sd - G * sn) / (float)sn * (L / 6.0f);      /* the exact moment inside the tick */
+            if (grv_on) s->rt_cnt[t] += GRV_T[grv][gp / 6] * s->g[G_GAM] * L;      /* groove template: this sixteenth comes a little late */
             if (sw_ph(s, s->gs) == 1 && s->pp[tk][PP_TSW] > 0.52f) s->rt_cnt[t] += (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * Ls;   /* per-track extra swing on the off-beat steps */
             if (s->rt_cnt[t] <= 0.0f) rt_fire(s, t);
         }
@@ -3419,6 +3453,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         else if (k == G_DLYT)  { int e = enum_index(val, DT_NAME, 5);   if (e < 0) return; v = (float)e; }
         else if (k == G_DMODE) { int e = enum_index(val, DMODE_NAME, 3); if (e < 0) return; v = (float)e; }
         else if (k == G_RMODE) { int e = enum_index(val, RMODE_NAME, 3); if (e < 0) return; v = (float)e; }
+        else if (k == G_GRV)   { int e = enum_index(val, GRV_NAME, 11); if (e < 0) return; v = (float)e; }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         s->g[k] = v;
         update_global(s);

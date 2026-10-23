@@ -30,7 +30,9 @@
  */
 
 /* boot breadcrumbs: show how far the module got (file /data/UserData/schwung/taktile-boot.log) */
-let bootLog = '', bootTick = false;
+let bootLog = '', bootTick = false, bootTicks = 0, bootReady = false, bootT0 = Date.now(), safeStart = false, safeNote = false;
+/* crash guard: a start that never reached 'ready' (the Move crashed or hung while loading) makes the next start a SAFE START: the old project file is kept as a copy, the module opens with an empty project */
+try { if (typeof host_read_file === 'function') { const pv = host_read_file('/data/UserData/schwung/taktile-boot.log'); safeStart = !!(pv && pv.indexOf('init') >= 0 && pv.indexOf('ready') < 0); } } catch (e) { safeStart = false; }
 function crumb(s) { bootLog += s + ' '; try { if (typeof host_write_file === 'function') host_write_file('/data/UserData/schwung/taktile-boot.log', bootLog); } catch (e) { /* ignore */ } }
 crumb('loaded');
 /* No external imports: the module must load even if the shared helper file changes or is missing. */
@@ -65,11 +67,12 @@ const ENUMS = {
     dly_time: ['1/16','1/8','3/16','1/4','1/2'],
 };
 ENUMS.dln = ['AUTO', '1/16', '1/8', '1/4', '1/2', '1 BAR', '2 BARS']; ENUMS.dmd = ['WHOLE', 'WORD', 'LETTER'];      /* speech: fit the text to a length, say all of it or one word per note */
+ENUMS.m_grv = ['OFF', 'MPC', 'SHUFFLE', 'LAIDBACK', 'DILLA', 'DRUNK', 'PUSH', 'FUNK', 'GHOST', 'HUMAN', 'ROLL'];      /* groove templates (the swing knob stays) */
 ENUMS.m2fx = ENUMS.mfx; ENUMS.x2fx = ENUMS.xfx; ENUMS.dly_mode = ENUMS.dmode; ENUMS.rvb_mode = ENUMS.rmode;
 const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn','dsw','dst','dnz','dck','dln','dmd','dlt','tkey','tscl'];
 const PDEF = { 105: 0.5, 106: 0.5, 107: 0.5, 108: 0.5, 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
-const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low','m_tape','m_hiss','m_wow'];
+const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low','m_tape','m_hiss','m_wow','m_grv','m_gam'];
 const PI = {}; PK.forEach((k, i) => PI[k] = i);
 const FAV_MAP = { dtime: 'dly_time', dfb: 'dly_fb', rsize: 'rvb_size', rdark: 'rvb_dark', dmode: 'dly_mode', rmode: 'rvb_mode', dtn: 'dly_tone', dwd: 'dly_wide', rwd: 'rvb_wide', rlc: 'rvb_low', chor: 'dly', phas: 'rvb', chrt: 'dly_time', chdp: 'dly_fb', phrt: 'rvb_size', phfb: 'rvb_dark' };     /* favourites saved before the shared FX bus */
 const MI = {}; MK.forEach((k, i) => MI[k] = i);
@@ -88,7 +91,7 @@ const LAYOUT = [
 ];
 const INIT_DRUMS = 'DKick808 DKickHse DSnr909 DClap DHatCl DHatOp DRim DTomMid DHatSoft DHatOp2 DHatTght DTomLo DCowbell DTomHi DClave DCowHi'.split(' ');      /* the INIT drum kit: pure synth drums, every one of them editable like a synth sound */
 const DRUM_LAYOUT = INIT_DRUMS.map(n => [Math.max(0, TYPE_NAME.indexOf(n)), .5, .5, 0, 1, 0, 0]);
-const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0];
+const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0, 0, 0.7];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
 const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
@@ -178,7 +181,7 @@ const VIEW_ITEMS = {
     25: [['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ'],['m_qnt','Launch','Lnch'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met']],
     26: [['rrate','Rate'],['repmode','Repeat','Rep'],['fullvel','FullVel','FVel'],['rqoff','RecSnap','Snap'],['qscale','ScaleQ','ScQ'],['bpm','BPM'],['swing','Swing','Swg']],
     22: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
-    23: [['swing','Swing','Swg'],['bpm','BPM'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['tsw','Swing+','Swg+'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl']],
+    23: [['swing','Swing','Swg'],['m_grv','Groove','Grv'],['m_gam','Groove Amt','GAmt'],['tsw','Swing+','Swg+'],['m_hum','Human','Hum'],['bpm','BPM'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch']],
     30: [['duck','Amount','Amt'],['duckr','Release','Rel'],['scs','Source','Src'],['pump','Pump'],['wob','Wobble','Wob'],['ring','Ring'],['crush','Crush','Crsh'],['locut','HPCut','HPF']],
     32: [['sgn','Gain'],['satk','Attack','Atk'],['srel','Release','Rel'],['sstr','Stretch','Strc'],['smd','Mode'],['sst','Start','Strt'],['sen','End'],['vol','Vol']],
     33: [['rsrc','Source','Src'],['rbar','Bars'],['rgo','Record','Rec'],['rst','State','Stat'],['m_vol','Master','Vol'],['m_lim','Limiter','Lim'],['bpm','BPM'],['m_met','Metro','Met']],
@@ -472,6 +475,11 @@ function loadState() {
         if (typeof host_read_file !== 'function') return;
         let txt = host_read_file(STATE_FILE);
         if (!txt) txt = host_read_file(OLD_STATE_FILE);
+        if (safeStart) {                                          /* the last start did not finish: keep the project file as a copy and begin empty */
+            safeStart = false; safeNote = true;
+            if (txt && !host_read_file('/data/UserData/schwung/taktile-state.before-safe-start.json')) host_write_file('/data/UserData/schwung/taktile-state.before-safe-start.json', txt);
+            freshState = true; return;
+        }
         if (!txt) { freshState = true; return; }
         const o = JSON.parse(txt);
         if (!o || o.v !== 2) { freshState = true; return; }
@@ -668,7 +676,7 @@ function showToast(label, text, f) {
     const e = undoStack.length ? undoStack[undoStack.length - 1] : null; if (e && (!e.lbl || e.k) && label !== 'UNDO' && label !== 'REDO') e.lbl = (String(label) + ' ' + String(text)).substring(0, 20);
 }
 
-const FX_TYPE_KEY = { xfx: 1, x2fx: 1, mfx: 1, m2fx: 1, dmode: 1, rmode: 1, dly_mode: 1, rvb_mode: 1, mono: 1 };
+const FX_TYPE_KEY = { m_grv: 1, xfx: 1, x2fx: 1, mfx: 1, m2fx: 1, dmode: 1, rmode: 1, dly_mode: 1, rvb_mode: 1, mono: 1 };
 function editParam(scope, key, delta, idx) {
     if (scope === 'sys') {
         if (key === 'bpm' || key === 'swing') pSnap('sys', 0, key);
@@ -1970,7 +1978,7 @@ function knobTouch(i) {
 }
 const LONG_NAME = { dly_time: 'Delay Time', dly_fb: 'Delay Feedback', dly_mode: 'Delay Type', dly_tone: 'Delay Tone', dly_wide: 'Delay Width', dly_ret: 'Delay Return', rvb_size: 'Reverb Size', rvb_dark: 'Reverb Damping', rvb_mode: 'Reverb Type', rvb_wide: 'Reverb Width', rvb_low: 'Reverb Low Cut', dmode: 'Delay Type', rmode: 'Reverb Type', dtime: 'Delay Time', dfb: 'Delay Feedback', rsize: 'Reverb Size', rdark: 'Reverb Damping', chrt: 'Chorus Rate', chdp: 'Chorus Depth', phrt: 'Phaser Rate', phfb: 'Phaser Feedback',
     dly: 'Delay Send', rvb: 'Reverb Send', cut: 'Lowpass Cutoff', locut: 'Highpass Cutoff', res: 'Resonance', fenv: 'Filter Envelope', crush: 'Bit Crusher', ring: 'Ring Modulator', pump: 'Pump', wob: 'Wobble',
-    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_tape: 'Tape Colour', m_hiss: 'Tape Hiss', m_wow: 'Tape Wow', m_wid: 'Stereo Width',
+    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_tape: 'Tape Colour', m_hiss: 'Tape Hiss', m_wow: 'Tape Wow', m_grv: 'Groove Template', m_gam: 'Groove Amount', m_wid: 'Stereo Width',
     m_comp: 'Compressor', dly_ret: 'Delay Return', rvb_ret: 'Reverb Return', eql: 'Sound EQ Low', eqm: 'Sound EQ Mid', eqh: 'Sound EQ High', m_eql: 'EQ Low', m_eqm: 'EQ Mid', m_eqh: 'EQ High', m_lim: 'Limiter', poly: 'Voices', wave: 'Waveform', det: 'Detune',
     sub: 'Sub Oscillator', att: 'Attack', vol: 'Volume', tvol: 'Track Volume', pmode: 'Pad Mode', dsel: 'Drum Sound', lay: 'Pad Layout', tcol: 'Track Color', tsw: 'Track Swing', rdens: 'Random Density',
     rvar: 'Random Velocity', rkey: 'Random In Key', rrat: 'Random Ratchet', rqoff: 'Record Snap', fullvel: 'Full Velocity', m_hum: 'Humanize', m_met: 'Metronome', m_qnt: 'Launch Quantize',
@@ -5270,6 +5278,7 @@ function tapTempo() {
 try { favBuild(); } catch (e) { /* later */ }
 globalThis.tick = function () {
     if (!bootTick) { bootTick = true; crumb('tick1'); }
+    if (!bootReady && ++bootTicks > 100) { bootReady = true; crumb('ready'); if (safeNote) { safeNote = false; showToast('SAFE START', 'LAST START DID NOT FINISH', 0); } }
     ticksSinceEdit++;
     if ((ticksSinceEdit & 7) === 0) { miscCheck(); chordReconcile(); }
     if (view === 50 && !menuOpen && pads[ln()][PI.grn] >= 0.01 && (ticksSinceEdit % 5) === 0) { grainPoll(); needsRedraw = true; }
