@@ -1,5 +1,5 @@
 const vm = require('vm'), fs = require('fs');
-const files = process.env.PRESET_FILES ? JSON.parse(process.env.PRESET_FILES) : {}; const writes = []; const params = {}; const setCalls = [];
+const files = {}; const writes = []; const params = {}; const setCalls = [];
 const ctx = vm.createContext({ console, Math, JSON, Date, Array, Object, String, Number, parseInt, parseFloat, isNaN, Float32Array, Int16Array, Uint8Array, setTimeout, clearTimeout });
 ctx.globalThis = ctx;
 Object.assign(ctx, {

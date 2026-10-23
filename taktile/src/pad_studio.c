@@ -216,35 +216,7 @@ static const float DT_BEATS[5] = { 0.25f, 0.5f, 0.75f, 1.0f, 2.0f };
 static const int   SCALE_TBL[NSC][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 } , { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 5, 7, 12, 17, 19 }, { 0, 5, 6, 12, 17, 18 }, { 0, 5, 7, 12, 17, 19 }, { 0, 4, 8, 12, 16, 20 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 6, 12, 15, 18 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 6, 12, 16, 18 }, { 0, 4, 6, 12, 16, 18 } };
 
 /* ---------------- global parameters ---------------- */
-enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_GRV, G_GAM, G_N };
-/* GROOVE templates: for each of the 16 sixteenths of a bar a delay (in steps, never early) and a velocity factor; the amount knob blends them in. Swing stays as it is and works on top. */
-static const char *const GRV_NAME[11] = { "OFF", "MPC", "SHUFFLE", "LAIDBACK", "DILLA", "DRUNK", "PUSH", "FUNK", "GHOST", "HUMAN", "ROLL" };
-static const float GRV_T[11][16] = {
-    { 0 },
-    { 0, .16f, 0, .16f, 0, .16f, 0, .16f, 0, .16f, 0, .16f, 0, .16f, 0, .16f },
-    { 0, .33f, 0, .33f, 0, .33f, 0, .33f, 0, .33f, 0, .33f, 0, .33f, 0, .33f },
-    { .04f, .06f, .05f, .06f, .14f, .06f, .05f, .06f, .04f, .06f, .05f, .06f, .14f, .06f, .05f, .08f },
-    { 0, .22f, .05f, .30f, .12f, .20f, .02f, .28f, .10f, .24f, .04f, .32f, .14f, .18f, .06f, .26f },
-    { .03f, .17f, .08f, .02f, .12f, .20f, .00f, .15f, .06f, .19f, .11f, .01f, .16f, .09f, .18f, .05f },
-    { .04f, .10f, .10f, .10f, 0, .10f, .10f, .10f, .04f, .10f, .10f, .10f, 0, .10f, .10f, .10f },
-    { 0, .12f, 0, .12f, 0, .12f, 0, .12f, 0, .12f, 0, .12f, 0, .12f, 0, .12f },
-    { 0, .10f, 0, .10f, 0, .10f, 0, .10f, 0, .10f, 0, .10f, 0, .10f, 0, .10f },
-    { .02f, .06f, 0, .05f, .03f, .07f, .01f, .05f, .02f, .06f, 0, .05f, .03f, .07f, .01f, .05f },
-    { 0, .08f, .16f, .24f, 0, .08f, .16f, .24f, 0, .08f, .16f, .24f, 0, .08f, .16f, .24f },
-};
-static const float GRV_V[11][16] = {
-    { 1 },
-    { 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f, 1.0f, .90f },
-    { 1.0f, .85f, .95f, .85f, 1.0f, .85f, .95f, .85f, 1.0f, .85f, .95f, .85f, 1.0f, .85f, .95f, .85f },
-    { 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f },
-    { 1.0f, .70f, .90f, .75f, 1.0f, .70f, .90f, .80f, 1.0f, .70f, .90f, .75f, 1.0f, .70f, .95f, .80f },
-    { .95f, .80f, 1.0f, .75f, .90f, 1.0f, .70f, .85f, 1.0f, .80f, .75f, .95f, .85f, 1.0f, .78f, .90f },
-    { 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f, 1.0f, .85f, .90f, .85f },
-    { 1.0f, .60f, .80f, .60f, 1.0f, .60f, .80f, .65f, 1.0f, .60f, .80f, .60f, 1.0f, .65f, .85f, .70f },
-    { 1.0f, .55f, .75f, .55f, 1.0f, .55f, .75f, .55f, 1.0f, .55f, .75f, .55f, 1.0f, .55f, .75f, .55f },
-    { 1.0f, .90f, .95f, .90f, .95f, .90f, 1.0f, .90f, 1.0f, .90f, .95f, .90f, .95f, .90f, 1.0f, .90f },
-    { 1.0f, .80f, .90f, .70f, 1.0f, .80f, .90f, .70f, 1.0f, .80f, .90f, .70f, 1.0f, .80f, .90f, .70f },
-};
+enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_N };
 static const pd_t GD[G_N] = {
     { "m_vol",    "Volume", 0, 0.80f },
     { "key",      "Key",    12, 5.0f },
@@ -276,8 +248,6 @@ static const pd_t GD[G_N] = {
     { "m_tape",   "Tape",   0, 0.00f },
     { "m_hiss",   "Hiss",   0, 0.00f },
     { "m_wow",    "Wow",    0, 0.00f },
-    { "m_grv",    "Groove", 11, 0.0f },
-    { "m_gam",    "GrvAmt", 0, 0.70f },
 };
 
 /* ---------------- sound types ---------------- */
@@ -810,7 +780,6 @@ typedef struct {
     int   llen[NLANE];                      /* own loop length of one lane (0 = follow the track) */
     int   playing, cur_pat, sel_track, gs;
     int   sub;                              /* tick inside the current 1/16 (0..5): the grid is 6 ticks per 1/16 so 1/32 and triplets are real steps */
-    int   tsn[NTRK], tsd[NTRK];            /* track speed as a fraction (tsn/tsd, 0 = 1): 1/2 = half time, 3/2 = one and a half times as fast */
     int   tres[NTRK];                       /* ticks per step of a track's grid: 6 = 1/16 (default), 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8 */
     int   clip[NTRK], qclip[NTRK];   /* active clip per track (-1 = stopped), pending (-2 = none) */
     int   scq[NPAT], pend_on, pend_qm;   /* launch quantisation of one scene (0 = global setting) and the one used by the pending scene launch */
@@ -1626,10 +1595,6 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
     v->c1 = T->tau1 > 0.0f ? expf(-1.0f / (T->tau1 * dm * s->sr)) : 0.0f;
     v->c2 = T->tau2 > 0.0f ? expf(-1.0f / (T->tau2 * dm * s->sr)) : 0.0f;
     v->pek = T->pet > 0.0f ? expf(-1.0f / (T->pet * s->sr)) : 0.0f;
-    if (T->oct == 0.0f && BASE_T[ty] < T_E_MODAL && BASE_T[ty] != T_SAMPLE) {      /* every drum sound shares the DRUM ENGINE knobs: Sweep = depth of the pitch drop, SweepTime = how long it lasts (middle = the sound as it was) */
-        v->pe *= powf(2.0f, (s->pp[p][PP_DSW] - 0.5f) * 3.0f);
-        if (T->pet > 0.0f) v->pek = expf(-1.0f / (T->pet * powf(2.0f, (s->pp[p][PP_DST] - 0.5f) * 3.0f) * s->sr));
-    }
     v->third = powf(2.0f, (float)SCALE_TBL[eff_scale(s, p)][1] / 12.0f);
     if (BASE_T[ty] >= T_E_MODAL) nx_init(s, v, p, ty);
     if (BASE_T[ty] == T_HATCL || (BASE_T[ty] == T_E_AC && ac_hat(ty) == 1)) {                         /* choke every open hat */
@@ -2618,11 +2583,6 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
     case T_E_MODAL: case T_E_FM: case T_E_VOX: case T_E_CHIP: case T_E_MORPH: case T_E_DRUM: case T_E_ANA: case T_E_WT: case T_E_FM4: case T_E_ADD: case T_E_PAD: case T_E_STR: case T_E_FLD: case T_E_AC: case T_E_FXE: case T_E_SPK: case T_E_303: case T_E_SWM: case T_E_DX: x = nx_render(s, v, p); break;
     default: v->active = 0; break;
     }
-    if (TY[v->type].oct == 0.0f && BASE_T[v->type] < T_E_MODAL && BASE_T[v->type] != T_SAMPLE && v->active) {      /* Click / Noise: from the middle upwards every drum sound gets a click at the start and a noise tail (middle = the sound as it was) */
-        const float ck = (s->pp[p][PP_DCK] - 0.5f) * 2.0f, nz = (s->pp[p][PP_DNZ] - 0.5f) * 2.0f;
-        if (ck > 0.02f && v->t < 0.012f) x += noise(s) * expf(-v->t / 0.0015f) * ck * 0.5f;
-        if (nz > 0.02f) x += noise(s) * v->env * nz * 0.35f;
-    }
     if (p < NTRK && v->gate && TY[v->type].sus) {                    /* Decay on sustained sounds: the same slope as the FM sound (time constant 0.8 s x the Decay knob law), so a pad and an FM voice answer the knob alike; the very top of the knob (>= 0.97) holds the note */
         const float dv = s->pp[p][PP_DECAY];
         if (dv < 0.97f) { float td = 0.8f * s->dm[p]; if (td < 0.002f) td = 0.002f; v->hd *= expf(-dt / td); x *= v->hd; }
@@ -2748,7 +2708,6 @@ static void rt_fire(inst_t *s, int t) {
 }
 
 /* swing phase of step g: 0 = long (on-beat), 1 = short (off-beat), 2 = neutral. With an odd main loop length the groove restarts with every pass (last step neutral), so the loop sounds the same each time. */
-static inline void trk_spd(const inst_t *s, int tk, int *n, int *d) { *n = s->tsn[tk] > 0 ? s->tsn[tk] : 1; *d = s->tsd[tk] > 0 ? s->tsd[tk] : 1; }
 static int sw_ph(const inst_t *s, long g) {
     int M = 16; for (int t = 0; t < NTRK; t++) { const int lt = s->seqlen[t] * s->tres[t]; if (lt != 96 && lt > 0 && lt % 6 == 0) { M = lt / 6; break; } }
     if (M & 1) { long i = g % M; return i == M - 1 ? 2 : (int)(i & 1); }
@@ -2764,9 +2723,7 @@ static void seq_step(inst_t *s) {
             const int c = s->clip[t]; if (c < 0 || c >= NPAT || s->qclip[t] != -2) continue;
             const int act = s->fol[t][c] & 7; if (act == 0) continue;
             int len = s->seqlen[t]; if (len < 1) len = 1;
-            { const long lt = (long)len * s->tres[t]; int sn, sd; trk_spd(s, t, &sn, &sd); long G = gtk - (long)s->tph[t] * 6; if (G < 0) G = 0;
-              if (sn == sd) { if ((G % lt) != 0) continue; }
-              else { const long a = (G * sn + sd - 1) / sd, b = ((G + 1) * sn + sd - 1) / sd; int hit = 0; for (long q = a; q < b; q++) if (q % lt == 0) hit = 1; if (!hit) continue; } }
+            { const long lt = (long)len * s->tres[t]; if (((gtk - (long)s->tph[t] * 6) % lt) != 0) continue; }
             int li = (s->fol[t][c] >> 3) & 7; if (li > 5) li = 5;
             if (++s->fol_cnt[t] < LP[li]) continue;
             s->fol_cnt[t] = 0;
@@ -2802,21 +2759,17 @@ static void seq_step(inst_t *s) {
     for (int t = 0; t < NLANE; t++) {                              /* t = lane */
         const int tk = lane_trk(s, t);
         const int res = s->tres[tk];
-        int sn, sd; trk_spd(s, tk, &sn, &sd);
-        if (res == 6 && sub != 0 && sn == sd) continue;
+        if (res == 6 && sub != 0) continue;
         if (!lane_on(s, t)) continue;
         int len = s->llen[t] > 0 ? s->llen[t] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
         if (s->clip[tk] < 0) continue;
-        long G = gtk - (long)s->tph[tk] * 6; if (G < 0) G = 0;
-        long lt0 = G, lt1 = G + 1;                                  /* the ticks of this track's own clock that begin inside this global tick (speed ratio sn/sd) */
-        if (sn != sd) { lt0 = (G * sn + sd - 1) / sd; lt1 = ((G + 1) * sn + sd - 1) / sd; }
-        for (long gl6 = lt0; gl6 < lt1; gl6++) {
+        long gl6 = gtk - (long)s->tph[tk] * 6; if (gl6 < 0) gl6 = 0;
         if (gl6 % res) continue;                                   /* not a step of this track's grid */
         const int gl = (int)(gl6 / res);
-        const float Ls = L * (float)res / 6.0f * (float)sd / (float)sn;      /* one step of this grid, in samples (a slower track has longer steps) */
+        const float Ls = L * (float)res / 6.0f;                    /* one step of this grid, in samples */
         if ((gl % len) == 0) s->spk_wi[t] = 0;                      /* a speech sound that says one word per note starts again with the loop */
         const uint8_t *st = s->stp[s->clip[tk]][t][gl % len];
-        if (s->rskip[t]) { const long ab = (gl6 + (long)s->tph[tk] * 6 * sn / sd) / res; if (s->rskip[t] == ab + 1) { s->rskip[t] = 0; continue; } if (s->rskip[t] < ab + 1) s->rskip[t] = 0; }      /* never leave an old skip behind */
+        if (s->rskip[t]) { const long ab = gtk / res; if (s->rskip[t] == ab + 1) { s->rskip[t] = 0; continue; } if (s->rskip[t] < ab + 1) s->rskip[t] = 0; }      /* never leave an old skip behind */
         if (!(st[0] & 0x80) || s->mute[tk] || s->lmute[t] || s->rechold[tk]) continue;
         if (prob_idx(st[1]) > 0) {
             s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5;
@@ -2835,9 +2788,6 @@ static void seq_step(inst_t *s) {
             hv *= 1.0f + s->g[G_HUM] * 0.6f * ((float)(s->rng & 0xFFFF) / 65536.0f - 0.5f);
             if (hv > 1.0f) hv = 1.0f; if (hv < 0.05f) hv = 0.05f;
         }
-        int grv = (int)(s->g[G_GRV] + 0.5f); if (grv < 0 || grv > 10) grv = 0;
-        const int gp = (int)(gl6 % 96); const int grv_on = grv > 0 && (gp % 6) == 0;
-        if (grv_on) { hv *= 1.0f + (GRV_V[grv][gp / 6] - 1.0f) * s->g[G_GAM]; if (hv > 1.0f) hv = 1.0f; if (hv < 0.05f) hv = 0.05f; }
         {
             static const float GT[8] = { 0.0f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 8.0f };
             int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7;
@@ -2847,11 +2797,8 @@ static void seq_step(inst_t *s) {
             if (n > 1 && gs_ > 0.9f * iv) gs_ = 0.9f * iv;
             s->act_dirty = 1; s->rt_n[t] = n; s->rt_int[t] = iv; s->rt_semi[t] = semi; s->rt_vel[t] = hv; s->rt_gate[t] = (int)gs_;
             s->rt_cnt[t] = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * Ls;      /* nudge: delay up to 70 % of a step in 2.5 % steps (older saves: 10 % steps) */
-            if (sn != sd) s->rt_cnt[t] += (float)(gl6 * sd - G * sn) / (float)sn * (L / 6.0f);      /* the exact moment inside the tick */
-            if (grv_on) s->rt_cnt[t] += GRV_T[grv][gp / 6] * s->g[G_GAM] * L;      /* groove template: this sixteenth comes a little late */
             if (sw_ph(s, s->gs) == 1 && s->pp[tk][PP_TSW] > 0.52f) s->rt_cnt[t] += (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * Ls;   /* per-track extra swing on the off-beat steps */
             if (s->rt_cnt[t] <= 0.0f) rt_fire(s, t);
-        }
         }
     }
     float off = (2.0f * s->swing - 1.0f) * L;
@@ -2991,7 +2938,7 @@ static void *create_instance(const char *module_dir, const char *json_defaults) 
             s->rec_src = -1; s->rec_slot = -1;
             for (int k = 0; k < G_N; k++) s->g[k] = GD[k].def; s->lim_g = 1.0f;
             s->bpm = 120.0f; s->swing = 0.5f; s->rep_idx = 8;
-            for (int t = 0; t < NTRK; t++) { s->seqlen[t] = 16; s->tg[t] = 1.0f; s->tres[t] = 6; s->tsn[t] = 1; s->tsd[t] = 1; }
+            for (int t = 0; t < NTRK; t++) { s->seqlen[t] = 16; s->tg[t] = 1.0f; s->tres[t] = 6; }
             for (int d = 0; d < 4; d++) s->dtrk[d] = -1;
             for (int k = 0; k < 32; k++) s->np_trk[k] = -1;
             init_static(s);
@@ -3123,17 +3070,17 @@ static void midi_export(inst_t *s, const char *val) {
         for (int c = c0; c <= c1 && ne < 19000; c++) {
             const long len0 = (c + 1 <= c1 ? start[c + 1] : total) - start[c]; if (len0 <= 0) continue;
             int len = s->llen[l] > 0 ? s->llen[l] : s->seqlen[tk]; if (len < 1) len = 1; if (len > MAXSTEP) len = MAXSTEP;
-            const int rs = s->tres[tk]; int sn_, sd_; trk_spd(s, tk, &sn_, &sd_); const double rsf = (double)rs * sd_ / sn_;      /* a slower track: longer steps */
-            for (long g = 0; (double)g * rsf < (double)len0 * 6 && ne < 19000; g++) {
+            const int rs = s->tres[tk];
+            for (long g = 0; g * rs < len0 * 6 && ne < 19000; g++) {
                 const uint8_t *st = s->stp[c][l][g % len]; if (!(st[0] & 0x80)) continue;
                 const int semi = (int)st[2] - 64, vel = st[0] & 0x7F; int note = drum ? 36 + ((l - NTRK) & 15) : 60 + semi; if (note < 0) note = 0; if (note > 127) note = 127;
-                const float sw = (sn_ == sd_ && (g * rs) % 6 == 0 && ((g * rs / 6) & 1)) ? (2.0f * s->swing - 1.0f) * TQ + (s->pp[tk][PP_TSW] > 0.52f ? (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * TQ : 0.0f) : 0.0f;
-                const float TS = (float)((double)TQ / 6.0 * rsf);
+                const float sw = ((g * rs) % 6 == 0 && ((g * rs / 6) & 1)) ? (2.0f * s->swing - 1.0f) * TQ + (s->pp[tk][PP_TSW] > 0.52f ? (s->pp[tk][PP_TSW] - 0.5f) * 0.5f * TQ : 0.0f) : 0.0f;
+                const float TS = (float)(TQ / 6 * rs);
                 const float nd = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * TS;
                 const int n = 1 + (st[3] & 3), gi = (st[3] >> 2) & 7; const float iv = TS / (float)n;
                 float gl = gi == 0 ? 0.8f * iv : GT[gi] * TS; if (n > 1 && gl > 0.9f * iv) gl = 0.9f * iv;
                 for (int r = 0; r < n && ne < 19998; r++) {
-                    long t0 = start[c] * TQ + (long)((double)g * rsf * ((double)TQ / 6.0)) + (long)(sw + nd + iv * r), t1 = t0 + (long)(gl < 1.0f ? 1.0f : gl);
+                    long t0 = start[c] * TQ + g * rs * (TQ / 6) + (long)(sw + nd + iv * r), t1 = t0 + (long)(gl < 1.0f ? 1.0f : gl);
                     ev[ne].tick = t0; ev[ne].on = 1; ev[ne].note = note; ev[ne].vel = vel ? vel : 1; ne++;
                     ev[ne].tick = t1; ev[ne].on = 0; ev[ne].note = note; ev[ne].vel = 0; ne++;
                 }
@@ -3390,12 +3337,6 @@ static void set_param(void *instance, const char *key, const char *val) {
         for (int i = 0; i < n && off + i < MAXSTEP; i++) put_step(s, pt, t, off + i, h + 12 * i, 12);
         return;
     }
-    if (strcmp(key, "tspd") == 0) {                /* switched off: every track runs at normal speed */
-        return;
-        int t = atoi(val); const char *c1 = strchr(val, ','); const char *c2 = c1 ? strchr(c1 + 1, ',') : NULL;
-        if (c2 && t >= 0 && t < NTRK) { int n = atoi(c1 + 1), d = atoi(c2 + 1); if (n >= 1 && d >= 1 && n <= 16 && d <= 16 && n * 4 <= d * 12 && d <= 8 * n) { s->tsn[t] = n; s->tsd[t] = d; } }
-        return;
-    }
     if (strcmp(key, "plkt") == 0) {                /* "lane,paramIndex": which lane parameter the step locks drive (0 = none) */
         int l = atoi(val); const char *c = strchr(val, ','); if (!c || l < 0 || l >= NLANE) return;
         int k = atoi(c + 1);
@@ -3474,7 +3415,6 @@ static void set_param(void *instance, const char *key, const char *val) {
         else if (k == G_DLYT)  { int e = enum_index(val, DT_NAME, 5);   if (e < 0) return; v = (float)e; }
         else if (k == G_DMODE) { int e = enum_index(val, DMODE_NAME, 3); if (e < 0) return; v = (float)e; }
         else if (k == G_RMODE) { int e = enum_index(val, RMODE_NAME, 3); if (e < 0) return; v = (float)e; }
-        else if (k == G_GRV)   { int e = enum_index(val, GRV_NAME, 11); if (e < 0) return; v = (float)e; }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         s->g[k] = v;
         update_global(s);
@@ -4299,13 +4239,6 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                     if (dly < 2.0f) dly = 2.0f; if (dly > 2040.0f) dly = 2040.0f;
                 }
                 const int w = s->tp_w;
-                float hz = 0.0f;                                              /* the hiss is ONE noise for both channels (mono): tape hiss does not widen the picture */
-                if (hs > 0.01f) {
-                    s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
-                    const float nz = (float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f;
-                    s->tp_hn[0] += 0.35f * (nz - s->tp_hn[0]);
-                    hz = (nz - s->tp_hn[0]) * 0.016f * hs * sqrtf(hs);            /* the hiss lives in the highs; full = about -45 dB, 25 % is still just audible in quiet parts */
-                }
                 for (int c = 0; c < 2; c++) {
                     float x = io[c];
                     if (ww > 0.01f) {
@@ -4323,7 +4256,12 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
                         s->tp_lp[c] += (1.0f - expf(-6.2831853f * fc * s->inv_sr)) * (x - s->tp_lp[c]);
                         x = s->tp_lp[c];
                     }
-                    x += hz;
+                    if (hs > 0.01f) {
+                        s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
+                        const float nz = (float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f;
+                        s->tp_hn[c] += 0.35f * (nz - s->tp_hn[c]);
+                        x += (nz - s->tp_hn[c]) * 0.016f * hs * sqrtf(hs);            /* the hiss lives in the highs; full = about -45 dB, 25 % is still just audible in quiet parts */
+                    }
                     io[c] = x;
                 }
                 s->tp_w = (w + 1) & 2047;

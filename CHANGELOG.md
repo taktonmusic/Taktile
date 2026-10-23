@@ -1,26 +1,12 @@
 # Changelog
 
 ## 1.0.0 (23 October 2026)
-- Track Speed taken out again (every track runs at the normal speed): the QUANT page has no Track Speed tile any more
-- Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms); 450 sounds in total
-- Drum sounds: every drum sound has the same ENGINE page (Sweep, SweepTime, Noise, Click, Drive, filter); the knobs now work on the classic drums too, the middle position is the sound as it was
-- Sound browser: the melodic synths are grouped into 6 groups (Bass, Lead, Pluck + Stabs, Pads + Chords, Keys + Bells, Brass) instead of 16
-- Song: tempo per step (Loop + Shift + jog, shown in the title), Shift + Copy + step moves a step, the title line is shorter
-- README: sound count and Groove
-- Presets cut from 1468 to 420 clearly different sounds (10 per synth plus the sounds Taktile needs itself), then 30 new sounds of the three new engines = 450; sounds of old projects become the most similar kept sound of the same synth, favorites and kits too
-- Tape hiss is mono now (the same noise on left and right), the settings stay as they are
-- Sound levels evened out: every sound is measured and trimmed so the sounds of one synth are about equally loud (spread inside a synth 5.2 dB -> 1.5 dB)
-- Drum tracks: each pad keeps its own loop length again (the shared-length change was taken out)
-- Menu: no leftover message on top of the menu title, shorter names where they were cut off (Btn lights, Scene Lnch, Pin knob to FAV), longer group titles, exit window title fits
-- Design themes are back: Menu → DESIGN → Design theme (14 themes, changes live while you scroll, saved with the project)
-- Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with Groove Amt on the SWING page; Swing stays and works on top
-- Safe start: if the last start did not finish, Taktile opens an empty project and keeps the old file as a copy
-- Native groove test and UI tests added to CI
-- Menus: the master pages (TEMPO, QUANT, OPTIONS, BUS, DELAY, REVERB, TRACK, SWING, KEY, REPEAT, DUCK, KIT, PROJECT, MIDI OUT ...) use the same tiles as the track pages instead of round knobs; the TAPE page has its title
-- Song page: only the song plays; speech letters per step; Euclid OFF / ON
-- Song page: when the song is off (or you leave the page) your normal clips play again
-- Song starts at the step you picked, the jogwheel scrolls through tracks 1-16
-- The one GitHub release is called Taktile 1.0.0 and always holds the newest version
+- Back to the proven 1.6.5 program (menus and all functions as in 1.6.5) with only two changes
+- Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms)
+- Presets cut from 1468 to 420 clearly different sounds (10 per synth plus the sounds Taktile needs itself) plus the 30 new sounds = 450; sounds of old projects, favorites and kits become the most similar kept sound of the same synth
+- Sound levels evened out inside every synth
+- Sound browser: the melodic synths are grouped into 6 groups (Bass, Lead, Pluck + Stabs, Pads + Chords, Keys + Bells, Brass)
+- No Track Speed, Groove templates, safe start or other additions after 1.6.5
 
 ## Development history (steps before 1.0.0)
 

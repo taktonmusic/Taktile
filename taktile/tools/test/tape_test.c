@@ -33,8 +33,5 @@ int main(void) {
     double rel = sqrt(e / r); free(a); free(b); api->destroy_instance(inst);
     printf("   tape on a kick: off %.1f dB, full %.1f dB, difference signal = %.0f%% of the signal\n", t0, t1, rel * 100);
     OK(rel > 0.1, "TAPE at 100%% clearly changes the sound (difference %.0f%% of the signal, must be above 10%%)", rel * 100);
-    setup("0", "1", 0); { int n = 44100; int16_t *bb = calloc((size_t)n * 2, 2); for (int p = 0; p < n; p += 128) api->render_block(inst, bb + p * 2, (n - p < 128) ? n - p : 128);
-      int diff = 0; for (int i = 4000; i < n; i++) if (bb[2 * i] != bb[2 * i + 1]) diff++; free(bb);
-      OK(diff == 0, "HISS is mono (left = right, %d samples differ)", diff); } api->destroy_instance(inst);
     printf(failed ? "%d FAILED\n" : "all ok\n", failed); return failed != 0;
 }
