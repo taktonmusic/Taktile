@@ -15,7 +15,7 @@
 - Hold a step button + left / right arrow = nudge of that step
 - Button lights (Mute, Copy, Delete, Back, Sample, Loop, arrows) glow softly by default
 - Fast repeated drum sounds (kicks in sixteenths) no longer click: the old tail fades out in 10 ms instead of being cut
-- Master output: a sum above 85 % is rounded off softly instead of being cut flat (no harsh clip crack)
+- Master output: the limiter is never fully off (ceiling 95 %) and a sum above 85 % is rounded off softly, so two loud sounds together no longer clip
 - Drum tracks: Delay and Reverb sends on the FX page (Output moved to the SOUND page)
 - No Track Speed
 

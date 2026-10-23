@@ -4261,7 +4261,7 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         lfx_proc(s, &L, &R);
         L *= mvol; R *= mvol;
         {   /* master limiter: instant attack, slow release; ceiling falls from 1.0 to 0.3 */
-            const float lm = s->g[G_LIM];
+            const float lm = fmaxf(s->g[G_LIM], 0.07f);      /* never fully off: the ceiling stays at 0.95 so two loud sounds together do not run into the converter */
             if (lm > 0.01f) {
                 const float thr = 1.0f - 0.7f * lm, pk = fmaxf(fabsf(L), fabsf(R));
                 const float tg = pk > thr ? thr / pk : 1.0f;
