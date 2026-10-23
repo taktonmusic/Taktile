@@ -2,8 +2,6 @@
 
 ## 1.0.0 (23 October 2026)
 - Drum tracks: each pad keeps its own loop length again (the shared-length change was taken out)
-
-## 1.0.0 (23 October 2026)
 - Menu: no leftover message on top of the menu title, shorter names where they were cut off (Btn lights, Scene Lnch, Pin knob to FAV), longer group titles, exit window title fits
 - Design themes are back: Menu → DESIGN → Design theme (14 themes, changes live while you scroll, saved with the project)
 - Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with Groove Amt on the SWING page; Swing stays and works on top
@@ -11,7 +9,7 @@
 - Native groove test and UI tests added to CI
 - Menus: the master pages (TEMPO, QUANT, OPTIONS, BUS, DELAY, REVERB, TRACK, SWING, KEY, REPEAT, DUCK, KIT, PROJECT, MIDI OUT ...) use the same tiles as the track pages instead of round knobs; the TAPE page has its title
 - New: Track Speed on the QUANT page (Shift + Step 3): every track runs at its own tempo ratio from 1/8 to 3/1
-- Song page: only the song plays; speech letters per step; Euclid OFF / ON; drum tracks share one length
+- Song page: only the song plays; speech letters per step; Euclid OFF / ON
 - Song page: when the song is off (or you leave the page) your normal clips play again
 - Song starts at the step you picked, the jogwheel scrolls through tracks 1-16
 - The one GitHub release is called Taktile 1.0.0 and always holds the newest version
