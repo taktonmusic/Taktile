@@ -37,6 +37,8 @@
 - Pad switch to the UI is sent at once when a page changes (mixer, clips, song)
 - Shift + knobs 1-4 no longer change BPM / Swing / Length / Clip on the SEQ page (Shift is only a modifier again)
 - Delay type DUB keeps more low end in the echoes (808 and sub sounds no longer fade out)
+- A sound change with the jog opens the filter again (LP up, HP and FltEnv at 0), like the preset browser
+- Scope latch: Shift + jog click in the scope keeps it on top of every page (you can keep playing and editing, toasts still show), Shift + jog click anywhere switches it off; also in the menu (EXPERT > Scope latch)
 
 ## Development history (steps before 1.0.0)
 

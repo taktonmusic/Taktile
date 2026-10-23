@@ -59,4 +59,12 @@ run('view = 31; songBlank = false; songList = [[0,4,1,0,0,0]]; songSlot = 0; mut
 ctx.onMidiMessageInternal([0x90 + 0, 0, 0]); cc(88, 127); ctx.onMidiMessageInternal([0x90, 68 + 8, 100]); ctx.onMidiMessageInternal([0x80, 68 + 8, 0]); cc(88, 0); T(2);
 ok(run('mutes[2] || mutes[1]') === 1, 'song page: Mute + pad mutes the track');
 run('mutes.fill(0); view = 0; muteHeld = false');
+run('kind[1] = 0; selectTrack(1); view = 0; menuOpen = false; shiftHeld = false; setLaneP(1, "cut", 0.3); setLaneP(1, "res", 0.6); pads[1][0] = 10'); T(2);
+run('browseSound(1)'); T(2);
+ok(run('pads[1][PI.cut]') === 1 && run('pads[1][PI.res]') === 0, 'a sound change by jog opens the filter again');
+run('askKind = -1; view = 42'); cc(49, 127); cc(3, 127); cc(3, 0); cc(49, 0); T(2);
+ok(run('scopeLatch') === true && run('view') === 0, 'Shift + jog click in the scope latches it');
+run('chosen[1] = 1; askKind = -1'); T(2);
+cc(49, 127); cc(3, 127); cc(3, 0); cc(49, 0); T(2);
+ok(run('scopeLatch') === false, 'Shift + jog click switches the latch off');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

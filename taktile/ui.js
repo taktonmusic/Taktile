@@ -153,6 +153,7 @@ function browseSound(dl) {                                 /* jog: presets insid
     brw = { c: c, l: l, i: Math.max(0, l.indexOf(nt)) }; brwTicks = 55; needsRedraw = true;
     if (nt === cur) return;
     pads[L][0] = nt; if (isDrmEng(nt) || isSpk(nt)) { for (let i = 105; i < 109; i++) pads[L][i] = 0.5; qPad(L); }
+    fltSet(L, FLT_OPEN);                                    /* a new sound starts with the filter wide open, like in the browser */
     if (isSpk(nt)) spkDefault(L, nt);      /* a new drum-synth sound starts with its engine knobs as designed */
     if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); storeCs(L);
     markEdited(); needsRedraw = true;
@@ -2045,6 +2046,7 @@ const MENU_ITEMS = [
     ['Invert display', () => { dispInv = !dispInv; markEdited(); needsRedraw = true; showToast('DISPLAY', dispInv ? 'INVERTED' : 'NORMAL', dispInv ? 1 : 0); }],
     ['MIDI monitor', () => { menuOpen = false; monOpen = true; monLog = []; needsRedraw = true; }],
     ['Scope', () => { menuOpen = false; navStack.push(18); view = 42; needsRedraw = true; }],
+    ['Scope latch', () => { scopeLatch = !scopeLatch; menuOpen = false; needsRedraw = true; showToast('SCOPE LATCH', scopeLatch ? 'ON (SHIFT+JOG CLICK = OFF)' : 'OFF', scopeLatch ? 1 : 0); }],
     ['Metronome', () => { const v = cycleMaster('m_met', [0, 0.6]); showToast('METRONOME', v > 0 ? 'ON' : 'OFF', v); }],
     ['Humanize', () => { const v = cycleMaster('m_hum', [0, 0.3, 0.6, 1]); showToast('HUMANIZE', String(Math.round(v * 100)), v); }],
     ['Launch quant', () => { const v = cycleMaster('m_qnt', [0.07, 0.21, 0.36, 0.5, 0.64, 0.79, 0.93]); showToast('LAUNCH', fmtVal('m_qnt', v), v); }],
@@ -2161,7 +2163,7 @@ const MENU_GROUPS = [
     ['LANGUAGE', LANGS.map(n => 'Language ' + n)],
     ['DESIGN', ['Language', 'Big values on/off', 'Page slide on/off', 'Invert display', 'Button lights', 'Start animation on/off', 'Idle screen on/off', 'Knob lights on/off']],
     ['GLOBAL', ['Count-in on/off', 'Note repeat on/off', 'Slow knobs on/off', 'Save now', 'Exit Taktile']],
-    ['EXPERT', ['CPU meter', 'Load info', 'MIDI monitor', 'Scope', 'Export clip (MIDI)', 'Export all clips (MIDI)']],
+    ['EXPERT', ['CPU meter', 'Load info', 'MIDI monitor', 'Scope', 'Scope latch', 'Export clip (MIDI)', 'Export all clips (MIDI)']],
     ['PLAY', ['Play / Stop', 'Stop + Reset', 'Record on/off', 'Metronome', 'Mono check', 'Tap tempo', 'Stop all clips']],
     ['EDIT CLIP', ['Quantize now', 'Undo', 'Redo', 'Undo history', 'Clear clip', 'Reverse clip', 'Rotate left', 'Rotate right', 'All loops 16', 'Double length', 'Half length', 'Fill (1 bar)', 'Follow action', 'Follow after', 'Follow preset', 'Name scene', 'Scene launch']],
     ['RANDOM + FEEL', ['Random clip', 'Random wild', 'Random sound', 'Random sound wild', 'Undo sound', 'Vary pattern', 'Randomize vel', 'Prob random', 'Prob curve', 'Prob 100%', 'Humanize', 'Launch quant']],
@@ -4982,6 +4984,7 @@ function viewItemsFix() {
 }
 
 /* ---- scope page: master output wave (triggered) and 8 band levels, polled from the DSP ---- */
+let scopeLatch = false;                                     /* Scope on top of every page (latched): you keep working in the page underneath; Shift + jog click switches it off again */
 let scopeStr = '', scopeMode = 0, scopePoll = 0, animT = 0;
 const SCOPE_NAMES = ['WATERFALL', 'BEAT', 'TUNNEL', 'GRID', 'SKYLINE', 'MIRROR', 'FLOWER'];
 let scPk = new Array(16).fill(0), scSm = new Array(16).fill(0), scWf = [], scPh = 0.5, scSt = [], scBass = 0, scKick = 0;
@@ -5059,7 +5062,7 @@ function drawScopeNew() {
     }
 }
 function scopeTick() {
-    if (view !== 42 || menuOpen) return;
+    if ((view !== 42 && !scopeLatch) || menuOpen) return;
     animT++; if (animT % 2 === 0) needsRedraw = true;
     if (++scopePoll % 2) return;
     const r = dspGet('scope'); if (typeof r === 'string' && r.length >= 144 && r !== scopeStr) { scopeStr = r; needsRedraw = true; scopeExtra(); }
@@ -5159,10 +5162,10 @@ function drawCore() {
     if (errShow > 0) { errShow--; drawErr(); return; }
     clear_screen(); hdrDrawn = false;
     if (menuOpen !== menuWasOpen) { menuWasOpen = menuOpen; if (menuOpen) toast = null; }      /* a leftover message (track name ...) never sits on top of the menu title */
-    tabStrip = isTab(view) && !projUI && !spkUI && exitDlg < 0 && !menuOpen && askKind < 0 && !(view === 28 && broOpen) && !(brwTicks > 0 && brw) && !fb;
+    tabStrip = isTab(view) && !(scopeLatch && view !== 42) && !projUI && !spkUI && exitDlg < 0 && !menuOpen && askKind < 0 && !(view === 28 && broOpen) && !(brwTicks > 0 && brw) && !fb;
     if (fb && !menuOpen && askKind < 0 && exitDlg < 0) { drawFB(); return; }
     if (brwTicks > 0 && brw && !menuOpen && askKind < 0) { drawBrowse(); return; }
-    if (spkUI) drawSpk(); else if (projUI) drawProj(); else if (monOpen) drawMon(); else if (exitDlg >= 0) drawExit(); else if (askKind >= 0) drawAsk(); else if (menuOpen) drawMenu(); else if (heldStep >= 0 && !recDown && stepWinView()) drawStepEdit(); else if (view === 0) drawSeq(); else if (view === 40) drawHist(); else if (view === 42) drawScope(); else if (view === 51) drawLoad(); else if (view === 7) drawClips(); else if (view === 31) drawSong(); else if (view === 45) drawDevices(); else if (isHub(view)) drawHub(); else if (view === 20) drawMix(); else if (view === 28 && broOpen) drawBro(); else if (view === 28) { if (smpPage === 1) drawSlice(); else drawSample(); } else drawParams();
+    if (spkUI) drawSpk(); else if (projUI) drawProj(); else if (monOpen) drawMon(); else if (exitDlg >= 0) drawExit(); else if (askKind >= 0) drawAsk(); else if (menuOpen) drawMenu(); else if (heldStep >= 0 && !recDown && stepWinView()) drawStepEdit(); else if (scopeLatch && view !== 42 && !(view === 28 && broOpen)) drawScope(); else if (view === 0) drawSeq(); else if (view === 40) drawHist(); else if (view === 42) drawScope(); else if (view === 51) drawLoad(); else if (view === 7) drawClips(); else if (view === 31) drawSong(); else if (view === 45) drawDevices(); else if (isHub(view)) drawHub(); else if (view === 20) drawMix(); else if (view === 28 && broOpen) drawBro(); else if (view === 28) { if (smpPage === 1) drawSlice(); else drawSample(); } else drawParams();
     if (toast && bigOn && toast.ck && !menuOpen && askKind < 0 && exitDlg < 0 && !monOpen) drawBigValue(toast);
     if (toast) {
         /* small message box in the top right corner (name + value on one line, thin bar under it); the page stays visible */
@@ -5655,6 +5658,8 @@ globalThis.onMidiMessageInternal = function (data) {
         else if (dl && !menuOpen) jogFirst(dl);                              /* every other page: the jogwheel turns the first parameter (like knob 1) */
         return; }
     case CC.JOGCLICK:
+        if (d2 > 0 && scopeLatch && shiftHeld && !menuOpen) { scopeLatch = false; needsRedraw = true; showToast('SCOPE', 'LATCH OFF', 0); return; }
+        if (d2 > 0 && view === 42 && shiftHeld && !menuOpen) { scopeLatch = true; setView(0); showToast('SCOPE LATCH', 'SHIFT+JOG CLICK = OFF', 1); toast.ticks = 80; return; }
         if (d2 > 0 && view === 45 && !menuOpen && !fb && !shiftHeld) { devClick(); return; }
         if (d2 > 0 && view === 42 && !menuOpen && !shiftHeld) { scopeMode = (scopeMode + 1) % SCOPE_NAMES.length; needsRedraw = true; return; }
         if (d2 > 0 && view === 40 && !menuOpen && !shiftHeld) { if (undoStack.length) histApply(); return; }
