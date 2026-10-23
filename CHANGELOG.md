@@ -2,8 +2,6 @@
 
 ## 1.0.0 (23 October 2026)
 - Track Speed taken out again (every track runs at the normal speed): the QUANT page has no Track Speed tile any more
-
-## 1.0.0 (23 October 2026)
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms); 450 sounds in total
 - Drum sounds: every drum sound has the same ENGINE page (Sweep, SweepTime, Noise, Click, Drive, filter); the knobs now work on the classic drums too, the middle position is the sound as it was
 - Sound browser: the melodic synths are grouped into 6 groups (Bass, Lead, Pluck + Stabs, Pads + Chords, Keys + Bells, Brass) instead of 16
