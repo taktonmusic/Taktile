@@ -494,7 +494,7 @@ function loadState() {
         if (Array.isArray(o.tc) && o.tc.length === NTRK) tcolO = o.tc.map(x => clamp(Number(x) | 0, 0, 26));
         for (let t = 0; t < NTRK; t++) for (let c = 0; c < NPAT; c++) fol[t][c] = (Array.isArray(o.fl) && Array.isArray(o.fl[t])) ? clamp(Number(o.fl[t][c]) | 0, 0, 63) : 0;
         lockT = new Array(NLANE).fill(0); if (Array.isArray(o.lt)) for (let l = 0; l < NLANE && l < o.lt.length; l++) lockT[l] = clamp(Number(o.lt[l]) | 0, 0, LOCK_KEYS.length - 1);
-        if (Array.isArray(o.fk) && o.fk.length === 8) favK = o.fk.map(String).map(k => FAV_MAP[k] || k).filter(k => PI[k] !== undefined || MI[k] !== undefined); if (favK.length !== 8) favK = ['cut', 'res', 'decay', 'tone', 'drive', 'dly', 'rvb', 'm_filt']; favBuild(); favs = Array.isArray(o.fv) ? o.fv.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length) : []; favOnly = !!o.fo; if (Array.isArray(o.ui)) { splashOn = o.ui[0] !== 0; idleOn = o.ui[1] === 1; dispInv = o.ui[2] === 1; repAllowed = o.ui[3] !== 0; slowKnobs = o.ui[4] === 1; knobLedsOn = o.ui[5] !== 0; uiTheme = 9; uiMin = true;      /* one fixed design (the theme choice was removed) */ uiMin = uiTheme !== 0; bigOn = o.ui[7] === 1; slideOn = o.ui[8] === 1; ciOn = o.ui[9] !== 0; knobLvlOn = o.ui[10] !== 0; btnBright = o.ui[12] === 1; lang = clamp(Math.round(Number(o.ui[13]) || 0), 0, LANGS.length - 1); if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0; } recent = Array.isArray(o.rc) ? o.rc.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length).slice(0, 12) : [];
+        if (Array.isArray(o.fk) && o.fk.length === 8) favK = o.fk.map(String).map(k => FAV_MAP[k] || k).filter(k => PI[k] !== undefined || MI[k] !== undefined); if (favK.length !== 8) favK = ['cut', 'res', 'decay', 'tone', 'drive', 'dly', 'rvb', 'm_filt']; favBuild(); favs = Array.isArray(o.fv) ? o.fv.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length) : []; favOnly = !!o.fo; if (Array.isArray(o.ui)) { splashOn = o.ui[0] !== 0; idleOn = o.ui[1] === 1; dispInv = o.ui[2] === 1; repAllowed = o.ui[3] !== 0; slowKnobs = o.ui[4] === 1; knobLedsOn = o.ui[5] !== 0; uiTheme = (o.ui[6] | 0) >= 0 && (o.ui[6] | 0) < THEME_NAME.length && o.ui[6] !== undefined ? (o.ui[6] | 0) : 9; uiMin = uiTheme !== 0;      /* the saved design theme (new projects: KNOBS) */ bigOn = o.ui[7] === 1; slideOn = o.ui[8] === 1; ciOn = o.ui[9] !== 0; knobLvlOn = o.ui[10] !== 0; btnBright = o.ui[12] === 1; lang = clamp(Math.round(Number(o.ui[13]) || 0), 0, LANGS.length - 1); if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0; } recent = Array.isArray(o.rc) ? o.rc.map(Number).filter(x => x >= 0 && x < TYPE_NAME.length).slice(0, 12) : [];
         if (Array.isArray(o.rn) && o.rn.length === 4) { rndDens = clamp(Number(o.rn[0]) || 0.28, 0.02, 0.9); rndVar = clamp(Number(o.rn[1]) || 0.5, 0, 1); rndKey = o.rn[2] ? 1 : 0; rndRat = clamp(Number(o.rn[3]) || 0, 0, 1); }
         if (typeof o.bp === 'string' && o.bp.charAt(0) === '/' && o.bp.length < 200) broPath = o.bp;
         if (Array.isArray(o.ep)) for (let i = 0; i < NLANE && i < o.ep.length; i++) { const q = o.ep[i] || {}, d = euDef(); euP[i] = { eo: clamp(q.eo | 0, 0, 1), n0: clamp(q.n0 | 0, -24, 24), alt: clamp(q.alt | 0, -12, 12), an: clamp(q.an | 0, -12, 12), wk: clamp(q.wk | 0, -4, 4), wl: clamp(q.wl | 0, 1, 16) || 4, rn: clamp(q.rn | 0, 0, 12), ou: clamp(q.ou | 0, 0, 100), od: clamp(q.od | 0, 0, 100), keep: 0, rev: q.rev ? 1 : 0, inv: q.inv ? 1 : 0, acc: clamp(q.acc | 0, 0, 60), hum: clamp(q.hum | 0, 0, 40), mut: clamp(q.mut | 0, 0, 100), nud: clamp((q.nud | 0) * (o.pf === 2 ? 1 : 4), 0, NUD_MAX), prb: clamp((q.prb | 0) * (o.pf === 2 ? 1 : (o.pf === 1 ? 2 : 4)), 0, 31), gat: clamp(q.gat | 0, 0, 6), rat: clamp(q.rat | 0, 0, 3), cond: clamp(q.cond | 0, 0, 7), seed: clamp(q.seed | 0, 1, 9972) || d.seed, q: Array.isArray(q.q) && q.q.length === 4 ? q.q.map((z, k) => { z = z || {}; const ln0 = clamp(z.len | 0, 1, 64) || EU_LDEF[k][0]; return { on: z.on ? 1 : 0, len: ln0, hit: clamp(z.hit | 0, 0, ln0), rot: clamp(z.rot | 0, 0, ln0 - 1), not: clamp(z.not | 0, -24, 24), prb: clamp(z.prb | 0, 0, 31), hum: clamp(z.hum | 0, 0, 40), acc: clamp(z.acc | 0, 0, 60) }; }) : null }; }
@@ -1891,6 +1891,7 @@ const MENU_ITEMS = [
     ['Undo', () => doUndo()],
     ['Undo history', () => { menuOpen = false; navStack.push(16); histSel = 0; view = 40; }],
     ['Favorite sound', () => { menuOpen = false; const t = Math.round(pads[ln()][0]), i = favs.indexOf(t); if (i >= 0) favs.splice(i, 1); else favs.push(t); markEdited(); showToast(TYPE_NAME[t], i >= 0 ? 'FAV OFF' : 'FAVORITE *', i >= 0 ? 0 : 1); }],
+    ['Design theme', () => { themeOpenPicker(); }],
     ['Fill (1 bar)', () => { menuOpen = false; fillBar(); }],
     ['Follow action', () => folCycle(0)],
     ['Follow after', () => folCycle(1)],
@@ -2003,6 +2004,7 @@ let themeBefore = 0;                                       /* the theme that was
 function themeApply(i) { uiTheme = i; uiMin = i !== 0; }
 LANGS.forEach((n, i) => MENU_ITEMS.push(['Language ' + n, () => { lang = i; langBefore = i; markEdited(); needsRedraw = true; showToast('LANGUAGE', n, (i + 1) / LANGS.length); }]));
 MENU_ITEMS.push(['Language', () => { langOpenPicker(); }]);
+THEME_NAME.forEach((n, i) => MENU_ITEMS.push(['Theme ' + n, () => { uiTheme = i; uiMin = i !== 0; themeBefore = i; markEdited(); needsRedraw = true; showToast('DESIGN THEME', n, (i + 1) / THEME_NAME.length); }]));
 function inLang() { return menuOpen && menuGrp >= 0 && MENU_GROUPS[menuGrp][0] === 'LANGUAGE'; }
 function langOpenPicker() { langBefore = lang; menuOpen = true; menuGrp = MENU_GROUPS.findIndex(g => g[0] === 'LANGUAGE'); menuIdx = menuGrp; menuSub = lang; needsRedraw = true; }
 function inThemes() { return menuOpen && menuGrp >= 0 && MENU_GROUPS[menuGrp][0] === 'THEMES'; }
@@ -2039,8 +2041,9 @@ function menuVal(n) {                                      /* the current state 
     return '';
 }
 const MENU_GROUPS = [
+    ['THEMES', THEME_NAME.map(n => 'Theme ' + n)],
     ['LANGUAGE', LANGS.map(n => 'Language ' + n)],
-    ['DESIGN', ['Language', 'Big values on/off', 'Page slide on/off', 'Invert display', 'Button lights', 'Start animation on/off', 'Idle screen on/off', 'Knob lights on/off']],
+    ['DESIGN', ['Design theme', 'Language', 'Big values on/off', 'Page slide on/off', 'Invert display', 'Button lights', 'Start animation on/off', 'Idle screen on/off', 'Knob lights on/off']],
     ['GLOBAL', ['Count-in on/off', 'Note repeat on/off', 'Slow knobs on/off', 'Save now', 'Exit Taktile']],
     ['EXPERT', ['CPU meter', 'Load info', 'MIDI monitor', 'Scope', 'Export clip (MIDI)', 'Export all clips (MIDI)']],
     ['PLAY', ['Play / Stop', 'Stop + Reset', 'Record on/off', 'Metronome', 'Mono check', 'Tap tempo', 'Stop all clips']],
