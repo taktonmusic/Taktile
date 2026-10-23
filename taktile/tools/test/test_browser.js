@@ -44,6 +44,7 @@ run('fbMove(1, 1)'); const typeBefore = run('Math.round(pads[ln()][0])'); const 
 const stepsBefore = run('JSON.stringify(steps)'); run('recArmed = true; playing = true'); setCalls.length = 0;
 ctx.onMidiMessageInternal([0x90, 68, 100]); T(2); ctx.onMidiMessageInternal([0x90, 68, 0]); T(2);
 ok(run('JSON.stringify(steps)') === stepsBefore, 'pad pressed while browsing in record mode: nothing is recorded');
+console.log('DBG actual', run('Math.round(pads[ln()][0])'), 'target', target, 'ln', run('ln()'), 'fb', run('fb ? JSON.stringify(fb.st.map(s=>s.i)) : null'), 'kind', run('kind[sel]'), 'view', run('view'), 'menu', run('menuOpen'));
 ok(run('Math.round(pads[ln()][0])') === target, 'pad press with preview OFF loads the highlighted sound (' + typeBefore + ' -> ' + target + ')');
 ok(setCalls.some((c) => c[0] === 'npad' && /^0,\d+,0$/.test(c[1])), 'and the pad plays it');
 

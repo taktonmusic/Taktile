@@ -29,7 +29,7 @@ jobs:
         run: node tools/test/test_smoke.js
 
       - name: Browser behaviour test
-        run: node tools/test/test_browser.js > /tmp/br.txt 2>&1 || { echo "::error::$(grep -v '^ok' /tmp/br.txt | head -8 | tr '\n' '|')"; exit 1; }
+        run: node tools/test/test_browser.js > /tmp/br.txt 2>&1 || { echo "::error::$(grep -v "^ok" /tmp/br.txt | head -8 | tr '\n' '|')"; exit 1; }
 
       - name: MIC page test
         run: node tools/test/test_mic.js
