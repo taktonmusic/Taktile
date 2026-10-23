@@ -9,6 +9,7 @@
 - Master pages (TEMPO, QUANT, OPTIONS, PROJECT, DESIGN ...) use tiles instead of round knobs
 - Safe start: if the last start did not finish, Taktile opens an empty project and keeps the old file as a copy
 - Tape hiss is mono
+- Euclid sequencer: OFF / ON again (the ADD mode is gone, so it can be switched off)
 - No Track Speed
 
 ## Development history (steps before 1.0.0)
