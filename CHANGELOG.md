@@ -2,13 +2,11 @@
 
 ## 1.0.0 (23 October 2026)
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms); 450 sounds in total
-
-## 1.0.0 (23 October 2026)
 - Drum sounds: every drum sound has the same ENGINE page (Sweep, SweepTime, Noise, Click, Drive, filter); the knobs now work on the classic drums too, the middle position is the sound as it was
 - Sound browser: the melodic synths are grouped into 6 groups (Bass, Lead, Pluck + Stabs, Pads + Chords, Keys + Bells, Brass) instead of 16
 - Song: tempo per step (Loop + Shift + jog, shown in the title), Shift + Copy + step moves a step, the title line is shorter
 - README: sound count, Groove and Track Speed
-- Presets cut from 1468 to 420 clearly different sounds (10 per synth plus the sounds Taktile needs itself); sounds of old projects become the most similar kept sound of the same synth, favorites and kits too
+- Presets cut from 1468 to 420 clearly different sounds (10 per synth plus the sounds Taktile needs itself), then 30 new sounds of the three new engines = 450; sounds of old projects become the most similar kept sound of the same synth, favorites and kits too
 - Tape hiss is mono now (the same noise on left and right), the settings stay as they are
 - Sound levels evened out: every sound is measured and trimmed so the sounds of one synth are about equally loud (spread inside a synth 5.2 dB -> 1.5 dB)
 - Drum tracks: each pad keeps its own loop length again (the shared-length change was taken out)
