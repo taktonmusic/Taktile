@@ -1056,7 +1056,7 @@ function drawHelp() {
     for (let i = 0; i < L.length && i < 5; i++) txt(5, 14 + i * 8, L[i], 1);
     txt(5, 54, lang === 1 ? 'Taste = zu' : 'Any key = close', 1);
 }
-let helpOpen = false;
+let helpOpen = false, menuWasOpen = false;
 let histSel = 0;
 function drawHist() {
     titleBar('HISTORY', undoStack.length + ' STEPS');
@@ -2010,7 +2010,7 @@ function langOpenPicker() { langBefore = lang; menuOpen = true; menuGrp = MENU_G
 function inThemes() { return menuOpen && menuGrp >= 0 && MENU_GROUPS[menuGrp][0] === 'THEMES'; }
 function themeRestore() { if (inThemes()) themeApply(themeBefore); else if (inLang()) { lang = langBefore; needsRedraw = true; } }
 function themeOpenPicker() { themeBefore = uiTheme; menuOpen = true; menuGrp = MENU_GROUPS.findIndex(g => g[0] === 'THEMES'); menuIdx = menuGrp; menuSub = uiTheme; needsRedraw = true; }
-const MENU_SHORT = { 'Design theme': 'Theme', 'Invert display': 'Invert', 'Start animation on/off': 'Intro', 'Export clip (MIDI)': 'MIDI export clip', 'Export all clips (MIDI)': 'MIDI export all', 'Pad mode (pitch/repeat/steps)': 'Pad mode', 'Live FX pads on/off': 'Live FX', 'Track: Synth / Drum': 'Track type', 'Sound / kit browser': 'Sound browser' };
+const MENU_SHORT = { 'Button lights': 'Btn lights', 'Scene launch': 'Scene Lnch', 'Pin last knob to FAV': 'Pin knob to FAV', 'Design theme': 'Theme', 'Invert display': 'Invert', 'Start animation on/off': 'Intro', 'Export clip (MIDI)': 'MIDI export clip', 'Export all clips (MIDI)': 'MIDI export all', 'Pad mode (pitch/repeat/steps)': 'Pad mode', 'Live FX pads on/off': 'Live FX', 'Track: Synth / Drum': 'Track type', 'Sound / kit browser': 'Sound browser' };
 function menuVal(n) {                                      /* the current state of a menu item, shown on its right */
     const o = v => v ? 'ON' : 'OFF';
     switch (n) {
@@ -2186,7 +2186,7 @@ function drawMenu() {
         for (let yy = 13; yy < 57; yy += 2) set_pixel(126 + ox, yy, 1); fill_rect(125 + ox, ty, 3, th, 1);
     }
     fill_rect(0, 0, 128, 11, 0);
-    menuHeader((inG ? MENU_GROUPS[menuGrp][0] + (MENU_GROUPS[menuGrp][0] === 'FIND' ? ' ' + (findCh || 'ALL') : '') : 'OPTIONS').slice(0, 12), (n ? cur + 1 : 0) + '/' + n, ox);
+    menuHeader((inG ? MENU_GROUPS[menuGrp][0] + (MENU_GROUPS[menuGrp][0] === 'FIND' ? ' ' + (findCh || 'ALL') : '') : 'OPTIONS').slice(0, 14), (n ? cur + 1 : 0) + '/' + n, ox);
 }
 
 /* euclid generator: hold Loop + knob 1 (hits) / knob 2 (rotation) */
@@ -4540,7 +4540,7 @@ function drawSeq() {
     }
 }
 function drawExit() {
-    titleBar('LEAVE TAKTILE', playing ? 'PLAYING' : 'STOPPED'); txt(4, 57, dirty ? 'SAVES ON LEAVE' : 'ALL SAVED', 1);
+    titleBar('LEAVE', playing ? 'PLAYING' : 'STOPPED'); txt(4, 57, dirty ? 'SAVES ON LEAVE' : 'ALL SAVED', 1);
     const L = [['BACKGROUND', 'plays on'], ['CLOSE', 'stops']];
     for (let i = 0; i < 2; i++) {
         const y = 14 + i * 22, on = exitDlg === i;
@@ -5057,6 +5057,7 @@ function drawCore() {
     if (idleBlank) { clear_screen(); needsRedraw = false; return; }
     if (errShow > 0) { errShow--; drawErr(); return; }
     clear_screen(); hdrDrawn = false;
+    if (menuOpen !== menuWasOpen) { menuWasOpen = menuOpen; if (menuOpen) toast = null; }      /* a leftover message (track name ...) never sits on top of the menu title */
     tabStrip = isTab(view) && !projUI && !spkUI && exitDlg < 0 && !menuOpen && askKind < 0 && !(view === 28 && broOpen) && !(brwTicks > 0 && brw) && !fb;
     if (fb && !menuOpen && askKind < 0 && exitDlg < 0) { drawFB(); return; }
     if (brwTicks > 0 && brw && !menuOpen && askKind < 0) { drawBrowse(); return; }
