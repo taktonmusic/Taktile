@@ -3390,7 +3390,8 @@ static void set_param(void *instance, const char *key, const char *val) {
         for (int i = 0; i < n && off + i < MAXSTEP; i++) put_step(s, pt, t, off + i, h + 12 * i, 12);
         return;
     }
-    if (strcmp(key, "tspd") == 0) {                /* "track,num,den": the track's speed as a fraction (1,1 = normal) */
+    if (strcmp(key, "tspd") == 0) {                /* switched off: every track runs at normal speed */
+        return;
         int t = atoi(val); const char *c1 = strchr(val, ','); const char *c2 = c1 ? strchr(c1 + 1, ',') : NULL;
         if (c2 && t >= 0 && t < NTRK) { int n = atoi(c1 + 1), d = atoi(c2 + 1); if (n >= 1 && d >= 1 && n <= 16 && d <= 16 && n * 4 <= d * 12 && d <= 8 * n) { s->tsn[t] = n; s->tsd[t] = d; } }
         return;

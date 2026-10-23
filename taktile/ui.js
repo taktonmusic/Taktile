@@ -178,7 +178,7 @@ const VIEW_ITEMS = {
     6: [['rvb','Send'],['rvb_size','Size'],['rvb_dark','Dark'],['rvb_mode','Type'],['rvb_wide','Wide'],['rvb_low','LowCut','Low'],['rvb_ret','Return','Ret']],
     8: [['browse','Jog'],['fullvel','FullVel','FVel'],['rqoff','RecSnap','Snap'],['rdens','RndDens','Dens'],['rvar','RndVel','RVel'],['rkey','RndKey','RKey'],['rrat','RndRatch','RRat'],['m_met','Metro','Met']],
     10: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
-    15: [['qstr','Quantize','Qnt'],['qgrid','Grid'],['sgrd','Step Grid','StpG'],['tspd','Track Speed','Speed'],['ci','Count-In','CntIn'],['rqoff','RecSnap','Snap'],['m_qnt','Launch','Lnch']],
+    15: [['qstr','Quantize','Qnt'],['qgrid','Grid'],['sgrd','Step Grid','StpG'],['ci','Count-In','CntIn'],['rqoff','RecSnap','Snap'],['m_qnt','Launch','Lnch']],
     24: [['xfx','Effect','FX'],['xmix','Amount','Amt'],['xrt','Rate'],['xdp','Depth','Dpth']],
     49: [['m2fx','MIDI FX 2','FX'],['m2amt','Amount','Amt'],['m2prm','Param','Prm'],['trn','Transp','Xpos'],['mvb','VelBias','VelB'],['vhm','VelHum','VHum'],['vmn','VelMin','VMin'],['vmx','VelMax','VMax']],
     27: [['mfx','MIDI FX','Effect'],['mamt','Amount','Amt'],['mprm','Param','Prm'],['tkey','Track Key','TKey'],['arp','Arp'],['rate','ArpRate','Rate'],['tscl','Track Scale','TScl'],['mch','Prob']],
@@ -218,7 +218,7 @@ const SPD = [[1, 8], [1, 6], [1, 5], [1, 4], [1, 3], [3, 8], [2, 5], [1, 2], [3,
 let tsp = new Array(NTRK).fill(SPD_ONE);
 function SPDV(t) { const a = SPD[tsp[t === undefined ? sel : t]] || SPD[SPD_ONE]; return a[0] / a[1]; }
 function SPDN(i) { const a = SPD[i] || SPD[SPD_ONE]; return a[0] === a[1] ? '1:1' : a[0] + '/' + a[1]; }
-function setSpeed(t, i) { i = clamp(i, 0, SPD.length - 1); if (i === tsp[t]) return; tsp[t] = i; enqueue('tspd' + t, 'tspd', t + ',' + SPD[i][0] + ',' + SPD[i][1]); showToast('TRACK SPEED ' + SPDN(i), i === SPD_ONE ? 'NORMAL' : (SPDV(t) < 1 ? 'SLOWER' : 'FASTER'), i / (SPD.length - 1)); markEdited(); needsRedraw = true; }
+function setSpeed(t, i) { return; i = clamp(i, 0, SPD.length - 1); if (i === tsp[t]) return; tsp[t] = i; enqueue('tspd' + t, 'tspd', t + ',' + SPD[i][0] + ',' + SPD[i][1]); showToast('TRACK SPEED ' + SPDN(i), i === SPD_ONE ? 'NORMAL' : (SPDV(t) < 1 ? 'SLOWER' : 'FASTER'), i / (SPD.length - 1)); markEdited(); needsRedraw = true; }
 let tres = new Array(NTRK).fill(6);                       /* ticks per step of each track's grid: 6 = 1/16, 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8 */
 let lens = new Array(NTRK).fill(16), mutes = new Array(NTRK).fill(0), lmutes = new Array(NLANE).fill(0), lmSent = new Array(NLANE).fill(0);   /* lmutes = per-sound mute of the drum pads */
 let bpm = 120, swing = 0;
@@ -383,7 +383,7 @@ function qTransport() {
     for (let t = 0; t < NTRK; t++) { enqueue('kind' + t, 'kind', t + ',' + (kind[t] ? slot[t] : -1)); enqueue('tv' + t, 'tvol', t + ',' + (tv[t] * 1.5).toFixed(3)); }
     syncSel();
     if (!clipInit) { clipInit = true; for (let t = 0; t < NTRK; t++) enqueue('clip' + t, 'clip', t + ',' + ed[t]); }
-    for (let t = 0; t < NTRK; t++) { enqueue('len' + t, 'len', t + ',' + lens[t]); enqueue('mute' + t, 'mute', t + ',' + mutes[t]); enqueue('tres' + t, 'tres', t + ',' + tres[t]); enqueue('tspd' + t, 'tspd', t + ',' + SPD[tsp[t]][0] + ',' + SPD[tsp[t]][1]); }
+    for (let t = 0; t < NTRK; t++) { enqueue('len' + t, 'len', t + ',' + lens[t]); enqueue('mute' + t, 'mute', t + ',' + mutes[t]); enqueue('tres' + t, 'tres', t + ',' + tres[t]); }
 }
 function qSeq(p, t) {                                      /* long patterns go out in chunks of 32 steps */
     const h = encTrack(p, t);
@@ -545,7 +545,7 @@ function loadState() {
         if (!repAllowed) for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0;
         chBak = (Array.isArray(o.cb) && o.cb.length === NTRK) ? o.cb.map(x => (Array.isArray(x) && x.length === 3) ? x.map(Number) : null) : new Array(NTRK).fill(null); for (let t = 0; t < NTRK; t++) { if (kind[t] || topModes[t] !== 4) { topModes[t] = (topModes[t] === 4 ? 0 : topModes[t]); chBak[t] = null; } chOn[t] = topModes[t] === 4 ? 1 : 0; }
         if (Array.isArray(o.lens)) lens = o.lens.map(Number);
-        tsp = (Array.isArray(o.ts) && o.ts.length === NTRK) ? o.ts.map(x => clamp(Number(x) | 0, 0, SPD.length - 1)) : new Array(NTRK).fill(SPD_ONE);
+        tsp = new Array(NTRK).fill(SPD_ONE);      /* every track runs at the normal speed */
         tres = (Array.isArray(o.tr) && o.tr.length === NTRK) ? o.tr.map(x => [3, 4, 6, 8, 12].includes(Number(x)) ? Number(x) : 6) : new Array(NTRK).fill(6);      /* older projects have no grid: all 1/16, nothing to convert */
         if (Array.isArray(o.mutes)) mutes = o.mutes.map(Number);
         lmutes = new Array(NLANE).fill(0); if (Array.isArray(o.lm)) for (let l = 0; l < NLANE && l < o.lm.length; l++) lmutes[l] = o.lm[l] ? 1 : 0;
@@ -1310,7 +1310,7 @@ function copyTrackFull(a, b) {                              /* Shift + Copy + tr
         for (let c = 0; c < NPAT; c++) { snap(c, lb[j], undoGroup); steps[c][lb[j]] = steps[c][la[j]].map(x => x.slice()); qSeq(c, lb[j]); }
         llen[lb[j]] = llen[la[j]]; enqueue('llen' + lb[j], 'llen', lb[j] + ',' + llen[lb[j]]);
     }
-    tres[b] = tres[a]; enqueue('tres' + b, 'tres', b + ',' + tres[b]); tsp[b] = tsp[a]; enqueue('tspd' + b, 'tspd', b + ',' + SPD[tsp[b]][0] + ',' + SPD[tsp[b]][1]);
+    tres[b] = tres[a]; enqueue('tres' + b, 'tres', b + ',' + tres[b]); 
     lens[b] = lens[a]; enqueue('len' + b, 'len', b + ',' + lens[b]);
     showToast('TRACK COPIED', 'T' + p2(a + 1) + ' > T' + p2(b + 1), 1); markEdited(); needsRedraw = true;
 }

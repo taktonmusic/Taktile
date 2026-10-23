@@ -1,11 +1,14 @@
 # Changelog
 
 ## 1.0.0 (23 October 2026)
+- Track Speed taken out again (every track runs at the normal speed): the QUANT page has no Track Speed tile any more
+
+## 1.0.0 (23 October 2026)
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms); 450 sounds in total
 - Drum sounds: every drum sound has the same ENGINE page (Sweep, SweepTime, Noise, Click, Drive, filter); the knobs now work on the classic drums too, the middle position is the sound as it was
 - Sound browser: the melodic synths are grouped into 6 groups (Bass, Lead, Pluck + Stabs, Pads + Chords, Keys + Bells, Brass) instead of 16
 - Song: tempo per step (Loop + Shift + jog, shown in the title), Shift + Copy + step moves a step, the title line is shorter
-- README: sound count, Groove and Track Speed
+- README: sound count and Groove
 - Presets cut from 1468 to 420 clearly different sounds (10 per synth plus the sounds Taktile needs itself), then 30 new sounds of the three new engines = 450; sounds of old projects become the most similar kept sound of the same synth, favorites and kits too
 - Tape hiss is mono now (the same noise on left and right), the settings stay as they are
 - Sound levels evened out: every sound is measured and trimmed so the sounds of one synth are about equally loud (spread inside a synth 5.2 dB -> 1.5 dB)
@@ -16,7 +19,6 @@
 - Safe start: if the last start did not finish, Taktile opens an empty project and keeps the old file as a copy
 - Native groove test and UI tests added to CI
 - Menus: the master pages (TEMPO, QUANT, OPTIONS, BUS, DELAY, REVERB, TRACK, SWING, KEY, REPEAT, DUCK, KIT, PROJECT, MIDI OUT ...) use the same tiles as the track pages instead of round knobs; the TAPE page has its title
-- New: Track Speed on the QUANT page (Shift + Step 3): every track runs at its own tempo ratio from 1/8 to 3/1
 - Song page: only the song plays; speech letters per step; Euclid OFF / ON
 - Song page: when the song is off (or you leave the page) your normal clips play again
 - Song starts at the step you picked, the jogwheel scrolls through tracks 1-16
