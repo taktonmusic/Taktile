@@ -30,7 +30,9 @@
  */
 
 /* boot breadcrumbs: show how far the module got (file /data/UserData/schwung/taktile-boot.log) */
-let bootLog = '', bootTick = false;
+let bootLog = '', bootTick = false, bootTicks = 0, bootReady = false, bootT0 = Date.now(), safeStart = false, safeNote = false;
+/* crash guard: a start that never reached 'ready' (the Move crashed or hung while loading) makes the next start a SAFE START: the old project file is kept as a copy, the module opens with an empty project */
+try { if (typeof host_read_file === 'function') { const pv = host_read_file('/data/UserData/schwung/taktile-boot.log'); safeStart = !!(pv && pv.indexOf('init') >= 0 && pv.indexOf('ready') < 0); } } catch (e) { safeStart = false; }
 function crumb(s) { bootLog += s + ' '; try { if (typeof host_write_file === 'function') host_write_file('/data/UserData/schwung/taktile-boot.log', bootLog); } catch (e) { /* ignore */ } }
 crumb('loaded');
 /* No external imports: the module must load even if the shared helper file changes or is missing. */
@@ -69,11 +71,12 @@ const ENUMS = {
     dly_time: ['1/16','1/8','3/16','1/4','1/2'],
 };
 ENUMS.dln = ['AUTO', '1/16', '1/8', '1/4', '1/2', '1 BAR', '2 BARS']; ENUMS.dmd = ['WHOLE', 'WORD', 'LETTER'];      /* speech: fit the text to a length, say all of it or one word per note */
+ENUMS.m_grv = ['OFF', 'MPC', 'SHUFFLE', 'LAIDBACK', 'DILLA', 'DRUNK', 'PUSH', 'FUNK', 'GHOST', 'HUMAN', 'ROLL'];      /* groove templates (the swing knob stays) */
 ENUMS.m2fx = ENUMS.mfx; ENUMS.x2fx = ENUMS.xfx; ENUMS.dly_mode = ENUMS.dmode; ENUMS.rvb_mode = ENUMS.rmode;
 const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn','dsw','dst','dnz','dck','dln','dmd','dlt','tkey','tscl'];
 const PDEF = { 105: 0.5, 106: 0.5, 107: 0.5, 108: 0.5, 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
-const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low','m_tape','m_hiss','m_wow'];
+const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low','m_tape','m_hiss','m_wow','m_grv','m_gam'];
 const PI = {}; PK.forEach((k, i) => PI[k] = i);
 const FAV_MAP = { dtime: 'dly_time', dfb: 'dly_fb', rsize: 'rvb_size', rdark: 'rvb_dark', dmode: 'dly_mode', rmode: 'rvb_mode', dtn: 'dly_tone', dwd: 'dly_wide', rwd: 'rvb_wide', rlc: 'rvb_low', chor: 'dly', phas: 'rvb', chrt: 'dly_time', chdp: 'dly_fb', phrt: 'rvb_size', phfb: 'rvb_dark' };     /* favourites saved before the shared FX bus */
 const MI = {}; MK.forEach((k, i) => MI[k] = i);
@@ -92,7 +95,7 @@ const LAYOUT = [
 ];
 const INIT_DRUMS = 'DKick808 DKickHse DSnr909 DClap DHatCl DHatOp DRim DTomMid DHatSoft DHatOp2 DHatTght DTomLo DCowbell DTomHi DClave DCowHi'.split(' ');      /* the INIT drum kit: pure synth drums, every one of them editable like a synth sound */
 const DRUM_LAYOUT = INIT_DRUMS.map(n => [Math.max(0, TYPE_NAME.indexOf(n)), .5, .5, 0, 1, 0, 0]);
-const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0];
+const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0, 0, 0.7];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
 const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
@@ -182,7 +185,7 @@ const VIEW_ITEMS = {
     25: [['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ'],['m_qnt','Launch','Lnch'],['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met']],
     26: [['rrate','Rate'],['repmode','Repeat','Rep'],['fullvel','FullVel','FVel'],['rqoff','RecSnap','Snap'],['qscale','ScaleQ','ScQ'],['bpm','BPM'],['swing','Swing','Swg']],
     22: [['bpm','BPM'],['swing','Swing','Swg'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl'],['qscale','ScaleQ','ScQ']],
-    23: [['swing','Swing','Swg'],['bpm','BPM'],['m_hum','Human','Hum'],['m_met','Metro','Met'],['tsw','Swing+','Swg+'],['m_qnt','Launch','Lnch'],['key','Key'],['scale','Scale','Scl']],
+    23: [['swing','Swing','Swg'],['m_grv','Groove','Grv'],['m_gam','Groove Amt','GAmt'],['tsw','Swing+','Swg+'],['m_hum','Human','Hum'],['bpm','BPM'],['m_met','Metro','Met'],['m_qnt','Launch','Lnch']],
     30: [['duck','Amount','Amt'],['duckr','Release','Rel'],['scs','Source','Src'],['pump','Pump'],['wob','Wobble','Wob'],['ring','Ring'],['crush','Crush','Crsh'],['locut','HPCut','HPF']],
     32: [['sgn','Gain'],['satk','Attack','Atk'],['srel','Release','Rel'],['sstr','Stretch','Strc'],['smd','Mode'],['sst','Start','Strt'],['sen','End'],['vol','Vol']],
     33: [['rsrc','Source','Src'],['rbar','Bars'],['rgo','Record','Rec'],['rst','State','Stat'],['m_vol','Master','Vol'],['m_lim','Limiter','Lim'],['bpm','BPM'],['m_met','Metro','Met']],
@@ -471,6 +474,11 @@ function loadState() {
         if (typeof host_read_file !== 'function') return;
         let txt = host_read_file(STATE_FILE);
         if (!txt) txt = host_read_file(OLD_STATE_FILE);
+        if (safeStart) {                                          /* the last start did not finish: keep the project file as a copy and begin empty */
+            safeStart = false; safeNote = true;
+            if (txt && !host_read_file('/data/UserData/schwung/taktile-state.before-safe-start.json')) host_write_file('/data/UserData/schwung/taktile-state.before-safe-start.json', txt);
+            freshState = true; return;
+        }
         if (!txt) { freshState = true; return; }
         const o = JSON.parse(txt);
         if (!o || o.v !== 2) { freshState = true; return; }
@@ -665,7 +673,7 @@ function showToast(label, text, f) {
     const e = undoStack.length ? undoStack[undoStack.length - 1] : null; if (e && (!e.lbl || e.k) && label !== 'UNDO' && label !== 'REDO') e.lbl = (String(label) + ' ' + String(text)).substring(0, 20);
 }
 
-const FX_TYPE_KEY = { xfx: 1, x2fx: 1, mfx: 1, m2fx: 1, dmode: 1, rmode: 1, dly_mode: 1, rvb_mode: 1, mono: 1 };
+const FX_TYPE_KEY = { m_grv: 1, xfx: 1, x2fx: 1, mfx: 1, m2fx: 1, dmode: 1, rmode: 1, dly_mode: 1, rvb_mode: 1, mono: 1 };
 function editParam(scope, key, delta, idx) {
     if (scope === 'sys') {
         if (key === 'bpm' || key === 'swing') pSnap('sys', 0, key);
@@ -1044,7 +1052,7 @@ function drawHelp() {
     for (let i = 0; i < L.length && i < 5; i++) txt(5, 14 + i * 8, L[i], 1);
     txt(5, 54, lang === 1 ? 'Taste = zu' : 'Any key = close', 1);
 }
-let helpOpen = false;
+let helpOpen = false, menuWasOpen = false;
 let histSel = 0;
 function drawHist() {
     titleBar('HISTORY', undoStack.length + ' STEPS');
@@ -1966,7 +1974,7 @@ function knobTouch(i) {
 }
 const LONG_NAME = { dly_time: 'Delay Time', dly_fb: 'Delay Feedback', dly_mode: 'Delay Type', dly_tone: 'Delay Tone', dly_wide: 'Delay Width', dly_ret: 'Delay Return', rvb_size: 'Reverb Size', rvb_dark: 'Reverb Damping', rvb_mode: 'Reverb Type', rvb_wide: 'Reverb Width', rvb_low: 'Reverb Low Cut', dmode: 'Delay Type', rmode: 'Reverb Type', dtime: 'Delay Time', dfb: 'Delay Feedback', rsize: 'Reverb Size', rdark: 'Reverb Damping', chrt: 'Chorus Rate', chdp: 'Chorus Depth', phrt: 'Phaser Rate', phfb: 'Phaser Feedback',
     dly: 'Delay Send', rvb: 'Reverb Send', cut: 'Lowpass Cutoff', locut: 'Highpass Cutoff', res: 'Resonance', fenv: 'Filter Envelope', crush: 'Bit Crusher', ring: 'Ring Modulator', pump: 'Pump', wob: 'Wobble',
-    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_tape: 'Tape Colour', m_hiss: 'Tape Hiss', m_wow: 'Tape Wow', m_wid: 'Stereo Width',
+    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_tape: 'Tape Colour', m_hiss: 'Tape Hiss', m_wow: 'Tape Wow', m_grv: 'Groove Template', m_gam: 'Groove Amount', m_wid: 'Stereo Width',
     m_comp: 'Compressor', dly_ret: 'Delay Return', rvb_ret: 'Reverb Return', eql: 'Sound EQ Low', eqm: 'Sound EQ Mid', eqh: 'Sound EQ High', m_eql: 'EQ Low', m_eqm: 'EQ Mid', m_eqh: 'EQ High', m_lim: 'Limiter', poly: 'Voices', wave: 'Waveform', det: 'Detune',
     sub: 'Sub Oscillator', att: 'Attack', vol: 'Volume', tvol: 'Track Volume', pmode: 'Pad Mode', dsel: 'Drum Sound', lay: 'Pad Layout', tcol: 'Track Color', tsw: 'Track Swing', rdens: 'Random Density',
     rvar: 'Random Velocity', rkey: 'Random In Key', rrat: 'Random Ratchet', rqoff: 'Record Snap', fullvel: 'Full Velocity', m_hum: 'Humanize', m_met: 'Metronome', m_qnt: 'Launch Quantize',
@@ -1996,7 +2004,7 @@ function langOpenPicker() { langBefore = lang; menuOpen = true; menuGrp = MENU_G
 function inThemes() { return menuOpen && menuGrp >= 0 && MENU_GROUPS[menuGrp][0] === 'THEMES'; }
 function themeRestore() { if (inThemes()) themeApply(themeBefore); else if (inLang()) { lang = langBefore; needsRedraw = true; } }
 function themeOpenPicker() { themeBefore = uiTheme; menuOpen = true; menuGrp = MENU_GROUPS.findIndex(g => g[0] === 'THEMES'); menuIdx = menuGrp; menuSub = uiTheme; needsRedraw = true; }
-const MENU_SHORT = { 'Design theme': 'Theme', 'Invert display': 'Invert', 'Start animation on/off': 'Intro', 'Export clip (MIDI)': 'MIDI export clip', 'Export all clips (MIDI)': 'MIDI export all', 'Pad mode (pitch/repeat/steps)': 'Pad mode', 'Live FX pads on/off': 'Live FX', 'Track: Synth / Drum': 'Track type', 'Sound / kit browser': 'Sound browser' };
+const MENU_SHORT = { 'Button lights': 'Btn lights', 'Scene launch': 'Scene Lnch', 'Pin last knob to FAV': 'Pin knob to FAV', 'Design theme': 'Theme', 'Invert display': 'Invert', 'Start animation on/off': 'Intro', 'Export clip (MIDI)': 'MIDI export clip', 'Export all clips (MIDI)': 'MIDI export all', 'Pad mode (pitch/repeat/steps)': 'Pad mode', 'Live FX pads on/off': 'Live FX', 'Track: Synth / Drum': 'Track type', 'Sound / kit browser': 'Sound browser' };
 function menuVal(n) {                                      /* the current state of a menu item, shown on its right */
     const o = v => v ? 'ON' : 'OFF';
     switch (n) {
@@ -2171,7 +2179,7 @@ function drawMenu() {
         for (let yy = 13; yy < 57; yy += 2) set_pixel(126 + ox, yy, 1); fill_rect(125 + ox, ty, 3, th, 1);
     }
     fill_rect(0, 0, 128, 11, 0);
-    menuHeader((inG ? MENU_GROUPS[menuGrp][0] + (MENU_GROUPS[menuGrp][0] === 'FIND' ? ' ' + (findCh || 'ALL') : '') : 'OPTIONS').slice(0, 12), (n ? cur + 1 : 0) + '/' + n, ox);
+    menuHeader((inG ? MENU_GROUPS[menuGrp][0] + (MENU_GROUPS[menuGrp][0] === 'FIND' ? ' ' + (findCh || 'ALL') : '') : 'OPTIONS').slice(0, 14), (n ? cur + 1 : 0) + '/' + n, ox);
 }
 
 /* euclid generator: hold Loop + knob 1 (hits) / knob 2 (rotation) */
@@ -4490,7 +4498,7 @@ function drawSeq() {
     }
 }
 function drawExit() {
-    titleBar('LEAVE TAKTILE', playing ? 'PLAYING' : 'STOPPED'); txt(4, 57, dirty ? 'SAVES ON LEAVE' : 'ALL SAVED', 1);
+    titleBar('LEAVE', playing ? 'PLAYING' : 'STOPPED'); txt(4, 57, dirty ? 'SAVES ON LEAVE' : 'ALL SAVED', 1);
     const L = [['BACKGROUND', 'plays on'], ['CLOSE', 'stops']];
     for (let i = 0; i < 2; i++) {
         const y = 14 + i * 22, on = exitDlg === i;
@@ -4593,6 +4601,7 @@ function drawGlyph(n, x, y, c) {
     if (n === 'KIT') { for (let a = 0; a < 2; a++) for (let b = 0; b < 3; b++) fill_rect(x + 2 + b * 5, y + a * 5, 4, 4, c); return; }
     if (n === 'PROJ') { draw_rect(x + 2, y + 2, 14, 7, c); fill_rect(x + 2, y, 6, 2, c); return; }
     if (n === 'SYNC') { for (let j = 0; j < 4; j++) { set_pixel(x + 2 + j, y + 1 + j, c); set_pixel(x + 2 + j, y + 7 - j, c); set_pixel(x + 9 + j, y + 1 + j, c); set_pixel(x + 9 + j, y + 7 - j, c); } fill_rect(x + 14, y + 1, 2, 7, c); return; }
+    if (n === 'TAPE') { draw_rect(x + 1, y, 17, 10, c); draw_rect(x + 4, y + 2, 4, 4, c); draw_rect(x + 11, y + 2, 4, 4, c); fill_rect(x + 5, y + 3, 2, 2, c); fill_rect(x + 12, y + 3, 2, 2, c); fill_rect(x + 5, y + 7, 9, 1, c); return; }      /* cassette */
     if (n === 'MIDI') { for (let j = 0; j < 4; j++) { fill_rect(x + 1 + j * 5, y + 7 - j * 2, 3, 2 + j * 2, c); } return; }
     if (n === 'EQ') { const H = [3, 7, 5, 8, 2]; for (let j = 0; j < 5; j++) fill_rect(x + 1 + j * 3, y + 9 - H[j], 2, H[j], c); return; }
     if (n === 'MULTI') { for (let j = 0; j < 3; j++) { fill_rect(x + 3 + j * 5, y + 1, 1, 8, c); fill_rect(x + 1 + j * 5, y + 2 + ((j * 3) % 5), 5, 2, c); } return; }
@@ -4726,7 +4735,8 @@ function drawParams() {
     if (BLOCKS[pg2(view)] && !(view === 9 && FMI > 0 && false)) { drawBlocks(BLOCKS[pg2(view)], items); return; }
     for (let i = 0; i < items.length; i++) {
         let cw = items.length <= 2 ? 64 : (items.length === 3 || items.length === 5 || items.length === 6 ? 42 : 32), per = Math.floor(128 / cw);
-        let x = (i % per) * cw, y = (tabStrip && TAB_NEW ? TAB_Y : 13) + ((i / per) | 0) * (tabStrip && TAB_NEW ? TAB_RH : 26), rh = 0;
+        const tl = (tabStrip && TAB_NEW) || sysTile;
+        let x = (i % per) * cw, y = (tl ? TAB_Y : 13) + ((i / per) | 0) * (tl ? TAB_RH : 26), rh = 0;
         const v = getVal(scopeOf(items[i][0]), items[i][0]);
         const lab = itemLabel(view, i, Math.floor((cw - 6) / 6)), vs = fmtVal(items[i][0], v), fr = fracVal(items[i][0], v); labFull = String(tr(lab)); labW = cw - 3;
         if (view === 50) continue;                                     /* the grain page writes its 8 values itself (drawGrains) */
@@ -4752,7 +4762,7 @@ function drawParams() {
         }
         if (view === 2) { const TN = tabStrip && TAB_NEW, cx = (i & 3) * 32 + 1, cy = (TN ? 27 : 25) + (i >> 2) * (TN ? 18 : 20); txt(cx + 1, cy, fit(lab, 30), 1); txtB(cx + 1, cy + 9, fit(vs, 30), 1); fill_rect(cx + 1, cy + 18, 28, 1, 1); const w = Math.round(28 * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 1, cy + 17, w, 2, 1); continue; }
         const isHot = hot.t > 0 && hot.v === view && hot.i === i;
-        if (tabStrip && TAB_NEW && cw >= 32 && ps !== 2 && ps !== 3) {       /* one tile look for every page and every theme: the one of the ENGINE page */
+        if (((tabStrip && TAB_NEW) || sysTile) && cw >= 32 && ps !== 2 && ps !== 3) {       /* one tile look for every page and every theme: the one of the ENGINE page */
             const nm = view === 1 && items[i][0] === 'type' ? (TYPE_NAME[Math.round(v)] || vs) : (view === 1 && items[i][0] === 'wave' ? (ENUMS.wave[Math.round(v)] || vs) : vs);
             engTile(x, y + 2, cw, lab, String(nm), fr, isHot); continue;
         }
@@ -4929,6 +4939,7 @@ function drawScope() {
     drawScopeNew();
 }
 /* ---- display options: start animation on/off, idle screen (animation, then black), inverted display ---- */
+let sysTile = true;                                          /* master pages (TEMPO, QUANT, OPTIONS ...) use the same tiles as the track pages: small name, big value, bar */
 let uiMin = true, uiTheme = 9, bigOn = false, slideOn = false;               /* minimal style / big value display / page slide */
 let knobLedsOn = true, knobLvlOn = true;                                      /* the lights under the knobs (which knobs do something here) */
 let slowKnobs = false, slowAcc = {};                         /* gentle mode: knobs and jogwheel turn at half speed, messages stay twice as long */
@@ -4997,6 +5008,7 @@ function drawCore() {
     if (idleBlank) { clear_screen(); needsRedraw = false; return; }
     if (errShow > 0) { errShow--; drawErr(); return; }
     clear_screen(); hdrDrawn = false;
+    if (menuOpen !== menuWasOpen) { menuWasOpen = menuOpen; if (menuOpen) toast = null; }      /* a leftover message (track name ...) never sits on top of the menu title */
     tabStrip = isTab(view) && !projUI && !spkUI && exitDlg < 0 && !menuOpen && askKind < 0 && !(view === 28 && broOpen) && !(brwTicks > 0 && brw) && !fb;
     if (fb && !menuOpen && askKind < 0 && exitDlg < 0) { drawFB(); return; }
     if (brwTicks > 0 && brw && !menuOpen && askKind < 0) { drawBrowse(); return; }
@@ -5221,6 +5233,7 @@ function tapTempo() {
 try { favBuild(); } catch (e) { /* later */ }
 globalThis.tick = function () {
     if (!bootTick) { bootTick = true; crumb('tick1'); }
+    if (!bootReady && ++bootTicks > 100) { bootReady = true; crumb('ready'); if (safeNote) { safeNote = false; showToast('SAFE START', 'LAST START DID NOT FINISH', 0); } }
     ticksSinceEdit++;
     if ((ticksSinceEdit & 7) === 0) { miscCheck(); chordReconcile(); }
     if (view === 50 && !menuOpen && pads[ln()][PI.grn] >= 0.01 && (ticksSinceEdit % 5) === 0) { grainPoll(); needsRedraw = true; }

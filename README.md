@@ -49,7 +49,7 @@ Demos, tutorials and progress updates are on the [TaktOnMusic YouTube channel](h
 | 🗂️ **Track tiles** | Synth track: 1 PRESET · 2 SYNTH · 3 MOD · 4 FILTER (+ EQ) · 5 FX (+ GRAIN) · 6 FX TYPE (+ FX TIME) · 7 EUCLID · 8 MIDI FX. Drum tracks have no SYNTH tile but a SAMPLE tile. The header shows the tile top left and the page (e.g. 2/2) top right; jog click switches the page |
 | 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 11 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off) |
 | 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator (switch, off by default), quantize grid 1/4 … 1/32 with strength, auto-growing clips while recording, MIDI clock + note out (USB-A) |
-| ⏱️ **Feel** | Swing, nudge, humanize, ratchets, song steps |
+| ⏱️ **Feel** | Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with amount next to Swing · nudge, humanize, ratchets, song steps |
 | 🧪 **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |
 | 💾 **Workflow** | 32 project slots (load, save, rename, new empty, delete), rolling backups, undo history, CPU meter and 11 scope views incl. spectrum, stereo, waterfall (Menu → EXPERT), in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
 

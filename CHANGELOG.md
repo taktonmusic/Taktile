@@ -1,12 +1,15 @@
 # Changelog
 
 ## 1.0.0 (23 October 2026)
-- Back to the proven 1.6.5 program (menus and all functions as in 1.6.5) with only two changes
+- Back to the proven 1.6.5 program with only these changes
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms)
-- Presets cut from 1468 to 420 clearly different sounds (10 per synth plus the sounds Taktile needs itself) plus the 30 new sounds = 450; sounds of old projects, favorites and kits become the most similar kept sound of the same synth
-- Sound levels evened out inside every synth
-- Sound browser: the melodic synths are grouped into 6 groups (Bass, Lead, Pluck + Stabs, Pads + Chords, Keys + Bells, Brass)
-- No Track Speed, Groove templates, safe start or other additions after 1.6.5
+- Presets cut from 1468 to 420 clearly different sounds plus the 30 new sounds = 450; sounds of old projects, favorites and kits become the most similar kept sound of the same synth; levels evened out inside every synth
+- Sound browser: the melodic synths are grouped into 6 groups
+- Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with Groove Amt on the SWING page
+- Master pages (TEMPO, QUANT, OPTIONS, PROJECT, DESIGN ...) use tiles instead of round knobs
+- Safe start: if the last start did not finish, Taktile opens an empty project and keeps the old file as a copy
+- Tape hiss is mono
+- No Track Speed
 
 ## Development history (steps before 1.0.0)
 
