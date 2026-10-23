@@ -2460,7 +2460,7 @@ function repHitsTick() {                                  /* Note Repeat while r
     const w = recArmed && playing ? 1 : 0; if (w !== rhSent) { rhSent = w; dspSet('rhrec', String(w)); }
     if (!w) return;
     const r = dspGet('rephits'); if (typeof r !== 'string' || r.length < 3) return;
-    const p = r.split(';'); for (let i = 1; i < p.length; i++) { const q = p[i].split(',').map(Number); if (q.length < 5) continue; recordHit(q[0], q[1], clamp(q[2], 1, 127), { g: q[3], f: q[4] }); }
+    const p = r.split(';'); for (let i = 1; i < p.length; i++) { const q = p[i].split(',').map(Number); if (q.length < 5 || q.some(x => !isFinite(x)) || q[0] < 0 || q[0] >= NLANE || !steps[ed[laneTrk(q[0])]] || !steps[ed[laneTrk(q[0])]][q[0]]) continue; recordHit(q[0], q[1], clamp(q[2], 1, 127), { g: q[3], f: q[4] }); }
     needsRedraw = true;
 }
 function growTick() {
@@ -4429,7 +4429,9 @@ const SONG_REP = [1, 2, 4];
 function songPadNew(idx) {                                       /* pads = your tracks (rows) x their clips 1-8 (columns): press = this step plays that clip on that track, press again = track silent */
     const t = bank * 4 + (3 - (idx >> 3)), c = idx & 7, e = songList[songSlot];
     if (!e || t < 0 || t >= NTRK) return;
-    const cl = songClips(e); songBlank = false;
+    const cl = songClips(e);
+    if (cl[t] !== c && !deleteHeld && !trackHasSteps(c, t)) { showToast('CLIP ' + (c + 1) + ' IS EMPTY', 'MAKE IT IN CLIP VIEW', 0); return; }      /* the song only picks clips that exist in the clip view; an empty pad never creates one */
+    songBlank = false;
     cl[t] = (cl[t] === c || deleteHeld) ? -1 : c;
     if (songOn && playing && songPlayIdx() === songSlot) { songCl[t] = cl[t]; songTrk(t, cl[t]); }
     showToast('STEP ' + p2(songSlot + 1) + ' T' + p2(t + 1), cl[t] < 0 ? 'SILENT' : 'CLIP ' + (cl[t] + 1), (cl[t] + 1) / NPAT);
@@ -5390,7 +5392,7 @@ globalThis.tick = function () {
     if (!bootTick) { bootTick = true; crumb('tick1'); }
     if (!bootReady && ++bootTicks > 100) { bootReady = true; crumb('ready'); if (safeNote) { safeNote = false; showToast('SAFE START', 'LAST START DID NOT FINISH', 0); } }
     ticksSinceEdit++;
-    if ((ticksSinceEdit & 7) === 0) { miscCheck(); chordReconcile(); }
+    if ((ticksSinceEdit & 7) === 0) { sg('misc', miscCheck); sg('chord', chordReconcile); }
     if (view === 50 && !menuOpen && pads[ln()][PI.grn] >= 0.01 && (ticksSinceEdit % 5) === 0) { grainPoll(); needsRedraw = true; }
     if (backTicks > 0) backTicks--;
     if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
@@ -5423,7 +5425,7 @@ globalThis.tick = function () {
         if (np !== playing || ng < gs - 1) tph.fill(0);      /* start / stop / restart: every clip begins at its own step 1 again */
         for (let t = 0; t < NTRK; t++) if (edSeen[t] !== ed[t]) { edSeen[t] = ed[t]; if (!growTrk[t]) tph[t] = 0; }      /* another clip on this track starts at its own step 1 */
         if (np !== playing || ng !== gs) { playing = np; gs = ng; needsRedraw = true; }
-        growTick(); loadTick(); autoPlay(); songTick(); rsTick(); micTick(); meterTick(); scopeTick(); fillTick(); kitPrevTick(); if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
+        sg('grow', growTick); sg('load', loadTick); sg('auto', autoPlay); sg('song', songTick); sg('rs', rsTick); sg('mic', micTick); sg('meter', meterTick); sg('scope', scopeTick); sg('fill', fillTick); sg('kprev', kitPrevTick); if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
         if (playing && followHold > 0) followHold--;
         if (playing && followHold === 0 && heldStep < 0 && LL() > PGN()) {   /* screen + step buttons follow the playing bar */
             const pg = Math.floor(curStep(sel, LL()) / PGN());
@@ -5732,15 +5734,18 @@ function drawErr() {
 }
 function logErr(where, e) {
     errCount++;
-    const msg = where + ': ' + (e && e.message ? e.message : String(e));
+    let ln0 = ''; try { const m = String(e.stack).match(/:(\d+):\d+/); if (m) ln0 = ' L' + m[1]; } catch (e4) { /* ignore */ }
+    const msg = where + ln0 + ': ' + (e && e.message ? e.message : String(e));
     lastErr = msg;
     try {
         if (typeof host_write_file === 'function')
             host_write_file('/data/UserData/schwung/taktile-error.log', 'count ' + errCount + '\n' + msg + '\n' + (e && e.stack ? e.stack : '') + '\n');
     } catch (e2) { /* ignore */ }
+    if (where.charAt(0) === '~') { if (errCount < 40 || errCount % 50 === 0) { try { showToast('ERR ' + msg.substring(1, 18), '', 0); } catch (e5) { /* ignore */ } } return; }      /* a part of the tick failed: the rest keeps running, only a short message shows */
     errShow = 600; needsRedraw = true;
     try { drawErr(); } catch (e3) { /* ignore */ }
 }
+function sg(name, f) { try { f(); } catch (e) { logErr('~' + name, e); } }
 function guarded(where, f) { return function () { try { return f.apply(this, arguments); } catch (e) { logErr(where, e); } }; }
 globalThis.init = guarded('init', globalThis.init);
 globalThis.tick = guarded('tick', globalThis.tick);

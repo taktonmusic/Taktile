@@ -67,4 +67,8 @@ ok(run('scopeLatch') === true && run('view') === 0, 'Shift + jog click in the sc
 run('chosen[1] = 1; askKind = -1'); T(2);
 cc(49, 127); cc(3, 127); cc(3, 0); cc(49, 0); T(2);
 ok(run('scopeLatch') === false, 'Shift + jog click switches the latch off');
+run('view = 31; songBlank = false; songList = [[0,4,1,0,0,0]]; songSlot = 0; bank = 0; steps[6][3] = steps[6][3].map(() => [0, 100, 0, 0]); kind[3] = 0'); T(2);
+run('songClips(songList[0])[3] = -1; songPadNew(6)'); ok(run('songList[0][6][3]') === -1, 'song: an empty pad does not pick or create a clip');
+run('steps[6][3][0] = [1, 100, 0, 0]; songPadNew(6)'); ok(run('songList[0][6][3]') === 6, 'song: a pad with a clip picks it');
+run('view = 0');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

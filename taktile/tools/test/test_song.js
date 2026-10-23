@@ -4,6 +4,7 @@ const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
 let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
 params.pos = '0,0,0,0'; ctx.init && ctx.init(); T(300);
 run('splashOn=false;splashT0=0'); run('view=31;bank=0;needsRedraw=true'); T(5);
+run('for (let t = 0; t < 8; t++) for (let c = 0; c < 8; c++) steps[c][lanesOf(t)[0]][0] = [1, 100, 0, 0, 0, 0, 0, 0]'); T(2);
 const pad = (r, c) => run('songPadNew(' + ((3 - r) * 8 + c) + ')');
 pad(0, 3); ok(run('songList[0][6][0]') === 3, 'top row pad 4 = track 1 plays clip 4');
 pad(0, 3); ok(run('songList[0][6][0]') === -1, 'same pad again = track silent');

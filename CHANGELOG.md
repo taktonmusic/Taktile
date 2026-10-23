@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (23 October 2026)
+## 1.0.0 (24 October 2026)
 - Back to the proven 1.6.5 program with only these changes
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms)
 - Presets cut from 1468 to 420 clearly different sounds plus 36 new sounds = 456; sounds of old projects, favorites and kits become the most similar kept sound of the same synth; levels evened out inside every synth
@@ -40,6 +40,8 @@
 - A sound change with the jog opens the filter again (LP up, HP and FltEnv at 0), like the preset browser
 - Scope latch: Shift + jog click in the scope keeps it on top of every page (you can keep playing and editing, toasts still show), Shift + jog click anywhere switches it off; also in the menu (EXPERT > Scope latch)
 - A muted track still shows its normal pad colours in the drum / synth pad modes (the display shows M)
+- Song page: a pad of an empty clip no longer creates or picks anything - the song only picks clips that exist in the clip view
+- Safer running: a failing part of the update loop no longer stops the rest; the error screen shows the line number (ERR ... Lnnn), repeated note-repeat hits are checked before they are recorded
 
 ## Development history (steps before 1.0.0)
 
