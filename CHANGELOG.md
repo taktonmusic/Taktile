@@ -11,6 +11,7 @@
 - Tape hiss is mono
 - Euclid sequencer: OFF / ON again (the ADD mode is gone, so it can be switched off)
 - No Track Speed
+- Fixed: sustained sounds (Strings, Pad, Lead, Organ ...) no longer sound a second time when the pad is released
 
 ## Development history (steps before 1.0.0)
 
