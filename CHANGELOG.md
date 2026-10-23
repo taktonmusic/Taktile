@@ -39,8 +39,6 @@
 - Delay type DUB keeps more low end in the echoes (808 and sub sounds no longer fade out)
 - A sound change with the jog opens the filter again (LP up, HP and FltEnv at 0), like the preset browser
 - Scope latch: Shift + jog click in the scope keeps it on top of every page (you can keep playing and editing, toasts still show), Shift + jog click anywhere switches it off; also in the menu (EXPERT > Scope latch)
-- A muted track still shows its normal pad colours in the drum / synth pad modes (the display shows M)
-- Song page: a pad of an empty clip no longer creates or picks anything - the song only picks clips that exist in the clip view
 - Safer running: a failing part of the update loop no longer stops the rest; the error screen shows the line number (ERR ... Lnnn), repeated note-repeat hits are checked before they are recorded
 - Recording into an empty drum or synth track starts with one bar and grows with what you play (no more leftover length like 64 steps from an earlier clip)
 

@@ -4429,9 +4429,7 @@ const SONG_REP = [1, 2, 4];
 function songPadNew(idx) {                                       /* pads = your tracks (rows) x their clips 1-8 (columns): press = this step plays that clip on that track, press again = track silent */
     const t = bank * 4 + (3 - (idx >> 3)), c = idx & 7, e = songList[songSlot];
     if (!e || t < 0 || t >= NTRK) return;
-    const cl = songClips(e);
-    if (cl[t] !== c && !deleteHeld && !trackHasSteps(c, t)) { showToast('CLIP ' + (c + 1) + ' IS EMPTY', 'MAKE IT IN CLIP VIEW', 0); return; }      /* the song only picks clips that exist in the clip view; an empty pad never creates one */
-    songBlank = false;
+    const cl = songClips(e); songBlank = false;
     cl[t] = (cl[t] === c || deleteHeld) ? -1 : c;
     if (songOn && playing && songPlayIdx() === songSlot) { songCl[t] = cl[t]; songTrk(t, cl[t]); }
     showToast('STEP ' + p2(songSlot + 1) + ' T' + p2(t + 1), cl[t] < 0 ? 'SILENT' : 'CLIP ' + (cl[t] + 1), (cl[t] + 1) / NPAT);
@@ -5257,7 +5255,7 @@ function updateLeds() {
         }
         else if (view === 20) c = i < NTRK ? (mutes[i] ? dimCol(trkCol(i)) : trkCol(i)) : 0;        /* mixer: the first 16 pads are the track mutes */
         else if (askKind >= 0) c = (i & 7) < 4 ? trkCol(sel) : 1;
-        else c = padLed(i);      /* a muted track still shows its pads (drum sounds / notes); the display shows M */
+        else c = mutes[sel] ? dimCol(trkCol(sel)) : padLed(i);
         led(PAD_FIRST + i, c);
     }
     for (let i = 0; i < 16; i++) {
