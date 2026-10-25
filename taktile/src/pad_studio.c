@@ -732,7 +732,7 @@ typedef struct {
     float ks[1024]; int ksi, ksn; float ksz1, ksz2;                     /* string engine: delay line */
     float nx[96]; int ni[2];                                           /* NEW ENGINES: modal / FM / vocal / chip / morph state */
     int   sw, gk; float sdet, ssub, satt;                              /* synth family options */
-    double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode; float srate, sgain, satk_inc, srel_c, sgate_env;                   /* sample playback */
+    double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode, sdir; float wbars; float srate, sgain, satk_inc, srel_c, sgate_env;                   /* sample playback */
     float nze, trp;                  /* noise follower, tremolo / auto-pan phase */
     float xfd;       /* >0: fast fade-out of a cut-off note (1 -> 0), no click */
     float aenv, ac, hd;  /* generic attack ramp for struck / plucked sounds on synth tracks (Attack knob above its default) */
@@ -1624,9 +1624,9 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         if (b < a + 0.002f) b = a + 0.002f;
         v->s0 = (int)(a * (float)m->n); v->s1 = (int)(b * (float)m->n);
         if (v->s1 > m->n) v->s1 = m->n; if (v->s0 > v->s1 - 4) v->s0 = v->s1 - 4; if (v->s0 < 0) v->s0 = 0;
-        v->smode = (int)(s->pp[p][PP_SMD] * 2.0f + 0.5f);
+        { const float sm = s->pp[p][PP_SMD]; v->smode = sm < 0.25f ? 0 : (sm < 0.625f ? 1 : (sm < 0.875f ? 3 : 2)); v->sdir = 1; }
         v->sidx = si; v->srate = m->sr * s->inv_sr;
-        { float sv = s->pp[p][PP_SSTR]; v->stch = (fabsf(sv - 0.5f) > 0.01f && v->smode != 1); v->stg = powf(2.0f, (sv - 0.5f) * 2.0f); /* output length factor 0.5x .. 2x */
+        { float sv = s->pp[p][PP_SSTR]; v->stch = (fabsf(sv - 0.5f) > 0.01f && v->smode != 1 && v->smode != 3); { static const float WB[7] = { 0.0f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 16.0f }; int wp = (int)(s->pp[p][PP_DLN] + 0.5f); v->wbars = (wp >= 1 && wp <= 6 && v->smode != 1 && v->smode != 3) ? WB[wp] : 0.0f; if (v->wbars > 0.0f) v->stch = 1; } v->stg = powf(2.0f, (sv - 0.5f) * 2.0f); /* output length factor 0.5x .. 2x */
           v->ga = (double)v->s0; v->g0[1] = (double)v->s0; v->gp[1] = 0.0f; v->gp[0] = 1024.0f; v->g0[0] = (double)v->s0 - 1024.0 * (double)(fm * v->srate); }
         v->sp = v->smode == 1 ? (double)(v->s1 - 1) : (double)v->s0;
         float dc = s->pp[p][PP_DECAY];
@@ -2575,9 +2575,9 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
     case T_SAMPLE: {
         const smp_t *m = smp_get(v->sidx);
         if (!m) { v->active = 0; break; }
-        const int rev = v->smode == 1, loop = v->smode == 2;
+        const int rev = v->smode == 1, pp = v->smode == 3, loop = v->smode == 2 || pp;
         double pos = v->sp; int i0 = (int)pos; float fr = (float)(pos - (double)i0);
-        int i1 = rev ? i0 - 1 : i0 + 1;
+        int i1 = (rev || (pp && v->sdir < 0)) ? i0 - 1 : i0 + 1;
         if (i0 < 0) i0 = 0; if (i0 >= m->n) i0 = m->n - 1;
         if (i1 < 0) i1 = 0; if (i1 >= m->n) i1 = m->n - 1;
         float a, b;
@@ -2595,6 +2595,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
                 x += (aa + (bb - aa) * fq) * (1.0f / 32768.0f) * w;
                 v->gp[k] += 1.0f;
             }
+            if (v->wbars > 0.0f) { float sl = (float)(v->s1 - v->s0) / m->sr, rt = v->wbars * 240.0f / s->bpm / (sl > 0.001f ? sl : 0.001f); v->stg = rt < 0.05f ? 0.05f : (rt > 40.0f ? 40.0f : rt); }      /* TIMEWARP: the selected region lasts exactly N bars at the current tempo, pitch stays */
             v->ga += (double)(m->sr * s->inv_sr) / (double)v->stg;
             pos = v->ga; v->sp = pos; i0 = (int)pos;
             if (v->ga >= (double)v->s1) { if (loop && v->gate) v->ga -= (double)(v->s1 - v->s0); else { v->active = 0; } }
@@ -2604,7 +2605,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         else { a = (float)m->d[i0]; b = (float)m->d[i1]; }
         x = (a + (b - a) * fr) * (1.0f / 32768.0f);
         smp_post:;
-        if (loop && v->gate) {                                  /* crossfaded loop: blend the material before the loop start into the loop end */
+        if (v->smode == 2 && v->gate) {                         /* crossfaded loop: blend the material before the loop start into the loop end */
             int xf = (int)(0.012f * m->sr), ll = v->s1 - v->s0; if (xf > ll / 4) xf = ll / 4;
             if (xf > 8 && pos > (double)(v->s1 - xf)) {
                 float w = (float)((pos - (double)(v->s1 - xf)) / (double)xf);
@@ -2617,7 +2618,7 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         if (v->sgate_env < 1.0f) { v->sgate_env += v->satk_inc; if (v->sgate_env > 1.0f) v->sgate_env = 1.0f; x *= v->sgate_env; }
         if (!v->gate && v->srel_c > 0.0f) { v->env *= v->srel_c; }
         float dend = rev ? (float)(pos - (double)v->s0) : (float)((double)v->s1 - pos);
-        if (dend < 48.0f) x *= dend < 0.0f ? 0.0f : dend / 48.0f;
+        if (!pp && dend < 48.0f) x *= dend < 0.0f ? 0.0f : dend / 48.0f;
         if (v->t < 0.0015f) x *= v->t / 0.0015f;
         x *= v->env;
         v->env *= v->c1;
@@ -2625,6 +2626,11 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         if (v->env < 1e-3f) v->active = 0;
         double step = v->stch ? 0.0 : (double)(fm * v->srate);
         if (rev) { pos -= step; if (pos < (double)v->s0) { if (loop && v->gate) pos += (double)(v->s1 - v->s0); else v->active = 0; } }
+        else if (pp) {                                          /* FWD-REV: forward to the end, back to the start, again and again while the note is held */
+            pos += step * (double)v->sdir;
+            if (pos >= (double)v->s1) { if (v->gate) { pos = 2.0 * (double)v->s1 - pos - 1.0; v->sdir = -1; if (pos < (double)v->s0) pos = (double)v->s0; } else v->active = 0; }
+            else if (pos < (double)v->s0) { if (v->gate) { pos = 2.0 * (double)v->s0 - pos; v->sdir = 1; if (pos >= (double)v->s1) pos = (double)v->s0; } else v->active = 0; }
+        }
         else { pos += step; if (pos >= (double)v->s1) { if (loop && v->gate) pos -= (double)(v->s1 - v->s0); else v->active = 0; } }
         v->sp = pos;
         break; }

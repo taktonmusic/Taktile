@@ -108,7 +108,7 @@ function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(v
 function isTab(v) { return v === 53 || v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
 const DRM_ENG_RE = /^D(Kick|Snr|Hat|Clap|Tom|Rim|Clave|Cow|Metal)/;
 function isDrmEng(t) { return DRM_ENG_RE.test(TYPE_NAME[Math.round(t)] || ''); }      /* the drum-synth engine: only these drum sounds have an ENGINE tab */
-function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel] && !smp; const tb = syn ? [1, 9, 3, 2, 38, 46, 36, 27] : (isDrmEng(pads[ln()][0]) ? [1, 9, 3, 2, 38, 36, 27, 28] : [1, 3, 2, 38, 36, 27, 28]); tb.push(53); if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
+function trackTabs() { const smp = Math.round(pads[ln()][0]) === 359, syn = !kind[sel]; const tb = syn ? (smp ? [1, 9, 3, 2, 38, 46, 36, 27, 28] : [1, 9, 3, 2, 38, 46, 36, 27]) : (isDrmEng(pads[ln()][0]) ? [1, 9, 3, 2, 38, 36, 27, 28] : [1, 3, 2, 38, 36, 27, 28]); tb.push(53); if (chordOn()) tb.unshift(44); return tb; }      /* SOUND, FILTER, MOD, FX, FX 2, EUCLID, MIDI FX, SYNTH/SAMPLE last */
 const CAT_NAME = ['KICK', 'SNARE', 'HATS', 'PERC', 'FX', 'BASS', 'LEAD', 'CHORD', 'SAMPLE'];
 function catOf(t) {
     const b = BASE_T[t];
@@ -569,7 +569,9 @@ function getVal(scope, key) {
         if (key === 'sgsl') return songSlot / 15; if (key === 'sgcl') return songList[songSlot] ? songList[songSlot][0] / 7 : 0; if (key === 'sgbr') return songList[songSlot] ? songList[songSlot][1] / 32 : 0; if (key === 'sgrp') return songList[songSlot] ? (songList[songSlot][2] - 1) / 15 : 0; if (key === 'sgtp') return songList[songSlot] ? songList[songSlot][3] / 240 : 0; if (key === 'sgtr') return songList[songSlot] ? songList[songSlot][4] / 2 : 0; if (key === 'sgtg') return songList[songSlot] ? songList[songSlot][5] / 7 : 0; if (key === 'sgon') return songOn ? (songLoop ? 1 : 0.5) : 0; if (key === 'sglp') return songLoop ? 1 : 0; if (key === 'sgin' || key === 'sgdl' || key === 'sgmv') return 0; if (key === 'slm') return slSel / 15; if (key === 'slp') return slm[slSel]; if (key === 'sln') return (slN - 1) / 15; if (key === 'sla') return 0; return 0; }
     return scope === 'pad' ? pads[keyLane(key)][PI[key]] : master[MI[key]];
 }
+function smdSnap(v) { return v < 0.25 ? 0 : (v < 0.625 ? 0.5 : (v < 0.875 ? 0.75 : 1)); }
 function fmtVal(key, v) {
+    if (key === 'vol' || key === 'tvol') return String(Math.round(v * 127));
     if (key === 'bpm') return String(Math.round(40 + v * 200));
     if (key === 'swing') return String(50 + Math.round(v * 25));
     if (key === 'fullvel' || key === 'repmode') return v > 0.5 ? 'ON' : 'OFF';
@@ -634,9 +636,10 @@ function fmtVal(key, v) {
     if (key === 'sla' || key === 'slg' || key === 'sladd' || key === 'sldel' || key === 'slsn' || key === 'smfit' || key === 'smhf' || key === 'smdb' || key === 'smrn' || key === 'smnm' || key === 'smrs') return 'TURN >';
     if (key === 'smnx') return '< TURN >';
     if (key === 'smrv') return pads[ln()][PI.smd] > 0.25 && pads[ln()][PI.smd] < 0.75 ? 'ON' : 'OFF';
-    if (key === 'smp') { const i = Math.round(v * 63); return smpInfo[i] && smpInfo[i][0] ? String(i + 1) : '--'; }
+    if (key === 'smp') { const i = Math.round(v * 63); if (view === 9 && smpInfo[i] && smpInfo[i][0] && smpNames[i]) return smpNames[i]; return smpInfo[i] && smpInfo[i][0] ? String(i + 1) : '--'; }
     if (key === 'sst' || key === 'sen') return String(Math.round(v * 100));
-    if (key === 'smd') return ['ONE', 'REV', 'LOOP'][Math.min(2, Math.round(v * 2))];
+    if (key === 'dln' && Math.round(pads[ln()][0]) === 359) return ['OFF', '1/2', '1', '2', '4', '8', '16'][clamp(Math.round(v), 0, 6)];
+    if (key === 'smd') return v < 0.25 ? 'ONE' : (v < 0.625 ? 'REV' : (v < 0.875 ? 'FWD-REV' : 'LOOP'));
     if (key === 'fmode') return ['LP', 'BP', 'HP'][Math.min(2, Math.round(v * 2))];
     if (key === 'lay') return kind[sel] ? LAYD_NAME[layD] : LAYS_NAME[layS];
     if (key === 'dsel') return kind[sel] ? String(Math.round(v * 15) + 1) : '-';
@@ -760,8 +763,10 @@ function editParam(scope, key, delta, idx) {
         else if (key === 'browse') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; if (!browseAll && !favOnly) browseAll = true; else if (browseAll) { browseAll = false; favOnly = favs.length > 0; } else favOnly = false; showToast('JOG SOUNDS', browseAll ? 'ALL SOUNDS' : 'CATEGORY ONLY', browseAll ? 1 : 0); }
         return { v: getVal('sys', key) };
     }
+    if (key === 'smp' && view === 9 && engDir && !kind[sel] && Math.round(pads[sel][0]) === 359) { acc[idx] += delta; if (Math.abs(acc[idx]) < 2) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; if (shiftHeld) engFolder(d); else engStep(d); return { v: getVal(scope, key) }; }
     if (key === 'smp') { selectSample(delta > 0 ? 1 : -1, true); return { v: getVal(scope, key) }; }
-    if (key === 'smd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'smd', clamp(Math.round(pads[ln()][PI.smd] * 2) + d, 0, 2) / 2); return { v: pads[ln()][PI.smd] }; }
+    if (key === 'dln' && Math.round(pads[ln()][0]) === 359) { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'dln', clamp(Math.round(pads[ln()][PI.dln]) + d, 0, 6)); showToast('TIMEWARP', ['OFF', '1/2 BAR', '1 BAR', '2 BARS', '4 BARS', '8 BARS', '16 BARS'][Math.round(pads[ln()][PI.dln])], Math.round(pads[ln()][PI.dln]) / 6); return { v: pads[ln()][PI.dln] }; }
+    if (key === 'smd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'smd', [0, 0.5, 1, 0.75][clamp([0, 0.5, 1, 0.75].indexOf(smdSnap(pads[ln()][PI.smd])) + d, 0, 3)]); return { v: pads[ln()][PI.smd] }; }
     if (key === 'dlt') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; const L = ln(), ni = clamp(letIdx(pads[L][PI.dlt]) + d, 0, SPK_NLET - 1); setLaneP(L, 'dlt', ni / (SPK_NLET - 1)); showToast('LETTER', SPK_LET[ni], ni / (SPK_NLET - 1)); return { v: pads[L][PI.dlt] }; }      /* the letter brush: the next step you press says this letter */
     if (key === 'fmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'fmode', clamp(Math.round(pads[ln()][PI.fmode] * 2) + d, 0, 2) / 2); return { v: pads[ln()][PI.fmode] }; }
     let v = getVal(scope, key);
@@ -2734,11 +2739,14 @@ function drawTabsNew() {
     fill_rect(0, 0, 128, 9, 1); txtS(126 - who.length * 4, 2, who, 0);
     txtH(2, 1, hfFit(nm, 120 - who.length * 4 - (two ? 18 : 0)), 0);
     if (two) txtS(2 + hfW(hfFit(nm, 120 - who.length * 4 - 18)) + 4, 2, pg[0] + '/' + pg[1], 0);
-    const wd = 15, x0 = Math.max(0, (128 - wd * tabs.length) >> 1);
-    for (let i = 0; i < tabs.length; i++) {
-        const t = TAB_3[tabs[i]] || '?', x = x0 + i * wd;
+    const wd = 15, vis = tabs.length * wd > 128 ? 8 : tabs.length, x0 = vis < tabs.length ? 4 : Math.max(0, (128 - wd * tabs.length) >> 1);      /* more tabs than fit (sampler, chords, LFO): the row scrolls with the page you are on */
+    const off = vis < tabs.length ? clamp(cur - (vis >> 1), 0, tabs.length - vis) : 0;
+    for (let i = off; i < off + vis; i++) {
+        const t = TAB_3[tabs[i]] || '?', x = x0 + (i - off) * wd;
         if (i === cur) { fill_rect(x, 9, wd - 1, 7, 1); txtS(x + 1, 10, t, 0); } else txtS(x + 1, 10, t, 1);
     }
+    if (off > 0) txtS(0, 10, '<', 1);
+    if (off + vis < tabs.length) txtS(124, 10, '>', 1);
     fill_rect(0, 16, 128, 1, 1);
 }
 function lastTabId() { return trackTabs().indexOf(9) >= 0 ? 9 : 28; }      /* SYNTH ENGINE (second tab of a synth track) or SAMPLE (last tab of the others) */
@@ -3242,7 +3250,35 @@ function selectSample(d, toast) {
     if (toast !== false) showToast('SAMPLE ' + (l[p] + 1) + '/' + l.length, smpNames[l[p]], p / Math.max(1, l.length - 1));
 }
 /* ---- file browser (any folder of the Move) ---- */
-let broOpen = false, broPath = '/data/UserData', broList = [], broSel = 0;
+const SMPHOME_FILE = '/data/UserData/schwung/taktile-samplehome.txt';
+let engDir = null;
+try { if (typeof host_read_file === 'function') { const h = host_read_file(SMPHOME_FILE); if (h && String(h).charAt(0) === '/') engDir = { path: String(h).trim(), name: '', pend: 0 }; } } catch (e) { engDir = null; }
+function engSave() { try { if (engDir && typeof host_write_file === 'function') host_write_file(SMPHOME_FILE, engDir.path); } catch (e) { /* ignore */ } }
+function engFolder(d) {
+    if (!engDir) { engDir = { path: broPath, name: '', pend: 0 }; }
+    const cut = engDir.path.lastIndexOf('/'), par = cut <= 0 ? '/' : engDir.path.substring(0, cut), base = engDir.path.substring(cut + 1);
+    broLoad(par); const dirs = broList.filter(x => x[0] === 'd' && x[1] !== '..'); if (!dirs.length) return;
+    let i = dirs.findIndex(x => x[1] === base); if (i < 0) i = d > 0 ? -1 : dirs.length; i = clamp(i + d, 0, dirs.length - 1);
+    const np = (par === '/' ? '' : par) + '/' + dirs[i][1]; broLoad(np); const files = broList.filter(x => x[0] === 'f');
+    engDir.path = np; engDir.name = files.length ? files[0][1] : ''; engSave();
+    if (files.length) { engDir.pend = 10; dspSet('brprev', String(files[0][2])); }
+    showToast('FOLDER ' + (i + 1) + '/' + dirs.length, dirs[i][1] + (files.length ? '' : ' (NO WAV)'), i / Math.max(1, dirs.length - 1));
+}
+function engStep(d) {
+    broLoad(engDir.path); const files = broList.filter(x => x[0] === 'f'); if (!files.length) return;
+    let i = files.findIndex(x => x[1] === engDir.name); if (i < 0) i = d > 0 ? -1 : files.length;
+    i = clamp(i + d, 0, files.length - 1); engDir.name = files[i][1]; engDir.pend = 10;
+    dspSet('brprev', String(files[i][2])); showToast((i + 1) + '/' + files.length, files[i][1], i / Math.max(1, files.length - 1));
+}
+function engTick() {
+    if (!engDir || engDir.pend <= 0 || --engDir.pend > 0) return;
+    if (kind[sel] || Math.round(pads[sel][0]) !== 359) return;
+    broLoad(engDir.path); const e = broList.find(x => x[0] === 'f' && x[1] === engDir.name); if (!e) return;
+    dspSet('brstop', '1'); dspSet('brimport', String(e[2])); const r = parseInt(dspGet('brres'));
+    if (r >= 0) { smpRefresh(); const L = ln(); setLaneP(L, 'smp', r / 63); setLaneP(L, 'sst', 0); setLaneP(L, 'sen', 1); showToast('SAMPLE ' + (r + 1), smpNames[r], 1); } else showToast('FAILED', smpMem >= 95 ? 'MEMORY FULL ' + smpMem + '%' : 'WAV 16/24/32-BIT <40MB', 0);
+    needsRedraw = true;
+}
+let broBack = false, broOpen = false, broPath = '/data/UserData', broList = [], broSel = 0;
 let broErr = 0;
 function broLoad(path) {
     dspSet('brdir', path); let e = String(dspGet('brerr') || '0,0,0').split(',').map(x => parseInt(x) || 0);
@@ -3253,7 +3289,7 @@ function broLoad(path) {
     for (let i = 0; i < n; i++) { const r = dspGet('br_' + i); if (typeof r === 'string') { const k = r.indexOf('|'); broList.push([r.substring(0, k), r.substring(k + 1), i]); } }
     broSel = 0; needsRedraw = true;
 }
-function broOpenNow() { broOpen = true; broLoad(broPath); showToast('BROWSE', 'PLAY = LISTEN', 0.5); }
+function broOpenNow() { broOpen = true; broLoad(engDir && !kind[sel] ? engDir.path : broPath); showToast('BROWSE', 'PLAY = LISTEN', 0.5); }
 function broPreview() {
     const e = broList[broSel]; if (!e || e[0] === 'd') { showToast('LISTEN', 'SELECT A WAV', 0); return; }
     dspSet('brprev', String(e[2])); const r = parseInt(dspGet('brres'));
@@ -3261,7 +3297,7 @@ function broPreview() {
 }
 function broUp() { const i = broPath.lastIndexOf('/'); return i <= 0 ? '/' : broPath.substring(0, i); }
 function broFolderKit(path) {                              /* Shift + click on a folder: its first 16 WAV files become the 16 pads of the drum track */
-    if (!kind[sel]) { showToast('FOLDER KIT', 'DRUM TRACK ONLY', 0); return; }
+    if (!kind[sel]) { engDir = { path: path, name: '', pend: 0 }; engSave(); broOpen = false; if (broBack) { broBack = false; tabEnter(9); } showToast('SAMPLE FOLDER', path.substring(path.lastIndexOf('/') + 1), 1); needsRedraw = true; return; }
     broLoad(path); const files = broList.filter(x => x[0] === 'f').slice(0, 16);
     if (!files.length) { showToast('FOLDER KIT', 'NO WAV FILES', 0); return; }
     let n = 0; dspSet('brstop', '1');
@@ -3281,7 +3317,7 @@ function broClick() {
     if (r >= 0) {
         smpRefresh(); const L = ln();
         setLaneP(L, 'type', 359); setLaneP(L, 'smp', r / 63); setLaneP(L, 'sst', 0); setLaneP(L, 'sen', 1);
-        broOpen = false; showToast('SAMPLE ' + (r + 1), smpNames[r], 1); if (smpMem >= 85) showToast('MEMORY ' + smpMem + '%', 'BANK ALMOST FULL', 1);
+        engDir = { path: broPath, name: e[1], pend: 0 }; engSave(); broOpen = false; if (broBack) { broBack = false; tabEnter(9); } showToast('SAMPLE ' + (r + 1), smpNames[r], 1); if (smpMem >= 85) showToast('MEMORY ' + smpMem + '%', 'BANK ALMOST FULL', 1);
     } else showToast('FAILED', smpMem >= 95 ? 'MEMORY FULL ' + smpMem + '%' : 'WAV 16/24/32-BIT <40MB', 0);
     needsRedraw = true;
 }
@@ -3675,7 +3711,7 @@ function fbTree() {
     const fav = [{ n: 'FAVORITES', l: favs.slice().sort((a, b) => a - b) }];
     const smp = smpLoaded().length ? [{ n: 'MY SAMPLES', smp: true }] : [];
     const rec = [{ n: 'RECENT', l: recent.slice() }];
-    const nx = [{ n: 'NEW ENGINES', kids: NX_GROUPS.map(g => ({ n: g[0], l: g[1].slice() })) }];
+    const nx = [];
     const cat = (n, c, pr) => fbSub(n, c, pr);
     const iniL = [...new Set(BASE_T)].filter(b => b !== 359 && (kind[sel] ? catOf(b) <= 4 : catOf(b) >= 5)).sort((a, b) => a - b);
     if (!kind[sel] && FMI > 0) iniL.unshift(FMI);                  /* the simple FM first: a sound you build yourself, not a preset */
@@ -3710,11 +3746,10 @@ function fbTree() {
     const all = [{ n: 'ALL SOUNDS', l: TYPE_NAME.map((x, k) => k).filter(k => BASE_T[k] !== 359) }];
     const roleMap = { 'BASS': 'BASS', 'LEAD': 'LEAD', 'PLUCK': 'PLUCK + STABS', 'PAD + STRINGS': 'PADS + CHORDS', 'KEYS + ORGAN': 'KEYS + BELLS', 'BELLS': 'KEYS + BELLS' };
     const typed = fbSynGroups().map(g => ({ n: g.n, kids: g.kids.slice() }));      /* sorted by sound type (pad, lead, bass ...), not by genre: the new engines join each type as a NEW folder */
-    byRole.kids.forEach(r => { const tg = typed.find(g => g.n === roleMap[r.n]); if (tg && r.l.length) tg.kids.push({ n: 'NEW ENGINES', l: r.l }); else if (r.l.length) typed.push({ n: r.n, kids: [{ n: 'NEW ENGINES', l: r.l }] }); });
     const sounds = { n: 'SOUNDS', kindSw: 0, kids: typed.concat([{ n: 'MORE', kids: nx.concat([cat('FX', 4), cat('PERCUSSION', 3), cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT)], all) }]) };
-    insts.n = 'SYNTHS'; insts.kindSw = 0;
+    insts.n = 'SYNTHS'; insts.kindSw = 0; { const q = insts.kids.findIndex(k => k.eng); if (q >= 0) insts.kids.splice(q, 1); }
     /* the same start for every track, like the question for a new track: SYNTHS | DRUMS | SOUNDS, each opens its list; picking the other kind switches the track */
-    return { n: 'BROWSE', kids: [sounds, drums, insts].concat(my, fxK, smp) };
+    return { n: 'BROWSE', kids: [sounds, drums, insts, { n: 'SAMPLER', smp: true, eng: true, kindSw: 0 }].concat(my, fxK, smp) };
 }
 const FX_LABEL = { x2fx: null, m2fx: null, xfx: ['NONE', 'STUTTER', 'REVERSE', 'FLANGER', 'TREMOLO', 'AUTO PAN', 'COMB', 'WAH', 'GATE', 'LO-FI', 'DJ FILTER', 'NONE', 'DELAY', 'REVERB'], mfx: ['NONE', 'OCTAVER', 'CHORD', 'ARPEGGIO', 'STRUM', 'NOTE ECHO', 'RANDOM PITCH', 'RANDOM VEL', 'COMPRESS', 'SCALE', 'TRANSPOSE', 'DIATONIC CHORD'] };
 FX_LABEL.x2fx = FX_LABEL.xfx; FX_LABEL.m2fx = FX_LABEL.mfx;
@@ -3794,6 +3829,7 @@ function fbSetType(nt) {
     if (liveOk(sel)) enqueue('p' + L + 'type', 'p' + p2(L + 1) + '_type', String(nt)); storeCs(L); markEdited();
 }
 function fbAudition() {
+    if (Math.round(pads[kind[sel] ? ln() : sel][0]) === 359) dspSet('panic', '1');
     if (fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; }
     if (kind[sel]) { const l = ln(); flushPad(l); dspSet('dhit', l + ',' + Math.max(1, Math.round(100 * fbVol)) + ',0'); fbOff = ['dhit', l + ',0,0']; } else { flushPad(sel); dspSet('npad', '0,' + Math.max(1, Math.round(100 * fbVol)) + ',0'); fbOff = ['npad', '0,0,0']; }
     fbT = 12;
@@ -3814,7 +3850,7 @@ function fbApply() {
     const L = ln();
     if (!top.node.kits) pSnap('pad', L, 'browse');
     if (top.node.kits) { kitSlot = it.val; kitPreview(false); kitPrevQ = []; }      /* no audition hits: just load, play the pads to listen */
-    else if (top.node.smp) { if (Math.round(pads[L][0]) !== 359) setLaneP(L, 'type', 359); setLaneP(L, 'smp', it.val / 63); setLaneP(L, 'sst', 0); setLaneP(L, 'sen', 1); }
+    else if (top.node.smp) { const fresh = top.node.eng && Math.round(pads[L][0]) !== 359; if (fresh) { if (fb.origAll) { pads[L] = fb.origAll.slice(); qPad(L); } initSound(L); } if (Math.round(pads[L][0]) !== 359) setLaneP(L, 'type', 359); setLaneP(L, 'smp', it.val / 63); setLaneP(L, 'sst', 0); setLaneP(L, 'sen', 1); if (fresh) { setLaneP(L, 'smd', 0); fltSet(L, FLT_OPEN); qPad(L); if (!smpLoaded().length) showToast('EMPTY SAMPLER', 'PICK A WAV FILE', 1); } }
     else if (top.node.fx) { const k = top.node.fx; setLaneP(L, k, it.val); if (it.val > 0 && FX_AMT[k] && pads[L][PI[FX_AMT[k]]] < 0.05) setLaneP(L, FX_AMT[k], FX_AMT_DEF[k]); }
     else { if (fb.origAll) { pads[L] = fb.origAll.slice(); qPad(L); }      /* every sound starts from the same state (the pad as it was when the browser opened), so the same entry always sounds the same, whatever was heard before */
         if (top.node.initFirst && !it.init && nxEng(it.val)) { pads[L][PI.det] = 0; pads[L][PI.sub] = 0; pads[L][PI.fkey] = 0; pads[L][PI.fdec] = 0.5; qPad(L); }
@@ -3871,6 +3907,7 @@ function fbClick() {
     if (top.node.kits) { kitBackup = null; showToast('KIT ' + it.label, 'LOADED', 1); }
     else { showToast(top.node.smp ? 'SAMPLE' : (top.node.fx === 'xfx' || top.node.fx === 'x2fx' ? 'AUDIO FX' : (top.node.fx === 'mfx' || top.node.fx === 'm2fx' ? 'MIDI FX' : 'SOUND')), it.label, 1); if (!top.node.smp && !top.node.fx && typeof it.val === 'number') recentAdd(it.val); }
     fb = null; needsRedraw = true;
+    if (top.node.eng && !kind[sel] && !smpLoaded().length) { tabEnter(28); broBack = true; broOpenNow(); }
 }
 function fbFav() {                                         /* Shift + click in the browser: star on / off for the highlighted sound */
     const top = fb.st[fb.st.length - 1], it = fbItems(top.node)[top.i];
@@ -4983,6 +5020,7 @@ function viewItemsFix() {
     VIEW_ITEMS[1] = kind[sel] ? SND_DRM : (isSpk(pads[sel][0]) ? SND_SPK : SND_SYN);      /* a drum sound has no voices: the delay send takes that place. Synths: the wave window only where the wave has an effect (classic synths), else the delay send */
     VIEW_ITEMS[9] = (FMI > 0 && t === FMI) ? FMI_PG : (e ? ENG_PG[e] : (isDrmEng(pads[ln()][0]) ? DRM_PG : (isSpk(pads[ln()][0]) ? (spkLetterOn(ln()) ? SPK_PG_L : SPK_PG) : SYN_PG)));
     BLOCKS[9] = VIEW_ITEMS[9] === DRM_PG ? [['DRUM ENGINE', 4], ['DRIVE + FILTER', 4]] : ((VIEW_ITEMS[9] === SPK_PG || VIEW_ITEMS[9] === SPK_PG_L) ? [['VOICE', 4], ['DRIVE + FILTER', 4]] : [['ENGINE', 4], ['FILTER + VOICES', 4]]);
+    if (!kind[sel] && Math.round(pads[sel][0]) === 359) { VIEW_ITEMS[9] = [['smp','File'],['sst','Start','Strt'],['sen','End'],['smd','Mode'],['sgn','Gain'],['sstr','Stretch','Strc'],['dln','WarpBars','WBar'],['poly','Voices','Poly']]; BLOCKS[9] = [['SAMPLE', 4], ['SHAPE + FILTER', 4]]; VIEW_ITEMS[1] = SND_SYN.map(it => it[0] === 'att' ? ['satk', 'Attack', 'Atk'] : (it[0] === 'tone' ? ['srel', 'Release', 'Rel'] : it)); }
     if (kind[sel] && !isDrmEng(pads[ln()][0]) && view === 9) { tabEnter(1); }      /* a drum sound without an engine has no ENGINE tab */
 }
 
@@ -5399,6 +5437,7 @@ globalThis.tick = function () {
     if (hot.t > 0 && --hot.t === 0) needsRedraw = true;
     if (clrPend.ticks > 0) clrPend.ticks--;
     ledAge++;
+    sg('eng', engTick);
     if (fbPend > 0 && --fbPend === 0 && fb && fbPrevOn()) { const tp = fb.st[fb.st.length - 1], pi = fbItems(tp.node)[tp.i]; if (pi && !pi.kid) { fbApply(); if (!tp.node.kits) fbAudition(); } }
     if (fbT > 0 && --fbT === 0 && fbOff) { dspSet(fbOff[0], fbOff[1]); fbOff = null; }
     if (deleteHeld && ++delAge > 300) { deleteHeld = false; needsRedraw = true; }      /* safety: Delete never stays on without any input */
@@ -5682,6 +5721,7 @@ globalThis.onMidiMessageInternal = function (data) {
             else { fxPage ^= 1; pg = fxPage + 1; }
             acc.fill(0); showToast(String(pg), '', 0); toast.ticks = 40; needsRedraw = true; return;
         }
+        if (d2 > 0 && view === 9 && !kind[sel] && Math.round(pads[sel][0]) === 359 && !menuOpen && !padMenu && !shiftHeld) { tabEnter(28); broBack = true; broOpenNow(); return; }
         if (d2 > 0 && isTab(view) && view !== 36 && view !== 28 && !menuOpen && !shiftHeld) return;      /* tabs without a second page: the jog click does nothing */
         if (d2 > 0 && view === 36 && !menuOpen && !padMenu && !shiftHeld) { euSetPage(euPage + 1); showToast((euPage + 1) + '/' + EU_NPG, '', 0); toast.ticks = 40; return; }
         if (d2 > 0 && view === 28 && broOpen && !menuOpen) { broClick(); return; }

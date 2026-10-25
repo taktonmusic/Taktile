@@ -45,6 +45,61 @@
 - A pad hit that reaches the sound engine twice (host MIDI and the module message) is played once: a second note-on of the same pad within 35 ms is ignored
 - Song page: the title shows NEXT nn while a jump waits for the end of the bar, that step button blinks, and the running section shows BAR n/m
 - SAMPLER is an engine of its own: in the sound browser under SYNTHS (synth tracks) and DRUMS (drum tracks) - pick a WAV, then One / Reverse / Loop, start / end, voices, filter, envelope, LFO and effects like any sound
+- SAMPLER as an entry of its own after SYNTHS in the sound browser: it makes a synth track that plays a sample instead of a synth (empty start, default values, filter open; with no sample loaded the file browser opens)
+- Sampler ENGINE page like a synth: SAMPLE block (file, start, end, mode) and SHAPE + FILTER block (gain, stretch, WarpBars, voices); knob 1 = file, jog click = file browser; Attack and Release of the sample on the SOUND page; tab strip like a synth
+- Timewarp in the sampler (WarpBars OFF, 1/2, 1, 2, 4, 8, 16): the region lasts exactly that many bars at the current tempo with the pitch kept, so long loops run in sync
+- New sample mode FWD-REV (ping-pong); saved sounds with ONE, REV and LOOP are unchanged
+- Sample folder: Shift + click on a folder in the file browser sets it (also a loaded file remembers its folder, kept after a restart); knob 1 on the ENGINE page walks through its WAVs (listen while turning, loads when you stop), Shift + knob 1 jumps to the next / previous folder beside it
+- The browser preview cuts the sample before at once when you move to the next one
+- Volume is shown 0 to 127 everywhere (track, pad, mixer, step lock)
+- The tab strip scrolls with the page you are on when not all tabs fit (sampler, chords, LFO), with < and > marks
+- The NEW ENGINES folders are hidden in the sound browser; the sounds stay in the synth lists and under MORE > ALL SOUNDS
+
+## 1.0.0 (25 October 2026)
+- Back to the proven 1.6.5 program with only these changes
+- Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms)
+- Presets cut from 1468 to 420 clearly different sounds plus 36 new sounds = 456; sounds of old projects, favorites and kits become the most similar kept sound of the same synth; levels evened out inside every synth
+- Sound browser: the melodic synths are grouped into 6 groups
+- Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with Groove Amt on the SWING page (Shift + step 7)
+- Master pages (TEMPO, QUANT, OPTIONS, PROJECT, DESIGN ...) use tiles instead of round knobs
+- Safe start: if the last start did not finish, Taktile opens an empty project and keeps the old file as a copy
+- Tape hiss is mono
+- Euclid sequencer: OFF / ON again (the ADD mode is gone, so it can be switched off)
+- Pads: a pad that sends its note-on again while it is still held (a deeper press) no longer triggers the sound a second time
+- Fixed: sustained sounds (Strings, Pad, Lead, Organ ...) no longer sound a second time when the pad is released
+- Hold a step button + left / right arrow = nudge of that step
+- Button lights (Mute, Copy, Delete, Back, Sample, Loop, arrows) glow softly by default
+- Fast repeated drum sounds (kicks in sixteenths) no longer click: the old tail fades out in 10 ms instead of being cut
+- Master output: the limiter is never fully off (ceiling 95 %) and a sum above 85 % is rounded off softly, so two loud sounds together no longer clip
+- Drum tracks: Delay and Reverb sends on the FX page (Output moved to the SOUND page)
+- No Track Speed
+- New LFO page: 4 LFOs per track (last tab) with assignable targets, rate, depth and shape
+- Shift + Menu opens the Mixer; Mix Vol knobs turn slower and finer
+- Duplicate a whole track (simple copy of all clips and sound)
+- Recording: clip length is taken from the first note, a second Rec press within 16 steps no longer jumps to 32 steps; the header shows bars instead of steps
+- Chord mode: what you played with chords stays recorded after leaving chord mode
+- Granular Pitch can now go down as well (+-24 semitones)
+- New GUIDE in the main menu: an easy step-by-step guide
+- Rename menu can be left with Back
+- Delay and Reverb are only sends now and removed from the Insert FX in all tracks (old projects convert)
+- Six new human voices: Granny, Grandson, Mother, Father, Kid, Teenager (456 sounds)
+- Song mode: song pads no longer play the synth in the background; copying clips works
+- Note Repeat is recorded when Rec is pressed while Note Repeat is held (drum and synth)
+- Mixer pads: a tap mutes / unmutes at once, a muted track is dimmed (not dark), Shift + pad opens that track; clip view shows muted tracks dimmed too
+- Drum FX page: page 1 = Delay and Reverb sends + Insert 1, Jog click = Insert 2
+- Filter knobs (LPCut, Reso, HPCut) turn a little faster
+- Song page like the clip view: Mute + pad (Shift = solo) mutes a track, muted tracks are dimmed and marked, the playing clip shows its progress
+- Pad switch to the UI is sent at once when a page changes (mixer, clips, song)
+- Shift + knobs 1-4 no longer change BPM / Swing / Length / Clip on the SEQ page (Shift is only a modifier again)
+- Delay type DUB keeps more low end in the echoes (808 and sub sounds no longer fade out)
+- A sound change with the jog opens the filter again (LP up, HP and FltEnv at 0), like the preset browser
+- Scope latch: Shift + jog click in the scope keeps it on top of every page (you can keep playing and editing, toasts still show), Shift + jog click anywhere switches it off; also in the menu (EXPERT > Scope latch)
+- A muted track still shows its normal pad colours in the drum / synth pad modes (the display shows M)
+- Song page: a pad of an empty clip no longer creates or picks anything - the song only picks clips that exist in the clip view
+- Safer running: a failing part of the update loop no longer stops the rest; the error screen shows the line number (ERR ... Lnnn), repeated note-repeat hits are checked before they are recorded
+- A pad hit that reaches the sound engine twice (host MIDI and the module message) is played once: a second note-on of the same pad within 35 ms is ignored
+- Song page: the title shows NEXT nn while a jump waits for the end of the bar, that step button blinks, and the running section shows BAR n/m
+- SAMPLER is an engine of its own: in the sound browser under SYNTHS (synth tracks) and DRUMS (drum tracks) - pick a WAV, then One / Reverse / Loop, start / end, voices, filter, envelope, LFO and effects like any sound
 
 ## Development history (steps before 1.0.0)
 
