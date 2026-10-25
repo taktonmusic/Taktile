@@ -4814,8 +4814,8 @@ function drawMix() {
 function songPlayIdx() { if (!songOn || !playing || songSent < 0) return -1; return songEntryAt(Math.max(0, Math.floor((gs - 1) / 16)))[0]; }
 function drawSong() {
     const L = songList.length, e = songList[songSlot] || [0, 4, 1, 0, 0, 0], cl = songClips(e), pl = songPlayIdx(), tot = songTotal();
-    const bs = (e[2] > 1 ? e[1] + 'x' + e[2] : e[1] + ' BARS');
-    titleBar((pl === songSlot ? '>' : '') + 'STEP ' + p2(songSlot + 1) + '/' + p2(L) + (e[5] ? ' ' + SONG_TAG[e[5]] : '') + (songOn ? (songLoop ? ' LOOP' : ' ONCE') : ''), bs);
+    let bs = (e[2] > 1 ? e[1] + 'x' + e[2] : e[1] + ' BARS'); if (songOn && playing && pl === songSlot) { const tt = songTotal(), bb = Math.floor(Math.max(0, gs - 1) / 16), q = (((bb + songOff) % tt) + tt) % tt; bs = 'BAR ' + (q - songStart(songSlot) + 1) + '/' + songLen(e); }
+    titleBar((pl === songSlot ? '>' : '') + (songNext >= 0 && songOn && playing ? 'NEXT ' + p2(songNext + 1) + ' ' : 'STEP ' + p2(songSlot + 1) + '/' + p2(L)) + (e[5] ? ' ' + SONG_TAG[e[5]] : '') + (songOn ? (songLoop ? ' LOOP' : ' ONCE') : ''), bs);
     for (let r = 0; r < 4; r++) {                                   /* tracks as rows, the clip this step plays is filled */
         const t = bank * 4 + r, y = 11 + r * 11, isSel = (t === sel);
         const nm = kind[t] ? 'DRM' + (slot[t] + 1) : 'S' + p2(t + 1);
@@ -5267,7 +5267,7 @@ function updateLeds() {
             if (loopHeld) { let pl = false, hs = false; if (i < NPAT) { for (let t = 0; t < NTRK; t++) { if (clipsCur[t] === i) pl = true; if (trackHasSteps(i, t)) hs = true; } } c = i >= NPAT ? 0 : (pl ? 120 : (hs ? 118 : 123)); }
             else c = i === sel ? 120 : (mutes[i] ? dimCol(trkCol(i)) : trkCol(i));
         }
-        else if (view === 31) c = (() => { const k = Math.floor(songSlot / 16) * 16 + i; return k < songList.length ? (k === songSlot ? 126 : (k === songPlayIdx() ? 120 : TAG_COL[songList[k][5]])) : (k === songList.length && k < SONG_MAX ? 124 : 0); })();
+        else if (view === 31) c = (() => { const k = Math.floor(songSlot / 16) * 16 + i; return k < songList.length ? (songNext >= 0 && k === songNext && songOn && playing ? ((Date.now() >> 8) & 1 ? 126 : 0) : (k === songSlot ? 126 : (k === songPlayIdx() ? 120 : TAG_COL[songList[k][5]]))) : (k === songList.length && k < SONG_MAX ? 124 : 0); })();
         else if (askKind >= 0 || exitDlg >= 0 || (view === 28 && broOpen)) c = 0;      /* the steps stay visible in every page, they can be pressed there too */
         else if (s < 0 || s >= LL()) c = 0;
         else if (heldStep >= 0 && heldStep < LL() && s > heldStep && s < heldStep + (steps[ed[sel]][ln()][heldStep][9] || 0)) c = 126;      /* hold a step: the steps it lasts over light up white */

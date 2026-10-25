@@ -43,6 +43,7 @@
 - Song page: a pad of an empty clip no longer creates or picks anything - the song only picks clips that exist in the clip view
 - Safer running: a failing part of the update loop no longer stops the rest; the error screen shows the line number (ERR ... Lnnn), repeated note-repeat hits are checked before they are recorded
 - A pad hit that reaches the sound engine twice (host MIDI and the module message) is played once: a second note-on of the same pad within 35 ms is ignored
+- Song page: the title shows NEXT nn while a jump waits for the end of the bar, that step button blinks, and the running section shows BAR n/m
 
 ## Development history (steps before 1.0.0)
 
