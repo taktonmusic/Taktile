@@ -3950,7 +3950,7 @@ static const double LFO_BEATS[13] = { 0.0, 32.0, 16.0, 8.0, 4.0, 2.0, 1.0, 0.5, 
 static inline float lfo_rnd(inst_t *s) { unsigned x = s->lfx_rng ? s->lfx_rng : 2463534242u; x ^= x << 13; x ^= x >> 17; x ^= x << 5; s->lfx_rng = x; return (float)(x & 0xFFFFFF) / 8388608.0f - 1.0f; }
 static float lfo_wave(inst_t *s, int t, int i, int sh, double tot) {
     const double fl = floor(tot); const float ph = (float)(tot - fl); const long cyc = (long)fl;
-    if ((sh == 5 || sh == 6) && cyc != s->lfx_cyc[t][i]) { s->lfx_cyc[t][i] = cyc; s->lfx_r0[t][i] = s->lfx_r1[t][i]; s->lfx_r1[t][i] = lfo_rnd(s); }
+    if (sh == 5 && cyc != s->lfx_cyc[t][i]) { s->lfx_cyc[t][i] = cyc; s->lfx_r0[t][i] = s->lfx_r1[t][i]; s->lfx_r1[t][i] = lfo_rnd(s); }
     switch (sh) {
     case 0: return sinf(6.2831853f * ph);
     case 1: return ph < 0.5f ? 4.0f * ph - 1.0f : 3.0f - 4.0f * ph;
@@ -3958,7 +3958,6 @@ static float lfo_wave(inst_t *s, int t, int i, int sh, double tot) {
     case 3: return 1.0f - 2.0f * ph;
     case 4: return ph < 0.5f ? 1.0f : -1.0f;
     case 5: return s->lfx_r1[t][i];
-    case 6: { const float u = ph * ph * (3.0f - 2.0f * ph); return s->lfx_r0[t][i] + (s->lfx_r1[t][i] - s->lfx_r0[t][i]) * u; }
     default: { const float u = 1.0f - ph; return 2.0f * u * u - 1.0f; }
     }
 }
