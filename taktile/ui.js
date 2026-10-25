@@ -3698,14 +3698,15 @@ function fbTree() {
         { n: 'MODAL', l: named(['MarimMid', 'VibesMid', 'HarpMid', 'KalimHi', 'Celesta', 'GlockHi', 'Tubular', 'BowlLo']), initFirst: true },
         { n: 'VOCAL', l: named(['ChoirAh', 'ChoirOh', 'MaleAh'].concat(['Granny', 'Grandson', 'Mother', 'Father', 'Kid', 'Teenager'])), initFirst: true },
         { n: 'SPEECH', l: named(['SpkEn', 'SpkEnLo', 'SpkEnHi', 'SpkDe', 'SpkDeLo', 'SpkDeHi']) },
-        { n: 'CHIP', l: named(['Pulse50', 'Pulse25', 'PwmSweep', 'ArpMaj', 'ChipBass']), initFirst: true } ] };
+        { n: 'CHIP', l: named(['Pulse50', 'Pulse25', 'PwmSweep', 'ArpMaj', 'ChipBass']), initFirst: true },
+        { n: 'SAMPLER', smp: true, eng: true } ] };      /* the sample player as an engine of its own: pick a WAV (one-shot, loop, reverse), then filter, envelope, LFO, effects like any sound */
     const byRole = { n: 'BY ROLE', kids: [['BASS', [19, 20, 21, 22, 74, 79]], ['LEAD', [26, 73, 80]], ['PLUCK', [23]], ['PAD + STRINGS', [25, 78]], ['KEYS + ORGAN', [24, 76, 77]], ['BELLS', [27]]].map(r => ({ n: r[0], l: (() => { const l = []; for (let t = 1064; t < TYPE_NAME.length; t++) if (r[1].indexOf(BASE_T[t]) >= 0 && !isSpk(t)) l.push(t); return l; })() })) };
     const dsy = (re) => { const l = []; for (let t = 1064; t < TYPE_NAME.length; t++) if (re.test(TYPE_NAME[t])) l.push(t); return l; };
     const dsyn = { n: 'DRUM SYNTHS', kids: [['KICKS', /^DKick/], ['SNARES', /^DSnr/], ['HATS', /^DHat/], ['CLAPS', /^DClap/], ['TOMS', /^DTom/], ['RIM + METAL', /^D(Rim|Clave|Cow|Metal)/]].map(x => ({ n: x[0], l: dsy(x[1]), init: true })) };
     const fxA = { n: 'AUDIO FX', fx: 'xfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] };       /* one flat list: turn = you hear it on the sound, click = keep */
     const fxM = { n: 'MIDI FX', fx: 'mfx', l: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] };
     const fxK = fbWantFx ? [fxA, fxM] : [];
-    const drums = { n: 'DRUMS', kindSw: 1, kids: [fbKitTree()].concat([fbStyles(), { n: 'BY TYPE', kids: [cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT), cat('PERCUSSION', 3), cat('FX', 4)].concat(nx) }, dsyn]) };
+    const drums = { n: 'DRUMS', kindSw: 1, kids: [fbKitTree()].concat([fbStyles(), { n: 'BY TYPE', kids: [cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT), cat('PERCUSSION', 3), cat('FX', 4)].concat(nx) }, dsyn, { n: 'SAMPLER', smp: true, eng: true }]) };
     const all = [{ n: 'ALL SOUNDS', l: TYPE_NAME.map((x, k) => k).filter(k => BASE_T[k] !== 359) }];
     const roleMap = { 'BASS': 'BASS', 'LEAD': 'LEAD', 'PLUCK': 'PLUCK + STABS', 'PAD + STRINGS': 'PADS + CHORDS', 'KEYS + ORGAN': 'KEYS + BELLS', 'BELLS': 'KEYS + BELLS' };
     const typed = fbSynGroups().map(g => ({ n: g.n, kids: g.kids.slice() }));      /* sorted by sound type (pad, lead, bass ...), not by genre: the new engines join each type as a NEW folder */
@@ -3724,12 +3725,12 @@ function fbSort(a) {                                       /* sounds, kits, samp
 function fbItems(node) {
     if (node.kids) return node.kids.map(k => ({ label: k.n, kid: k, cnt: fbCount(k) }));
     if (node.kits) return fbSort((node.slots || fbKitSlots()).map(sl => ({ label: kitName(sl), val: sl })));
-    if (node.smp) return fbSort(smpLoaded().map(i => ({ label: smpNames[i], val: i })));
+    if (node.smp) { const l = smpLoaded(); if (!l.length && node.eng) return [{ label: 'EMPTY SAMPLER', val: 0 }]; return fbSort(l.map(i => ({ label: smpNames[i], val: i }))); }      /* the SAMPLER engine without any file yet: start empty, record or load on the SAMPLE page */
     if (node.fx) return fbSort(node.l.map(t => ({ label: FX_LABEL[node.fx][t], val: t })));
     if (node.initFirst) return fbSort(node.l.map((t, k) => k === 0 ? mapT(t) : t).filter((t, k) => k === 0 || TYPE_KEEP[t]).map((t, k) => ({ label: k === 0 ? 'INIT' : TYPE_NAME[t], val: t, init: k === 0 })));
     return fbSort(node.l.filter(t => TYPE_KEEP[t]).map(t => ({ label: (node.init ? 'INIT ' : '') + TYPE_NAME[t], val: t })));
 }
-function fbCount(n) { return n.kids ? n.kids.reduce((a, k) => a + fbCount(k), 0) : (n.kits ? (n.slots || fbKitSlots()).length : (n.smp ? smpLoaded().length : n.l.filter(t => TYPE_KEEP[t]).length)); }
+function fbCount(n) { return n.kids ? n.kids.reduce((a, k) => a + fbCount(k), 0) : (n.kits ? (n.slots || fbKitSlots()).length : (n.smp ? Math.max(smpLoaded().length, n.eng ? 1 : 0) : n.l.filter(t => TYPE_KEEP[t]).length)); }
 function fbOpen() {
     fbShow = -1;
     fbApplied = null;

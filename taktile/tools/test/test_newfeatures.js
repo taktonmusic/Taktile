@@ -71,4 +71,7 @@ run('view = 31; songBlank = false; songList = [[0,4,1,0,0,0]]; songSlot = 0; ban
 run('songClips(songList[0])[3] = -1; songPadNew(6)'); ok(run('songList[0][6][3]') === -1, 'song: an empty pad does not pick or create a clip');
 run('steps[6][3][0] = [1, 100, 0, 0]; songPadNew(6)'); ok(run('songList[0][6][3]') === 6, 'song: a pad with a clip picks it');
 run('view = 0');
+run('setKind(0, 0); selectTrack(0); askKind = -1; view = 1; fbOpen(); fb.st = [{ node: fbTree(), i: 0 }]');
+ok(run('(function () { let c = 0; (function w(n) { if (n.eng) c++; if (n.kids) n.kids.forEach(w); })(fbTree()); return c; })()') === 2, 'SAMPLER is an engine in the SYNTHS and in the DRUMS list');
+run('fb = null');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);
