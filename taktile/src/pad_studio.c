@@ -817,7 +817,7 @@ typedef struct {
     int   llen[NLANE];                      /* own loop length of one lane (0 = follow the track) */
     int   playing, cur_pat, sel_track, gs;
     int   sub;                              /* tick inside the current 1/16 (0..5): the grid is 6 ticks per 1/16 so 1/32 and triplets are real steps */
-    unsigned pd_blk, pd_on[128];                                        /* pad note-ons seen (block counter): a pad that sends its note-on again while held (deeper press) does not trigger twice */
+    unsigned pd_blk, pd_on[128], dd_on[128];                                        /* pad note-ons seen (block counter): a pad that sends its note-on again while held (deeper press) does not trigger twice */
     int   tres[NTRK];                       /* ticks per step of a track's grid: 6 = 1/16 (default), 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8 */
     int   clip[NTRK], qclip[NTRK];   /* active clip per track (-1 = stopped), pending (-2 = none) */
     int   scq[NPAT], pend_on, pend_qm;   /* launch quantisation of one scene (0 = global setting) and the one used by the pending scene launch */
@@ -3017,6 +3017,14 @@ static int note_to_pad(int note) {
     return -1;
 }
 
+/* the same pad hit can reach the sound engine twice (host MIDI and the UI's own message): a second note-on for the same pad within ~35 ms is ignored */
+static int pad_dup(inst_t *s, int p, int vel) {
+    if (vel <= 0 || p < 0) return 0;
+    const int i = p & 127;
+    if (s->dd_on[i] && s->pd_blk - (s->dd_on[i] - 1) < 12u) return 1;
+    s->dd_on[i] = s->pd_blk + 1; return 0;
+}
+
 static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
     (void)source;
     inst_t *s = (inst_t *)instance;
@@ -3037,12 +3045,14 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
         if (s->pads_off == 5) {                                          /* CHORD mode: left 4 columns = single notes (no MIDI FX), right 4 columns = the chords of the same degrees */
             const int c4 = col & 3, w4 = 4;
             p = s->lay_s >= 3 ? 32 + c4 + (s->lay_s == 3 ? 5 : (s->lay_s == 4 ? 4 : 8)) * row : (s->lay_s == 0 ? c4 + 3 * row : (s->lay_s == 1 ? row * w4 + c4 : c4 + 7 * row));
+            if (pad_dup(s, p, vel)) return;
             sel_pad(s, p, vel, col < 4 ? 2 : 0);
             return;
         }
         p = s->lay_s >= 3 ? 32 + col + (s->lay_s == 3 ? 5 : (s->lay_s == 4 ? 4 : 8)) * row : (s->lay_s == 0 ? col + 3 * row : (s->lay_s == 1 ? row * 8 + col : col + 7 * row));
     }
     if (s->pads_off == 1) { if (!vel) sel_pad(s, p, 0, 0); return; }     /* UI owns the pads (session, steps, menus) */
+    if (pad_dup(s, p, vel)) return;
     sel_pad(s, p, vel, s->pads_off == 3 && rcol >= 4);      /* NOTE REPEAT: only the right 16 pads repeat (several at once), the left 16 play normally */
 }
 
@@ -3275,6 +3285,7 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "padsoff") == 0) { s->pads_off = atoi(val); if (s->pads_off == 1) rep_clear(s); return; }
     if (strcmp(key, "npad") == 0) {                /* "k,vel,rep" from the UI */
         int k = atoi(val); const char *c = strchr(val, ','); int vel = c ? atoi(c + 1) : 100; const char *c2 = c ? strchr(c + 1, ',') : NULL;
+        if (pad_dup(s, k, vel)) return;
         sel_pad(s, k, vel, c2 ? atoi(c2 + 1) : 0);
         return;
     }
