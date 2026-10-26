@@ -693,7 +693,7 @@ function drawCurveBox(key) {
     else if (key === 'drive') plot(t => { const x = t * 2 - 1, k = 1 + v * 9; return 0.5 + 0.5 * Math.tanh(k * x) / Math.tanh(k); });
 }
 function showToast(label, text, f) {
-    toastSeq++; label = tr(label); text = tr(text); toast = { label, text, f, ticks: slowKnobs ? 160 : (curveKey ? 70 : 30), ck: curveKey, nm: 1 }; curveKey = ''; needsRedraw = true;
+    toastSeq++; label = tr(label); text = tr(text); toast = { label, text, f, ticks: slowKnobs ? 300 : 170, ck: curveKey, nm: 1 }; curveKey = ''; needsRedraw = true;
     const e = undoStack.length ? undoStack[undoStack.length - 1] : null; if (e && (!e.lbl || e.k) && label !== 'UNDO' && label !== 'REDO') e.lbl = (String(label) + ' ' + String(text)).substring(0, 20);
 }
 
@@ -2823,7 +2823,7 @@ function drawTabsSimple() {                                    /* one row: the o
 }
 const TAB_NEW = true, TAB_Y = 17, TAB_RH = 23;                /* new track header: track + mode bar, then one row with all tiles (the open one with its page); the content starts at y 17 */
 const TAB_3 = { 1: 'PRE', 9: 'ENG', 3: 'MOD', 2: 'FLT', 38: 'FX', 46: 'BUS', 36: 'EUC', 27: 'MID', 28: 'SMP', 44: 'CHD', 53: 'LFO' };
-function toastInRow() { return !!toast && !SIMPLE && !menuOpen && askKind < 0 && exitDlg < 0 && !monOpen && !(bigOn && toast.ck) && !(toast.ck && CURVE_KEYS[toast.ck]); }      /* short messages sit in the dots row, right side */
+function toastInRow() { return !!toast && !SIMPLE && !menuOpen && askKind < 0 && exitDlg < 0 && !monOpen; }      /* short messages sit in the dots row, right side */
 let tabsNewDrawn = false;
 function drawTabsNew() {
     if (SIMPLE) { drawTabsSimple(); return; }
@@ -4963,12 +4963,15 @@ function drawSample() {
 }
 function drawSeq() {
     if (heldStep >= 0 && !recDown) { drawStepEdit(); return; }
-    titleBar('C' + (ed[sel] + 1) + '  ' + bpm + ' BPM', recArmed ? (ciBeats > 0 ? 'COUNT ' + ciBeats : (playing ? 'REC' : 'REC ARM')) : ((topModes[sel] === 1 ? 'RPT ' + REP_NAME[repRate] : TOP_NAMES[topModes[sel]]) + (playing ? ' >' : '')));
+    const modeTxt = (recArmed ? (ciBeats > 0 ? 'COUNT ' + ciBeats : (playing ? 'REC' : 'REC ARM')) : ((topModes[sel] === 1 ? 'RPT ' + REP_NAME[repRate] : TOP_NAMES[topModes[sel]]) + (playing ? ' >' : ''))).toUpperCase();
+    tabsNewDrawn = true;
+    { const cn = 'CLIP ' + (ed[sel] + 1), cw = cn.length * 4 + 6; NHskip = true; fill_rect(0, 0, cw, 9, 1); NHskip = false; txtS(3, 2, cn, 0); txtS(cw + 5, 2, bpm + ' BPM', 1); txtS(126 - modeTxt.length * 4, 2, modeTxt, 1); }      /* header like the tab strip: the clip as the white block, tempo, mode */
     let star = llen[ln()] ? '*' : '', gn = RES() === 6 ? '' : GRID_NAME[GRID_RES.indexOf(RES())] + ' ', pgTxt = gn + (LL() > PGN() ? (RES() === 6 ? 'BAR ' : 'P') + (stepPage + 1) + '/' + pageCount() + ' L' + LL() + star : 'L' + LL() + star);      /* every bar = 16 steps = one page */
     const barsTxt = (n, t) => { const b = Math.round(n / barSteps(t) * 10) / 10; return b + (b === 1 ? ' BAR' : ' BARS'); };
     if (recArmed) pgTxt = (LL() > PGN() ? 'BAR ' + (stepPage + 1) + '/' + pageCount() + ' ' : '') + barsTxt(LL(), sel);      /* while recording the length is counted in bars */
-    txt(0, 11, fit(p2(sel + 1) + ' ' + laneName() + (mutes[sel] ? ' M' : ''), 120 - tw(pgTxt)), 1);
-    txt(126 - tw(pgTxt), 11, pgTxt, 1);
+    { const inRow = toastInRow(), right = inRow ? (String(toast.text) ? String(toast.label) + ' ' + String(toast.text) : String(toast.label)).toUpperCase() : pgTxt.toUpperCase(), rmax = inRow ? 22 : 16;
+      const r2 = right.length > rmax ? right.substring(0, rmax) : right, left = (p2(sel + 1) + ' ' + laneName() + (mutes[sel] ? ' M' : '')).toUpperCase(), lmax = Math.floor((124 - r2.length * 4) / 4) - 1;
+      txtS(2, 11, left.length > lmax ? left.substring(0, lmax) : left, 1); txtS(126 - r2.length * 4, 11, r2, 1); fill_rect(0, 16, 128, 1, 1); }
     const cur = playing ? curStep(sel, LL()) : -1;
     for (let i = 0; i < 16; i++) {
         const s = btnStep(i), x = i * 8;
@@ -4981,8 +4984,8 @@ function drawSeq() {
         else if (st[0] && st[5]) fill_rect(x, 38, [0, 2, 3, 4, 6, 7, 7, 7][st[5]], 2, 1);      /* gate length of the step (nothing = auto) */
         if (s === cur) fill_rect(x, 36, 7, 2, 1);
         else if (i % 4 === 0) set_pixel(x + 3, 37, 1);
-        if (heldGrp.includes(s)) draw_rect(x > 0 ? x - 1 : 0, 15, x > 0 ? 9 : 8, 21, 1);
-        if (s === heldStep || (recDown && !playing && s === recHead % LL())) draw_rect(x > 0 ? x - 1 : 0, 15, x > 0 ? 9 : 8, 21, 1);
+        if (heldGrp.includes(s)) draw_rect(x > 0 ? x - 1 : 0, 17, x > 0 ? 9 : 8, 19, 1);
+        if (s === heldStep || (recDown && !playing && s === recHead % LL())) draw_rect(x > 0 ? x - 1 : 0, 17, x > 0 ? 9 : 8, 19, 1);
     }
     if (heldStep >= 0) {
         const st = stepAt(heldStep);
@@ -5564,7 +5567,7 @@ function drawCore() {
     if (fb && !menuOpen && askKind < 0 && exitDlg < 0) { drawFB(); return; }
     if (brwTicks > 0 && brw && !menuOpen && askKind < 0) { drawBrowse(); return; }
     if (spkUI) drawSpk(); else if (projUI) drawProj(); else if (monOpen) drawMon(); else if (exitDlg >= 0) drawExit(); else if (askKind >= 0) drawAsk(); else if (menuOpen) drawMenu(); else if (heldStep >= 0 && !recDown && stepWinView()) drawStepEdit(); else if (scopeLatch && view !== 42 && !(view === 28 && broOpen)) drawScope(); else if (view === 0) drawSeq(); else if (view === 40) drawHist(); else if (view === 42) drawScope(); else if (view === 51) drawLoad(); else if (view === 7) drawClips(); else if (view === 31) drawSong(); else if (view === 45) drawDevices(); else if (isHub(view)) drawHub(); else if (view === 20) drawMix(); else if (view === 28 && broOpen) drawBro(); else if (view === 28) { if (smpPage === 1) drawSlice(); else drawSample(); } else drawParams();
-    if (toast && bigOn && toast.ck && !menuOpen && askKind < 0 && exitDlg < 0 && !monOpen) drawBigValue(toast);
+    if (toast && bigOn && toast.ck && !menuOpen && askKind < 0 && exitDlg < 0 && !monOpen && !(tabsNewDrawn && toastInRow())) drawBigValue(toast);
     if (toast && !(tabsNewDrawn && toastInRow())) {
         /* small message box in the top right corner (name + value on one line, thin bar under it); the page stays visible */
         const vt = String(toast.text).toUpperCase(), lb = String(toast.label).toUpperCase();
@@ -5890,7 +5893,7 @@ globalThis.onMidiMessageInternal = function (data) {
     if (splashT0 > 0 && (data[2] | 0) > 0 && ((data[0] & 0xF0) === 0x90 || ((data[0] & 0xF0) === 0xB0 && data[1] !== 14 && !(data[1] >= 71 && data[1] <= 78)))) { splashEnd(); return; }
     viewItemsFix();
     const status = data[0] | 0, d1 = data[1] | 0, d2 = data[2] | 0, type = status & 0xF0;
-    if ((type === 0x90 || type === 0x80) && d1 < 10) { if (type === 0x90 && d2 > 0 && d1 < 8) { touchK = d1; touchT = 0; knobTouch(d1); } else if (d1 < 8 && touchK === d1) { touchK = -1; if (toast) toast.ticks = Math.max(toast.ticks, 260); } return; }
+    if ((type === 0x90 || type === 0x80) && d1 < 10) { if (type === 0x90 && d2 > 0 && d1 < 8) { touchK = d1; touchT = 0; knobTouch(d1); } else if (d1 < 8 && touchK === d1) { touchK = -1; if (toast) toast.ticks = Math.max(toast.ticks, 200); } return; }
     if (guideI >= 0) {
         if (type === 0xB0 && d2 > 0) {
             if (d1 === CC.JOG) { const dl = decodeDelta(d2); if (dl) { guideAcc += dl; if (Math.abs(guideAcc) >= 2) { guideMove(guideAcc > 0 ? 1 : -1); guideAcc = 0; } } }
