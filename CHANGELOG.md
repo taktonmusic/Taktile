@@ -2,6 +2,11 @@
 
 ## 1.0.0 (26 October 2026)
 - Back to the proven 1.6.5 program with only these changes
+- Recording into an empty clip: stopping with the Play button now gives the length you played too (it used to stay one bar too long, e.g. 48 instead of 32 steps); a downbeat played a little early no longer adds a bar, it goes to step 1
+- Sampler and synth tracks are polyphonic by default (Voices = Poly): a low and a high note can be held together
+- Arp rate: 1/4 and 1/2 added (slower than 1/8)
+- Scale Q runs once per turn instead of again and again while the knob keeps turning
+- Full Velocity: live pad hits now play at full velocity too, like the steps they record
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms)
 - Presets cut from 1468 to 420 clearly different sounds plus 36 new sounds = 456; sounds of old projects, favorites and kits become the most similar kept sound of the same synth; levels evened out inside every synth
 - Sound browser: the melodic synths are grouped into 6 groups
