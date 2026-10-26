@@ -51,9 +51,16 @@ const BASE_T = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24
 /* removed presets -> the most similar kept preset of the same synth (generated; same table as src/type_map.inc) */
 const TYPE_MAP = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,1218,387,32,33,243,36,36,1246,6,1226,5,282,465,43,44,486,294,47,492,512,506,1062,156,53,317,21,560,735,58,706,1274,23,62,24,902,25,26,339,27,1295,1028,29,1019,73,74,75,76,77,78,79,80,198,608,74,84,887,887,953,76,89,77,91,78,93,820,622,96,96,242,367,246,101,102,103,104,105,398,4,367,1457,379,421,112,421,6,1356,1240,117,1393,430,1394,440,44,1108,8,125,8,446,128,456,458,131,132,289,1397,135,475,137,138,12,140,13,142,1244,1366,14,14,1250,148,504,16,508,512,512,156,521,156,522,524,1045,29,1045,162,712,164,165,702,20,553,53,745,731,21,319,731,175,58,735,178,735,572,572,1130,1130,74,74,186,587,79,749,587,26,26,26,781,198,345,608,198,787,781,201,622,1266,204,204,1274,1274,208,209,23,24,1204,1204,874,902,1201,898,25,27,1295,27,1295,223,675,1010,1010,227,228,953,953,1211,1285,690,234,1120,78,1147,238,1144,367,1458,242,243,244,246,246,247,248,243,250,251,252,362,402,257,256,257,258,398,260,261,261,263,405,417,1239,1239,1356,421,112,405,430,273,430,430,1228,440,278,7,280,125,282,1142,1234,465,286,458,288,289,1380,1376,292,483,294,13,486,1364,1250,1101,300,301,302,303,1141,305,1062,1062,521,524,28,311,1045,540,702,315,546,317,317,319,175,558,178,323,571,831,1274,327,1168,1443,643,62,1443,1201,335,335,25,1151,339,339,790,1295,985,1295,345,345,787,929,227,349,887,579,1144,608,76,758,608,1285,1130,359,0,367,362,1461,244,1213,367,367,367,1214,367,367,1461,1214,374,2,248,377,32,379,380,381,33,383,263,383,386,387,389,389,390,391,1216,1214,243,243,1221,243,398,257,402,256,402,256,1239,405,421,421,6,1239,417,411,417,413,411,417,417,417,421,421,421,421,6,421,5,425,430,430,430,5,430,430,273,1226,1393,1393,5,430,430,5,440,441,7,7,444,7,446,282,280,125,1231,8,1231,8,125,1370,456,1372,458,458,128,1234,1372,1235,1372,465,10,10,10,469,1400,471,472,473,1377,475,1377,477,478,479,480,478,482,483,1245,142,486,486,294,486,294,13,492,495,494,495,14,14,1249,1250,1248,47,148,504,504,505,506,1141,508,16,512,508,512,16,17,521,1062,1062,521,1059,1062,521,522,524,524,525,1028,28,28,1424,1410,534,1045,29,534,29,1045,1045,1333,164,540,712,164,712,702,540,546,547,546,317,553,551,552,553,1337,319,319,21,558,175,560,21,562,21,733,735,22,567,568,571,22,571,572,74,758,74,84,758,758,579,186,1130,186,74,584,79,79,587,587,587,587,587,1168,1168,831,23,23,327,1274,1274,1274,23,327,327,198,781,787,608,608,345,198,802,198,787,783,787,1266,617,622,619,620,204,622,80,26,26,26,339,1151,1151,339,26,633,633,1204,643,1443,1204,643,1204,1204,1276,1204,643,902,1201,902,25,902,25,902,902,25,902,902,25,902,25,27,27,985,971,27,1295,27,27,1295,1295,75,929,1010,929,675,75,675,675,75,1010,1118,679,941,1211,941,228,76,953,690,688,688,1285,690,1120,1001,78,1144,1306,696,1147,1144,78,1333,1333,702,702,712,712,706,702,702,706,706,702,712,712,702,702,1163,74,74,84,74,579,74,186,724,724,1259,1337,1259,1337,558,731,735,733,734,735,323,571,568,178,547,546,547,547,546,745,317,747,748,749,749,751,749,587,754,755,74,84,758,758,74,758,1130,186,84,572,1163,572,572,74,74,74,26,26,1151,790,339,339,339,339,198,781,781,783,802,787,802,787,1151,1165,790,26,339,1151,26,1324,198,198,198,802,787,802,802,783,802,198,783,783,1263,787,802,802,1165,26,26,1151,339,339,818,819,820,820,619,204,620,204,826,831,826,831,826,831,831,23,831,831,831,831,208,1168,1094,1274,1274,1274,208,1274,1168,1168,826,1168,23,1168,209,831,1204,874,858,643,858,874,874,643,862,633,862,1443,24,1443,1443,1443,24,1443,862,633,874,24,1443,24,1204,24,929,929,1010,929,929,929,675,887,1314,1302,1201,902,1302,1302,902,1302,1314,1302,898,1302,1302,25,902,902,898,1302,906,1302,898,902,1201,898,25,25,25,902,25,25,25,25,929,929,75,675,924,1010,223,675,675,929,929,929,675,1010,1010,1010,953,1117,953,953,76,941,1211,953,944,944,1118,1118,948,948,948,1118,1211,953,941,955,679,1211,1120,959,688,964,1285,89,964,77,77,690,77,1285,27,971,985,27,27,27,27,1295,985,1295,1295,27,1295,1295,1295,985,1087,1087,1087,1087,971,27,238,78,1144,1144,1001,78,238,78,78,1001,1147,1003,238,78,1306,78,1010,1010,1010,1010,1012,675,1019,1015,1019,1019,1019,1019,1021,1021,1022,1023,524,1028,524,1424,1028,28,1030,1030,522,1030,28,1028,1028,28,1038,1412,1410,1045,311,1410,1045,1045,1046,305,16,512,16,1055,512,305,305,1055,156,1059,1059,1059,1062,1062,1062,1063,1094,208,1274,208,1094,27,1087,1071,1168,23,208,1274,27,1124,1087,1079,1087,1087,27,1124,1295,1087,27,1087,27,1295,1295,1094,208,1274,1094,208,208,1094,1098,1099,1100,1101,14,14,1243,1244,13,1389,1108,1109,505,1111,1108,1113,76,76,76,1117,1118,1285,1120,208,27,1295,1124,1124,208,208,1274,1130,1130,1182,751,1130,787,198,198,1302,1147,1243,521,1141,1142,1108,1144,1147,1147,1147,1148,25,1151,1151,1151,339,25,902,1156,1157,1158,1165,1160,1160,1162,1163,1163,1165,1168,209,1168,209,1168,1274,1172,17,1174,1175,421,1177,1178,1179,1130,74,1182,1130,74,1185,733,198,339,339,1151,26,1151,1298,1151,898,902,25,902,1201,898,1201,25,1274,1204,1295,76,1274,643,1124,1210,1211,1212,1213,1214,1215,1216,1217,1218,1219,1220,1221,1222,1223,1224,1225,1226,1227,1228,1229,1230,1231,1232,1233,1234,1235,1236,1237,1238,1239,1240,1241,1242,1243,1244,1245,1246,1247,1248,1249,1250,1251,1151,1151,1151,339,339,74,1333,1259,790,1274,1443,1263,902,1151,1266,339,339,74,339,985,74,25,1274,335,1276,339,25,76,1124,76,751,345,208,1285,902,1295,1151,1295,1182,1151,690,1443,1295,1295,1302,1302,1298,339,1147,208,1302,1302,335,902,1306,335,1302,902,1314,25,902,1147,1314,1274,1274,1274,1274,1274,1320,1274,1322,953,1324,1295,1326,1151,74,339,1274,902,1295,1333,1124,1201,1274,1337,1151,1458,1458,1458,1342,1342,1458,1342,1458,0,1458,1239,1356,1238,1356,1238,1239,1239,1356,1239,6,1238,1366,1366,1364,1364,1364,1365,1366,1244,282,125,1370,125,1372,458,1234,458,1376,1377,1380,473,1380,1376,1383,1383,1383,480,1389,7,7,1389,7,430,1394,1393,1394,1228,1398,1397,1398,1398,1400,289,1402,1402,1402,148,1406,148,1111,1409,1410,29,1412,1413,1410,1415,1410,1417,1418,1419,1420,1421,1422,1417,1424,522,1428,1428,1428,522,1431,1431,1432,1433,1433,1435,1436,1437,1333,1333,1130,1130,874,1443,1274,1274,208,208,27,1124,27,1087,208,1130,1295,1274,74,1457,1458,1459,1460,1461,1462,1463,1464,1465,1466,1467,1468,1469,1470,1471,1472,1473,1474,1475,1476,1477,1478,1479,1480,1481,1482,1483,1484,1485,1486,1487,1488,1489,1490,1491,1492,1493,1494,1495,1496,1497,1498,1499,1500,1501,1502,1503,1504,1505,1506,1507,1508,1509,1510];
 const TYPE_KEEP = TYPE_MAP.map((m, i) => m === i);
+/* readable preset names for the screen (the short names above stay the internal ids): Kick Hard, Warm Pad 3, Synth Snare Tight ... */
+const TYPE_DISP = (() => {
+  const W = { Ac:'Acoustic', Acd:'Acid', Add:'Additive', Ah:'Ah', Ana:'Analog', Arp:'Arp', Atm:'Atmosphere', Bel:'Bell', Bs:'Bass', Chd:'Chord', Cl:'Closed', Clik:'Click', Clk:'Click', Clp:'Clap', Cng:'Conga', Cow:'Cowbell', Crck:'Crack', Crd:'Chord', Crs:'Crash', Crsh:'Crash', Cym:'Cymbal', D:'Synth', De:'German', Dnb:'DnB', Dp:'Deep', Dx:'DX', En:'English', Ep:'Electric Piano', Fl:'Floor', Fst:'Fast', Fx:'FX', FM:'FM', Fm:'FM', Glch:'Glitch', Grv:'Groove', Hg:'Huge', Hlf:'Half', Hoov:'Hoover', Hrd:'Hard', Hse:'House', Imp:'Impact', Jzz:'Jazz', L:'Low', Ld:'Lead', Lng:'Long', Loos:'Loose', Lof:'Lo-Fi', Lo:'Low', Hi:'High', Mlt:'Mallet', Met:'Metal', Metl:'Metal', Nu:'New', Nz:'Noise', Oct:'Octave', Op:'Open', Org:'Organ', Ped:'Pedal', Pl:'Pluck', Pls:'Pulse', Pnc:'Punch', Pno:'Piano', Rck:'Rock', Rde:'Ride', Rev:'Reverse', Rez:'Resonant', Ris:'Rise', Rm:'Room', Rnd:'Round', Rumb:'Rumble', Rv:'Rave', Sb:'Sub', Sft:'Soft', Shak:'Shaker', Shk:'Shaker', Shr:'Short', Shrt:'Short', Sht:'Short', Snp:'Snap', Snr:'Snare', Spk:'Speech', Sqr:'Square', Squel:'Squelch', Stac:'Staccato', Stb:'Stab', Stk:'Stack', Str:'Strings', Strng:'Strings', Sw:'Sweep', Swm:'Swarm', Syn:'Synth', Tch:'Techno', Tght:'Tight', Tgt:'Tight', Thmp:'Thump', Thundr:'Thunder', Tn:'Tone', Tranc:'Trance', Trc:'Trance', Trn:'Trance', Trnc:'Cut', Trp:'Trap', Trem:'Tremolo', Tri:'Triangle', Wb:'Wobble', Wob:'Wobble', Wrm:'Warm', Wt:'Wavetable', Kck:'Kick', M:'Morph', Perc:'Percussion', Tamb:'Tambourine', Timp:'Timpani', Vox:'Vocal', Wurli:'Wurlitzer', Clav:'Clavinet', X:'', Set:'' , Shake:'Shaker', Elec:'Electric', Sizz:'Sizzle', Flut:'Flute', Semi:'Semi-Open', Half:'Half-Open', Tk:'Shot', Fi:'', Lo:'Low' }, OV = { EPiano: 'Electric Piano', EPsoft: 'Electric Piano Soft', EPno2: 'Electric Piano 2', EpSoft: 'Electric Piano Soft', SubBass: 'Sub Bass', SuperSaw: 'Super Saw', SuperSqr: 'Super Square', FmInit: 'FM Init', Fm4Organ: 'FM 4-Op Organ', HatCl: 'Closed Hat', HatOp: 'Open Hat', Sub808: 'Sub 808', Sub808Hi: 'Sub 808 High', PercFM: 'FM Percussion', HatOp909: 'Open Hat 909', Kick707: 'Kick 707', MKeyStb: 'Morph Keys Stab', MKeyOrg: 'Morph Keys Organ', MPadOrg: 'Morph Pad Organ', MBassWb: 'Morph Bass Wobble', MBassSb: 'Morph Bass Sub', DMetlInit: 'Synth Metal Init', WtPluck: 'Wavetable Pluck', WtMetal: 'Wavetable Metal', DKick808: 'Synth Kick 808', DSnr909: 'Synth Snare 909' , DSnrLoFi: 'Synth Snare Lo-Fi', DHatLoFi: 'Synth Hat Lo-Fi', DxEPiano: 'DX Electric Piano', KickHard: 'Kick Hard Alt', EpSoft: 'Electric Piano Soft 2', LoFi: 'Lo-Fi' };
+  const tok = s => s.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+/g) || [s];
+  const pretty = n => { if (OV[n]) return OV[n]; const out = []; for (const x of tok(n)) { if (/^\d+$/.test(x)) { out.push(x.length === 3 ? x : String(+x)); continue; } const w = W[x] !== undefined ? W[x] : x; if (w) out.push(w); } return out.join(' ').replace(/\s+/g, ' ').trim() || n; };
+  return TYPE_NAME.map(pretty);
+})();
 function mapT(v) { const i = Math.round(Number(v)); return i >= 0 && i < TYPE_MAP.length ? TYPE_MAP[i] : v; }
 const ENUMS = {
-    type: TYPE_NAME,
+    type: TYPE_DISP,
     wave: ['Auto','Saw','Square','Tri','Sine','Pulse','Pulse12','RampDn','HalfSin','Organ','Hollow','Fold','Stair','Digi','Vowel','Sync'],
     poly: ['Mono','Poly'],
     mfx: ['OFF','OCTV','CHRD','ARP','STRM','ECHO','RNDP','RNDV','COMP','SCAL','TRNS','DIAT'],
@@ -128,7 +135,7 @@ function drawBrowse() {                                    /* preset list: 5 row
     for (let q = -2; q <= 2; q++) {
         const k = b.i + q, y = 12 + (q + 2) * 10;
         if (k < 0 || k >= b.l.length) continue;
-        const nm = b.names ? (b.names[b.l[k]] || '') : TYPE_NAME[b.l[k]];
+        const nm = b.names ? (b.names[b.l[k]] || '') : TYPE_DISP[b.l[k]];
         const fv = (!b.names && favs.indexOf(b.l[k]) >= 0) ? '*' : ' ';
         if (q === 0) { fill_rect(0, y, 128, 10, 1); txt(4, y + 1, '>' + fv + mq(nm, 19), 0); } else txt(4, y + 1, (' ' + fv + nm).slice(0, 20), 1);
     }
@@ -239,7 +246,7 @@ function laneOf(t, k) { return kind[t] ? NTRK + slot[t] * 16 + k : t; }
 function ln() { return kind[sel] ? NTRK + slot[sel] * 16 + dsel[sel] : sel; }                  /* the lane (sound + steps) being edited */
 function laneTrk(l) { if (l < NTRK) return l; const d = (l - NTRK) >> 4; for (let t = 0; t < NTRK; t++) if (kind[t] && slot[t] === d) return t; for (let t = 0; t < NTRK; t++) if (slot[t] === d) return t; return 0; }
 function keyLane(k) { return (LFO_RE.test(k) || k === 'tkey' || k === 'tscl' || PI[k] === 45 || PI[k] === 46 || PI[k] === 51 || PI[k] === 52) ? sel : ln(); }                                         /* effects belong to the track, sounds to the lane */
-function laneName() { return kind[sel] ? 'D' + (dsel[sel] + 1) + ' ' + TYPE_NAME[Math.round(pads[ln()][0])] : TYPE_NAME[Math.round(pads[sel][0])]; }
+function laneName() { return kind[sel] ? 'D' + (dsel[sel] + 1) + ' ' + TYPE_DISP[Math.round(pads[ln()][0])] : TYPE_DISP[Math.round(pads[sel][0])]; }
 function tl(t) { if (kind[t]) return 'DRM' + (slot[t] + 1); let n = 1; for (let i = 0; i < t; i++) if (!kind[i]) n++; return 'SY' + n; }      /* track label: DRM1, SY1, SY2 ... */
 function trkName(t) { return kind[t] ? 'DRUM ' + (slot[t] + 1) : 'SYNTH'; }
 function getTV(t) { return kind[t] ? tv[t] : pads[t][PI.vol]; }
@@ -1156,7 +1163,7 @@ function doCapture() {                                  /* keep what was just pl
 }
 function toggleLaneMute(l) {
     lmutes[l] ^= 1; enqueue('lmute' + l, 'lmute', l + ',' + lmutes[l]); lmSent[l] = lmutes[l];
-    showToast('SOUND ' + ((l - NTRK) % 16 + 1) + ' ' + (TYPE_NAME[Math.round(pads[l][0])] || ''), lmutes[l] ? 'MUTED' : 'ON', lmutes[l] ? 0 : 1); markEdited();
+    showToast('SOUND ' + ((l - NTRK) % 16 + 1) + ' ' + (TYPE_DISP[Math.round(pads[l][0])] || ''), lmutes[l] ? 'MUTED' : 'ON', lmutes[l] ? 0 : 1); markEdited();
 }
 function toggleMute(t) {
     pSnap('mute', 0, 'm' + t); mutes[t] ^= 1; enqueue('mute' + t, 'mute', t + ',' + mutes[t]);
@@ -1588,7 +1595,7 @@ function fillHit(idx, on, vel) {
     if (fillHeld[idx]) dspSet('dhit', fillHeld[idx].l + ',0,0');
     fillHeld[idx] = { l: l }; recordHit(l, 0, v); logHit(l, 0, v); flushPad(l);
     dspSet('dhit', l + ',' + v + ',' + (roll ? rollCode(l) : 0));
-    showToast(roll ? 'ROLL' : 'FILL', TYPE_NAME[Math.round(pads[l][0])] || '', (idx & 7) / 7); needsRedraw = true;
+    showToast(roll ? 'ROLL' : 'FILL', TYPE_DISP[Math.round(pads[l][0])] || '', (idx & 7) / 7); needsRedraw = true;
 }
 function lfxSend() { let m = 0; for (let k = lfxStack.length - 1; k >= 0; k--) { const h = lfxHeld[lfxStack[k]]; if (h && h.m) { m = h.m; break; } } if (m !== lfxMode) { lfxMode = m; dspSet('lfx', String(m)); } }
 let lfxMode = 0;
@@ -1632,7 +1639,7 @@ function devList() {                                           /* only what is r
 function devCur() { const l = devList(); devRow = clamp(devRow, 0, l.length - 1); return l[devRow]; }
 function devItems() { const d = devCur(), ks = d.k ? DEV_PAR[d.k] : []; return ks.map(k => [k, LONG_NAME[k] || k, DEV_SHORT[k] || k]); }
 function devSync() { VIEW_ITEMS[45] = devItems(); }
-function devName(d) { if (d.add) return 'ADD ...'; const L = ln(); if (d.k === 'snd') return TYPE_NAME[Math.round(pads[L][0])] || '?'; return FX_LABEL[d.k][Math.round(pads[L][PI[d.k]])]; }
+function devName(d) { if (d.add) return 'ADD ...'; const L = ln(); if (d.k === 'snd') return TYPE_DISP[Math.round(pads[L][0])] || '?'; return FX_LABEL[d.k][Math.round(pads[L][PI[d.k]])]; }
 function openDevices() {
     if (view === 45) { view = devPrev; fb = null; acc.fill(0); needsRedraw = true; return; }
     if (askKind >= 0 || exitDlg >= 0 || fb) return;
@@ -2117,7 +2124,7 @@ const MENU_ITEMS = [
     ['Record on/off', () => { if (recArmed) recStopLen(); recArmed = !recArmed; growTrk.fill(false); showToast('REC', recArmed ? 'ARMED' : 'OFF', recArmed ? 1 : 0); }],
     ['Undo', () => doUndo()],
     ['Undo history', () => { menuOpen = false; navStack.push(16); histSel = 0; view = 40; }],
-    ['Favorite sound', () => { menuOpen = false; const t = Math.round(pads[ln()][0]), i = favs.indexOf(t); if (i >= 0) favs.splice(i, 1); else favs.push(t); markEdited(); showToast(TYPE_NAME[t], i >= 0 ? 'FAV OFF' : 'FAVORITE *', i >= 0 ? 0 : 1); }],
+    ['Favorite sound', () => { menuOpen = false; const t = Math.round(pads[ln()][0]), i = favs.indexOf(t); if (i >= 0) favs.splice(i, 1); else favs.push(t); markEdited(); showToast(TYPE_DISP[t], i >= 0 ? 'FAV OFF' : 'FAVORITE *', i >= 0 ? 0 : 1); }],
     ['Fill (1 bar)', () => { menuOpen = false; fillBar(); }],
     ['Follow action', () => folCycle(0)],
     ['Follow after', () => folCycle(1)],
@@ -2691,7 +2698,7 @@ function drumPad(idx, on, vel) {                          /* drum track: left 4x
         if (on && copyHeld) { padCopy(k); return; }
         if (on) {
             if (k !== dsel[sel]) { dsel[sel] = k; heldStep = -1; heldPad = -1; syncSel(); needsRedraw = true; markEdited(); }
-            if (shiftHeld && !copyHeld) { showToast('SOUND ' + (k + 1), TYPE_NAME[Math.round(pads[l][0])], k / 15); return; }          /* Shift + pad = select silently */
+            if (shiftHeld && !copyHeld) { showToast('SOUND ' + (k + 1), TYPE_DISP[Math.round(pads[l][0])], k / 15); return; }          /* Shift + pad = select silently */
             if (deleteHeld) {
                 const c = ed[sel]; snap(c, l); let had = false; for (let s = 0; s < MAXSTEP; s++) { if (steps[c][l][s][0]) had = true; steps[c][l][s] = [0, 100, 0, 0]; }
                 if (had) { qSeq(c, l); showToast('SOUND ' + (k + 1), 'STEPS CLEARED', 0); }
@@ -2735,6 +2742,7 @@ function delNote(L, semi) {                                 /* Delete + note pad
 }
 const padDn = {};
 function onPad(idx, on, vel) {
+    if (view === 28 && broOpen && askKind < 0 && !menuOpen) { if (on) broPreview(); return; }      /* sample browser: a pad tap plays the highlighted WAV, no click needed first */
     if (fb && askKind < 0 && on) {                          /* browser: the pads play at the preview volume */
         fbEnsure(); const fv = fullVel; vel = Math.max(1, Math.round((fv ? 127 : vel) * fbVol)); fullVel = false;
         try { onPadCore(idx, on, vel); } finally { fullVel = fv; } return;
@@ -3185,7 +3193,7 @@ function themedCell(x, y, label, value, f, cw, hotE, key) {
 function drawTabsMin() {                                       /* themed tab header: page name, a mark for the position */
     const tabs = trackTabs(), cur = Math.max(0, tabIndex(tabs)), th = uiTheme;
     let nm = TAB_SHORT[tabs[cur]];
-    if (tabs[cur] === 1) nm = TYPE_NAME[Math.round(pads[ln()][0])] || nm;           /* first page: the title is the preset that is loaded right now */
+    if (tabs[cur] === 1) nm = TYPE_DISP[Math.round(pads[ln()][0])] || nm;           /* first page: the title is the preset that is loaded right now */
     const num = String(cur + 1), nw = num.length * 4 + 3, pg = tabPg(tabs[cur]), pt = pg[0] + '/' + pg[1], pw = pt.length * 4;
     nm = hfFit(th === 5 ? '[' + nm + ']' : nm, 126 - (tabs.length * 6 - 3) - 6 - nw - pw - 3);
     txtS(2, 2, num, 1); txtH(2 + nw, 1, nm, 1); txtS(126 - (tabs.length * 6 - 3) - 4 - pw, 2, pt, 1);
@@ -3984,6 +3992,8 @@ function fbTree() {
     const all = [{ n: 'ALL SOUNDS', l: TYPE_NAME.map((x, k) => k).filter(k => BASE_T[k] !== 359) }];
     const roleMap = { 'BASS': 'BASS', 'LEAD': 'LEAD', 'PLUCK': 'PLUCK + STABS', 'PAD + STRINGS': 'PADS + CHORDS', 'KEYS + ORGAN': 'KEYS + BELLS', 'BELLS': 'KEYS + BELLS' };
     const typed = fbSynGroups().map(g => ({ n: g.n, kids: g.kids.slice() }));      /* sorted by sound type (pad, lead, bass ...), not by genre: the new engines join each type as a NEW folder */
+    const markSyn = n => { if (n.kids) n.kids.forEach(markSyn); else if (n.l && !n.fx && !n.smp && !n.mine) n.synInit = true; };      /* every synth preset list starts with an INIT sound */
+    typed.forEach(g => { if (/^(BASS|LEAD|PLUCK|PADS|KEYS|BRASS)/.test(g.n)) markSyn(g); });
     const sounds = { n: 'SOUNDS', kindSw: 0, kids: typed.concat([{ n: 'MORE', kids: nx.concat([cat('FX', 4), cat('PERCUSSION', 3), cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT)], all) }]) };
     insts.n = 'SYNTHS'; insts.kindSw = 0; { const q = insts.kids.findIndex(k => k.eng); if (q >= 0) insts.kids.splice(q, 1); }
     /* the same start for every track, like the question for a new track: SYNTHS | DRUMS | SOUNDS, each opens its list; picking the other kind switches the track */
@@ -4003,10 +4013,11 @@ function fbItems(node) {
     if (node.fx) return fbSort(node.l.map(t => ({ label: FX_LABEL[node.fx][t], val: t })));
     if (node.initFirst) {      /* the INIT entry is the engine's own Init sound (never a removed preset mapped onto something else); families without one just list their sounds */
         const f = node.l[0], isI = /Init$/.test(TYPE_NAME[f] || ''), seen = {};
-        const rest = node.l.filter((t, k) => !(isI && k === 0) && TYPE_KEEP[t] && !seen[t] && (seen[t] = 1)).map(t => ({ label: TYPE_NAME[t], val: t }));
+        const rest = node.l.filter((t, k) => !(isI && k === 0) && TYPE_KEEP[t] && !seen[t] && (seen[t] = 1))  .map(t => ({ label: TYPE_DISP[t], val: t }));
         return fbSort((isI ? [{ label: 'INIT', val: f, init: true }] : []).concat(rest));
     }
-    return fbSort(node.l.filter(t => TYPE_KEEP[t]).map(t => { const ii = node.init && /^D.*Init$/.test(TYPE_NAME[t]); return { label: ii ? 'INIT' : (node.init ? 'INIT ' : '') + TYPE_NAME[t], val: t, init: ii || undefined }; }));
+    if (node.synInit) { const li = node.l.filter(t => TYPE_KEEP[t]).map(t => ({ label: TYPE_DISP[t], val: t })), ai = tIdx('AnaInit'); return fbSort(li).filter(x => x.val !== ai).length ? [{ label: 'INIT', val: ai, init: true }].concat(fbSort(li)) : li; }
+    return fbSort(node.l.filter(t => TYPE_KEEP[t]).map(t => { const ii = node.init && /^D.*Init$/.test(TYPE_NAME[t]); return { label: ii ? 'INIT' : (node.init ? 'INIT ' : '') + TYPE_DISP[t], val: t, init: ii || undefined }; }));
 }
 function fbCount(n) { if (n.mine) { presetsLoad(); return userPre.length; } return n.kids ? n.kids.reduce((a, k) => a + fbCount(k), 0) : (n.kits ? (n.slots || fbKitSlots()).length : (n.smp ? Math.max(smpLoaded().length, n.eng ? 1 : 0) : n.l.filter(t => TYPE_KEEP[t]).length)); }
 function fbOpen() {
@@ -4190,7 +4201,7 @@ let fbLK = 0;
 function fbLetter(dl) {                                      /* knob 7: the list jumps to the next / previous first letter */
     fbShow = -1;
     const top = fb.st[fb.st.length - 1], its = fbItems(top.node); if (its.length < 2) return;
-    const ch = k => String(its[k].label || ' ').charAt(0).toUpperCase(), cur = ch(top.i);
+    top.i = clamp(top.i, 0, its.length - 1); const ch = k => String((its[k] || {}).label || ' ').charAt(0).toUpperCase(), cur = ch(top.i);
     let k = top.i;
     if (dl > 0) { while (k < its.length - 1 && ch(k) === cur) k++; }
     else { while (k > 0 && ch(k) === cur) k--; if (ch(k) !== cur) { const L = ch(k); while (k > 0 && ch(k - 1) === L) k--; } else k = 0; }
@@ -4302,7 +4313,7 @@ function kitSoundNames(sl) {                               /* the 16 pad sounds 
     for (let j = 0; j < 16; j++) {
         let n = '';
         if (sl >= 16) n = (FACTORY[sl - 16] && FACTORY[sl - 16][1][j]) || '';
-        else { const k = kits && kits[sl]; n = k && k.r && k.r[j] ? (TYPE_NAME[Math.round(k.r[j][0])] || '') : ''; }
+        else { const k = kits && kits[sl]; n = k && k.r && k.r[j] ? (TYPE_DISP[Math.round(k.r[j][0])] || '') : ''; }
         n = n.replace(/^(Ac|Fx|Tn|FM|Fm|Chip|Noise)(?=[A-Z])/, '').replace(/^D(?=[A-Z][a-z])/, '');
         out.push(n.substring(0, 3));
     }
@@ -5419,12 +5430,12 @@ function drawParams2() {
         if (view === 2) { const TN = tabStrip && TAB_NEW, cx = (i & 3) * 32 + 1, cy = (TN ? 27 : 25) + (i >> 2) * (TN ? 18 : 20); txt(cx + 1, cy, fit(lab, 30), 1); txtB(cx + 1, cy + 9, fit(vs, 30), 1); fill_rect(cx + 1, cy + 18, 28, 1, 1); const w = Math.round(28 * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 1, cy + 17, w, 2, 1); continue; }
         const isHot = hot.t > 0 && hot.v === view && hot.i === i;
         if (((tabStrip && TAB_NEW) || sysTile) && cw >= 32 && ps !== 2 && ps !== 3) {       /* one tile look for every page and every theme: the one of the ENGINE page */
-            const nm = view === 1 && items[i][0] === 'type' ? (TYPE_NAME[Math.round(v)] || vs) : (view === 1 && items[i][0] === 'wave' ? (ENUMS.wave[Math.round(v)] || vs) : vs);
+            const nm = view === 1 && items[i][0] === 'type' ? (TYPE_DISP[Math.round(v)] || vs) : (view === 1 && items[i][0] === 'wave' ? (ENUMS.wave[Math.round(v)] || vs) : vs);
             engTile(x, y + 2, cw, lab, String(nm), fr, isHot); continue;
         }
         if (view === 1 && items[i][0] === 'wave' && cw >= 32) { drawPresetBox(x, y, cw, (ENUMS.wave[Math.round(v)] || vs)); continue; }
         { const si = (ps !== 3 && cw >= 32) ? selInfo(items[i][0], v) : null; if (si) { cellSel(x, y, lab, vs, si[0], si[1], cw, isHot, false); continue; } }
-                if (view === 1 && items[i][0] === 'type' && cw >= 32) { drawPresetBox(x, y, cw, TYPE_NAME[Math.round(v)] || vs); continue; }
+                if (view === 1 && items[i][0] === 'type' && cw >= 32) { drawPresetBox(x, y, cw, TYPE_DISP[Math.round(v)] || vs); continue; }
         if (uiMin && cw >= 32 && (ps === 0 || ps === 1 || ps === 4) && view !== 24 && view !== 27) { themedCell(x, y, lab, vs, fr, cw, isHot, items[i][0]); continue; }
         if (ps === 2) { const n = items.length; per = n > 4 ? 2 : 1; cw = 128 / per; rh = Math.min(15, Math.floor(50 / Math.ceil(n / per))); x = (i % per) * cw; y = 14 + ((i / per) | 0) * rh; cellList(x, y, lab, vs, fr, cw, rh, isHot); }
         else if (ps === 1) { if (isHot) cell(x, y, lab, vs, fr, cw); else cellInv(x, y, lab, vs, fr, cw); }
@@ -5872,7 +5883,7 @@ globalThis.init = function () {
 };
 
 function syncPadsOff() {
-    const want = (menuOpen || askKind >= 0 || shiftHeld || view === 7 || view === 31 || view === 20 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : (topModes[sel] === 3 ? 4 : (chordOn() ? 5 : 0)));
+    const want = (menuOpen || askKind >= 0 || (view === 28 && broOpen) || shiftHeld || view === 7 || view === 31 || view === 20 || kind[sel] || topModes[sel] === 2) ? 1 : (topModes[sel] === 1 ? 3 : (topModes[sel] === 3 ? 4 : (chordOn() ? 5 : 0)));
     if (want !== padsOffSent) { padsOffSent = want; dspSet('padsoff', String(want)); }
 }
 function hostSuspend() {                                   /* keep Taktile running in the background (the sequencer keeps playing while you browse Move) */
