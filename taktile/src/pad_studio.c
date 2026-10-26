@@ -116,7 +116,7 @@ static const pd_t PD[PP_N] = {
     { "dly",   "Delay",  0, 0.00f },
     { "rvb",   "Reverb", 0, 0.00f },
     { "arp",   "Arp",    6, 0.0f },
-    { "rate",  "Rate",   4, 1.0f },
+    { "rate",  "Rate",   8, 1.0f },
     { "crush", "Crush",  0, 0.00f },
     { "locut", "LowCut", 0, 0.00f },
     { "ring",  "Ring",   0, 0.00f },
@@ -209,8 +209,8 @@ static const char *TYPE_NAME[T_COUNT] = {
 static const char *WAVE_NAME[16] = { "Auto", "Saw", "Square", "Tri", "Sine", "Pulse", "Pulse12", "RampDn", "HalfSin", "Organ", "Hollow", "Fold", "Stair", "Digi", "Vowel", "Sync" };
 static const char *POLY_NAME[2] = { "Mono", "Poly" };
 static const char *ARP_NAME[6]   = { "Off", "Up", "Down", "UpDn", "Rand", "Roll" };
-static const char *RATE_NAME[4]  = { "1/8", "1/16", "1/16T", "1/32" };
-static const float RATE_SPB[4]   = { 2.0f, 4.0f, 6.0f, 8.0f };
+static const char *RATE_NAME[8]  = { "1/8", "1/16", "1/16T", "1/32", "1/4", "1/2", "1/8T", "1/1" };
+static const float RATE_SPB[8]   = { 2.0f, 4.0f, 6.0f, 8.0f, 1.0f, 0.5f, 3.0f, 0.25f };
 static const float RPT_SPB[16]   = { 0.5f, 0.6667f, 1.0f, 1.3333f, 1.5f, 2.0f, 2.6667f, 3.0f, 4.0f, 5.3333f, 6.0f, 8.0f, 12.0f, 16.0f, 24.0f, 32.0f };   /* note repeat rates: steps per beat, slow to fast */
 static const char *KEY_NAME[12]  = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 #define NSC 28
@@ -838,6 +838,7 @@ typedef struct {
     int   scq[NPAT], pend_on, pend_qm;   /* launch quantisation of one scene (0 = global setting) and the one used by the pending scene launch */
     float bpm, swing;
     float pump_ph, wob_ph;
+    int fullvel;        /* FULL VEL: every live pad hit plays at 127, like the step it records */
     float mf_z[2][2], mf_a, comp_env; int mf_mode;
     float eq_c[NLANE][3][5], eq_z[NLANE][3][2][2], eq_g[NLANE][3], eq_p[NLANE][4], eq_og[NLANE], eq_ogp[NLANE]; int eq_on[NLANE];       /* per-sound 3-band EQ (low shelf, peak, high shelf) */
     float rm_buf[4][4096], rm_lp, rm_env, rm_hp; int rm_w, rm_act;       /* kick rumble bus: dark comb reverb, ducked by the kicks */
@@ -1398,6 +1399,7 @@ static const lay_t LAYOUT[NPADS] = {
 static void reset_pad(inst_t *s, int p) {
     for (int k = 0; k < PP_N; k++) s->pp[p][k] = PD[k].def;
     const lay_t *l = &LAYOUT[p < NTRK ? p : NTRK + ((p - NTRK) & 15)];
+    if (p < NTRK) s->pp[p][PP_POLY] = 1.0f;      /* synth / sampler tracks play several notes at once */
     s->pp[p][PP_TYPE] = (float)TYPE_MAP[(l->type >= 0 && l->type < T_COUNT) ? l->type : 0];
     s->pp[p][PP_TUNE] = l->tune;
     s->pp[p][PP_DECAY] = l->decay;
@@ -2706,7 +2708,7 @@ static int arp_offset(inst_t *s, int p, int n) {
 
 static float arp_step_samples(inst_t *s, int p) {
     int r = (int)(s->pp[p][PP_RATE] + 0.5f);
-    if (r < 0) r = 0; if (r > 3) r = 3;
+    if (r < 0) r = 0; if (r > 7) r = 7;
     return s->sr * 60.0f / s->bpm / RATE_SPB[r];
 }
 
@@ -3089,6 +3091,7 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
     if (p < 0) return;
     const int rcol = p & 7;
     int vel = (st == 0x90 && msg[2] > 0) ? msg[2] : 0;
+    if (vel > 0 && s->fullvel) vel = 127;
     if (s->pads_off == 4 && msg[1] >= 68 && msg[1] <= 99) return;      /* LIVE FX: every pad belongs to the UI (effect pads on top, fill hits at the bottom) - no notes of the synth */
     if (msg[1] >= 68 && msg[1] <= 99) {                                 /* a Move pad: the same layout as the UI (MOVE rows 3 degrees apart, SEQ, OCT, CHR) */
         const int col = p & 7, row = p >> 3;
@@ -3126,7 +3129,7 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
         float v;
         if (k == PP_TYPE)      { int e = enum_index(val, TYPE_NAME, T_COUNT); if (e < 0) return; v = (float)TYPE_MAP[e]; }
         else if (k == PP_ARP)  { int e = enum_index(val, ARP_NAME, 6);        if (e < 0) return; v = (float)e; }
-        else if (k == PP_RATE) { int e = enum_index(val, RATE_NAME, 4);       if (e < 0) return; v = (float)e; }
+        else if (k == PP_RATE) { int e = enum_index(val, RATE_NAME, 8);       if (e < 0) return; v = (float)e; }
         else if (k == PP_WAVE) { int e = enum_index(val, WAVE_NAME, 16);      if (e < 0) return; v = (float)e; }
         else if (k == PP_POLY) { int e = enum_index(val, POLY_NAME, 2);       if (e < 0) return; v = (float)e; }
         else if (k == PP_DTIME) { int e = enum_index(val, DT_NAME, 5);        if (e < 0) return; v = (float)e; }
@@ -3336,6 +3339,7 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "laysyn") == 0) { int v = atoi(val); s->lay_s = v < 0 ? 0 : (v > 5 ? 5 : v); return; }
     if (strcmp(key, "padoct") == 0) { int o = atoi(val); s->pad_oct = o < -36 ? -36 : (o > 36 ? 36 : o); return; }
     if (strcmp(key, "padsoff") == 0) { s->pads_off = atoi(val); if (s->pads_off == 1) rep_clear(s); return; }
+    if (strcmp(key, "fullvel") == 0) { s->fullvel = atoi(val) ? 1 : 0; return; }
     if (strcmp(key, "npad") == 0) {                /* "k,vel,rep" from the UI */
         int k = atoi(val); const char *c = strchr(val, ','); int vel = c ? atoi(c + 1) : 100; const char *c2 = c ? strchr(c + 1, ',') : NULL;
         if (pad_dup(s, k, vel)) return;
@@ -3499,7 +3503,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             if (end == q) break;
             if (k == PP_TYPE) v = (float)TYPE_MAP[(int)clampf(v + 0.5f, 0.0f, (float)(T_COUNT - 1))];
             else if (k == PP_ARP) v = clampf(v, 0.0f, 5.0f);
-            else if (k == PP_RATE) v = clampf(v, 0.0f, 3.0f);
+            else if (k == PP_RATE) v = clampf(v, 0.0f, 7.0f);
             else if (k == PP_WAVE) v = clampf(v, 0.0f, 15.0f);
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);
@@ -3525,7 +3529,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             if (end == q) break;
             if (k == PP_TYPE) v = (float)TYPE_MAP[(int)clampf(v + 0.5f, 0.0f, (float)(T_COUNT - 1))];
             else if (k == PP_ARP) v = clampf(v, 0.0f, 5.0f);
-            else if (k == PP_RATE) v = clampf(v, 0.0f, 3.0f);
+            else if (k == PP_RATE) v = clampf(v, 0.0f, 7.0f);
             else if (k == PP_WAVE) v = clampf(v, 0.0f, 15.0f);
             else if (k == PP_POLY) v = v > 0.5f ? 1.0f : 0.0f;
             else if (k == PP_DTIME) v = clampf(v, 0.0f, 4.0f);

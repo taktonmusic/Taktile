@@ -1,0 +1,15 @@
+const { ctx, run } = require('./harness.js');
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+ctx.init && ctx.init(); T(600);
+run('splashOn=false;splashT0=0;chosen[1]=1;askKind=-1;setKind(1,1);selectTrack(1);for(let i=0;i<3;i++){smpInfo[i]=[44100,44100,1];} view=28;smpPage=1');
+run('steps[ed[sel]][laneOf(sel,6)][0][0]=1');
+run('slN=4;slm=[0,0.25,0.5,0.75];sliceApply()'); T(3);
+const m = k => run('lmutes[laneOf(sel,' + k + ')]');
+ok(m(0) === 0 && m(3) === 0, 'slice pads 1-4 sound');
+ok(m(4) === 1 && m(15) === 1, 'pads 5-16 silent');
+run('slN=2;slm=[0,0.5];sliceApply()');
+ok(m(2) === 1 && m(6) === 0, 'pad with notes stays on, empty ones muted');
+run('slN=8;slm=[0,.1,.2,.3,.4,.5,.6,.7];sliceApply()');
+ok(m(5) === 0 && m(8) === 1, 'more slices unmute again');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

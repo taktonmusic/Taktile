@@ -1,0 +1,14 @@
+const { ctx, run } = require('./harness.js');
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+ctx.init && ctx.init(); T(300); run('splashT0 = 0');
+run('chosen[0] = 1; askKind = -1; selectTrack(0); setKind(0, 0); selectTrack(0); askKind = -1; view = 1; userPre = []; host_write_file("/data/UserData/schwung/taktile-presets.json", "[]")');
+run('setLaneP(0, "cut", 0.37); setLaneP(0, "decay", 0.81)');
+run('fbOpen(); const r = fb.st[0].node; const j = r.kids.findIndex(k => k.n === "MY PRESETS"); fb.st = [{ node: r, i: j }]; fbClick();');
+ok(run('fb && fb.st.length === 2'), 'MY PRESETS folder opens');
+run('fb.st[1].i = 0; fbClick()');
+ok(run('userPre.length') === 1, 'click on SAVE stores one preset (' + run('userPre.length') + ')');
+run('setLaneP(0, "cut", 0.9); setLaneP(0, "decay", 0.1)');
+run('fbOpen(); const r2 = fb.st[0].node; fb.st = [{ node: r2, i: r2.kids.findIndex(k => k.n === "MY PRESETS") }]; fbClick(); fb.st[1].i = 1; fbClick()');
+ok(Math.abs(run('pads[0][PI.cut]') - 0.37) < 0.01 && Math.abs(run('pads[0][PI.decay]') - 0.81) < 0.01, 'loading it brings the knobs back (' + run('pads[0][PI.cut].toFixed(2)') + ', ' + run('pads[0][PI.decay].toFixed(2)') + ')');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

@@ -1,0 +1,12 @@
+const { ctx, run } = require('./harness.js');
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+ctx.init && ctx.init(); T(300); run('splashT0 = 0');
+run('chosen[0] = 1; askKind = -1; selectTrack(0); setKind(0, 0); selectTrack(0); askKind = -1; view = 0'); T(5);
+run('for (const l of lanesOf(0)) for (let c = 0; c < NPAT; c++) steps[c][l] = steps[c][l].map(() => [0, 100, 0, 0, 0, 0, 0, 0]); qAmt = 100; qGrid = 3');
+run('steps[ed[0]][0][4] = [1, 100, 0, 0, 0, 0, 20, 0]; steps[ed[0]][0][9] = [1, 100, 0, 0, 0, 0, 13, 0]');
+run('opTimeQ()');
+ok(run('steps[ed[0]][0][4][6]') === 0 && run('steps[ed[0]][0][9][6]') === 0, 'QUANTIZE 100 % moves the notes onto the grid (' + run('steps[ed[0]][0][4][6]') + ',' + run('steps[ed[0]][0][9][6]') + ')');
+run('steps[ed[0]][0][4] = [1, 100, 0, 0, 0, 0, 10, 0]; qAmt = 50; opTimeQ()');
+ok(run('steps[ed[0]][0][4][6]') === 5, '50 % moves halfway (' + run('steps[ed[0]][0][4][6]') + ')');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

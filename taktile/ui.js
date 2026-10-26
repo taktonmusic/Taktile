@@ -164,8 +164,7 @@ function jogFirst(dl) {
     const key = items[0][0], delta = Math.sign(dl) * Math.min(Math.abs(dl), 3), ts0 = toastSeq;
     if (editParam(scopeOf(key), key, delta, 0)) {
         markEdited(); if (toastSeq !== ts0) return;
-        if (!bigOn && !CURVE_KEYS[key]) { needsRedraw = true; return; }
-        const v2 = getVal(scopeOf(key), key); curveKey = key; showToast(fullLabel(view, 0, items).toUpperCase(), fmtVal(key, v2), fracVal(key, v2)); if (toast) toast.nm = 1;
+        const v2 = getVal(scopeOf(key), key); if (bigOn || CURVE_KEYS[key]) curveKey = key; showToast(fullLabel(view, 0, items).toUpperCase(), fmtVal(key, v2), fracVal(key, v2)); if (toast) toast.nm = 1;
     }
 }
 function padView(v) { return v === 53 || v === 50 || v === 43 || v === 30 || v === 38 || v === 39 || v === 46 || v === 36 || (v >= 1 && v <= 3) || v === 5 || v === 6 || v === 9 || v === 14 || v === 19 || v === 24 || v === 26 || v === 27; }
@@ -221,7 +220,7 @@ let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
 /* ---- state ---- */
 let pads = [], master = MASTER_DEF.slice();
 let steps = [];                 /* [pat][trk][step] = [on, vel, semi, prob] */
-const growP0 = new Array(NTRK).fill(0), growMax = new Array(NTRK).fill(0);
+const growP0 = new Array(NTRK).fill(0), growMax = new Array(NTRK).fill(0), growEdge = new Array(NTRK).fill(0);      /* growEdge: the last hit of the take that landed exactly on the first step of a later bar (a downbeat played a little early) */
 const growTrk = new Array(NTRK).fill(false), growG0 = new Array(NTRK).fill(0);            /* auto length: a clip recorded from empty grows by 16 steps whenever you play into its last beat */
 let tres = new Array(NTRK).fill(6);                       /* ticks per step of each track's grid: 6 = 1/16, 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8 */
 let lens = new Array(NTRK).fill(16), mutes = new Array(NTRK).fill(0), lmutes = new Array(NLANE).fill(0), lmSent = new Array(NLANE).fill(0);   /* lmutes = per-sound mute of the drum pads */
@@ -292,7 +291,7 @@ function laneHas(p, l) { return !!steps[p][l] && steps[p][l].some(s => s[0]); }
 function activeLanes() { const a = []; for (let t = 0; t < NTRK; t++) a.push(t); for (let t = 0; t < NTRK; t++) if (kind[t]) for (const l of lanesOf(t)) a.push(l); return a; }
 function defaultPads() {
     const lay = []; for (let l = 0; l < NLANE; l++) lay.push(l < NTRK ? LAYOUT[l] : DRUM_LAYOUT[(l - NTRK) & 15]);
-    return lay.map((l, li) => { const a = [l[0], 0.8, 0.5, l[1], l[2], 1.0, 0.0, li >= NTRK ? 0 : l[5], li >= NTRK ? 0 : l[6], l[3], l[4], 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]; while (a.length < PK.length) a.push(defOf(a.length)); if (li < NTRK) a[PI.poly] = 1; return a; });      /* tracks start POLY: several notes at once */
+    return lay.map((l, li) => { const a = [l[0], 0.8, 0.5, l[1], l[2], 1.0, 0.0, li >= NTRK ? 0 : l[5], li >= NTRK ? 0 : l[6], l[3], l[4], 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]; while (a.length < PK.length) a.push(defOf(a.length)); if (li < NTRK) a[PI.poly] = 1; return a; });      /* synth tracks start polyphonic (Voices = Poly); drum sounds keep their own one-voice behaviour */
 }
 function hex2(n) { return (n < 16 ? '0' : '') + n.toString(16); }
 function encStep(st) {                                    /* 12 hex chars: on+vel, prob, semi+64, ratchet|gate<<2|cond<<5, nudge, lock. The 4 spare bits (prob bits 5-6, nudge bit 7, lock bit 7) hold the exact step length 1..15 */
@@ -377,7 +376,7 @@ function applyClipSound(t, c) {                         /* UI follows the clip: 
     ensureCs();
     for (const l of lanesOf(t)) { const v = pads[l][1], p = pads[l][2]; pads[l] = csnd[c][l].slice(); pads[l][1] = v; pads[l][2] = p; }
 }
-function padStrL(l, a) { return padStr(a); }      /* drum sounds keep their delay and reverb sends when the sound is sent as a whole (clip change, load) */
+function padStrL(l, a) { return padStr(a); }      /* drum sounds have Delay and Reverb sends too (FX page): the whole row goes to the engine as it is, so a clip change, a sound load or a track switch no longer sets the sends back to 0 */
 function qPadLive(i) { enqueue('setpad' + i, 'setpad', (i + 1) + ':' + padStrL(i, pads[i])); }
 function qPad(i) { storeCs(i); if (liveOk(laneTrk(i))) qPadLive(i); }
 function qLay() { enqueue('laysyn', 'laysyn', String(layS)); }      /* the engine plays the pads of the inbound MIDI route with the same layout as the sequencer records them */
@@ -703,11 +702,11 @@ function editParam(scope, key, delta, idx) {
         if (key === 'bpm' || key === 'swing') pSnap('sys', 0, key);
         if (key === 'bpm') { pSnap('sys', 0, 'bpm'); bpm = clamp(bpm + delta * (shiftHeld ? 2 : 1), 40, 240); enqueue('bpm', 'bpm', String(bpm)); if (recArmed && playing) autoRecM('bpm', (bpm - 40) / 200); }
         else if (key === 'swing') { pSnap('sys', 0, 'swing'); swing = clamp(swing + delta, 0, 25); enqueue('swing', 'swing', (0.5 + swing / 100).toFixed(3)); if (recArmed && playing) autoRecM('swing', swing / 25); }
-        else if (key === 'fullvel') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; fullVel = !fullVel; }
+        else if (key === 'fullvel') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; fullVel = !fullVel; dspSet('fullvel', fullVel ? '1' : '0'); }
         else if (key === 'rqoff') { rqOff = clamp(rqOff + delta * 0.02, 0, 1); }
         else if (key === 'repmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; if (!repAllowed) { showToast('NOTE REPEAT', 'OFF IN OPTIONS', 0); return false; } toggleTop(1, true); }
         else if (key === 'rrate') { acc[idx] += delta; if (Math.abs(acc[idx]) < 5) return false; setRepRate(repRate + (acc[idx] > 0 ? 1 : -1), false); acc[idx] = 0; }
-        else if (key === 'qscale') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; if (sqDone) return false; sqDone = true; opScaleQ(); return false; }
+        else if (key === 'qscale') { acc[idx] += delta; const now = Date.now(), held = now - qsT < 700; qsT = now; if (Math.abs(acc[idx]) < 3) return false; acc[idx] = 0; if (held) return false; opScaleQ(); }      /* one turn = one Scale Q: while you keep turning it does not run again and again (it fires again after a short pause) */
         else if (key === 'qtime') { acc[idx] += delta; if (acc[idx] < 3) return false; acc[idx] = 0; opTimeQ(); }
         else if (key === 'qgrid') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; qGrid = clamp(qGrid + (acc[idx] > 0 ? 1 : -1), 0, 5); acc[idx] = 0; markEdited(); }
         else if (key === 'sgrd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 3) return false; const gi = clamp(Math.max(0, GRID_RES.indexOf(RES())) + (acc[idx] > 0 ? 1 : -1), 0, 4); acc[idx] = 0; setGrid(sel, GRID_RES[gi]); }
@@ -1403,7 +1402,7 @@ function opReverse() { const c = ed[sel], L = ln(), n = LL(); snap(c, L); const 
 function opRotate(d) { const c = ed[sel], L = ln(), n = LL(); snap(c, L); const a = steps[c][L].slice(0, n); for (let s = 0; s < n; s++) steps[c][L][s] = a[((s - d) % n + n) % n]; clipOpDone(d > 0 ? 'ROTATE >' : 'ROTATE <'); }
 function opDouble() { const c = ed[sel], n = lens[sel]; if (n * 2 > MAXSTEP) { showToast('DOUBLE', 'MAX ' + MAXSTEP, 1); return; } snapAll(c, sel); for (const l of lanesOf(sel)) { const m = effLen(l); if (m * 2 > MAXSTEP) continue; for (let s = 0; s < m; s++) steps[c][l][s + m] = steps[c][l][s].slice(); if (llen[l]) { llen[l] = m * 2; enqueue('llen' + l, 'llen', l + ',' + llen[l]); } } lens[sel] = n * 2; clipOpDone('DOUBLE x2', 1, true); }
 const Q_GRID = [['1/4', 4], ['1/8', 2], ['1/8T', 4 / 3], ['1/16', 1], ['1/16T', 2 / 3], ['1/32', 0.5]];
-let qGrid = 3, qAmt = 100;                                   /* time quantize: grid (in steps) and amount 5 .. 100 % (like the Move's QUANTIZE entry) */
+let qsT = 0, qGrid = 3, qAmt = 100;                                   /* time quantize: grid (in steps) and amount 5 .. 100 % (like the Move's QUANTIZE entry) */
 function qSnapPos(p, cap) { const g = Math.min(Q_GRID[qGrid][1], cap || 99); return Math.round(p / g) * g; }      /* cap: a grid finer than the Quantize grid (1/32, triplets) is never snapped coarser than its own steps */
 function qLane(c, L, str) {                                 /* move every note of one sound toward the grid; returns how many moved */
     const n = effLen(L), row = steps[c][L], out = [], rs = RES(laneTrk(L)); let moved = 0;
@@ -1648,7 +1647,7 @@ function shiftStep(i) {
     if (i === 7) { cycleTop(1); return; }                             /* step 8: LAYOUT = the three pad modes PITCH > REPEAT > STEPS */
     if (i === 11) { toggleTop(2); return; }                          /* step 12: step grid on / off (the 16 pads become steps) */
     if (i === 5) { const v = cycleMaster('m_met', [0, 0.6]); showToast('METRONOME', v > 0 ? 'ON' : 'OFF', v); return; }
-    if (i === 9) { fullVel = !fullVel; showToast('FULL VELOCITY', fullVel ? 'ON' : 'OFF', fullVel ? 1 : 0); markEdited(); return; }
+    if (i === 9) { fullVel = !fullVel; dspSet('fullvel', fullVel ? '1' : '0'); showToast('FULL VELOCITY', fullVel ? 'ON' : 'OFF', fullVel ? 1 : 0); markEdited(); return; }
     if (i === 14) { opDouble(); return; }
     if (i === 15) { opTimeQ(); return; }                            /* step 16: QUANT = quantize the timing right now with the grid + strength of the QUANT tile (Shift + step 3) */
     if (symLit(i)) { closeSym(); return; }                          /* same symbol again = close its menu */
@@ -2160,8 +2159,7 @@ function knobTouch(i) {
     if (view === 7) { const t = bank * 4 + (i & 3), k = i >= 4 ? 'pan' : 'vol', tvv = k === 'pan' ? pads[t][PI.pan] : getTV(t); showToast(k === 'pan' ? 'PAN' : 'VOLUME', kind[t] && k === 'pan' ? 'PER SOUND' : fmtVal(k, tvv), tvv); return; }
     const items = VIEW_ITEMS[itemsView()]; if (!items || i >= items.length) return;
     const scope = scopeOf(items[i][0]), v = getVal(scope, items[i][0]);
-    if (!bigOn && !CURVE_KEYS[items[i][0]]) { needsRedraw = true; return; }
-    curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v), fracVal(items[i][0], v)); if (toast) toast.nm = 1;
+    if (bigOn || CURVE_KEYS[items[i][0]]) curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v), fracVal(items[i][0], v)); if (toast) toast.nm = 1;
 }
 const LONG_NAME = { dly_time: 'Delay Time', dly_fb: 'Delay Feedback', dly_mode: 'Delay Type', dly_tone: 'Delay Tone', dly_wide: 'Delay Width', dly_ret: 'Delay Return', rvb_size: 'Reverb Size', rvb_dark: 'Reverb Damping', rvb_mode: 'Reverb Type', rvb_wide: 'Reverb Width', rvb_low: 'Reverb Low Cut', dmode: 'Delay Type', rmode: 'Reverb Type', dtime: 'Delay Time', dfb: 'Delay Feedback', rsize: 'Reverb Size', rdark: 'Reverb Damping', chrt: 'Chorus Rate', chdp: 'Chorus Depth', phrt: 'Phaser Rate', phfb: 'Phaser Feedback',
     dly: 'Delay Send', rvb: 'Reverb Send', cut: 'Lowpass Cutoff', locut: 'Highpass Cutoff', res: 'Resonance', fenv: 'Filter Envelope', crush: 'Bit Crusher', ring: 'Ring Modulator', pump: 'Pump', wob: 'Wobble',
@@ -2509,11 +2507,20 @@ function resetLen(t) {                                    /* an emptied clip goe
     for (const l of lanesOf(t)) if (llen[l]) { llen[l] = 0; enqueue('llen' + l, 'llen', l + ',0'); }
     growTrk[t] = false;
 }
+function edgeWrap(t, e, n) {                               /* a downbeat that was played a little early lies on the first step of the bar after the take: it belongs to step 1 of the loop (when that step is free) */
+    const c = ed[t];
+    for (const l of lanesOf(t)) { const a = steps[c][l], to = e % n; if (a[e] && a[e][0] && a[to] && !a[to][0]) a[to] = a[e].slice(); }
+}
+function recFinish() {                                    /* the transport is stopped while recording an empty clip: the clip gets the length you played, like with the second Rec press (it grows one bar ahead on the last step, so it would stay a bar too long) */
+    if (recArmed && playing && growTrk.some(Boolean)) { recStopLen(); growTrk.fill(false); }
+}
 function recStopLen() {                                   /* Rec pressed the second time: the clip is as long as you played (16, 32, 48 ... steps, rounded up) */
     let gpos = gs - 1; { const r = dspGet('pos'); if (typeof r === 'string') { const a = r.split(','), g = parseInt(a[1]) || 0; if (g > 0) gpos = g - 1 + (parseInt(a[3]) || 0) / 100; } }      /* the DSP's own step counter, the same one the recorded hits use */
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
-        const bs = barSteps(t), el = Math.max(0.01, (gpos - growP0[t]) * 6 / RES(t)), n = clamp(Math.max(Math.round(el / bs), Math.ceil(growMax[t] / bs), 1) * bs, bs, MAXSTEP);      /* like the Move: stopped in the first half of a bar, that bar is not part of the clip; in the second half, it is */
+        const bs = barSteps(t), el = Math.max(0.01, (gpos - growP0[t]) * 6 / RES(t)), ne = (growEdge[t] > 0 && growMax[t] === growEdge[t] + 1) ? growEdge[t] : 0, hm = ne ? growMax[t] - 1 : growMax[t];      /* ne: the only note beyond the take is a downbeat played a little early (it snapped to the first step of the next bar) */
+        const n = clamp(Math.max(Math.round(el / bs), Math.ceil(hm / bs), 1) * bs, bs, MAXSTEP);      /* like the Move: stopped in the first half of a bar, that bar is not part of the clip; in the second half, it is */
+        if (ne >= n) edgeWrap(t, ne, n);
         growSet(t, n);
         { const b = Math.round(n / bs * 10) / 10; showToast('REC LENGTH', b + (b === 1 ? ' BAR' : ' BARS'), n / MAXSTEP); }
     }
@@ -2595,7 +2602,7 @@ function recordHit(lane, semi, vel, at) {
     if (!recArmed) return;
     if (!playing) {                                   /* arm + first hit starts the clip recorder */
         recUndo(track, lane);
-        playing = true; gs = 0; dspSet('play', '1'); growTrk[track] = !trackHasSteps(ed[track], track); growG0[track] = 0; growP0[track] = 0; growMax[track] = 1;
+        playing = true; gs = 0; dspSet('play', '1'); growTrk[track] = !trackHasSteps(ed[track], track); growG0[track] = 0; growP0[track] = 0; growMax[track] = 1; growEdge[track] = 0;
         const st0 = steps[ed[track]][lane][0]; st0[0] = 1; st0[1] = clamp(vel, 1, 127); st0[2] = clamp(semi, -64, 63);
         dspSet('rskip', lane + ',0'); qStep(ed[track], lane, 0); lastRec = { c: ed[track], l: lane, i: 0, g: 1, f: 0 }; showToast('REC', 'T' + p2(track + 1) + ' C' + (ed[track] + 1), 1); markEdited(); return;
     }
@@ -2604,13 +2611,12 @@ function recordHit(lane, semi, vel, at) {
     if (typeof r !== 'string') return;
     const a = at ? [0, at.g, 0, at.f] : r.split(','), g = parseInt(a[1]) || 0, fr = parseInt(a[3]) || 0;
     let len = effLen(lane);
-    if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; { const g1 = g - 1; growG0[track] = g1 - (((g1 % 16) + 16) % 16); tph[track] = growG0[track]; dspSet('tph', track + ',' + tph[track]); growP0[track] = (g - 1) + fr / 100; growMax[track] = 1; } }      /* the clip begins at the bar line of this take: its step 1 */
+    if (!growTrk[track] && !trackHasSteps(ed[track], track)) { growTrk[track] = true; { const g1 = g - 1; growG0[track] = g1 - (((g1 % 16) + 16) % 16); tph[track] = growG0[track]; dspSet('tph', track + ',' + tph[track]); growP0[track] = (g - 1) + fr / 100; growMax[track] = 1; growEdge[track] = 0; } }      /* the clip begins at the bar line of this take: its step 1 */
     const rs = RES(track), pRaw = (g - 1) + fr / 100 + 0.5 - Math.round(90 - rqOff * 80) / 100, pSn = qSnapPos(pRaw, rs === 6 || rs === 12 ? 99 : rs / 6) * 6 / rs;      /* the hit's exact position (in steps of the track's grid), snapped to the QUANT grid (1/16 = whole steps, finer grids keep the rest as nudge) */
     let tS = Math.floor(pSn + 1e-6), tN = Math.round((pSn - tS) / 0.025); if (tN > NUD_MAX) { tS++; tN = 0; }
     const rel = tS - Math.round(tph[track] * 6 / rs);
-    const relRaw = Math.floor(pRaw * 6 / rs + 1e-6) - Math.round(tph[track] * 6 / rs), early = rel >= len && relRaw < len;      /* a hit that was played a little early before the loop end but snapped onto the next bar line belongs to the START of the loop, it does not make the clip longer */
-    if (growTrk[track] && !early) while (len < MAXSTEP && rel >= len) { growLoop(lane, len + barSteps(track)); const l2 = effLen(lane); if (l2 <= len) break; len = l2; }      /* the take always reaches the bar you are playing in, even when the loop did not grow in time */
-    if (growTrk[track]) growMax[track] = Math.max(growMax[track], early ? len : rel + 1);
+    if (growTrk[track]) while (len < MAXSTEP && rel >= len) { growLoop(lane, len + barSteps(track)); const l2 = effLen(lane); if (l2 <= len) break; len = l2; }      /* the take always reaches the bar you are playing in, even when the loop did not grow in time */
+    if (growTrk[track]) { growMax[track] = Math.max(growMax[track], rel + 1); if (rel > 0 && rel % barSteps(track) === 0) growEdge[track] = Math.max(growEdge[track], rel); }
     const target = ((rel % len) + len) % len;
     const st = steps[ed[track]][lane][target]; st[6] = tN; for (let q = st.length; q < 10; q++) st[q] = 0; st[5] = 0; st[9] = 0;
     st[0] = 1; st[1] = clamp(vel, 1, 127); st[2] = clamp(semi, -64, 63);
@@ -2715,7 +2721,7 @@ function onPadCore(idx, on, vel) {
         const st = stepAt(heldStep); st[2] = clamp(notePadSemi(dg) + oct(), -64, 63);
         heldEdited = true; qStep(ed[sel], sel, heldStep); showToast('PITCH', (st[2] > 0 ? '+' : '') + st[2] + 'st', (st[2] + 64) / 127); markEdited();
     }
-    if (!inboundActive()) dspSet('npad', dg + ',' + (on ? Math.max(1, fullVel ? 127 : vel) : 0) + ',' + (m === 1 ? 1 : (m === 4 && (idx & 7) < 4 ? 2 : 0)));
+    if (!inboundActive()) dspSet('npad', dg + ',' + (on ? (fullVel ? 127 : Math.max(1, vel)) : 0) + ',' + (m === 1 ? 1 : (m === 4 && (idx & 7) < 4 ? 2 : 0)));
 }
 let loopKeys = [];      /* step buttons held together with Loop: 1 = that many steps, 2 or more together = that many bars */
 function onStep(i, on) {
@@ -3369,7 +3375,7 @@ function setLaneP(L, key, v) {
 function selectSample(d, toast) {
     const L = ln(), l = smpLoaded();
     if (!l.length) { showToast('NO SAMPLES', 'FOLDER taktile-samples', 0); return; }
-    if (Math.round(pads[L][0]) !== 359) setLaneP(L, 'type', 359);
+    if (Math.round(pads[L][0]) !== 359) { setLaneP(L, 'type', 359); if (!kind[sel]) setLaneP(L, 'poly', 1); }
     let p = l.indexOf(smpIdx(L)); if (p < 0) p = d > 0 ? -1 : l.length;
     p = clamp(p + d, 0, l.length - 1);
     if (l[p] !== smpIdx(L)) smpDefaults(L);
@@ -6052,11 +6058,11 @@ globalThis.onMidiMessageInternal = function (data) {
     case CC.PLAY:
         if (d2 > 0 && view === 28 && broOpen && !menuOpen) { broPreview(); return; }
         if (d2 > 0) {
-            if (shiftHeld) { playing = false; gs = 0; dspSet('play', '0'); dspSet('panic', '1'); showToast('TRANSPORT', 'STOP + RESET + PANIC', 0); }
+            if (shiftHeld) { recFinish(); playing = false; gs = 0; dspSet('play', '0'); dspSet('panic', '1'); showToast('TRANSPORT', 'STOP + RESET + PANIC', 0); }
             else if (!playing && ciBeats > 0) { dspSet('play', '0'); ciBeats = 0; showToast('COUNT-IN', 'CANCELLED', 0); }
             else if (!playing && recArmed && ciOn) { dspSet('play', '2'); showToast('COUNT-IN', '1 BAR', 1); }      /* Rec armed + Play: one bar of clicks, then the recording starts */
             else if (view === 31 && !menuOpen && !(playing && songOn)) songGo();      /* Play in the song page starts the song at the selected step */
-            else { if (playing && recArmed) recStopLen(); playing = !playing; gs = 0; dspSet('play', playing ? '1' : '0'); showToast('TRANSPORT', playing ? 'PLAY' : 'STOP', playing ? 1 : 0); }
+            else { if (playing) recFinish(); playing = !playing; gs = 0; dspSet('play', playing ? '1' : '0'); showToast('TRANSPORT', playing ? 'PLAY' : 'STOP', playing ? 1 : 0); }
             needsRedraw = true;
         }
         return;
@@ -6172,7 +6178,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (!shiftHeld && view === 28 && !smpPage && items[i][0] === 'smp') { const st = slowStep(i, delta, 5); if (st) sampleList(st); return; }
         const ts0 = toastSeq;
         lastKnob = items[i][0]; hot = { v: view, i: i, t: 75 }; if (view === 31) songHoldT = Date.now() + 6000;      /* turning a song knob: the page stays on that step (it does not jump to the playing one) */
-        if (editParam(scopeOf(items[i][0]), items[i][0], delta, i)) { markEdited(); if (toastSeq !== ts0) return; if (!bigOn && !CURVE_KEYS[items[i][0]]) { needsRedraw = true; return; } const v2 = getVal(scopeOf(items[i][0]), items[i][0]); curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v2), fracVal(items[i][0], v2)); if (toast) toast.nm = 1; }
+        if (editParam(scopeOf(items[i][0]), items[i][0], delta, i)) { markEdited(); if (toastSeq !== ts0) return; const v2 = getVal(scopeOf(items[i][0]), items[i][0]); if (bigOn || CURVE_KEYS[items[i][0]]) curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v2), fracVal(items[i][0], v2)); if (toast) toast.nm = 1; }
     }
 };
 

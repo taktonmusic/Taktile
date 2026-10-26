@@ -1,0 +1,10 @@
+const { ctx, run } = require('./harness.js');
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+ctx.init && ctx.init(); T(300); run('splashT0 = 0');
+run('chosen[0] = 1; askKind = -1; selectTrack(0); setKind(0, 0); selectTrack(0); askKind = -1; view = 0'); T(5);
+run('recArmed = true; playing = true; gs = 33; for (const l of lanesOf(0)) for (let c = 0; c < NPAT; c++) steps[c][l] = steps[c][l].map(() => [0, 100, 0, 0]); lens[0] = 32; growTrk[0] = true; growG0[0] = 0; growP0[0] = 0; growMax[0] = 20; tph[0] = 0; qGrid = 0');
+run('recordHit(0, 3, 100, { g: 32, f: 95 })'); run('gs = 33; recStopLen()');
+ok(run('lens[0]') === 32, 'a hit just before the loop end does not make the clip longer (' + run('lens[0]') + ')');
+ok(run('steps[ed[0]][0][0][0]') === 1, 'the early downbeat sits on step 1 of the loop');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

@@ -2,6 +2,13 @@
 
 ## 1.0.0 (26 October 2026)
 - Back to the proven 1.6.5 program with only these changes
+- Recording into an empty clip: stopping with the Play button now gives the length you played too (it used to stay one bar too long, e.g. 48 instead of 32 steps); a downbeat played a little early no longer adds a bar, it goes to step 1
+- Sampler and synth tracks are polyphonic by default (Voices = Poly): a low and a high note can be held together
+- Arp rate: 1/4 and 1/2 added (slower than 1/8)
+- Scale Q runs once per turn instead of again and again while the knob keeps turning
+- Full Velocity: live pad hits now play at full velocity too, like the steps they record
+- Drum tracks: the Delay and Reverb sends of the drum sounds now work (they were reset to 0 whenever the sounds were sent to the engine)
+- Turning a knob on any page shows the changed value top right next to the page dots (also with Big Values off)
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms)
 - Presets cut from 1468 to 420 clearly different sounds plus 36 new sounds = 456; sounds of old projects, favorites and kits become the most similar kept sound of the same synth; levels evened out inside every synth
 - Sound browser: the melodic synths are grouped into 6 groups
@@ -71,15 +78,11 @@
 - Short messages (track name, play, stop, knob values) appear in the dots row on the right instead of covering the tabs; the dots slide left meanwhile
 - Step page: header in the style of the tab strip (clip as white block, tempo, mode, lane line)
 - Applying slices to a drum track: pads without a slice and without notes are muted instead of playing the default drums; the message says "N PADS REST OFF"
-- Synth and sampler tracks start in POLY: a high and a low note at once both sound (old projects are switched once)
-- Arp rate also slower: 1/4, 1/2, 1/1 and 1/8T
+- Arp rate: 1/8T and 1/1 added too (1/4 and 1/2 are listed above)
 - Loop held: the step buttons show the clip length (white = steps, green = bars); one button = that many steps, two or more together = that many bars
-- Recording: a note played just before the loop end no longer makes the clip a bar longer (32 steps stay 32); stopping with Play finishes the length like Rec
 - INIT in every engine family is the engine's own Init sound (it pointed to other presets before); duplicates removed from the family lists
 - MY PRESETS in the sound browser (synth tracks): + SAVE THIS SOUND stores the whole sound, click loads it, Delete + click removes it
-- Master: Groove template turns at the normal speed; the knob you turn shows on the right of the header; "Notes To Scale" runs once per touch
-- Drum tracks keep their delay and reverb sends when the sound is sent as a whole (clip change)
-- Full Velocity also applies when playing live, so live and playback sound the same
+- Master: the Groove template turns at the normal speed (it needed 14 clicks per step); the knob you turn shows on the right of the header
 
 ## Development history (steps before 1.0.0)
 

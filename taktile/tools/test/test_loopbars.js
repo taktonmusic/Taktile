@@ -1,0 +1,14 @@
+const { ctx, run } = require('./harness.js');
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+ctx.init && ctx.init(); T(300); run('splashT0 = 0');
+run('chosen[0] = 1; askKind = -1; selectTrack(0); setKind(0, 0); selectTrack(0); askKind = -1; view = 0'); T(5);
+run('loopHeld = true; loopKeys = []; onStep(11, true); onStep(11, false)');
+ok(run('lens[0]') === 12, 'one button = 12 steps (' + run('lens[0]') + ')');
+run('onStep(0, true); onStep(1, true)');
+ok(run('lens[0]') === 32, 'two buttons together = 2 bars (' + run('lens[0]') + ')');
+run('onStep(2, true)');
+ok(run('lens[0]') === 48, 'three buttons = 3 bars (' + run('lens[0]') + ')');
+run('onStep(0, false); onStep(1, false); onStep(2, false)');
+ok(run('loopKeys.length') === 0, 'buttons released');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);
