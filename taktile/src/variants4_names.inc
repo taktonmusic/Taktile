@@ -72,4 +72,6 @@
     "SwmChoir","SwmStab","DxInit","DxEPiano","DxBass","DxBrass",
     "DxBell","DxMarimba","DxOrgan","DxPad","DxLead","DxReese",
     "Granny","Grandson","Mother","Father","Kid","Teenager",
-    "DKickInit","DSnrInit","DHatInit","DClapInit","DTomInit","DRimInit","DMetlInit"
+    "DKickInit","DSnrInit","DHatInit","DClapInit","DTomInit","DRimInit","DMetlInit",
+    "AnaInitBs","AnaInitPl","AnaInitPd","AnaInitKy","AnaInitBr","TchRoll","TchPluck","HseBass","HseOff","TchDrive","TchSub","HseWarm","SoftTri","SoftSaw","Mellow","SoftPls","Whistle","SilkLead","AcidLd1","AcidLd2","AcidLd3","AcidLd4","SyncSoft","SyncMid","SyncDeep","SyncPls","SyncPlk","MuteSoft","PalmMute","MuteTri","MuteDeep","MutePwm","PlkSoft","PlkSaw","PlkOct","StbSoft","StbHse","StbDeep","StbOct","DarkPad1","DarkPad2","DarkPad3","DarkSwll","PadSaw","PadTri","PadSine","KeyTri","KeySine","KeyPls","KeySoft","BrsSoft","BrsSwell","BrsStab","BrsSqr","WtBsRoll","WtBsSoft","WtSoftLd","WtAirLd","WtDarkPd","WtGlsPd","Fm4BrsSf","AddGlsPd","PadChill","PadHaze",
+    "DKickWrm","DKickSft","DKickMid","DKickDeep","DKickGrv","DKickAco","DKickTop","DSnrSoft","DSnrRimS","DSnrBrsh","DSnrMid","DSnrPop","DSnrRoom","DSnrHse","DHatMute","DHatHalf","DHatWarm","DHatShrt","DHatDry","DHatOpSf","DClapSft","DClapRoom","DClapDry","DClapSnp","DTomFlr","DTomSoft","DTomDeep","DTomPerc","DRimSoft","DRimWood","DWoodLo","DWoodHi","DCymInit","DCrash","DCrashLg","DCrashSf","DRide","DRideSft","DRideBel","DCymSplsh","DShaker","DShkLong","DCongaLo","DCongaHi","DBongo","DCowLo","DZapLow","DZapHi"

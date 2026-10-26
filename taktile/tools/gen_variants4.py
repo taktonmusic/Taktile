@@ -228,7 +228,7 @@ dr('DMetal', 14, 6, 410, .5, band=2600)
 AN = 'ANALOG'
 def an(name, ub, wa, wb, det, sub, sync, pw, mix, drv, oct=8, tau1=.3, att=.003, sus=1):
     add(name, AN, ub, 6, [wa, wb, det, sub, sync, pw, mix, drv], oct=oct, tau1=tau1, tau2=.01, att=att, sus=sus)
-an('AnaInit', 26, 0, 0, 7, 0, 0, .5, .8, 0, oct=8, tau1=.25, att=.003)
+an('AnaInit', 26, 0, 0, 0, 0, 0, .5, 0, 0, oct=8, tau1=.25, att=.003)
 an('AnaSawLd', 26, 0, 0, 12, .3, 0, .5, .9, .1, oct=8)
 an('AnaPulse', 26, 1, 1, 9, .2, 0, .3, .8, 0, oct=8)
 an('AnaSync', 26, 0, 0, 0, 0, 1.5, .5, 1.0, .15, oct=8)
@@ -340,6 +340,162 @@ fo('FoldDrone', 25, 1, 1.0, 1.0, .25, .4, .4, 1.5, oct=2, tau1=2.0, tau2=6.0, at
 fo('FoldSeq', 23, 0, .5, 2.5, .05, 0, 0, 2, oct=8, tau1=.2, tau2=.1, sus=0)
 fo('FoldAcid', 21, 1, 1.4, 1.8, .2, .2, 0, 2, oct=1, tau1=.15, tau2=.2)
 fo('FoldBuzz', 26, 1, 2.2, .5, .3, 0, .4, 1.01, oct=4, tau2=.5)
+# ============ ACOUSTIC drums (eng 13): p = kind (0 kick, 1 snare, 2 tom, 3 hat, 4 cymbal, 5 rim, 6 clap, 7 shaker / tambourine, 8 block / bell), tone, drop, noise, click, body, noise Hz, extra, set / jingles, hat flag (1 closed, 2 open)
+AG = {0: 'ACOUSTIC KICKS', 1: 'ACOUSTIC SNARES', 2: 'ACOUSTIC TOMS', 3: 'ACOUSTIC HATS', 4: 'ACOUSTIC CYMBALS', 5: 'ACOUSTIC PERC', 6: 'ACOUSTIC PERC', 7: 'ACOUSTIC PERC', 8: 'ACOUSTIC PERC'}
+def ac(name, ub, kind, f0, tau1, tau2=.05, tone=.7, drop=0, noise=.5, click=.3, body=.5, hz=None, extra=0, aset=0, flag=0):
+    if hz is None: hz = 0 if kind == 0 else 3000
+    add(name, AG[kind], ub, 13, [kind, tone, drop, noise, click, body, hz, extra, aset, flag], f0=f0, tau1=tau1, tau2=tau2, att=.001)
+# kicks: f0, tau1 = thump decay, drop = start pitch above f0, noise = shell knock, click = beater, body = shell tone, hz = drive (0..100)
+ac('AcKickRck', 0, 0, 58, .30, drop=.55, noise=.25, click=.38, body=.55)
+ac('AcKickJzz', 0, 0, 74, .22, drop=.35, noise=.15, click=.12, body=.45)
+ac('AcKickDp', 0, 0, 49, .42, drop=.5, noise=.3, click=.2, body=.65)
+ac('AcKickTgt', 0, 0, 64, .14, drop=.45, noise=.35, click=.45, body=.3)
+ac('AcKickPnc', 0, 0, 60, .21, drop=.7, noise=.2, click=.6, body=.35, hz=40)
+ac('AcKickVin', 0, 0, 55, .34, drop=.3, noise=.2, click=.15, body=.75)
+ac('AcKickBtr', 0, 0, 62, .19, drop=.5, noise=.2, click=.85, body=.3)
+ac('AcKickFlt', 0, 0, 57, .26, drop=.4, noise=.28, click=.05, body=.6)
+ac('AcKickSub', 0, 0, 44, .5, drop=.4, noise=.1, click=.1, body=.3)
+ac('AcKickLof', 0, 0, 56, .24, drop=.45, noise=.3, click=.3, body=.5, hz=65)
+# snares: f0 = batter head, tau1 = head decay, tau2 = wire decay, tone = stick brightness, noise = wires, click = stick, body = ring tilt, hz = wire high-pass
+ac('AcSnrRock', 6, 1, 190, .16, .26, tone=.8, noise=.8, click=.6, body=.4, hz=2800)
+ac('AcSnrTght', 6, 1, 220, .09, .14, tone=.8, noise=.6, click=.55, body=.4, hz=3500)
+ac('AcSnrFat', 6, 1, 160, .20, .32, tone=.7, noise=.8, click=.45, body=.35, hz=2200)
+ac('AcSnrJazz', 6, 1, 200, .13, .18, tone=.6, noise=.5, click=.3, body=.5, hz=3000)
+ac('AcSnrBrsh', 6, 1, 170, .06, .26, tone=.3, noise=1.0, click=.0, body=.9, hz=3600)
+ac('AcSnrPicc', 6, 1, 270, .08, .17, tone=.85, noise=.8, click=.7, body=.4, hz=4200)
+ac('AcSnrRimS', 6, 1, 210, .12, .20, tone=1.0, noise=.7, click=1.0, body=.3, hz=3200)
+ac('AcSnrDry', 6, 1, 185, .10, .10, tone=.5, noise=.5, click=.35, body=.6, hz=2600)
+ac('AcSnrCrk', 6, 1, 240, .09, .15, tone=.95, noise=.85, click=.8, body=.35, hz=3800)
+ac('AcSnrDeep', 6, 1, 150, .22, .30, tone=.65, noise=.7, click=.4, body=.4, hz=2000)
+ac('AcSnrLoos', 6, 1, 175, .15, .40, tone=.7, noise=.9, click=.4, body=.4, hz=2400)
+# toms: f0 = fundamental, tau1 = decay, drop = pitch drop, click = stick, body = the head's other modes
+ac('AcTomFlr', 13, 2, 82, .55, drop=.18, click=.4, body=.7, tone=.7)
+ac('AcTomLo', 13, 2, 108, .46, drop=.2, click=.4, body=.7, tone=.7)
+ac('AcTomMid', 13, 2, 142, .38, drop=.22, click=.4, body=.7, tone=.7)
+ac('AcTomHi', 13, 2, 188, .30, drop=.25, click=.4, body=.65, tone=.75)
+ac('AcTomRck', 13, 2, 235, .24, drop=.25, click=.45, body=.6, tone=.8)
+ac('AcTomDry', 13, 2, 125, .2, drop=.12, click=.35, body=.5, tone=.5)
+ac('AcTomDpFl', 13, 2, 68, .7, drop=.15, click=.3, body=.8, tone=.6)
+ac('AcTomRoto', 13, 2, 160, .5, drop=.5, click=.3, body=.5, tone=.7)
+# hats: f0 = metal ring base, tau1 = ring decay, tau2 = sizzle decay, noise = sizzle, hz = sizzle high-pass, flag 1 closed / 2 open (closed chokes open)
+ac('AcHatTgt', 8, 3, 3500, .028, .034, tone=.9, noise=.8, click=.7, body=.4, hz=6500, flag=1)
+ac('AcHatCls', 8, 3, 3300, .05, .06, tone=.9, noise=.8, click=.6, body=.4, hz=6000, flag=1)
+ac('AcHatSft', 8, 3, 3000, .07, .09, tone=.6, noise=.6, click=.4, body=.4, hz=5200, flag=1)
+ac('AcHatPdl', 8, 3, 2700, .045, .05, tone=.6, noise=.55, click=.5, body=.5, hz=4200, flag=1)
+ac('AcHatHlf', 9, 3, 3300, .17, .2, tone=.85, noise=.8, click=.4, body=.4, hz=5800, flag=0)
+ac('AcHatOpn', 9, 3, 3300, .46, .52, tone=.85, noise=.85, click=.35, body=.4, hz=5600, flag=2)
+ac('AcHatWid', 9, 3, 3100, .9, 1.0, tone=.8, noise=.85, click=.3, body=.4, hz=5200, flag=2)
+ac('AcHatSzl', 9, 3, 3400, .6, .7, tone=.85, noise=1.0, click=.3, body=.3, hz=6800, flag=2)
+# cymbals: f0 = ring base, tau1 = decay, noise = wash, click = how long the modes are kept alive (burst), extra = burst ms, hz = wash high-pass, set(8) = swell time s
+ac('AcCrash', 11, 4, 1500, 1.5, 1.6, tone=.85, noise=.7, click=.9, body=.2, hz=4500, extra=220)
+ac('AcCrshLng', 11, 4, 1400, 2.8, 2.9, tone=.8, noise=.7, click=.9, body=.2, hz=4200, extra=300)
+ac('AcCrshDry', 11, 4, 1600, .8, .85, tone=.9, noise=.65, click=.9, body=.3, hz=5000, extra=120)
+ac('AcSplash', 11, 4, 2100, .55, .6, tone=.95, noise=.7, click=.9, body=.3, hz=6000, extra=70)
+ac('AcChina', 11, 4, 1150, 1.0, 1.1, tone=1.0, noise=.85, click=1.0, body=.5, hz=3800, extra=100)
+ac('AcCrshSwl', 11, 4, 1500, 2.2, 2.3, tone=.8, noise=.7, click=.9, body=.2, hz=4500, extra=260, aset=0)
+ac('AcRide', 12, 4, 1900, 1.9, 1.5, tone=.7, noise=.3, click=.5, body=.2, hz=6000, extra=35)
+ac('AcRideBel', 12, 4, 2600, 1.3, .3, tone=.55, noise=.12, click=.3, body=.2, hz=8000, extra=12)
+ac('AcRideSft', 12, 4, 1800, 1.4, 1.0, tone=.5, noise=.25, click=.4, body=.2, hz=5500, extra=28)
+ac('AcRideTnk', 12, 4, 2100, .55, .4, tone=.8, noise=.3, click=.6, body=.2, hz=6500, extra=15)
+# percussion: rim shots / side sticks, claps, shakers, tambourine, blocks, bells
+ac('AcRim', 7, 5, 900, .065, tone=.9, click=.6)
+ac('AcStick', 7, 5, 1300, .05, tone=.95, click=.7)
+ac('AcRimHi', 7, 5, 1900, .04, tone=.95, click=.6)
+ac('AcRimLo', 7, 5, 620, .085, tone=.8, click=.5)
+ac('AcClick', 7, 5, 2300, .03, tone=1.0, click=.9)
+ac('AcClap', 5, 6, 0, .03, .14, noise=.8, hz=1400)
+ac('AcClapTgt', 5, 6, 0, .03, .08, noise=.7, hz=1800)
+ac('AcClapRm', 5, 6, 0, .03, .32, noise=.9, hz=1150)
+ac('AcClapSnp', 5, 6, 0, .03, .06, noise=.6, hz=2300)
+ac('AcClapHal', 5, 6, 0, .03, .55, noise=1.0, hz=1000)
+ac('AcShaker', 10, 7, 0, .07, noise=.6, hz=6500, extra=.012)
+ac('AcShkLng', 10, 7, 0, .13, noise=.6, hz=6000, extra=.02)
+ac('AcEgg', 10, 7, 0, .045, noise=.7, hz=6800, extra=.006)
+ac('AcCabasa', 10, 7, 0, .06, noise=.8, hz=7500, extra=.004)
+ac('AcTamb', 10, 7, 5200, .32, noise=.5, click=.9, hz=5500, extra=.003, aset=1)
+ac('AcTambHit', 10, 7, 5600, .2, noise=.4, click=.9, hz=6000, extra=.002, aset=1)
+ac('AcWood', 14, 8, 900, .06, click=.6, body=.4, aset=0)
+ac('AcWoodHi', 14, 8, 1400, .05, click=.6, body=.4, aset=0)
+ac('AcWoodLo', 14, 8, 650, .09, click=.5, body=.4, aset=0)
+ac('AcCowbell', 15, 8, 560, .28, click=.5, body=.5, aset=1)
+ac('AcCowLo', 15, 8, 420, .34, click=.4, body=.5, aset=1)
+ac('AcCowHi', 15, 8, 780, .2, click=.5, body=.5, aset=1)
+ac('AcTriang', 15, 8, 1700, 1.8, click=.3, body=.3, aset=2)
+ac('AcTriMute', 15, 8, 1700, .35, click=.3, body=.3, aset=2)
+# ============ EFFECTS (eng 14): p = length s, tone Hz start, tone Hz end, filter Hz start, filter Hz end, resonance, noise level, tone level, peak position (0 = hit that falls), filter 0 LP / 1 BP / 2 HP
+FG = {'imp': 'FX IMPACTS', 'ris': 'FX RISERS', 'swp': 'FX SWEEPS', 'lsr': 'FX LASERS + HITS'}
+def fx(name, grp, ub, L, f1, f2, c1, c2, q, nz, tn, pk, ft):
+    add(name, FG[grp], ub, 14, [L, f1, f2, c1, c2, q, nz, tn, pk, ft], tau1=L, tau2=.1, att=.001)
+fx('FxImpact', 'imp', 29, 1.8, 90, 28, 3000, 120, .2, .5, 1.0, 0, 0)
+fx('FxImpBig', 'imp', 29, 3.2, 70, 24, 2200, 90, .15, .55, 1.0, 0, 0)
+fx('FxImpDry', 'imp', 29, .7, 110, 40, 5000, 200, .2, .3, 1.0, 0, 0)
+fx('FxImpHi', 'imp', 29, 1.2, 200, 60, 8000, 400, .3, .6, .6, 0, 0)
+fx('FxSubDrp', 'imp', 29, 1.4, 120, 30, 200, 100, 0, 0, 1.0, 0, 0)
+fx('FxThundr', 'imp', 29, 3.5, 40, 30, 700, 80, .1, 1.0, .0, .04, 0)
+fx('FxBoom', 'imp', 29, 2.2, 60, 26, 1500, 150, .1, .7, .9, 0, 0)
+fx('FxRiser', 'ris', 18, 4.0, 200, 2400, 400, 9000, .5, .8, .15, .97, 1)
+fx('FxRisHi', 'ris', 18, 3.0, 600, 5000, 1500, 12000, .45, .8, .15, .97, 1)
+fx('FxRisLo', 'ris', 18, 4.5, 80, 900, 120, 2500, .6, .9, .3, .97, 0)
+fx('FxRisNz', 'ris', 18, 2.5, 100, 100, 800, 8000, .2, 1.0, 0, .97, 2)
+fx('FxRisTn', 'ris', 18, 3.5, 150, 1800, 500, 6000, .6, .35, .8, .97, 1)
+fx('FxRevCym', 'ris', 18, 2.0, 100, 100, 2500, 9000, .1, 1.0, 0, .98, 2)
+fx('FxRevSnr', 'ris', 18, .5, 100, 100, 3000, 9000, .15, 1.0, 0, .96, 2)
+fx('FxFall', 'swp', 28, 2.5, 2400, 100, 9000, 300, .5, .8, .15, 0, 1)
+fx('FxFallNz', 'swp', 28, 2.0, 100, 100, 7000, 250, .45, 1.0, 0, 0, 0)
+fx('FxWhoosh', 'swp', 28, 1.0, 100, 100, 300, 6000, .4, 1.0, 0, .5, 1)
+fx('FxWhshLo', 'swp', 28, 1.4, 100, 100, 150, 2500, .4, 1.0, 0, .55, 1)
+fx('FxSweepUp', 'swp', 28, 1.5, 100, 100, 200, 10000, .7, 1.0, 0, .95, 0)
+fx('FxSweepDn', 'swp', 28, 1.5, 100, 100, 10000, 200, .7, 1.0, 0, 0, 0)
+fx('FxLaser', 'lsr', 17, .35, 4200, 180, 4000, 400, 0, 0, 1.0, 0, 0)
+fx('FxLaserLo', 'lsr', 17, .5, 1800, 60, 3000, 300, 0, 0, 1.0, 0, 0)
+fx('FxZapUp', 'lsr', 17, .25, 200, 3800, 3000, 3000, 0, 0, 1.0, .85, 0)
+fx('FxBlip', 'lsr', 17, .09, 1400, 900, 3000, 3000, 0, 0, 1.0, 0, 0)
+fx('FxBubble', 'lsr', 17, .2, 300, 1400, 3000, 3000, 0, 0, 1.0, .5, 0)
+fx('FxNzHit', 'lsr', 4, .18, 100, 100, 6000, 3000, .2, 1.0, 0, 0, 2)
+fx('FxNzSnap', 'lsr', 4, .06, 100, 100, 8000, 5000, .3, 1.0, 0, 0, 2)
+fx('FxStatic', 'lsr', 4, .5, 100, 100, 3000, 1500, .1, 1.0, 0, 0, 1)
+# ============ TONE PARTS: short tuned one-shots that sit with the kits (key-relative, no gate: they ring out)
+TP = 'TONE PARTS'
+add('TnSub', TP, 19, 6, [3, 3, 3, 1.0, 0, .5, .3, 0], oct=1, tau1=.38, tau2=.01, att=.003, sus=0)
+add('TnSubPnc', TP, 19, 6, [3, 3, 3, 1.0, 0, .5, .3, .3], oct=1, tau1=.22, tau2=.01, att=.002, sus=0)
+add('TnBass', TP, 74, 6, [0, 1, 6, .8, 0, .5, .6, .2], oct=1, tau1=.26, tau2=.01, att=.002, sus=0)
+add('TnBassDub', TP, 74, 6, [0, 3, 4, .9, 0, .5, .5, .1], oct=.5, tau1=.55, tau2=.01, att=.004, sus=0)
+add('TnStab', TP, 24, 6, [0, 1, 11, .2, 0, .35, .8, .2], oct=4, tau1=.22, tau2=.01, att=.002, sus=0)
+add('TnStabHi', TP, 24, 6, [0, 1, 9, .1, 0, .4, .8, .15], oct=8, tau1=.16, tau2=.01, att=.002, sus=0)
+add('TnPluck', TP, 23, 6, [0, 1, 8, .1, 0, .4, .6, .1], oct=8, tau1=.35, tau2=.01, att=.002, sus=0)
+add('TnStrPlk', TP, 23, 11, [.8, .2, .997, .15], oct=8, tau1=1.2, tau2=.01, att=.001)
+add('TnMarim', TP, 23, 0, [0, .6, 3, .9, 0, .3], oct=8, tau1=.45)
+add('TnKalim', TP, 23, 0, [3, .6, 2, .7, .01, .4], oct=8, tau1=.8)
+add('TnVibes', TP, 27, 0, [1, .5, 4, .4, 0, .15], oct=8, tau1=1.2)
+add('TnGlock', TP, 27, 0, [4, .8, 1.5, .35, 0, .3], oct=32, tau1=1.2)
+add('TnBell', TP, 27, 0, [5, .5, 3, .3, .002, .4], oct=4, tau1=1.6)
+add('TnSteel', TP, 27, 0, [7, .6, 3, .55, 0, .35], oct=4, tau1=.9)
+add('TnFmPluk', TP, 23, 1, [2, 3.5, 3, 2.2, .5, 1, 0, .8, 2, 0], oct=8, tau1=.5, tau2=.08)
+add('TnFmBass', TP, 74, 1, [1, 4.5, 2, 1.0, .35, 1, .3, .7, 0, 0], oct=1, tau1=.35, tau2=.07)
+add('TnFmBell', TP, 27, 1, [3.5, 4.5, 1.4, 2.0, 0, 1, 0, .5, 0, 0], oct=8, tau1=1.6, tau2=.9)
+add('TnFoldPl', TP, 23, 12, [0, .4, 3.0, 0, 0, 0, 2], oct=8, tau1=.4, tau2=.12, att=.003, sus=0)
+add('TnFoldBs', TP, 74, 12, [0, .8, 1.2, .1, .4, 0, 2], oct=1, tau1=.3, tau2=.12, att=.003, sus=0)
+
+# ---- five more kicks, each built to sound different from the others (appended at the end so every older sound keeps its number)
+dr('DKickThmp', 0, 0, 36, .7, sweep=8.0, swms=95, drive=.2)                         # deep thump: a huge slow dive
+dr('DKickClk', 0, 0, 70, .1, sweep=9.0, swms=7, mix=.1, click=.9, drive=.6, hp=4000)   # short, hard, clicky
+dr('DKickGrit', 0, 0, 48, .55, sweep=4.0, swms=40, mix=.3, drive=.98, hp=700)          # dirty, distorted, noisy
+dr('DKickBoom', 0, 0, 30, 2.0, sweep=1.0, swms=140, drive=.08)                         # very low, very long sub boom
+dr('DKickRnd', 0, 0, 85, .16, sweep=2.5, swms=14, click=.15, drive=.7)                 # mid-high, round, tom-like punch
+# ---- timing pass for the acoustic drums: real drums are short. tau = time constant (s); -20 dB comes after 2.3 x tau
+FIXT = {
+ 'AcKickRck': (.13, .05), 'AcKickJzz': (.095, .05), 'AcKickDp': (.18, .05), 'AcKickTgt': (.06, .05), 'AcKickPnc': (.085, .05), 'AcKickVin': (.15, .05), 'AcKickBtr': (.083, .05), 'AcKickFlt': (.11, .05), 'AcKickSub': (.22, .05), 'AcKickLof': (.1, .05),
+ 'AcSnrRock': (.06, .095), 'AcSnrTght': (.04, .06), 'AcSnrFat': (.075, .13), 'AcSnrJazz': (.05, .075), 'AcSnrBrsh': (.03, .11), 'AcSnrPicc': (.035, .07), 'AcSnrRimS': (.045, .085), 'AcSnrDry': (.04, .04), 'AcSnrCrk': (.04, .065), 'AcSnrDeep': (.09, .12), 'AcSnrLoos': (.06, .17),
+ 'AcTomFlr': (.22, .05), 'AcTomLo': (.18, .05), 'AcTomMid': (.15, .05), 'AcTomHi': (.12, .05), 'AcTomRck': (.095, .05), 'AcTomDry': (.075, .05), 'AcTomDpFl': (.28, .05), 'AcTomRoto': (.2, .05),
+ 'AcHatTgt': (.013, .015), 'AcHatCls': (.024, .028), 'AcHatSft': (.04, .05), 'AcHatPdl': (.02, .024), 'AcHatHlf': (.08, .09), 'AcHatOpn': (.22, .25), 'AcHatWid': (.4, .45), 'AcHatSzl': (.28, .32),
+ 'AcCrash': (.5, .55), 'AcCrshLng': (.85, .9), 'AcCrshDry': (.22, .25), 'AcSplash': (.15, .17), 'AcChina': (.3, .33), 'AcCrshSwl': (.65, .7), 'AcRide': (.65, .5), 'AcRideBel': (.45, .1), 'AcRideSft': (.5, .35), 'AcRideTnk': (.2, .15),
+ 'AcRim': (.03, .05), 'AcStick': (.022, .05), 'AcRimHi': (.016, .05), 'AcRimLo': (.04, .05), 'AcClick': (.012, .05),
+ 'AcClap': (.03, .065), 'AcClapTgt': (.03, .04), 'AcClapRm': (.03, .14), 'AcClapSnp': (.03, .026), 'AcClapHal': (.03, .26),
+ 'AcShaker': (.03, .05), 'AcShkLng': (.06, .05), 'AcEgg': (.02, .05), 'AcCabasa': (.025, .05), 'AcTamb': (.15, .05), 'AcTambHit': (.09, .05),
+ 'AcWood': (.03, .05), 'AcWoodHi': (.025, .05), 'AcWoodLo': (.045, .05), 'AcCowbell': (.12, .05), 'AcCowLo': (.15, .05), 'AcCowHi': (.09, .05), 'AcTriang': (.65, .05), 'AcTriMute': (.12, .05),
+}
+for i, x in enumerate(P):
+    if x[0] in FIXT: P[i] = x[:6] + FIXT[x[0]] + x[8:]
 # ---------------------------------------------------------------------------------------------------------
 names = [x[0] for x in P]; assert len(set(names)) == len(names), [n for n in names if names.count(n) > 1]
 trimf = root + 'tools/nx_trim.json'
@@ -365,7 +521,7 @@ if '/*NXBEGIN*/' in u: u = re.sub(r"/\*NXBEGIN\*/.*?/\*NXEND\*/", lambda _: blk,
 else: u = u.replace("const SYN_ORDER =", blk + "\nconst SYN_ORDER =", 1)
 ne = []
 for i, x in enumerate(P):
-    if x[3] >= 6:
+    if 6 <= x[3] <= 12 and x[1] != 'TONE PARTS':          # drum / effect engines and the tone parts keep out of the synth engine lists
         if ne and ne[-1][2] == x[3] and ne[-1][1] == 1064 + i - 1: ne[-1][1] = 1064 + i
         else: ne.append([1064 + i, 1064 + i, x[3]])
 blk2 = "/*NXEBEGIN*/const NX_ENG = " + json.dumps(ne, separators=(',', ':')) + ";/*NXEEND*/"

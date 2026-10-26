@@ -445,6 +445,15 @@ static int BASE_T[T_COUNT];
    Generated at start from a seeded random draw per class of sound; src/char_gain.inc (measured) levels them to the plain sound. */
 typedef struct { float cm, res, fenv, drive, crush, ring, lo, tm, gn; int wv; float pf, pg, pq; } ch_t;
 static ch_t CHR[T_COUNT];
+/* gentle top end for drums: noise-based sounds (snares, hats, cymbals, claps, shakers) were very hissy (most energy above 6 kHz). tm is the one-pole coefficient of the sound's two-pole low-pass (1 = open):
+   .6 ~ 6 kHz, .75 ~ 9 kHz. It only softens; the Tone knob still works on top. */
+static float soft_tm_kind(int bt, int eng, int kd);
+static float soft_tm(int ty) { const nx_t *n = &VAR4[ty - T_V4]; return soft_tm_kind(BASE_T[ty], n->eng, (int)(n->p[0] + 0.5f)); }
+static float soft_tm_kind(int bt, int eng, int kd) {
+    if (eng == 5) { if (kd == 1) return 0.6f; if (kd == 2) return bt >= 11 && bt <= 12 ? 0.68f : (bt == 10 ? 0.74f : 0.74f); if (kd == 3) return 0.8f; return 1.0f; }
+    if (eng == 13) { if (kd == 1) return 0.62f; if (kd == 3) return 0.76f; if (kd == 4) return 0.7f; if (kd == 6) return 0.8f; if (kd == 7) return 0.74f; return 1.0f; }
+    return 1.0f;
+}
 #ifndef CHAR_NEUTRAL
 static const float CHGAIN[T_COUNT] = {
 #include "char_gain.inc"
@@ -4590,7 +4599,8 @@ static void init_chars(void) {
     };
     for (int ty = 0; ty < T_COUNT; ty++) {
         ch_t *h = &CHR[ty]; h->cm = 1.0f; h->res = h->fenv = h->drive = h->crush = h->ring = h->lo = 0.0f; h->tm = 1.0f; h->gn = 1.0f; h->wv = 0; h->pf = h->pg = h->pq = 0.0f;
-        if (ty == T_SAMPLE || ty >= T_V4) continue;
+        if (ty == T_SAMPLE) continue;
+        if (ty >= T_V4) { h->tm = soft_tm(ty); continue; }                  /* the new engines carry no random character: drums just get a gentle top end (below) */
 #ifdef CHAR_NEUTRAL
         continue;
 #else
@@ -4631,6 +4641,9 @@ static void init_chars(void) {
         h->ring = clampf(a[5] * kg * (0.85f + 0.5f * ch_f(&s)), 0.0f, 0.8f);
         h->lo = clampf(a[6] * kl * (0.85f + 0.5f * ch_f(&s)), 0.0f, 0.5f);
         h->tm = 1.0f - (1.0f - a[7]) * (0.85f + 0.5f * ch_f(&s)); if (h->tm < 0.35f) h->tm = 0.35f; if (h->tm > 1.0f) h->tm = 1.0f;
+        { const float c = bt == 5 ? 0.8f : (bt == 6 ? 0.6f : (bt >= 8 && bt <= 10 ? 0.75f : (bt == 11 ? 0.68f : (bt == 12 ? 0.72f : 1.0f)))); if (h->tm > c) h->tm = c; }      /* clap / snare / hats / cymbals: no hiss above ~6-10 kHz */
+        { static const struct { const char *n; float tm; } SN[] = { {"TrcLd2", 0.5f}, {"EPno2", 0.6f}, {"LeadFlut", 0.65f}, {"TrcLd4", 0.7f}, {"Pluck", 0.7f}, {"Hoov7", 0.65f}, {"Clav5", 0.6f}, {"StringPls", 0.55f}, {"Lead", 0.75f}, {"SuperSaw", 0.75f}, {"OctSaw", 0.8f}, {"ArpPl06", 0.7f} };      /* the few bright synth presets: a softer top end */
+          for (unsigned k = 0; k < sizeof SN / sizeof SN[0]; k++) if (!strcmp(TYPE_NAME[ty], SN[k].n) && h->tm > SN[k].tm) h->tm = SN[k].tm; }
         if (h->res > 0.01f && h->cm >= 0.999f && h->fenv <= 0.01f) h->cm = 0.8f;      /* resonance needs a filter that is not wide open */
         {   /* oscillator shape: wave-capable sounds that do not already carry a deliberate wave get a random one half of the time */
             const int wc = bt == T_ACID || bt == T_REESE || bt == T_PLUCK || bt == T_STAB || bt == T_PAD || bt == T_LEAD || bt == T_SLEAD || bt == T_SBASS || bt == T_SSUPER || bt == T_SSTRINGS || bt == T_SHOOVER;

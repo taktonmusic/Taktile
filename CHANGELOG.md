@@ -8,6 +8,8 @@
 - Sequencer page: holding Shift no longer replaces the sound knobs by BPM / Swing / Length / Clip (Shift + knobs 1-4 still change them)
 - Naming (project, scene, speech text): after the last letter there is an OK field; a click on it confirms the name (the Menu button still works)
 - Clip and mixer pages: synth tracks are shown as SY1, SY2 ... (not SSY1)
+- Synth presets reworked: every role list starts with a clean INIT (single plain voice), no empty categories any more, 64 new soft synth sounds plus 130 restored distinct older ones; harsh, piercing sounds were softened
+- Drums: only the drum synth is left (drum categories removed); it has lists for Kicks, Snares, Hats, Cymbals, Claps, Toms, Rims and Percussion with INIT first and 48 new sounds; the browser opens in the list of the sound you just played; drum hiss reduced
 - Synth tracks start Mono again; Voices = Poly lets you hold up to eight notes together (choosing a sampler sound switches that track to Poly)
 - MIC page: Shift + Gain knob switches a live monitor on (you hear the input; use headphones). It is off when you leave the page or record
 - Notes To Scale first reads the notes of the other synth tracks, sets master Key + Scale to the best match (major, minor, dorian ...) and then moves the notes of this clip into it
