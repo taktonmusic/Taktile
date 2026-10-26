@@ -7,6 +7,8 @@
 - Arp rate: 1/4 and 1/2 added (slower than 1/8)
 - Scale Q runs once per turn instead of again and again while the knob keeps turning
 - Full Velocity: live pad hits now play at full velocity too, like the steps they record
+- Drum tracks: the Delay and Reverb sends of the drum sounds now work (they were reset to 0 whenever the sounds were sent to the engine)
+- Turning a knob on any page shows the changed value top right next to the page dots (also with Big Values off)
 - Three new synth engines with 10 sounds each: ACID 303 (TB-303 style filter, squelch, accent), SWARM (a wide swarm of detuned saws) and DX 6-OP FM (six operators, the 32 DX algorithms)
 - Presets cut from 1468 to 420 clearly different sounds plus 36 new sounds = 456; sounds of old projects, favorites and kits become the most similar kept sound of the same synth; levels evened out inside every synth
 - Sound browser: the melodic synths are grouped into 6 groups

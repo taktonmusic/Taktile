@@ -164,8 +164,7 @@ function jogFirst(dl) {
     const key = items[0][0], delta = Math.sign(dl) * Math.min(Math.abs(dl), 3), ts0 = toastSeq;
     if (editParam(scopeOf(key), key, delta, 0)) {
         markEdited(); if (toastSeq !== ts0) return;
-        if (!bigOn && !CURVE_KEYS[key]) { needsRedraw = true; return; }
-        const v2 = getVal(scopeOf(key), key); curveKey = key; showToast(fullLabel(view, 0, items).toUpperCase(), fmtVal(key, v2), fracVal(key, v2)); if (toast) toast.nm = 1;
+        const v2 = getVal(scopeOf(key), key); if (bigOn || CURVE_KEYS[key]) curveKey = key; showToast(fullLabel(view, 0, items).toUpperCase(), fmtVal(key, v2), fracVal(key, v2)); if (toast) toast.nm = 1;
     }
 }
 function padView(v) { return v === 53 || v === 50 || v === 43 || v === 30 || v === 38 || v === 39 || v === 46 || v === 36 || (v >= 1 && v <= 3) || v === 5 || v === 6 || v === 9 || v === 14 || v === 19 || v === 24 || v === 26 || v === 27; }
@@ -377,7 +376,7 @@ function applyClipSound(t, c) {                         /* UI follows the clip: 
     ensureCs();
     for (const l of lanesOf(t)) { const v = pads[l][1], p = pads[l][2]; pads[l] = csnd[c][l].slice(); pads[l][1] = v; pads[l][2] = p; }
 }
-function padStrL(l, a) { if (l >= NTRK && (a[PI.dly] || a[PI.rvb])) { a = a.slice(); a[PI.dly] = 0; a[PI.rvb] = 0; } return padStr(a); }      /* drum sounds never feed the shared delay / reverb bus: they have their own insert effects */
+function padStrL(l, a) { return padStr(a); }      /* drum sounds have Delay and Reverb sends too (FX page): the whole row goes to the engine as it is, so a clip change, a sound load or a track switch no longer sets the sends back to 0 */
 function qPadLive(i) { enqueue('setpad' + i, 'setpad', (i + 1) + ':' + padStrL(i, pads[i])); }
 function qPad(i) { storeCs(i); if (liveOk(laneTrk(i))) qPadLive(i); }
 function qLay() { enqueue('laysyn', 'laysyn', String(layS)); }      /* the engine plays the pads of the inbound MIDI route with the same layout as the sequencer records them */
@@ -2160,8 +2159,7 @@ function knobTouch(i) {
     if (view === 7) { const t = bank * 4 + (i & 3), k = i >= 4 ? 'pan' : 'vol', tvv = k === 'pan' ? pads[t][PI.pan] : getTV(t); showToast(k === 'pan' ? 'PAN' : 'VOLUME', kind[t] && k === 'pan' ? 'PER SOUND' : fmtVal(k, tvv), tvv); return; }
     const items = VIEW_ITEMS[itemsView()]; if (!items || i >= items.length) return;
     const scope = scopeOf(items[i][0]), v = getVal(scope, items[i][0]);
-    if (!bigOn && !CURVE_KEYS[items[i][0]]) { needsRedraw = true; return; }
-    curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v), fracVal(items[i][0], v)); if (toast) toast.nm = 1;
+    if (bigOn || CURVE_KEYS[items[i][0]]) curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v), fracVal(items[i][0], v)); if (toast) toast.nm = 1;
 }
 const LONG_NAME = { dly_time: 'Delay Time', dly_fb: 'Delay Feedback', dly_mode: 'Delay Type', dly_tone: 'Delay Tone', dly_wide: 'Delay Width', dly_ret: 'Delay Return', rvb_size: 'Reverb Size', rvb_dark: 'Reverb Damping', rvb_mode: 'Reverb Type', rvb_wide: 'Reverb Width', rvb_low: 'Reverb Low Cut', dmode: 'Delay Type', rmode: 'Reverb Type', dtime: 'Delay Time', dfb: 'Delay Feedback', rsize: 'Reverb Size', rdark: 'Reverb Damping', chrt: 'Chorus Rate', chdp: 'Chorus Depth', phrt: 'Phaser Rate', phfb: 'Phaser Feedback',
     dly: 'Delay Send', rvb: 'Reverb Send', cut: 'Lowpass Cutoff', locut: 'Highpass Cutoff', res: 'Resonance', fenv: 'Filter Envelope', crush: 'Bit Crusher', ring: 'Ring Modulator', pump: 'Pump', wob: 'Wobble',
@@ -6150,7 +6148,7 @@ globalThis.onMidiMessageInternal = function (data) {
         if (!shiftHeld && view === 28 && !smpPage && items[i][0] === 'smp') { const st = slowStep(i, delta, 5); if (st) sampleList(st); return; }
         const ts0 = toastSeq;
         lastKnob = items[i][0]; hot = { v: view, i: i, t: 75 }; if (view === 31) songHoldT = Date.now() + 6000;      /* turning a song knob: the page stays on that step (it does not jump to the playing one) */
-        if (editParam(scopeOf(items[i][0]), items[i][0], delta, i)) { markEdited(); if (toastSeq !== ts0) return; if (!bigOn && !CURVE_KEYS[items[i][0]]) { needsRedraw = true; return; } const v2 = getVal(scopeOf(items[i][0]), items[i][0]); curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v2), fracVal(items[i][0], v2)); if (toast) toast.nm = 1; }
+        if (editParam(scopeOf(items[i][0]), items[i][0], delta, i)) { markEdited(); if (toastSeq !== ts0) return; const v2 = getVal(scopeOf(items[i][0]), items[i][0]); if (bigOn || CURVE_KEYS[items[i][0]]) curveKey = items[i][0]; showToast(fullLabel(view, i, items).toUpperCase(), fmtVal(items[i][0], v2), fracVal(items[i][0], v2)); if (toast) toast.nm = 1; }
     }
 };
 
