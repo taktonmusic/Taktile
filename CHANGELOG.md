@@ -7,6 +7,9 @@
 - MIC page: Shift + Gain knob switches a live monitor on (you hear the input; use headphones). It is off when you leave the page or record
 - Notes To Scale first reads the notes of the other synth tracks, sets master Key + Scale to the best match (major, minor, dorian ...) and then moves the notes of this clip into it
 - Tracks are shown as DRM1, SY1, SY2 ... instead of T01 / S02
+- A step can hold several notes: pads played together while recording (or pads held + a step button) are stored as a chord and all notes play back, in Mono and Poly
+- CHORD pad mode is only a pad layout now (left = notes, right = chords): entering or leaving it does not change the track's MIDI effect or sound; chord pads are recorded as full chords
+- Note Repeat works on synth tracks too (Shift + step 11 > Repeat)
 - Arp rate: 1/4 and 1/2 added (slower than 1/8)
 - Scale Q runs once per turn instead of again and again while the knob keeps turning
 - Full Velocity: live pad hits now play at full velocity too, like the steps they record

@@ -18,10 +18,10 @@ ok(run('VIEW_ITEMS[53].length') === 6 && run('VIEW_ITEMS[53][0][0]') === 'l1t', 
 run('editParam("pad", "l1t", 7, 0); editParam("pad", "l1t", 7, 0)'); T(2);
 ok(run('Math.round(pads[0][PI.l1t])') === 2, 'LFO 1 target changes (' + run('pads[0][PI.l1t]') + ')');
 run('askKind = -1'); cc(3, 127); T(2); ok(run('VIEW_ITEMS[53][0][0]') === 'l2t', 'jog click = next LFO');
-run('selectTrack(0); view = 0; topModes[0] = 4; chordReconcile()'); T(2);
-ok(run('pads[0][PI.mfx]') === 2, 'chord mode sets the chord effect');
+run('selectTrack(0); view = 0; var mf0 = pads[0][PI.mfx]; topModes[0] = 4; chordReconcile()'); T(2);
+ok(run('pads[0][PI.mfx]') === run('mf0'), 'chord mode leaves the track\'s own effect alone');
 run('topModes[0] = 0; chordReconcile()'); T(2);
-ok(run('pads[0][PI.mfx]') === 2, 'leaving chord mode with notes keeps the chord effect');
+ok(run('pads[0][PI.mfx]') === run('mf0'), 'leaving chord mode changes nothing');
 run('selectTrack(5); for (let c = 0; c < NPAT; c++) for (const l of lanesOf(5)) { steps[c][l] = steps[c][l].map(() => [0, 100, 0, 0]); }; topModes[5] = 4; chordReconcile(); topModes[5] = 0; chordReconcile()'); T(2);
 ok(run('pads[5][PI.mfx]') !== 2, 'an empty track gets its old effect back');
 run('selectTrack(2); lens[2] = 32; growTrk[2] = true; growG0[2] = 0; growP0[2] = 10; growMax[2] = 1; gs = 27; recStopLen()');

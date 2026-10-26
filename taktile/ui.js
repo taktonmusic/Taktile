@@ -317,6 +317,13 @@ function decStepOld(h) {                                  /* states saved before
     return [(a & 0x80) ? 1 : 0, (a & 0x7F) || 100, (b & 31) - 16, (b >> 5) * 4];
 }
 function encTrack(p, t) { return steps[p][t].map(encStep).join(''); }
+/* extra notes of a step (a recorded chord): st[10..12] = semitone + 65, 0 / undefined = none. The main note stays st[2]. */
+function stX(st) { const r = []; for (let k = 10; k < 13; k++) if (st[k]) r.push(st[k] | 0); return r; }
+function xnStr(p, t, s) { const x = stX(steps[p][t][s]); return p + ',' + t + ',' + s + ',' + (x[0] || 0) + ',' + (x[1] || 0) + ',' + (x[2] || 0); }
+function enqueueEnd(uk, dk, val) { for (let i = 0; i < queue.length; i++) if (queue[i][0] === uk) { queue.splice(i, 1); break; } queue.push([uk, dk, val]); }
+function qX(p, t, s) { if (t < NTRK && stX(steps[p][t][s]).length) enqueueEnd('sx' + p + '_' + t + '_' + s, 'sx', xnStr(p, t, s)); }
+function xnPack() { const o = {}; for (let p = 0; p < NPAT; p++) for (let t = 0; t < NTRK; t++) { const a = []; for (let s = 0; s < MAXSTEP; s++) { const st = steps[p][t][s], x = st && stX(st); if (x && x.length && st[0]) a.push([s, x[0] || 0, x[1] || 0, x[2] || 0]); } if (a.length) o[p + '_' + t] = a; } return o; }
+function xnLoad(o) { if (!o || typeof o !== 'object') return; for (const k in o) { const m = k.split('_'), p = +m[0], t = +m[1]; if (!steps[p] || !steps[p][t] || !Array.isArray(o[k])) continue; for (const e of o[k]) { const st = steps[p][t][e[0]]; if (!st) continue; while (st.length < 10) st.push(0); st[10] = e[1] | 0; st[11] = e[2] | 0; st[12] = e[3] | 0; } } }
 function trackHasSteps(p, t) { if (kind[t]) { for (const l of lanesOf(t)) if (laneHas(p, l)) return true; return false; } return laneHas(p, t); }
 const LOCK_KEYS = ['cut', 'res', 'fenv', 'tune', 'decay', 'tone', 'drive', 'pan', 'vol', 'locut', 'dlt'], LOCK_NAME = ['LPCut', 'Reso', 'FltEnv', 'Tune', 'Decay', 'Tone', 'Drive', 'Pan', 'Vol', 'HPCut', 'Letter'];
 let ciOn = true, ciBeats = 0;                                   /* count-in before recording starts */
@@ -393,6 +400,7 @@ function qTransport() {
 function qSeq(p, t) {                                      /* long patterns go out in chunks of 32 steps */
     const h = encTrack(p, t);
     for (let o = 0; o < MAXSTEP; o += 16) enqueue('seq' + p + '_' + t + '_' + o, 'seqd', p + ',' + t + ',' + o + ':' + h.substr(12 * o, 192));
+    if (t < NTRK) for (let s = 0; s < MAXSTEP; s++) qX(p, t, s);
 }
 function setLen(n, wholeTrack) {                           /* loop length: a drum sound has its own, otherwise (or with wholeTrack) the track's */
     growTrk[sel] = false;
@@ -442,7 +450,7 @@ function btnStep(i, pg) { const q = pg === undefined ? stepPage : pg; if (!isTri
 function stepBtn(s) { if (!isTrip()) return s & 15; const k = s % 12; return Math.floor(k / 3) * 4 + k % 3; }
 function curStep(t, n) { const f = ((gl(t) - 1) * 6 + (posFr || 0) * 0.06) / RES(t); return ((Math.floor(f + 1e-9) % n) + n) % n; }      /* the step of track t that is sounding now */
 function qSeqT(p, t) { for (const l of lanesOf(t)) qSeq(p, l); }
-function qStep(p, t, s) { enqueue('st' + p + '_' + t + '_' + s, 'st', p + ',' + t + ',' + s + ',' + encStep(steps[p][t][s])); }
+function qStep(p, t, s) { enqueue('st' + p + '_' + t + '_' + s, 'st', p + ',' + t + ',' + s + ',' + encStep(steps[p][t][s])); qX(p, t, s); }
 function qEverything(wipe) {
     for (let l = 0; l < NLANE; l++) if (lmutes[l] || lmSent[l]) { enqueue('lmute' + l, 'lmute', l + ',' + lmutes[l]); lmSent[l] = lmutes[l]; }
     qMaster(); qTransport(); qLay(); enqueue('reprate', 'reprate', String(repRate));
@@ -468,7 +476,7 @@ function saveState() {
         for (let p = 0; p < NPAT; p++) { const row = []; for (let l = 0; l < NLANE; l++) row.push(laneHas(p, l) ? encTrack(p, l) : ''); seqHex.push(row); }
         const keep = {}; for (let t = 0; t < NTRK; t++) { keep[t] = 1; if (slot[t] >= 0) for (let k = 0; k < 16; k++) keep[NTRK + slot[t] * 16 + k] = 1; }
         const cs = csnd.map(row => row.map((r, l) => keep[l] ? r : null));
-        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, tv: 2, hv: 3, pm: 1, spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, cl: clipLen, co: clipOct, bl: baseLen, tr: tres, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 3 : 4, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
+        host_write_file(STATE_FILE, JSON.stringify({ v: 2, av: 2, tv: 2, hv: 3, pm: 1, xn: xnPack(), spk: spkTxt, mg: 1, qg: [qGrid, [25, 50, 75, 100].reduce((b, v, k) => Math.abs(v - qAmt) < Math.abs([25, 50, 75, 100][b] - qAmt) ? k : b, 0), qAmt], fx: 2, pf: 2, sf: 12, lm: lmutes, rr: repRate, pads, master: (monoChk ? master.map((v, i) => i === MI.m_wid ? monoSaved : v) : master), seq: seqHex, lens, cl: clipLen, co: clipOct, bl: baseLen, tr: tres, mutes, bpm, swing, ed, pm: topModes, cb: chBak, ba: browseAll, rq: rqOff, cs: cs, kd: kind, ch: chosen, ll: llen, sl: slot, ds: dsel, tv: tv, ly: [layS, layD], sm: slm, au: AUTO, sg: { on: songOn, l: songList, lp: songLoop ? 1 : 0 }, mo: [moClk, moMask, moChn, moXp, moVp, moDn], eu: [euV], ep: euP, bp: broPath, tc: tcolO, rn: [rndDens, rndVar, rndKey, rndRat], lt: lockT, fk: favK, fv: favs, rc: recent, fo: favOnly ? 1 : 0, ui: [splashOn ? 1 : 0, idleOn ? 1 : 0, dispInv ? 1 : 0, repAllowed ? 1 : 0, slowKnobs ? 1 : 0, knobLedsOn ? 1 : 0, uiTheme, bigOn ? 1 : 0, slideOn ? 1 : 0, ciOn ? 1 : 0, knobLvlOn ? 1 : 0, 1, btnBright ? 3 : 4, lang], fl: fol, sn: sceneNames, sq: sceneQ, se: sel }));
         dirty = false; saveFlash = 30; needsRedraw = true;
     } catch (e) { /* ignore */ }
 }
@@ -527,6 +535,7 @@ function loadState() {
             const h = o.seq[p] && o.seq[p][t];
             if (h && steps[p][t]) { const w = o.sf === 12 ? 12 : (o.sf === 10 ? 10 : (o.sf === 6 ? 6 : 4)); for (let s = 0; s < Math.min(MAXSTEP, Math.floor(h.length / w)); s++) steps[p][t][s] = w >= 10 ? decStep(h.substr(w * s, w)) : (w === 6 ? decStep(h.substr(6 * s, 6)) : decStepOld(h.substr(4 * s, 4))); }
         }
+        xnLoad(o.xn);
         if (Array.isArray(o.cs) && o.cs.length === NPAT && o.cs.every(row => Array.isArray(row) && (row.length === NTRK || row.length === NLANE))) {
             csnd = o.cs.map(row => { const out = []; for (let l = 0; l < NLANE; l++) { const a = row[l]; if (Array.isArray(a)) { const b = a.map(Number); while (b.length < PK.length) b.push(defOf(b.length)); if (tuneMig) b[PI.tune] = tuneNew(b[PI.tune]); out.push(neutEng2(b, l)); } else out.push(pads[l].slice()); } return out; });
         }
@@ -1600,7 +1609,6 @@ function toggleTop(m, force) {
     if (!force && !canTop()) { showToast('PAD MODE', 'OPEN THE TRACK FIRST', 0); return; }                                    /* Shift + step 11 = note repeat on/off, Shift + step 12 = step grid on/off; off goes back to where you were (PITCH or the other mode) */
     if (m === 1 && !repAllowed) { showToast('NOTE REPEAT', 'OFF IN MENU', 0); return; }
     if (m === 4 && kind[sel]) { showToast('CHORD PADS', 'SYNTH TRACKS ONLY', 0); return; }
-    if (m === 1 && !kind[sel]) { showToast('NOTE REPEAT', 'DRUM TRACKS ONLY', 0); return; }
     liveFxAllOff(); const cur = topModes[sel], name = m === 1 ? 'NOTE REPEAT' : (m === 3 ? 'LIVE FX' : (m === 4 ? 'CHORD PADS' : 'STEP GRID'));
     if (cur === m) { const back = topPrev[sel] !== m ? topPrev[sel] : 0; topModes[sel] = back; heldStep = -1; heldPad = -1; showToast(name, 'OFF  > ' + TOP_NAMES[back], 0); }
     else { topPrev[sel] = cur; topModes[sel] = m; heldStep = -1; heldPad = -1; showToast(name, 'ON', 1); }
@@ -1701,22 +1709,29 @@ const CH_PG2 = [['m2fx', 'Layer FX', 'Lyr'], ['m2amt', 'Layer Amt', 'LAmt'], ['m
 let chPage = 0;
 let chPrev = 1;
 let chBak = new Array(16).fill(null), chOn = new Array(16).fill(0), favSig = 0;
+function chordFxOn(t) { const m = Math.round(pads[t][PI.mfx]); return m === 2 || m === 11; }
+function chordPadNotes(t, semi) {                                /* the notes of a chord pad, like the engine plays them: [root, ...] (CHORD = fixed shapes, DIATONIC = the chord of the scale degree) */
+    const a = pads[t], m = Math.round(a[PI.mfx]), pr = a[PI.mprm];
+    if (m === 11) {
+        const sc = effScale(t), S = SCALE7[sc], n7 = S.length, ks = 5 - effKey(t), as = semi + ks, o = Math.floor(as / 12), r = as - o * 12;
+        let deg = 0, bd = 99; for (let k = 0; k < n7; k++) { const dd = Math.abs(S[k] - r); if (dd < bd) { bd = dd; deg = k; } }
+        const base = o * 12 - ks, n = pr < 0.25 ? 3 : (pr < 0.5 ? 4 : (pr < 0.75 ? 5 : 3)), stp = [0, 2, 4, 6, 8], out = [base + S[deg]];
+        for (let k = 1; k < n; k++) { const g = deg + stp[k]; let sm = base + S[g % n7] + 12 * Math.floor(g / n7); if (pr >= 0.75 && k === 1) sm += 12; out.push(sm); }
+        return out;
+    }
+    const CHD = [[0, 4, 7], [0, 3, 7], [0, 2, 7], [0, 5, 7], [0, 4, 7, 10], [0, 3, 7, 10], [0, 4, 7, 11], [0, 3, 6, 9]], ci = clamp(Math.floor((m === 2 ? pr : 0) * 7.99), 0, 7);
+    return CHD[ci].map(d => semi + d);
+}
 function chordOn() { return !kind[sel] && topModes[sel] === 4; }
 function trackAnyNotes(t) { for (let c = 0; c < NPAT; c++) if (trackHasSteps(c, t)) return true; return false; }
 function chordReconcile() {                                   /* switching the mode on sets the track's MIDI effect to CHORD (the old one is remembered), switching it off brings the old one back */
     for (let t = 0; t < NTRK; t++) {
         const want = !kind[t] && topModes[t] === 4 ? 1 : 0;
         if (kind[t] && topModes[t] === 4) topModes[t] = 0;
-        if (!kind[t] && topModes[t] === 1) topModes[t] = 0;
         if (want === chOn[t]) continue;
         chOn[t] = want; const a = pads[t]; if (!a) continue;
-        pSnap('pad', t, 'chordmode');
-        if (want) {
-            const m = Math.round(a[PI.mfx]);
-            if (m !== 2 && m !== 11) { chBak[t] = [a[PI.mfx], a[PI.mamt], a[PI.mprm]]; a[PI.mfx] = 2; a[PI.mamt] = 0.7; a[PI.mprm] = 0; } else chBak[t] = null;
-        } else if (chBak[t] && trackAnyNotes(t)) { chBak[t] = null; showToast('CHORD STAYS', 'IN MIDI FX', 1); }      /* leaving the mode: a track with notes keeps its chord effect, so it still plays what you played */
-        else if (chBak[t]) { a[PI.mfx] = chBak[t][0]; a[PI.mamt] = chBak[t][1]; a[PI.mprm] = chBak[t][2]; chBak[t] = null; }
-        qPad(t); markEdited(); needsRedraw = true;
+        chBak[t] = null;      /* the mode only changes the pad layout: the track's MIDI effect and sound stay exactly as they are */
+        markEdited(); needsRedraw = true;
         if (t === sel) {      /* the screen follows the mode: the CHORD page opens, and when the mode ends the screen goes back to where it was */
             favBuild();
             if (want) { if (view !== 44) chPrev = view; chPage = 0; favBuild(); tabEnter(44); showToast('CHORD MODE', 'LEFT = NOTES, RIGHT = CHORDS', 1); }
@@ -2606,7 +2621,7 @@ function recUndo(track, lane) {                           /* one live take = one
 let lastRec = null; const recHeldPad = {};
 let padHold = {};                                          /* pads held down right now: a step button pressed meanwhile gets exactly that note */
 function recRelease(key, lane) {                           /* the recorded note lasts as long as the pad was held (long = step length up to 15 steps, very short = short gate) */
-    const h = recHeldPad[key]; delete recHeldPad[key]; if (!h || !pads[lane]) return;
+    const h = recHeldPad[key]; delete recHeldPad[key]; if (!h || !pads[lane] || h.x) return;
     let dur = (Date.now() - h.t) / (15000 / bpm);                      /* fallback: the clock of the UI */
     if (playing && h.g !== undefined) { const r = dspGet('pos'); if (typeof r === 'string') { const a = r.split(','), g = parseInt(a[1]) || 0, f = parseInt(a[3]) || 0; const d2 = (g - h.g) + (f - h.f) / 100; if (d2 >= 0 && d2 < 4096) dur = d2; } }
     dur = dur * 6 / RES(laneTrk(h.l));                                  /* sixteenths -> steps of this track's grid */
@@ -2618,7 +2633,9 @@ function recRelease(key, lane) {                           /* the recorded note 
     else if (dur < 0.35) st[5] = 1; else if (dur < 0.65) st[5] = 2; else return;
     qStep(h.c, h.l, h.i); markEdited();
 }
-function recHit(lane, semi, vel, key) { lastRec = null; recordHit(lane, semi, vel); if (lastRec) recHeldPad[key] = { c: lastRec.c, l: lastRec.l, i: lastRec.i, g: lastRec.g, f: lastRec.f, t: Date.now() }; }
+let recStack = false;
+function recHit(lane, semi, vel, key) { lastRec = null; recStack = false; recKey = key; recordHit(lane, semi, vel); if (lastRec) recHeldPad[key] = { c: lastRec.c, l: lastRec.l, i: lastRec.i, g: lastRec.g, f: lastRec.f, t: Date.now(), x: recStack }; }
+let recKey = null;
 function recordHit(lane, semi, vel, at) {
     if (fb) return;                                            /* the sound browser is open: pads only play, nothing is recorded */
     const track = laneTrk(lane);
@@ -2628,7 +2645,7 @@ function recordHit(lane, semi, vel, at) {
     if (!playing) {                                   /* arm + first hit starts the clip recorder */
         recUndo(track, lane);
         playing = true; gs = 0; dspSet('play', '1'); growTrk[track] = !trackHasSteps(ed[track], track); growG0[track] = 0; growP0[track] = 0; growMax[track] = 1; growEdge[track] = 0;
-        const st0 = steps[ed[track]][lane][0]; st0[0] = 1; st0[1] = clamp(vel, 1, 127); st0[2] = clamp(semi, -64, 63);
+        const st0 = steps[ed[track]][lane][0]; st0[0] = 1; st0[1] = clamp(vel, 1, 127); st0[2] = clamp(semi, -64, 63); st0[10] = 0; st0[11] = 0; st0[12] = 0;
         dspSet('rskip', lane + ',0'); qStep(ed[track], lane, 0); lastRec = { c: ed[track], l: lane, i: 0, g: 1, f: 0 }; showToast('REC', tl(track) + ' C' + (ed[track] + 1), 1); markEdited(); return;
     }
     recUndo(track, lane);
@@ -2643,7 +2660,15 @@ function recordHit(lane, semi, vel, at) {
     if (growTrk[track]) while (len < MAXSTEP && rel >= len) { growLoop(lane, len + barSteps(track)); const l2 = effLen(lane); if (l2 <= len) break; len = l2; }      /* the take always reaches the bar you are playing in, even when the loop did not grow in time */
     if (growTrk[track]) { growMax[track] = Math.max(growMax[track], rel + 1); if (rel > 0 && rel % barSteps(track) === 0) growEdge[track] = Math.max(growEdge[track], rel); }
     const target = ((rel % len) + len) % len;
-    const st = steps[ed[track]][lane][target]; st[6] = tN; for (let q = st.length; q < 10; q++) st[q] = 0; st[5] = 0; st[9] = 0;
+    const st = steps[ed[track]][lane][target];
+    if (lane < NTRK && st[0] && !at) for (const hk in recHeldPad) {          /* POLY: another pad of this track is held on the very same step: this note is added to it (a chord), it does not replace it */
+        const e = recHeldPad[hk]; if (hk === recKey || !e || e.c !== ed[track] || e.l !== lane || e.i !== target || Date.now() - e.t > 600) continue;
+        for (let q = st.length; q < 13; q++) st[q] = 0;
+        const sm = clamp(semi, -64, 63), already = st[2] === sm || st[10] === sm + 65 || st[11] === sm + 65 || st[12] === sm + 65, free = [10, 11, 12].find(k => !st[k]);
+        if (!already && free !== undefined) st[free] = sm + 65;
+        recStack = true; lastRec = { c: ed[track], l: lane, i: target, g: g, f: fr }; qStep(ed[track], lane, target); markEdited(); return;
+    }
+    st[6] = tN; for (let q = st.length; q < 10; q++) st[q] = 0; st[5] = 0; st[9] = 0; st[10] = 0; st[11] = 0; st[12] = 0;
     st[0] = 1; st[1] = clamp(vel, 1, 127); st[2] = clamp(semi, -64, 63);
     if (tS > Math.floor(((g - 1) + fr / 100) * 6 / rs + 1e-9)) dspSet('rskip', lane + ',' + tS);      /* the step is still ahead: the pad already sounded, so this pass does not play it a second time */
     qStep(ed[track], lane, target); lastRec = { c: ed[track], l: lane, i: target, g: g, f: fr }; markEdited();
@@ -2703,7 +2728,7 @@ function drumPad(idx, on, vel) {                          /* drum track: left 4x
 }
 function delNote(L, semi) {                                 /* Delete + note pad: removes every step of that pitch */
     const c = ed[sel]; let n = 0; snap(c, L);
-    for (let k = 0; k < MAXSTEP; k++) { const st = steps[c][L][k]; if (st[0] && st[2] === semi) { steps[c][L][k] = [0, 100, 0, 0]; n++; } }
+    for (let k = 0; k < MAXSTEP; k++) { const st = steps[c][L][k]; if (st[0] && st[2] === semi) { const ex = stX(st).filter(v => v !== semi + 65); if (ex.length) { const nn = ex.shift() - 65; st[2] = nn; st[10] = ex[0] || 0; st[11] = ex[1] || 0; st[12] = 0; n++; qStep(c, L, k); } else { steps[c][L][k] = [0, 100, 0, 0]; n++; } } else if (st[0] && stX(st).indexOf(semi + 65) >= 0) { for (let q = 10; q < 13; q++) if (st[q] === semi + 65) st[q] = 0; n++; qStep(c, L, k); } }
     if (n) { qSeq(c, L); markEdited(); }
     showToast(n ? 'NOTE DELETED' : 'NO NOTE HERE', n ? n + ' STEPS' : '', 0);
 }
@@ -2740,13 +2765,19 @@ function onPadCore(idx, on, vel) {
     if (on && deleteHeld) { delNote(sel, notePadSemi(dg) + oct()); return; }
     if (on) lastSemi[sel] = clamp(notePadSemi(dg) + oct(), -64, 63);
     if (on) padHold[idx] = { lane: sel, semi: clamp(notePadSemi(dg) + oct(), -64, 63), vel: fullVel ? 127 : Math.max(1, vel) }; else delete padHold[idx];
-    if (on && heldStep < 0) { recHit(sel, notePadSemi(dg) + oct(), vel, idx); logHit(sel, notePadSemi(dg) + oct(), vel); }
+    if (on && heldStep < 0) {
+        recHit(sel, notePadSemi(dg) + oct(), vel, idx); logHit(sel, notePadSemi(dg) + oct(), vel);
+        if (m === 4 && (idx & 7) >= 4 && lastRec && !chordFxOn(sel)) {      /* a chord pad is recorded as the whole chord (when the track's own MIDI effect is not already a chord) */
+            const st = steps[lastRec.c][lastRec.l][lastRec.i], ns = chordPadNotes(sel, clamp(notePadSemi(dg) + oct(), -64, 63));
+            if (st && st[0]) { while (st.length < 13) st.push(0); st[2] = clamp(ns[0], -64, 63); for (let k = 0; k < 3; k++) st[10 + k] = ns[k + 1] !== undefined ? clamp(ns[k + 1], -64, 63) + 65 : 0; qStep(lastRec.c, lastRec.l, lastRec.i); }
+        }
+    }
     if (!on) recRelease(idx, sel);
     if (on && heldStep >= 0) {                                       /* hold step + pad = set pitch */
         const st = stepAt(heldStep); st[2] = clamp(notePadSemi(dg) + oct(), -64, 63);
         heldEdited = true; qStep(ed[sel], sel, heldStep); showToast('PITCH', (st[2] > 0 ? '+' : '') + st[2] + 'st', (st[2] + 64) / 127); markEdited();
     }
-    if (!inboundActive()) dspSet('npad', dg + ',' + (on ? (fullVel ? 127 : Math.max(1, vel)) : 0) + ',' + (m === 1 ? 1 : (m === 4 && (idx & 7) < 4 ? 2 : 0)));
+    if (!inboundActive()) dspSet('npad', dg + ',' + (on ? (fullVel ? 127 : Math.max(1, vel)) : 0) + ',' + (m === 1 ? 1 : (m === 4 && (idx & 7) >= 4 ? 3 : 0)));
 }
 let loopKeys = [];      /* step buttons held together with Loop: 1 = that many steps, 2 or more together = that many bars */
 function onStep(i, on) {
@@ -2778,7 +2809,9 @@ function onStep(i, on) {
         if (deleteHeld) { snap(ed[sel], L); steps[ed[sel]][L][s] = [0, 100, 0, 0]; qStep(ed[sel], L, s); markEdited(); return; }
         const ph = Object.keys(padHold); if (ph.length && heldStep < 0 && view !== 7) {      /* a pad is held: this step gets exactly its note (and how hard it was hit) */
             const h = padHold[ph[ph.length - 1]], c = ed[sel]; snap(c, h.lane); const st = steps[c][h.lane][s]; for (let q = st.length; q < 10; q++) st[q] = 0;
-            st[0] = 1; st[1] = clamp(h.vel, 1, 127); st[2] = h.semi; qStep(c, h.lane, s); markEdited(); if (!playing) launchClip(sel, ed[sel]); showToast('STEP ' + (s + 1), kind[sel] ? 'SOUND SET' : (h.semi > 0 ? '+' : '') + h.semi + ' ST', 1); needsRedraw = true; return;
+            st[0] = 1; st[1] = clamp(h.vel, 1, 127); st[2] = h.semi; st[10] = 0; st[11] = 0; st[12] = 0;
+            if (h.lane < NTRK) { const more = []; for (const k of ph) { const e = padHold[k]; if (e && e.lane === h.lane && e.semi !== h.semi && more.indexOf(e.semi) < 0) more.push(e.semi); } more.slice(0, 3).forEach((m, q) => { st[10 + q] = m + 65; }); }      /* several pads held + step = a chord on that step */
+            qStep(c, h.lane, s); markEdited(); if (!playing) launchClip(sel, ed[sel]); showToast('STEP ' + (s + 1), kind[sel] ? 'SOUND SET' : (h.semi > 0 ? '+' : '') + h.semi + ' ST', 1); needsRedraw = true; return;
         }
         if (heldStep >= 0 && heldStep !== s && !heldGrp.includes(s) && s < LL()) {
             /* a second step while one is held: (1) the first step lasts until here, like on the Move; (2) the step is also held with the first one, so as long as you keep both down the knobs edit both (probability ...) */

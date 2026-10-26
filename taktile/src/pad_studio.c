@@ -821,6 +821,7 @@ typedef struct {
     float sbuf[NLANE][2][SB_SIZE];
 
     /* sequencer */
+    uint8_t xn[NPAT][NTRK][MAXSTEP][3], rt_x[NTRK][3];   /* extra notes of a step (a recorded chord): semitone + 65, 0 = none */
     uint8_t stp[NPAT][NLANE][MAXSTEP][7];   /* a = on<<7 | vel, b = probability 0..7, c = semi + 64, d = ratchet | gate<<2 | cond<<5, e = nudge 0..7, f = parameter lock value 0 (none) .. 127 */
     double lfx_ph[NTRK][4]; long lfx_cyc[NTRK][4]; float lfx_r0[NTRK][4], lfx_r1[NTRK][4], lm_w[NLANE][4], lfx_b[NLANE][4]; uint8_t lm_t[NLANE][4]; unsigned lfx_rng; int sctr; int baselen[NTRK], cplen[NPAT][NTRK], coct[NTRK]; signed char cpoct[NPAT][NTRK];   /* the four LFOs of every track: phase, random values, and what was written to each lane (so it can be taken back exactly) */
     int rh_on, rh_n, rh_l[16], rh_semi[16], rh_vel[16], rh_g[16], rh_fr[16];   /* note repeat while recording: every repeated hit is reported to the UI so it can be written into the clip */
@@ -2802,6 +2803,10 @@ static void rt_fire(inst_t *s, int t) {
             if (ap->key == -2) { ap->on = 0; ap->key = -1; }
             trig(s, t, s->rt_vel[t], s->rt_semi[t], 1);
         }
+        if (t < NTRK) for (int k = 0; k < 3; k++) if (s->rt_x[t][k]) {      /* the other notes of a recorded chord: layered voices that end with the main note */
+            int xs = (int)s->rt_x[t][k] - 65 + s->sctr + s->coct[t] + (int)((s->pp[t][PP_TRN] - 0.5f) * 48.0f + (s->pp[t][PP_TRN] >= 0.5f ? 0.5f : -0.5f));
+            trig_layer(s, t, s->rt_vel[t], xs, 1);
+        }
         { const int tk = lane_trk(s, t); if (s->mo_trk & (1 << tk)) mo_note(s, t, tk, s->rt_vel[t], s->rt_semi[t], s->rt_gate[t]); }
         if (TY[s->vc[t].type].sus) { s->gate_left[t] = s->rt_gate[t] > 0 ? s->rt_gate[t] : 1; s->act_dirty = 1; }
     }
@@ -2900,6 +2905,7 @@ static void seq_step(inst_t *s) {
             float gs_ = gi == 0 ? 0.8f * iv : GT[gi] * Ls;
             if (st[6] > 0) gs_ = (float)st[6] * Ls - 1.0f;      /* held-step length: lasts exactly until the chosen step */
             if (n > 1 && gs_ > 0.9f * iv) gs_ = 0.9f * iv;
+            if (t < NTRK) memcpy(s->rt_x[t], s->xn[s->clip[tk]][t][gl % len], 3);
             s->act_dirty = 1; s->rt_n[t] = n; s->rt_int[t] = iv; s->rt_semi[t] = semi; s->rt_vel[t] = hv; s->rt_gate[t] = (int)gs_;
             s->rt_cnt[t] = (float)((st[4] & 0x40) ? (st[4] & 0x3F) : (st[4] & 7) * 4) * 0.025f * Ls;      /* nudge: delay up to 70 % of a step in 2.5 % steps (older saves: 10 % steps) */
             if (grv_on) s->rt_cnt[t] += GRV_T[grv][gp / 6] * s->g[G_GAM] * L;      /* groove template */
@@ -2927,6 +2933,7 @@ static int hexv(char c) { return c >= '0' && c <= '9' ? c - '0' : (c >= 'a' && c
 static void put_step(inst_t *s, int pat, int t, int st, const char *h, int w) {
     if (pat < 0 || pat >= NPAT || t < 0 || t >= NLANE || st < 0 || st >= MAXSTEP) return;
     const int bb = (hexv(h[2]) << 4) | hexv(h[3]), ee = (hexv(h[8]) << 4) | hexv(h[9]), ff = w >= 12 ? (hexv(h[10]) << 4) | hexv(h[11]) : 0;
+    if (t < NTRK) memset(s->xn[pat][t][st], 0, 3);
     s->stp[pat][t][st][0] = (uint8_t)((hexv(h[0]) << 4) | hexv(h[1]));
     s->stp[pat][t][st][1] = (uint8_t)(bb & 0x9F);
     s->stp[pat][t][st][2] = (uint8_t)((hexv(h[4]) << 4) | hexv(h[5]));
@@ -2965,9 +2972,16 @@ static int rep_start(inst_t *s, int t, int k, float semi, float vel) {
     return f;
 }
 /* pad k (0..31) plays the selected track chromatically in the scale; repeat = retrigger while held at the track's rate */
+/* CHORD pads (right half of the CHORD mode): this hit is played as a chord, whatever MIDI effect the track has - the track's own settings are put back at once, so entering or leaving the mode never changes how the track sounds */
+static void trig_chordpad(inst_t *s, int t, float vel, int sm) {
+    const float f = s->pp[t][PP_MFX], a = s->pp[t][PP_MAMT]; const int m = (int)(f + 0.5f);
+    if (m != 2 && m != 11) { s->pp[t][PP_MFX] = 2.0f; if (a < 0.3f) s->pp[t][PP_MAMT] = 0.7f; }
+    trig(s, t, vel, sm, 1);
+    s->pp[t][PP_MFX] = f; s->pp[t][PP_MAMT] = a;
+}
 static void sel_pad(inst_t *s, int k, int vel, int repeat) {
     if (k < 0 || k >= 96) return;
-    const int dry = repeat == 2; if (dry) repeat = 0;                       /* 2 = a single note without the MIDI effects (the note half of the CHORD pads) */
+    const int dry = repeat == 2, chd = repeat == 3; if (dry || chd) repeat = 0;                       /* 2 = a single note without the MIDI effects (the note half of the CHORD pads) */
     int kk = k & 31;
     if (vel > 0) {
         int t = s->sel_track; if (t < 0 || t >= NLANE) t = 0;
@@ -2979,7 +2993,7 @@ static void sel_pad(inst_t *s, int k, int vel, int repeat) {
             trig(s, t, (float)vel / 127.0f, sm + arp_offset(s, t, 0), 1);
         } else {
             if (ap->key >= 0) { ap->on = 0; ap->key = -1; }
-            if (dry) trig_raw(s, t, (float)vel / 127.0f, sm, 1); else trig(s, t, (float)vel / 127.0f, sm, 1);
+            if (dry) trig_raw(s, t, (float)vel / 127.0f, sm, 1); else if (chd) trig_chordpad(s, t, (float)vel / 127.0f, sm); else trig(s, t, (float)vel / 127.0f, sm, 1);
         }
         s->vc[t].gk = k + 1;
         s->ar[t].held = 1;
@@ -3088,7 +3102,6 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
     }
     int p = note_to_pad(msg[1]);
     if (p < 0) return;
-    const int rcol = p & 7;
     int vel = (st == 0x90 && msg[2] > 0) ? msg[2] : 0;
     if (vel > 0 && s->fullvel) vel = 127;
     if (s->pads_off == 4 && msg[1] >= 68 && msg[1] <= 99) return;      /* LIVE FX: every pad belongs to the UI (effect pads on top, fill hits at the bottom) - no notes of the synth */
@@ -3098,14 +3111,14 @@ static void on_midi(void *instance, const uint8_t *msg, int len, int source) {
             const int c4 = col & 3, w4 = 4;
             p = s->lay_s >= 3 ? 32 + c4 + (s->lay_s == 3 ? 5 : (s->lay_s == 4 ? 4 : 8)) * row : (s->lay_s == 0 ? c4 + 3 * row : (s->lay_s == 1 ? row * w4 + c4 : c4 + 7 * row));
             if (pad_dup(s, p, vel)) return;
-            sel_pad(s, p, vel, col < 4 ? 2 : 0);
+            sel_pad(s, p, vel, col < 4 ? 0 : 3);
             return;
         }
         p = s->lay_s >= 3 ? 32 + col + (s->lay_s == 3 ? 5 : (s->lay_s == 4 ? 4 : 8)) * row : (s->lay_s == 0 ? col + 3 * row : (s->lay_s == 1 ? row * 8 + col : col + 7 * row));
     }
     if (s->pads_off == 1) { if (!vel) sel_pad(s, p, 0, 0); return; }     /* UI owns the pads (session, steps, menus) */
     if (pad_dup(s, p, vel)) return;
-    sel_pad(s, p, vel, s->pads_off == 3 && rcol >= 4);      /* NOTE REPEAT: only the right 16 pads repeat (several at once), the left 16 play normally */
+    sel_pad(s, p, vel, s->pads_off == 3);      /* NOTE REPEAT: every note pad repeats while it is held (several at once) */
 }
 
 static int parse_pad_key(const char *key, int *pad, const char **name) {
@@ -3451,6 +3464,12 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "lmute") == 0) {               /* "lane,0|1": mute one drum sound */
         int l = atoi(val); const char *c = strchr(val, ',');
         if (c && l >= 0 && l < NLANE) s->lmute[l] = atoi(c + 1) ? 1 : 0;
+        return;
+    }
+    if (strcmp(key, "sx") == 0) {                  /* "pat,track,step,a,b,c": the extra notes of a step (semitone + 65, 0 = none) */
+        int v[6] = { 0, 0, 0, 0, 0, 0 }; const char *q = val;
+        for (int i = 0; i < 6 && q; i++) { v[i] = atoi(q); q = strchr(q, ','); if (q) q++; }
+        if (v[0] >= 0 && v[0] < NPAT && v[1] >= 0 && v[1] < NTRK && v[2] >= 0 && v[2] < MAXSTEP) for (int k = 0; k < 3; k++) s->xn[v[0]][v[1]][v[2]][k] = (uint8_t)(v[3 + k] < 0 || v[3 + k] > 200 ? 0 : v[3 + k]);
         return;
     }
     if (strcmp(key, "st") == 0) {                  /* "pat,track,step,hhhh" */
