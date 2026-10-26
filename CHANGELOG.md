@@ -6,6 +6,7 @@
 - Every synth sound list starts with INIT; synth sound names are written out and easier to read (for example Electric Piano, Kick Hard)
 - Sound browser and Sample browser: tapping a pad plays the highlighted sound or WAV right away, without clicking it first
 - Sequencer page: holding Shift no longer replaces the sound knobs by BPM / Swing / Length / Clip (Shift + knobs 1-4 still change them)
+- Naming (project, scene, speech text): after the last letter there is an OK field; a click on it confirms the name (the Menu button still works)
 - Synth tracks start Mono again; Voices = Poly lets you hold up to eight notes together (choosing a sampler sound switches that track to Poly)
 - MIC page: Shift + Gain knob switches a live monitor on (you hear the input; use headphones). It is off when you leave the page or record
 - Notes To Scale first reads the notes of the other synth tracks, sets master Key + Scale to the best match (major, minor, dorian ...) and then moves the notes of this clip into it

@@ -4401,22 +4401,23 @@ function spkOpen() {
     spkUI = { l: L, nm, cur: 0 }; needsRedraw = true;
 }
 function spkStr() { return spkUI.nm.map(i => SP_CHARS[i]).join('').replace(/\s+$/, ''); }
+function spkOk() { const u = spkUI; spkTxt[u.l] = spkStr(); spkSend(u.l); spkUI = null; markEdited(); showToast('SPEECH', spkTxt[u.l] ? 'TEXT SET' : 'DEFAULT TEXT', 1); fbAudition(); needsRedraw = true; }
 function spkInput(type, d1, d2) {
     const u = spkUI; if (type !== 0xB0) return false;
-    if (d1 === CC.JOG) { const dl = decodeDelta(d2); if (!dl) return true; u.nm[u.cur] = (u.nm[u.cur] + (dl > 0 ? 1 : -1) + SP_CHARS.length) % SP_CHARS.length; needsRedraw = true; return true; }
-    if (d1 === CC.JOGCLICK && d2 > 0) { if (shiftHeld) u.cur = Math.max(0, u.cur - 1); else if (u.cur < SP_LEN - 1) u.cur++; needsRedraw = true; return true; }
-    if (d1 === CC.BACK && d2 > 0 && !shiftHeld) { if (u.nm[u.cur] === 0 && u.cur === 0) { spkUI = null; needsRedraw = true; return true; } if (u.nm[u.cur] === 0 && u.cur > 0) u.cur--; u.nm[u.cur] = 0; needsRedraw = true; return true; }
-    if ((d1 === CC.LEFT || d1 === CC.RIGHT) && d2 > 0) { u.cur = clamp(u.cur + (d1 === CC.RIGHT ? 1 : -1), 0, SP_LEN - 1); needsRedraw = true; return true; }
-    if (d1 === CC.MENU && d2 > 0) { spkTxt[u.l] = spkStr(); spkSend(u.l); spkUI = null; markEdited(); showToast('SPEECH', spkTxt[u.l] ? 'TEXT SET' : 'DEFAULT TEXT', 1); fbAudition(); needsRedraw = true; return true; }
+    if (d1 === CC.JOG) { const dl = decodeDelta(d2); if (!dl || u.cur >= SP_LEN) return true; u.nm[u.cur] = (u.nm[u.cur] + (dl > 0 ? 1 : -1) + SP_CHARS.length) % SP_CHARS.length; needsRedraw = true; return true; }
+    if (d1 === CC.JOGCLICK && d2 > 0) { if (u.cur >= SP_LEN && !shiftHeld) { spkOk(); return true; } if (shiftHeld) u.cur = Math.max(0, u.cur - 1); else if (u.cur < SP_LEN) u.cur++; needsRedraw = true; return true; }
+    if (d1 === CC.BACK && d2 > 0 && !shiftHeld) { if (u.cur >= SP_LEN) { u.cur = SP_LEN - 1; needsRedraw = true; return true; } if (u.nm[u.cur] === 0 && u.cur === 0) { spkUI = null; needsRedraw = true; return true; } if (u.nm[u.cur] === 0 && u.cur > 0) u.cur--; u.nm[u.cur] = 0; needsRedraw = true; return true; }
+    if ((d1 === CC.LEFT || d1 === CC.RIGHT) && d2 > 0) { u.cur = clamp(u.cur + (d1 === CC.RIGHT ? 1 : -1), 0, SP_LEN); needsRedraw = true; return true; }
+    if (d1 === CC.MENU && d2 > 0) { spkOk(); return true; }
     if (d1 === CC.BACK && d2 > 0) { spkUI = null; needsRedraw = true; return true; }
     return d1 !== CC.SHIFT && d1 !== CC.PLAY;
 }
 function drawSpk() {
     const u = spkUI;
     titleBar('SPEAK', spkLang(pads[u.l][0]) + ' ' + p2(u.cur + 1) + '/' + SP_LEN);
-    txt(4, 12, 'TURN:LETTER', 1); txt(4, 20, 'CLICK:NEXT BACK:DEL/EXIT', 1); txt(4, 28, '<> MOVE  MENU:OK', 1);
-    const W = 11, st = clamp(u.cur - 5, 0, SP_LEN - W);
-    for (let k = 0; k < W; k++) { const i = st + k, x = 3 + k * 11, ch = SP_CHARS[u.nm[i]]; txt(x + 1, 40, ch === ' ' ? '' : ch, 1); fill_rect(x, 52, 9, i === u.cur ? 2 : 1, 1); }
+    txt(4, 12, 'TURN:LETTER', 1); txt(4, 20, 'CLICK:NEXT BACK:DEL/EXIT', 1); txt(4, 28, 'CLICK ON OK = DONE', 1);
+    const W = 11, st = clamp(u.cur - 5, 0, SP_LEN + 1 - W);
+    for (let k = 0; k < W; k++) { const i = st + k, x = 3 + k * 11; if (i === SP_LEN) { if (u.cur === SP_LEN) fill_rect(x - 1, 38, 13, 12, 1); txtS(x + 1, 41, 'OK', u.cur === SP_LEN ? 0 : 1); continue; } const ch = SP_CHARS[u.nm[i]]; txt(x + 1, 40, ch === ' ' ? '' : ch, 1); fill_rect(x, 52, 9, i === u.cur ? 2 : 1, 1); }
 }
 const PNAME_FILE = '/data/UserData/schwung/taktile-proj-names.json', PCHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-', PNAME_LEN = 12;
 function projNamesLoad() { projNames = []; try { const t = host_read_file(PNAME_FILE); const a = t ? JSON.parse(t) : []; for (let n = 0; n < 32; n++) projNames.push(typeof a[n] === 'string' ? a[n].slice(0, PNAME_LEN) : ''); } catch (e) { projNames = new Array(32).fill(''); } }
@@ -4425,10 +4426,17 @@ function projOpen(slot) { projScan(); projNamesLoad(); if (slot !== undefined &&
 function projNm(n) { return projNames[n] || (projUsed[n] ? 'PROJECT ' + (n + 1) : ''); }
 function projNameStart(n, then) { const nm = (projNames[n] || 'PROJECT ' + (n + 1)).toUpperCase().slice(0, PNAME_LEN).split(''); while (nm.length < PNAME_LEN) nm.push(' '); projUI.nm = nm.map(c => Math.max(0, PCHARS.indexOf(c))); projUI.cur = 0; projUI.mode = 2; projUI.then = then; }
 function projNameStr() { return projUI.nm.map(i => PCHARS[i]).join('').replace(/\s+$/, ''); }
+function projOk() {                                            /* OK (click on the OK field, or Menu): scene name, or save / rename the project under this name */
+    const u = projUI; if (!u || u.mode !== 2) return;
+    if (u.scn) { sceneNames[u.i] = projNameStr(); markEdited(); showToast('SCENE ' + (u.i + 1), sceneNames[u.i] || 'NAME CLEARED', 1); projUI = null; needsRedraw = true; return; }
+    projNames[u.i] = projNameStr(); projNamesSave(); projSlot = u.i;
+    if (u.then === 1) { projSave(); } else showToast('PROJECT ' + (u.i + 1), 'RENAMED', 1);
+    u.mode = 0; needsRedraw = true;
+}
 function projInput(type, d1, d2) {
     const u = projUI; if (type !== 0xB0) return false;
     if (d1 === CC.JOG) { const dl = decodeDelta(d2); if (!dl) return true; const dd = dl > 0 ? 1 : -1;
-        if (u.mode === 0) u.i = clamp(u.i + dd, 0, 31); else if (u.mode === 1) u.a = clamp(u.a + dd, 0, 4); else if (u.mode === 3) { /* confirm: only click / back */ } else u.nm[u.cur] = (u.nm[u.cur] + dd + PCHARS.length) % PCHARS.length;
+        if (u.mode === 0) u.i = clamp(u.i + dd, 0, 31); else if (u.mode === 1) u.a = clamp(u.a + dd, 0, 4); else if (u.mode === 3) { /* confirm: only click / back */ } else if (u.cur < PNAME_LEN) u.nm[u.cur] = (u.nm[u.cur] + dd + PCHARS.length) % PCHARS.length;
         needsRedraw = true; return true; }
     if (d1 === CC.JOGCLICK && d2 > 0) {
         if (u.mode === 0) { u.mode = 1; u.a = projUsed[u.i] ? 0 : 1; }
@@ -4438,21 +4446,18 @@ function projInput(type, d1, d2) {
             else if (u.a === 4) { if (!projUsed[u.i]) showToast('PROJECT ' + (u.i + 1), 'EMPTY', 0); else { u.mode = 3; u.ck = 4; } }
             else projNameStart(u.i, u.a === 1 ? 1 : 2); }
         else if (u.mode === 3) { const k = u.ck, n = u.i; u.mode = 0; if (k === 3) projNewHere(n); else projDelete(n); }
-        else { if (shiftHeld) u.cur = Math.max(0, u.cur - 1); else if (u.cur < PNAME_LEN - 1) u.cur++; }
+        else { if (u.cur >= PNAME_LEN && !shiftHeld) { projOk(); return true; } if (shiftHeld) u.cur = Math.max(0, u.cur - 1); else if (u.cur < PNAME_LEN) u.cur++; }
         needsRedraw = true; return true; }
     if (u.mode === 2 && d1 === CC.BACK && d2 > 0 && !shiftHeld) {      /* naming: Back = delete a letter (Shift + Back = cancel) */
+        if (u.cur >= PNAME_LEN) { u.cur = PNAME_LEN - 1; needsRedraw = true; return true; }
         if (u.nm[u.cur] === 0 && u.cur === 0) { if (u.scn) projUI = null; else u.mode = 1; needsRedraw = true; return true; }      /* nothing left to delete: Back leaves the naming */
         if (u.nm[u.cur] === 0 && u.cur > 0) u.cur--; u.nm[u.cur] = 0; needsRedraw = true; return true; }
     if ((d1 === CC.LEFT || d1 === CC.RIGHT) && d2 > 0) {                /* arrows: through the letters of the name, or through the project slots (5 at a time) */
         const dd = d1 === CC.RIGHT ? 1 : -1;
-        if (u.mode === 2) u.cur = clamp(u.cur + dd, 0, PNAME_LEN - 1); else if (u.mode === 0) u.i = clamp(u.i + dd * 5, 0, 31);
+        if (u.mode === 2) u.cur = clamp(u.cur + dd, 0, PNAME_LEN); else if (u.mode === 0) u.i = clamp(u.i + dd * 5, 0, 31);
         needsRedraw = true; return true; }
-    if (d1 === CC.MENU && d2 > 0 && u.mode === 2 && u.scn) { sceneNames[u.i] = projNameStr(); markEdited(); showToast('SCENE ' + (u.i + 1), sceneNames[u.i] || 'NAME CLEARED', 1); projUI = null; needsRedraw = true; return true; }
+    if (d1 === CC.MENU && d2 > 0 && u.mode === 2) { projOk(); return true; }
     if (d1 === CC.BACK && d2 > 0 && u.scn) { projUI = null; needsRedraw = true; return true; }
-    if (d1 === CC.MENU && d2 > 0 && u.mode === 2) {                    /* Menu = OK: save (or just rename) under this name */
-        projNames[u.i] = projNameStr(); projNamesSave(); projSlot = u.i;
-        if (u.then === 1) { projSave(); } else showToast('PROJECT ' + (u.i + 1), 'RENAMED', 1);
-        u.mode = 0; needsRedraw = true; return true; }
     if (d1 === CC.BACK && d2 > 0) { if (u.mode === 0) projUI = null; else u.mode = (u.mode === 2 || u.mode === 3) ? 1 : 0; needsRedraw = true; return true; }
     return d1 !== CC.SHIFT && d1 !== CC.PLAY;
 }
@@ -4460,8 +4465,9 @@ function drawProj() {
     const u = projUI;
     if (u.mode === 2) {
         titleBar(u.scn ? 'SCENE ' + (u.i + 1) : 'NAME ' + p2(u.i + 1), u.scn ? 'NAME' : (u.then === 1 ? 'SAVE' : 'RENAME'));
-        const nm = projNameStr(); txt(4, 12, 'TURN:LETTER', 1); txt(4, 20, 'CLICK:NEXT BACK:DEL/EXIT', 1); txt(4, 28, '<> MOVE  MENU:OK', 1);
-        for (let k = 0; k < PNAME_LEN; k++) { const x = 4 + k * 10, ch = PCHARS[u.nm[k]]; txt(x + 1, 40, ch === ' ' ? '' : ch, 1); fill_rect(x, 52, 8, k === u.cur ? 2 : 1, 1); }
+        const nm = projNameStr(); txt(4, 12, 'TURN:LETTER', 1); txt(4, 20, 'CLICK:NEXT BACK:DEL/EXIT', 1); txt(4, 28, 'CLICK ON OK = DONE', 1);
+        for (let k = 0; k < PNAME_LEN; k++) { const x = 2 + k * 9, ch = PCHARS[u.nm[k]]; txt(x + 1, 40, ch === ' ' ? '' : ch, 1); fill_rect(x, 52, 7, k === u.cur ? 2 : 1, 1); }
+        if (u.cur === PNAME_LEN) fill_rect(109, 38, 17, 12, 1); txtS(112, 41, 'OK', u.cur === PNAME_LEN ? 0 : 1);
         return;
     }
     if (u.mode === 3) {
