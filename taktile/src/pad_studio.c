@@ -85,7 +85,7 @@ static inline float sin2pi(float ph) { ph -= floorf(ph); return sin2pi_raw(ph); 
 #include "variants_n.h"
 #include "variants3_n.h"
 #include "variants4_n.h"
-enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_DSW, PP_DST, PP_DNZ, PP_DCK, PP_DLN, PP_DMD, PP_DLT, PP_TKEY, PP_TSCL, PP_GTR, PP_L1T, PP_L1S, PP_L1R, PP_L1Y, PP_L1D, PP_L1P, PP_L2T, PP_L2S, PP_L2R, PP_L2Y, PP_L2D, PP_L2P, PP_L3T, PP_L3S, PP_L3R, PP_L3Y, PP_L3D, PP_L3P, PP_L4T, PP_L4S, PP_L4R, PP_L4Y, PP_L4D, PP_L4P, PP_N };
+enum { PP_TYPE, PP_VOL, PP_PAN, PP_TUNE, PP_DECAY, PP_TONE, PP_DRIVE, PP_DLY, PP_RVB, PP_ARP, PP_RATE, PP_CRUSH, PP_LOCUT, PP_RING, PP_PUMP, PP_WOB, PP_CUT, PP_RES, PP_FENV, PP_WAVE, PP_DET, PP_SUB, PP_ATT, PP_POLY, PP_DTIME, PP_DFB, PP_RSIZE, PP_RDARK, PP_CHOR, PP_CHRT, PP_CHDP, PP_PHAS, PP_PHRT, PP_PHFB, PP_XFX, PP_XMIX, PP_XRT, PP_XDP, PP_MFX, PP_MAMT, PP_MPRM, PP_SMP, PP_SST, PP_SEN, PP_SMD, PP_DUCK, PP_DUCKR, PP_SGN, PP_SATK, PP_SREL, PP_SSTR, PP_SCS, PP_TSW, PP_FDEC, PP_FKEY, PP_FMODE, PP_RMB, PP_RMT, PP_EQL, PP_EQM, PP_EQH, PP_X2FX, PP_X2MIX, PP_X2RT, PP_X2DP, PP_M2FX, PP_M2AMT, PP_M2PRM, PP_DMODE, PP_RMODE, PP_MONO, PP_SNZ, PP_FATK, PP_SFLD, PP_SCHP, PP_TREM, PP_TRAT, PP_APAN, PP_VFLT, PP_GRN, PP_GSZ, PP_GSP, PP_GPI, PP_MCH, PP_MVB, PP_TRN, PP_VHM, PP_VMN, PP_VMX, PP_ORN, PP_EQLF, PP_EQMF, PP_EQHF, PP_EQQ, PP_EQO, PP_PCV, PP_RFQ, PP_DTN, PP_DWD, PP_RWD, PP_RLC, PP_GDN, PP_GRV, PP_GFZ, PP_GTN, PP_DSW, PP_DST, PP_DNZ, PP_DCK, PP_DLN, PP_DMD, PP_DLT, PP_TKEY, PP_TSCL, PP_GTR, PP_L1T, PP_L1S, PP_L1R, PP_L1Y, PP_L1D, PP_L1P, PP_L2T, PP_L2S, PP_L2R, PP_L2Y, PP_L2D, PP_L2P, PP_L3T, PP_L3S, PP_L3R, PP_L3Y, PP_L3D, PP_L3P, PP_L4T, PP_L4S, PP_L4R, PP_L4Y, PP_L4D, PP_L4P, PP_SSCN, PP_SUNV, PP_SUNP, PP_STPS, PP_N };
 #define NGH 24                       /* ghost voices: released tails of retriggered notes in POLY mode */
 
 enum {
@@ -189,6 +189,7 @@ static const pd_t PD[PP_N] = {
     { "l2t", "LFO2t", 17, 0.0f }, { "l2s", "LFO2s", 8, 0.0f }, { "l2r", "LFO2r", 0, 0.4f }, { "l2y", "LFO2y", 13, 0.0f }, { "l2d", "LFO2d", 0, 0.5f }, { "l2p", "LFO2p", 0, 0.0f },
     { "l3t", "LFO3t", 17, 0.0f }, { "l3s", "LFO3s", 8, 0.0f }, { "l3r", "LFO3r", 0, 0.4f }, { "l3y", "LFO3y", 13, 0.0f }, { "l3d", "LFO3d", 0, 0.5f }, { "l3p", "LFO3p", 0, 0.0f },
     { "l4t", "LFO4t", 17, 0.0f }, { "l4s", "LFO4s", 8, 0.0f }, { "l4r", "LFO4r", 0, 0.4f }, { "l4y", "LFO4y", 13, 0.0f }, { "l4d", "LFO4d", 0, 0.5f }, { "l4p", "LFO4p", 0, 0.0f },
+    { "sscn", "Scan", 0, 0.0f }, { "sunv", "UniVoices", 0, 0.0f }, { "sunp", "UniSpread", 0, 0.5f }, { "stps", "TapeStop", 0, 0.0f },
 };
 
 static const char *TYPE_NAME[T_COUNT] = {
@@ -596,6 +597,20 @@ static int smp_load(smp_t *m, const char *path) {
     free(b);
     return ok;
 }
+static int16_t *smp_trash;
+static void smp_delete(int i) {                      /* delete the file of one slot and free its memory (the slot stays empty and can be reused) */
+    if (i < 0 || i >= NSMP || !SMP[i].name[0]) return;
+    char path[400]; snprintf(path, sizeof path, "%s/%s", SMP_DIR, SMP[i].name); remove(path);
+    int16_t *d = SMP[i].d; unsigned b = (unsigned)(SMP[i].n * SMP[i].ch * 2);
+    if (d) { __atomic_store_n(&SMP[i].d, (int16_t *)NULL, __ATOMIC_RELEASE); if (smp_trash) free(smp_trash); smp_trash = d; smp_bytes = smp_bytes > b ? smp_bytes - b : 0; }
+    SMP[i].n = 0; SMP[i].name[0] = 0;
+    char names[NSMP][40]; int nn = 0; for (int k = 0; k < NSMP; k++) names[k][0] = 0;
+    FILE *f = fopen(SMP_IDX, "r");
+    if (f) { char ln[128]; while (nn < NSMP && fgets(ln, sizeof ln, f)) { size_t l = strlen(ln); while (l && (ln[l - 1] == '\n' || ln[l - 1] == '\r')) ln[--l] = 0; if (l && l < 40) strcpy(names[nn], ln); nn++; } fclose(f); }
+    names[i][0] = 0;
+    f = fopen(SMP_IDX, "w");
+    if (f) { int last = -1; for (int k = 0; k < NSMP; k++) if (names[k][0]) last = k; for (int k = 0; k <= last; k++) fprintf(f, "%s\n", names[k]); fclose(f); }
+}
 static int smp_cmp(const void *a, const void *b) { return strcmp((const char *)a, (const char *)b); }
 static void smp_scan(void) {                         /* slots stay stable: names are remembered in taktile-samples.idx */
     char names[NSMP][40]; int nn = 0, changed = 0;
@@ -732,7 +747,7 @@ typedef struct {
     float ks[1024]; int ksi, ksn; float ksz1, ksz2;                     /* string engine: delay line */
     float nx[96]; int ni[2];                                           /* NEW ENGINES: modal / FM / vocal / chip / morph state */
     int   sw, gk; float sdet, ssub, satt;                              /* synth family options */
-    double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode, sdir; float wbars; float srate, sgain, satk_inc, srel_c, sgate_env;                   /* sample playback */
+    double sp; double ga, g0[2]; float gp[2]; int stch; float stg; int s0, s1, sidx, smode, sdir; float wbars; float srate, sgain, satk_inc, srel_c, sgate_env; float tsr, tsd; int nu, scan; double up[3]; float ur[3];                   /* sample playback */
     float nze, trp;                  /* noise follower, tremolo / auto-pan phase */
     float xfd;       /* >0: fast fade-out of a cut-off note (1 -> 0), no click */
     float aenv, ac, hd;  /* generic attack ramp for struck / plucked sounds on synth tracks (Attack knob above its default) */
@@ -793,7 +808,7 @@ typedef struct {
     int   rv_len[NLINES];
     float rv_g[NLINES], rv_a;
     float rlc_z[2];
-    float dt_buf[12][DT_SIZE]; int dt_w, dt_len[26]; float dt_bw, dt_zl, dt_zr, dt_lfo, dt_dec;     /* Dattorro plate */
+    float pd_buf[1024]; int pd_w; float dt_buf[12][DT_SIZE]; int dt_w, dt_len[26]; float dt_bw, dt_zl, dt_zr, dt_lfo, dt_dec;     /* Dattorro plate */
     int   fx_act[NLANE], dr_act, dr_quiet;
     /* activity lists (rebuilt every 16 samples or when a voice / arp / ratchet starts): the per-sample loops only visit what is really sounding */
     int   act_dirty, vl_n, al_n, rl_n; short vl[NLANE + NGH], al[NLANE], rl[NLANE]; uint64_t fxm[2];
@@ -807,7 +822,7 @@ typedef struct {
 
     /* sequencer */
     uint8_t stp[NPAT][NLANE][MAXSTEP][7];   /* a = on<<7 | vel, b = probability 0..7, c = semi + 64, d = ratchet | gate<<2 | cond<<5, e = nudge 0..7, f = parameter lock value 0 (none) .. 127 */
-    double lfx_ph[NTRK][4]; long lfx_cyc[NTRK][4]; float lfx_r0[NTRK][4], lfx_r1[NTRK][4], lm_w[NLANE][4], lfx_b[NLANE][4]; uint8_t lm_t[NLANE][4]; unsigned lfx_rng;   /* the four LFOs of every track: phase, random values, and what was written to each lane (so it can be taken back exactly) */
+    double lfx_ph[NTRK][4]; long lfx_cyc[NTRK][4]; float lfx_r0[NTRK][4], lfx_r1[NTRK][4], lm_w[NLANE][4], lfx_b[NLANE][4]; uint8_t lm_t[NLANE][4]; unsigned lfx_rng; int sctr; int baselen[NTRK], cplen[NPAT][NTRK], coct[NTRK]; signed char cpoct[NPAT][NTRK];   /* the four LFOs of every track: phase, random values, and what was written to each lane (so it can be taken back exactly) */
     int rh_on, rh_n, rh_l[16], rh_semi[16], rh_vel[16], rh_g[16], rh_fr[16];   /* note repeat while recording: every repeated hit is reported to the UI so it can be written into the clip */
     uint8_t plk_t[NLANE]; float plk_b[NLANE]; float cdet_z[2];   /* per-lane lock target (PP index, 0 = none), its base value, compressor detector HPF state */
     int   seqlen[NTRK], mute[NTRK]; uint8_t rechold[NTRK];
@@ -1625,9 +1640,20 @@ static void trig_raw(inst_t *s, int p, float vel, int arp_semi, int fresh) {
         v->s0 = (int)(a * (float)m->n); v->s1 = (int)(b * (float)m->n);
         if (v->s1 > m->n) v->s1 = m->n; if (v->s0 > v->s1 - 4) v->s0 = v->s1 - 4; if (v->s0 < 0) v->s0 = 0;
         { const float sm = s->pp[p][PP_SMD]; v->smode = sm < 0.25f ? 0 : (sm < 0.625f ? 1 : (sm < 0.875f ? 3 : 2)); v->sdir = 1; }
-        v->sidx = si; v->srate = m->sr * s->inv_sr;
+        v->sidx = si; v->srate = m->sr * s->inv_sr; { int rk = (int)(s->pp[p][PP_DSW] * 48.0f + 0.5f); if (rk != 24) v->srate *= powf(2.0f, (float)(24 - rk) / 12.0f); }      /* ROOT key of the sampler: the sample sounds as recorded on that key */
         { float sv = s->pp[p][PP_SSTR]; v->stch = (fabsf(sv - 0.5f) > 0.01f && v->smode != 1 && v->smode != 3); { static const float WB[7] = { 0.0f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 16.0f }; int wp = (int)(s->pp[p][PP_DLN] + 0.5f); v->wbars = (wp >= 1 && wp <= 6 && v->smode != 1 && v->smode != 3) ? WB[wp] : 0.0f; if (v->wbars > 0.0f) v->stch = 1; } v->stg = powf(2.0f, (sv - 0.5f) * 2.0f); /* output length factor 0.5x .. 2x */
           v->ga = (double)v->s0; v->g0[1] = (double)v->s0; v->gp[1] = 0.0f; v->gp[0] = 1024.0f; v->g0[0] = (double)v->s0 - 1024.0 * (double)(fm * v->srate); }
+        v->tsr = 1.0f; { float ts = s->pp[p][PP_STPS]; v->tsd = ts < 0.01f ? 0.0f : 1.0f / ((0.05f + ts * ts * 2.0f) * s->sr); }
+        { float sc = s->pp[p][PP_SSCN]; v->scan = (sc >= 0.01f && v->smode != 1 && v->smode != 3); if (v->scan) { v->stch = 1; double t = (double)v->s0 + (double)((sc - 0.01f) / 0.99f) * (double)(v->s1 - 1 - v->s0); v->ga = t; v->g0[1] = t; v->gp[1] = 0.0f; v->gp[0] = 1024.0f; v->g0[0] = t - 1024.0 * (double)(fm * v->srate); } }
+        v->nu = 0;
+        if (!v->stch && (v->smode == 0 || v->smode == 2)) {                      /* VOICES: up to 3 more read heads, each a little detuned and shifted in time */
+            const float uv = s->pp[p][PP_SUNV], us = s->pp[p][PP_SUNP]; const int n = (int)(uv * 3.0f + 0.5f); v->nu = n > 3 ? 3 : n;
+            for (int u = 0; u < v->nu; u++) {
+                const float side = (u & 1) ? 1.0f : -1.0f, k = (float)(u / 2 + 1);
+                v->ur[u] = powf(2.0f, side * k * us * 0.0208f);
+                double st = (double)v->s0 + (double)(u + 1) * (double)us * 0.02 * (double)m->sr; if (st > (double)(v->s1 - 2)) st = (double)v->s0; v->up[u] = st;
+            }
+        }
         v->sp = v->smode == 1 ? (double)(v->s1 - 1) : (double)v->s0;
         float dc = s->pp[p][PP_DECAY];
         v->env = 1.0f; v->env2 = 1.0f; v->pe = 0.0f; v->c2 = 0.0f; v->pek = 0.0f;
@@ -1764,6 +1790,7 @@ static void trig(inst_t *s, int p, float vel, int arp_semi, int fresh) {
     {   /* note stage before the MIDI effects: chance, transpose, random octave, velocity bias / humanise / range */
         const float *q = s->pp[p];
         if (fresh && q[PP_MCH] < 0.995f) { s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5; if ((float)(s->rng & 0xFFFF) / 65536.0f >= q[PP_MCH]) return; }
+        if (p < NTRK) arp_semi += s->sctr + s->coct[p];
         arp_semi += (int)((q[PP_TRN] - 0.5f) * 48.0f + (q[PP_TRN] >= 0.5f ? 0.5f : -0.5f));
         if (q[PP_ORN] > 0.01f) { s->rng ^= s->rng << 13; s->rng ^= s->rng >> 17; s->rng ^= s->rng << 5; if ((float)(s->rng & 0xFFFF) / 65536.0f < q[PP_ORN]) arp_semi += (s->rng & 0x10000u) ? 12 : -12; }
         vel += (q[PP_MVB] - 0.5f) * 0.8f;
@@ -2575,14 +2602,14 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
     case T_SAMPLE: {
         const smp_t *m = smp_get(v->sidx);
         if (!m) { v->active = 0; break; }
-        const int rev = v->smode == 1, pp = v->smode == 3, loop = v->smode == 2 || pp;
+        const int rev = v->smode == 1, pp = v->smode == 3, loop = v->smode == 2 || pp || v->scan;
         double pos = v->sp; int i0 = (int)pos; float fr = (float)(pos - (double)i0);
         int i1 = (rev || (pp && v->sdir < 0)) ? i0 - 1 : i0 + 1;
         if (i0 < 0) i0 = 0; if (i0 >= m->n) i0 = m->n - 1;
         if (i1 < 0) i1 = 0; if (i1 >= m->n) i1 = m->n - 1;
         float a, b;
         if (v->stch) {                                          /* time-stretch: two overlapping Hann grains, the read position moves at 1/stretch, pitch stays */
-            const int G = 2048; const float fmv = fm * v->srate; x = 0.0f;
+            const int G = 2048; const float fmv = fm * v->srate * v->tsr; x = 0.0f;
             for (int k = 0; k < 2; k++) {
                 if (v->gp[k] < 0.0f) { v->gp[k] += 1.0f; if (v->gp[k] >= 0.0f) v->g0[k] = v->ga; continue; }
                 if (v->gp[k] >= (float)G) { v->gp[k] = -(float)(G / 2); v->g0[k] = v->ga; continue; }
@@ -2596,7 +2623,8 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
                 v->gp[k] += 1.0f;
             }
             if (v->wbars > 0.0f) { float sl = (float)(v->s1 - v->s0) / m->sr, rt = v->wbars * 240.0f / s->bpm / (sl > 0.001f ? sl : 0.001f); v->stg = rt < 0.05f ? 0.05f : (rt > 40.0f ? 40.0f : rt); }      /* TIMEWARP: the selected region lasts exactly N bars at the current tempo, pitch stays */
-            v->ga += (double)(m->sr * s->inv_sr) / (double)v->stg;
+            if (v->scan) { const float sp_ = s->pp[p][PP_SSCN]; const double tg = (double)v->s0 + (double)clampf((sp_ - 0.01f) / 0.99f, 0.0f, 1.0f) * (double)(v->s1 - 1 - v->s0); v->ga += (tg - v->ga) * 0.003; }      /* SCAN: the play head follows the knob / the LFO */
+            else v->ga += (double)(m->sr * s->inv_sr) / (double)v->stg * (double)v->tsr;
             pos = v->ga; v->sp = pos; i0 = (int)pos;
             if (v->ga >= (double)v->s1) { if (loop && v->gate) v->ga -= (double)(v->s1 - v->s0); else { v->active = 0; } }
             goto smp_post;
@@ -2614,6 +2642,20 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
                 x = x * (1.0f - w) + (o * (1.0f / 32768.0f)) * w;
             }
         }
+        if (v->nu > 0) {
+            for (int u = 0; u < v->nu; u++) {
+                if (v->up[u] < 0.0) continue;
+                int j0 = (int)v->up[u], j1 = j0 + 1; const float fr2 = (float)(v->up[u] - (double)j0);
+                if (j0 >= m->n) j0 = m->n - 1; if (j1 >= m->n) j1 = m->n - 1;
+                float ua, ub;
+                if (m->ch == 2) { ua = (float)(m->d[j0 * 2] + m->d[j0 * 2 + 1]) * 0.5f; ub = (float)(m->d[j1 * 2] + m->d[j1 * 2 + 1]) * 0.5f; } else { ua = (float)m->d[j0]; ub = (float)m->d[j1]; }
+                x += (ua + (ub - ua) * fr2) * (1.0f / 32768.0f);
+                v->up[u] += (double)(fm * v->srate * v->tsr) * (double)v->ur[u];
+                if (v->up[u] >= (double)v->s1) { if (loop && v->gate) v->up[u] -= (double)(v->s1 - v->s0); else v->up[u] = -1.0; }
+            }
+            x *= 1.0f / sqrtf((float)(1 + v->nu));
+        }
+        if (v->tsd > 0.0f && !v->gate) { v->tsr -= v->tsd; if (v->tsr <= 0.0f) { v->tsr = 0.0f; v->active = 0; } x *= v->tsr; }      /* TAPE STOP: after the pad is let go the pitch winds down to zero */
         x *= v->sgain;
         if (v->sgate_env < 1.0f) { v->sgate_env += v->satk_inc; if (v->sgate_env > 1.0f) v->sgate_env = 1.0f; x *= v->sgate_env; }
         if (!v->gate && v->srel_c > 0.0f) { v->env *= v->srel_c; }
@@ -2622,9 +2664,9 @@ static float vc_render(inst_t *s, vc_t *v, int p) {
         if (v->t < 0.0015f) x *= v->t / 0.0015f;
         x *= v->env;
         v->env *= v->c1;
-        if (loop && !v->gate && v->srel_c <= 0.0f) v->env *= 0.992f;
+        if (loop && !v->gate && v->srel_c <= 0.0f && v->tsd <= 0.0f) v->env *= 0.992f;
         if (v->env < 1e-3f) v->active = 0;
-        double step = v->stch ? 0.0 : (double)(fm * v->srate);
+        double step = v->stch ? 0.0 : (double)(fm * v->srate * v->tsr);
         if (rev) { pos -= step; if (pos < (double)v->s0) { if (loop && v->gate) pos += (double)(v->s1 - v->s0); else v->active = 0; } }
         else if (pp) {                                          /* FWD-REV: forward to the end, back to the start, again and again while the note is held */
             pos += step * (double)v->sdir;
@@ -2712,12 +2754,14 @@ static void clip_activate_lane(inst_t *s, int l, int c) {
 }
 static void clip_activate(inst_t *s, int t, int c) {
     s->clip[t] = c; s->tph[t] = 0; s->fol_cnt[t] = 0;
+    s->seqlen[t] = (c >= 0 && c < NPAT && s->cplen[c][t]) ? s->cplen[c][t] : s->baselen[t]; s->coct[t] = (c >= 0 && c < NPAT) ? 12 * s->cpoct[c][t] : 0;      /* every clip can have its own loop length and octave */
     if (s->isdrum[t]) { int d = track_slot(s, t); if (d >= 0) for (int k = 0; k < 16; k++) clip_activate_lane(s, NTRK + d * 16 + k, c); }
     else clip_activate_lane(s, t, c);
 }
 static void apply_pending(inst_t *s) {
     for (int t = 0; t < NTRK; t++) if (s->qclip[t] != -2) {
         clip_activate(s, t, s->qclip[t]); s->qclip[t] = -2;
+        if (s->playing && s->clip[t] >= 0) s->tph[t] = (int)s->gs;      /* a launched clip always starts from its own first step (not from wherever the global counter is in a longer loop) */
         if (s->clip[t] < 0) for (int l = 0; l < NLANE; l++) if (lane_on(s, l) && lane_trk(s, l) == t) { s->gate_left[l] = 0; s->vc[l].gate = 0; }
     }
 }
@@ -2999,7 +3043,7 @@ static void *create_instance(const char *module_dir, const char *json_defaults) 
             s->rec_src = -1; s->rec_slot = -1;
             for (int k = 0; k < G_N; k++) s->g[k] = GD[k].def; s->lim_g = 1.0f;
             s->bpm = 120.0f; s->swing = 0.5f; s->rep_idx = 8;
-            for (int t = 0; t < NTRK; t++) { s->seqlen[t] = 16; s->tg[t] = 1.0f; s->tres[t] = 6; }
+            for (int t = 0; t < NTRK; t++) { s->seqlen[t] = 16; s->baselen[t] = 16; s->tg[t] = 1.0f; s->tres[t] = 6; }
             for (int d = 0; d < 4; d++) s->dtrk[d] = -1;
             for (int k = 0; k < 32; k++) s->np_trk[k] = -1;
             init_static(s);
@@ -3091,7 +3135,7 @@ static void set_pad_param(inst_t *s, int p, const char *name, const char *val) {
         else if (k == PP_DLN) { v = clampf((float)atof(val), 0.0f, 6.0f); }
         else if (k == PP_TKEY) { v = clampf((float)atof(val), 0.0f, 12.0f); }
         else if (k == PP_TSCL) { v = clampf((float)atof(val), 0.0f, (float)NSC); }
-        else if (k >= PP_L1T) { static const float cap[6] = { 16.0f, 7.0f, 1.0f, 12.0f, 1.0f, 1.0f }; v = clampf((float)atof(val), 0.0f, cap[(k - PP_L1T) % 6]); }
+        else if (k >= PP_L1T && k <= PP_L4P) { static const float cap[6] = { 17.0f, 7.0f, 1.0f, 12.0f, 1.0f, 1.0f }; v = clampf((float)atof(val), 0.0f, cap[(k - PP_L1T) % 6]); }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         s->pp[p][k] = v;
         if (s->plk_t[p] == k) s->plk_b[p] = v;
@@ -3204,6 +3248,9 @@ static void set_param(void *instance, const char *key, const char *val) {
     }
     if (strcmp(key, "cpureset") == 0) { s->cpu_peak = 0.0f; return; }
     if (strcmp(key, "smprescan") == 0) { smp_scan(); return; }
+    if (strcmp(key, "smpdel") == 0) { smp_delete(atoi(val)); return; }
+    if (strcmp(key, "qbar") == 0) { s->pend_on = s->playing ? 1 : 0; s->pend_qm = 15; return; }      /* song: the queued clips start exactly on the next bar line, whatever the Launch setting says */
+    if (strcmp(key, "qnow") == 0) { s->pend_on = s->playing ? 1 : 0; s->pend_qm = 0; return; }      /* live scene jump: the clips that were just queued start on the next step, whatever the Launch setting says */
     if (strcmp(key, "brdir") == 0) { br_list(val); return; }
     if (strcmp(key, "brimport") == 0) { br_import(atoi(val)); return; }
     if (strcmp(key, "brprev") == 0) { br_res = br_preview(atoi(val)) ? 1 : -1; return; }
@@ -3353,7 +3400,16 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "sel") == 0)  { int n = atoi(val); if (n >= 0 && n < NLANE) { if (n != s->sel_track) rep_clear(s); s->sel_track = n; } return; }
     if (strcmp(key, "len") == 0)  {                /* "track,length" */
         int t = atoi(val); const char *c = strchr(val, ',');
-        if (c && t >= 0 && t < NTRK) { int l = atoi(c + 1); if (l >= 1 && l <= MAXSTEP) s->seqlen[t] = l; }
+        if (c && t >= 0 && t < NTRK) { int l = atoi(c + 1); if (l >= 1 && l <= MAXSTEP) { s->baselen[t] = l; int cc = s->clip[t]; if (!(cc >= 0 && cc < NPAT && s->cplen[cc][t])) s->seqlen[t] = l; } }
+        return;
+    }
+    if (strcmp(key, "clen") == 0 || strcmp(key, "coct") == 0) {        /* "track,clip,value" */
+        int t = atoi(val), c = -1, v = 0; const char *p1 = strchr(val, ','); const char *p2 = p1 ? strchr(p1 + 1, ',') : NULL;
+        if (p1) c = atoi(p1 + 1); if (p2) v = atoi(p2 + 1);
+        if (t >= 0 && t < NTRK && c >= 0 && c < NPAT) {
+            if (key[1] == 'l') { s->cplen[c][t] = v < 0 ? 0 : (v > MAXSTEP ? MAXSTEP : v); if (s->clip[t] == c) s->seqlen[t] = s->cplen[c][t] ? s->cplen[c][t] : s->baselen[t]; }
+            else { s->cpoct[c][t] = (signed char)(v < -3 ? -3 : (v > 3 ? 3 : v)); if (s->clip[t] == c) s->coct[t] = 12 * s->cpoct[c][t]; }
+        }
         return;
     }
     if (strcmp(key, "tres") == 0) {                /* "track,ticks per step" (6 = 1/16, 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8) */
@@ -3366,6 +3422,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         if (c && t >= 0 && t < NLANE) { int l = atoi(c + 1); if (l >= 0 && l <= MAXSTEP) s->llen[t] = l; }
         return;
     }
+    if (strcmp(key, "sctr") == 0) { int v = atoi(val); s->sctr = v < -24 ? -24 : (v > 24 ? 24 : v); return; }      /* song scene: transposition of the synth tracks */
     if (strcmp(key, "mute") == 0) {                /* "track,0|1" */
         int t = atoi(val); const char *c = strchr(val, ',');
         if (c && t >= 0 && t < NTRK) s->mute[t] = atoi(c + 1) ? 1 : 0;
@@ -3451,7 +3508,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
             else if (k == PP_TKEY) v = clampf(v, 0.0f, 12.0f);
             else if (k == PP_TSCL) v = clampf(v, 0.0f, (float)NSC);
-            else if (k >= PP_L1T) { static const float cap[6] = { 16.0f, 7.0f, 1.0f, 12.0f, 1.0f, 1.0f }; v = clampf(v, 0.0f, cap[(k - PP_L1T) % 6]); }
+            else if (k >= PP_L1T && k <= PP_L4P) { static const float cap[6] = { 17.0f, 7.0f, 1.0f, 12.0f, 1.0f, 1.0f }; v = clampf(v, 0.0f, cap[(k - PP_L1T) % 6]); }
             else v = clampf(v, 0.0f, 1.0f);
             s->cpp[c][t][k] = v;
             q = (*end == ',') ? end + 1 : end;
@@ -3477,7 +3534,7 @@ static void set_param(void *instance, const char *key, const char *val) {
             else if (k == PP_DLN) v = clampf(v, 0.0f, 6.0f);
             else if (k == PP_TKEY) v = clampf(v, 0.0f, 12.0f);
             else if (k == PP_TSCL) v = clampf(v, 0.0f, (float)NSC);
-            else if (k >= PP_L1T) { static const float cap[6] = { 16.0f, 7.0f, 1.0f, 12.0f, 1.0f, 1.0f }; v = clampf(v, 0.0f, cap[(k - PP_L1T) % 6]); }
+            else if (k >= PP_L1T && k <= PP_L4P) { static const float cap[6] = { 17.0f, 7.0f, 1.0f, 12.0f, 1.0f, 1.0f }; v = clampf(v, 0.0f, cap[(k - PP_L1T) % 6]); }
             else v = clampf(v, 0.0f, 1.0f);
             s->pp[n - 1][k] = v;
             q = (*end == ',') ? end + 1 : end;
@@ -3636,9 +3693,10 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
     if (strcmp(key, "cpu") == 0)
         return snprintf(buf, (size_t)buf_len, "%d,%d", (int)(s->cpu_avg * 100.0f + 0.5f), (int)(s->cpu_peak * 100.0f + 0.5f));
     if (strcmp(key, "clips") == 0) {
-        char tmp[200]; int n = 0;
+        char tmp[400]; int n = 0;
         for (int t = 0; t < NTRK; t++) n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%d,", s->clip[t]);
-        for (int t = 0; t < NTRK; t++) n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%d%s", s->qclip[t], t < NTRK - 1 ? "," : "");
+        for (int t = 0; t < NTRK; t++) n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%d,", s->qclip[t]);
+        for (int t = 0; t < NTRK; t++) n += snprintf(tmp + n, sizeof tmp - (size_t)n, "%d%s", s->tph[t], t < NTRK - 1 ? "," : "");
         if (buf_len <= n) return -1;
         memcpy(buf, tmp, (size_t)n + 1);
         return n;
@@ -3826,8 +3884,12 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
             { const float ta = fminf(1.0f, s->a_dly * (0.2f + 1.6f * dtn));
               s->dly_z[0] += ta * (yl - s->dly_z[0]);
               s->dly_z[1] += ta * (yr - s->dly_z[1]); }
-            s->dlL[s->dw] = sd + s->dly_z[1] * dfb;
-            s->dlR[s->dw] = s->dly_z[0] * dfb;
+            { float fa = s->dly_z[0], fb = s->dly_z[1];                /* the repeats stay clean: no low rumble piling up, loud repeats are rounded off softly */
+              s->dly_hp[0] += 0.006f * (fa - s->dly_hp[0]); fa -= s->dly_hp[0];
+              s->dly_hp[1] += 0.006f * (fb - s->dly_hp[1]); fb -= s->dly_hp[1];
+              fa = fast_tanh(fa * 1.2f) * 0.833f; fb = fast_tanh(fb * 1.2f) * 0.833f;
+              s->dlL[s->dw] = sd + fb * dfb;
+              s->dlR[s->dw] = fa * dfb; }
         } else {
             float dl_l = (float)dlen, dl_r = (float)dlen;
             if (dm == 1) {
@@ -3863,7 +3925,8 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
         float rl, rr2;
         if (rm == 0) {
             const int *Ln = s->dt_len;
-            float x = s->dt_bw += 0.75f * (sr_in * 0.5f - s->dt_bw);
+            const int pdl = (int)(0.016f * s->sr); s->pd_buf[s->pd_w & 1023] = sr_in; const float sr_pd = s->pd_buf[(s->pd_w - (pdl > 1000 ? 1000 : pdl)) & 1023]; s->pd_w = (s->pd_w + 1) & 1023;      /* 16 ms pre-delay: the sound stays clear, the room comes after it */
+            float x = s->dt_bw += 0.88f * (sr_pd * 0.5f - s->dt_bw);        /* input bandwidth a little more open (brighter, airier plate) */
             for (int i = 0; i < 4; i++) {
                 const float gg = i < 2 ? 0.75f : 0.625f;
                 const float v = dt_rd(s, i, Ln[i]), u = x - gg * v;
@@ -3944,8 +4007,8 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
 }
 
 /* ---- LFOs: four per track. Every block each one moves its target parameter around the value the knob has; the next block takes it back first, so a knob turn is never lost. ---- */
-static const uint8_t LFO_TGT[17] = { 0, PP_CUT, PP_RES, PP_TUNE, PP_VOL, PP_PAN, PP_DRIVE, PP_TONE, PP_DECAY, PP_DET, PP_DLY, PP_RVB, PP_XMIX, PP_XRT, PP_FENV, PP_CRUSH, PP_RING };
-static const float LFO_RNG[17] = { 0.0f, 0.5f, 0.4f, 0.08f, 0.5f, 0.5f, 0.5f, 0.5f, 0.4f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
+static const uint8_t LFO_TGT[18] = { 0, PP_CUT, PP_RES, PP_TUNE, PP_VOL, PP_PAN, PP_DRIVE, PP_TONE, PP_DECAY, PP_DET, PP_DLY, PP_RVB, PP_XMIX, PP_XRT, PP_FENV, PP_CRUSH, PP_RING, PP_SSCN };
+static const float LFO_RNG[18] = { 0.0f, 0.5f, 0.4f, 0.08f, 0.5f, 0.5f, 0.5f, 0.5f, 0.4f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
 static const double LFO_BEATS[13] = { 0.0, 32.0, 16.0, 8.0, 4.0, 2.0, 1.0, 0.5, 0.25, 1.0 / 3.0, 1.0 / 6.0, 0.125, 2.0 / 3.0 };
 static inline float lfo_rnd(inst_t *s) { unsigned x = s->lfx_rng ? s->lfx_rng : 2463534242u; x ^= x << 13; x ^= x >> 17; x ^= x << 5; s->lfx_rng = x; return (float)(x & 0xFFFFFF) / 8388608.0f - 1.0f; }
 static float lfo_wave(inst_t *s, int t, int i, int sh, double tot) {
@@ -3972,7 +4035,7 @@ static void lfo_run(inst_t *s, int frames) {
         const float *q = s->pp[t];
         for (int i = 0; i < 4; i++) {
             const int ti = (int)(q[PP_L1T + 6 * i] + 0.5f); const float dp = q[PP_L1D + 6 * i];
-            if (ti <= 0 || ti > 16 || dp < 0.002f) continue;
+            if (ti <= 0 || ti > 17 || dp < 0.002f) continue;
             const int sy = (int)(q[PP_L1Y + 6 * i] + 0.5f), sh = (int)(q[PP_L1S + 6 * i] + 0.5f);
             double tot;
             if (sy > 0 && sy <= 12) {
