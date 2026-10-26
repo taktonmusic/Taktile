@@ -71,4 +71,5 @@
     "SwmDrift","SwmCloud","SwmSwirl","SwmPad","SwmBass","SwmLead",
     "SwmChoir","SwmStab","DxInit","DxEPiano","DxBass","DxBrass",
     "DxBell","DxMarimba","DxOrgan","DxPad","DxLead","DxReese",
-    "Granny","Grandson","Mother","Father","Kid","Teenager"
+    "Granny","Grandson","Mother","Father","Kid","Teenager",
+    "DKickInit","DSnrInit","DHatInit","DClapInit","DTomInit","DRimInit","DMetlInit"

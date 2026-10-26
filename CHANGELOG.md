@@ -10,6 +10,7 @@
 - A step can hold several notes: pads played together while recording (or pads held + a step button) are stored as a chord and all notes play back, in Mono and Poly
 - CHORD pad mode is only a pad layout now (left = notes, right = chords): entering or leaving it does not change the track's MIDI effect or sound; chord pads are recorded as full chords
 - Note Repeat works on synth tracks too (Shift + step 11 > Repeat)
+- Drum synth: an INIT sound for kick, snare, hat, clap, tom, rim and metal (first entry in DRUM SYNTHS > every group), and a new ENGINE 2 page (Shift + Jog click on a drum-synth sound) with Overtone, Ratio, Punch and Noise Decay
 - Arp rate: 1/4 and 1/2 added (slower than 1/8)
 - Scale Q runs once per turn instead of again and again while the knob keeps turning
 - Full Velocity: live pad hits now play at full velocity too, like the steps they record

@@ -1522,6 +1522,7 @@ static void nx_init(inst_t *s, vc_t *v, int p, int ty) {
         v->nx[5] = 0.0f; v->nx[6] = 0.0f; v->nx[7] = 0.0f; v->ni[0] = 0x4001; break; }
     case 5:                                                         /* DRUM SYNTH */
         for (int k = 0; k < 24; k++) v->nx[k] = 0.0f;
+        v->nx[9] = s->pp[p][PP_DLN] > 0.002f ? powf(v->c2, exp2f(-s->pp[p][PP_DLN] * 2.0f)) : v->c2;      /* Noise Decay (ENGINE 2): the noise part rings up to 4 x longer */
         break;
     case 11: {                                                      /* STRING (Karplus-Strong): fill the delay line with a plucked burst. p: brightness, pick position, loop gain, excitation (0 noise .. 1 saw) */
         float N = s->sr / (f0 > 44.0f ? f0 : 44.0f) - 0.5f; if (N > 1020.0f) N = 1020.0f; if (N < 6.0f) N = 6.0f;
@@ -1994,8 +1995,13 @@ static float nx_render(inst_t *s, vc_t *v, int p) {
             out = v->nx[5] * 0.5f * v->env;
             break; }
         }
+        if (pq5[PP_DET] > 0.002f) {                                     /* Overtone (ENGINE 2): a second partial above the body, Ratio = how far (x1 .. x4) */
+            v->nx[8] += f * (kd <= 1 || kd == 4 ? sw : 1.0f) * (1.0f + 3.0f * pq5[PP_SUB]) * dt; WRAP(v->nx[8]);
+            out += pq5[PP_DET] * 0.6f * sin2pi(v->nx[8]) * v->env;
+        }
+        if (pq5[PP_ATT] > 0.002f) out *= 1.0f + pq5[PP_ATT] * 3.0f * expf(-t / 0.012f);      /* Punch (ENGINE 2): the first 12 ms hit harder */
         if (q[5] > 0.0f) out = fast_tanh(out * (1.0f + q[5] * 5.0f)) * 0.85f;
-        v->env *= v->c1; v->env2 *= v->c2;
+        v->env *= v->c1; v->env2 *= v->nx[9];
         if (v->env < 1e-3f && v->env2 < 1e-3f) v->active = 0;
         x = out * 0.9f;
         break; }
