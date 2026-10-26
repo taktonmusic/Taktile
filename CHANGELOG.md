@@ -68,6 +68,7 @@
 - Send reverb with 16 ms pre-delay and a more open top; ping-pong delay repeats without low rumble and rounded off softly
 - List knobs of the sampler engine (Sample Mode, Voices, Filter Mode, speech letter) turn as slowly as all other list knobs
 - Guide in the menu: new pages for song, knob recording and samples; manuals updated
+- Short messages (track name, play, knob values) now appear briefly in the dots row on the right instead of covering the tabs; the dots slide left meanwhile
 
 ## Development history (steps before 1.0.0)
 

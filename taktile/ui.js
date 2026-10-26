@@ -693,7 +693,7 @@ function drawCurveBox(key) {
     else if (key === 'drive') plot(t => { const x = t * 2 - 1, k = 1 + v * 9; return 0.5 + 0.5 * Math.tanh(k * x) / Math.tanh(k); });
 }
 function showToast(label, text, f) {
-    toastSeq++; label = tr(label); text = tr(text); toast = { label, text, f, ticks: slowKnobs ? 160 : 70, ck: curveKey, nm: 1 }; curveKey = ''; needsRedraw = true;
+    toastSeq++; label = tr(label); text = tr(text); toast = { label, text, f, ticks: slowKnobs ? 160 : (curveKey ? 70 : 30), ck: curveKey, nm: 1 }; curveKey = ''; needsRedraw = true;
     const e = undoStack.length ? undoStack[undoStack.length - 1] : null; if (e && (!e.lbl || e.k) && label !== 'UNDO' && label !== 'REDO') e.lbl = (String(label) + ' ' + String(text)).substring(0, 20);
 }
 
@@ -2823,8 +2823,11 @@ function drawTabsSimple() {                                    /* one row: the o
 }
 const TAB_NEW = true, TAB_Y = 17, TAB_RH = 23;                /* new track header: track + mode bar, then one row with all tiles (the open one with its page); the content starts at y 17 */
 const TAB_3 = { 1: 'PRE', 9: 'ENG', 3: 'MOD', 2: 'FLT', 38: 'FX', 46: 'BUS', 36: 'EUC', 27: 'MID', 28: 'SMP', 44: 'CHD', 53: 'LFO' };
+function toastInRow() { return !!toast && !SIMPLE && !menuOpen && askKind < 0 && exitDlg < 0 && !monOpen && !(bigOn && toast.ck) && !(toast.ck && CURVE_KEYS[toast.ck]); }      /* short messages sit in the dots row, right side */
+let tabsNewDrawn = false;
 function drawTabsNew() {
     if (SIMPLE) { drawTabsSimple(); return; }
+    tabsNewDrawn = true;
     const tabs = trackTabs(), cur = Math.max(0, tabIndex(tabs)), n = tabs.length;
     const nm = i => TAB_FULL[tabs[i]] || TAB_3[tabs[i]] || '?', ww = i => nm(i).length * 4 + 6;      /* whole names in the small letters; the row scrolls with the page you are on */
     let lo = cur, hi = cur, used = ww(cur);
@@ -2841,8 +2844,14 @@ function drawTabsNew() {
     }
     if (lo > 0) txtS(0, 2, '<', 1);
     if (hi < n - 1) txtS(122, 2, '>', 1);
-    { const gap = n > 9 ? 6 : 8, x0 = 64 - Math.round((n - 1) * gap / 2);      /* one dot per page right under the names: the page you are on is the big one */
+    const inRow = toastInRow();
+    { const gap = n > 9 ? 6 : 8, x0 = inRow ? 3 : 64 - Math.round((n - 1) * gap / 2);      /* one dot per page right under the names: the page you are on is the big one (they slide left while a message shows) */
       for (let i = 0; i < n; i++) { const dx = x0 + i * gap; if (i === cur) fill_rect(dx - 1, 11, 3, 3, 1); else set_pixel(dx, 12, 1); } }
+    if (inRow) {
+        const gap = n > 9 ? 6 : 8, room = Math.floor((124 - (3 + (n - 1) * gap + 5)) / 4), vt = String(toast.text).toUpperCase(), lb = String(toast.label).toUpperCase();
+        let str = vt ? lb + ' ' + vt : lb; if (str.length > room) str = vt && vt.length < room - 2 ? lb.substring(0, room - vt.length - 1) + ' ' + vt : str.substring(0, room);
+        txtS(127 - str.length * 4, 11, str, 1);
+    }
     fill_rect(0, 16, 128, 1, 1);
 }
 function lastTabId() { return trackTabs().indexOf(9) >= 0 ? 9 : 28; }      /* SYNTH ENGINE (second tab of a synth track) or SAMPLE (last tab of the others) */
@@ -5549,14 +5558,14 @@ function drawCore() {
     if (splashT0 > 0) { if (splashActive()) { drawSplashAt(Date.now() - splashT0); return; } splashEnd(); }
     if (idleBlank) { clear_screen(); needsRedraw = false; return; }
     if (errShow > 0) { errShow--; drawErr(); return; }
-    clear_screen(); hdrDrawn = false;
+    clear_screen(); hdrDrawn = false; tabsNewDrawn = false;
     if (menuOpen !== menuWasOpen) { menuWasOpen = menuOpen; if (menuOpen) toast = null; }      /* a leftover message (track name ...) never sits on top of the menu title */
     tabStrip = isTab(view) && !(scopeLatch && view !== 42) && !projUI && !spkUI && exitDlg < 0 && !menuOpen && askKind < 0 && !(view === 28 && broOpen) && !(brwTicks > 0 && brw) && !fb;
     if (fb && !menuOpen && askKind < 0 && exitDlg < 0) { drawFB(); return; }
     if (brwTicks > 0 && brw && !menuOpen && askKind < 0) { drawBrowse(); return; }
     if (spkUI) drawSpk(); else if (projUI) drawProj(); else if (monOpen) drawMon(); else if (exitDlg >= 0) drawExit(); else if (askKind >= 0) drawAsk(); else if (menuOpen) drawMenu(); else if (heldStep >= 0 && !recDown && stepWinView()) drawStepEdit(); else if (scopeLatch && view !== 42 && !(view === 28 && broOpen)) drawScope(); else if (view === 0) drawSeq(); else if (view === 40) drawHist(); else if (view === 42) drawScope(); else if (view === 51) drawLoad(); else if (view === 7) drawClips(); else if (view === 31) drawSong(); else if (view === 45) drawDevices(); else if (isHub(view)) drawHub(); else if (view === 20) drawMix(); else if (view === 28 && broOpen) drawBro(); else if (view === 28) { if (smpPage === 1) drawSlice(); else drawSample(); } else drawParams();
     if (toast && bigOn && toast.ck && !menuOpen && askKind < 0 && exitDlg < 0 && !monOpen) drawBigValue(toast);
-    if (toast) {
+    if (toast && !(tabsNewDrawn && toastInRow())) {
         /* small message box in the top right corner (name + value on one line, thin bar under it); the page stays visible */
         const vt = String(toast.text).toUpperCase(), lb = String(toast.label).toUpperCase();
         const nmL = toast.nm && vt && !menuOpen;                 /* turning a knob: the name stands top left, the box only holds the value */
