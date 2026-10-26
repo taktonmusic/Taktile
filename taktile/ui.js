@@ -5169,7 +5169,7 @@ function drawClips() {
     titleBar('CLIPS ' + (bank * 4 + 1) + '-' + (bank * 4 + 4), sceneNames[ed[sel]] ? 'C' + (ed[sel] + 1) + ' ' + sceneNames[ed[sel]] : (playing ? 'PLAY' : 'STOP'));
     for (let r = 0; r < 4; r++) {
         const t = bank * 4 + r, y = 11 + r * 13, isSel = (t === sel);
-        const nm = kind[t] ? 'DRM' + (slot[t] + 1) : 'S' + tl(t);
+        const nm = kind[t] ? 'DRM' + (slot[t] + 1) : tl(t);
         if (isSel) { fill_rect(0, y, 25, 11, 1); txt(1, y + 1, nm, 0); } else txt(1, y + 1, nm, 1);
         if (mutes[t]) fill_rect(0, y + 5, 25, 1, isSel ? 0 : 1);
         for (let c = 0; c < NPAT; c++) {
@@ -5328,7 +5328,7 @@ function drawSong() {
     }
     for (let r = 0; r < 4; r++) {                                   /* tracks as rows, the clip this step plays is filled */
         const t = bank * 4 + r, y = 11 + r * 11, isSel = (t === sel);
-        const nm = kind[t] ? 'DRM' + (slot[t] + 1) : 'S' + tl(t);
+        const nm = kind[t] ? 'DRM' + (slot[t] + 1) : tl(t);
         if (isSel) { fill_rect(0, y, 25, 10, 1); txt(1, y + 1, nm, 0); } else txt(1, y + 1, nm, 1);
         if (sceneMuted(t)) fill_rect(0, y + 4, 25, 1, isSel ? 0 : 1);
         for (let c = 0; c < NPAT; c++) {
