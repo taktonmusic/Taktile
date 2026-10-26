@@ -4878,7 +4878,7 @@ function sliceRest(t) {                                    /* slices fill pads 1
         if (k < slN) want = 0; else { let used = false; for (let p = 0; p < NPAT && !used; p++) if (laneHas(p, l)) used = true; if (!used) want = 1; }
         if (want !== lmutes[l]) { lmutes[l] = want; enqueue('lmute' + l, 'lmute', l + ',' + want); lmSent[l] = want; }
     }
-    markEdited();
+    markEdited(); let m = 0; for (let k = slN; k < 16; k++) if (lmutes[laneOf(t, k)]) m++; return m;
 }
 function sliceApply2(k) {
     if (!k) { sliceApply(); return; }
@@ -4888,16 +4888,16 @@ function sliceApply2(k) {
     if (t < 0) { showToast('NO FREE TRACK', 'USE THIS TRACK', 0); return; }
     chosen[t] = 1; setKind(t, 1); if (!kind[t]) return; selectTrack(t);
     for (let q = 0; q < slN; q++) { const l = laneOf(t, q); setLaneP(l, 'type', 359); setLaneP(l, 'smp', i / 63); setLaneP(l, 'sst', slm[q]); setLaneP(l, 'sen', q < slN - 1 ? slm[q + 1] : 1); setLaneP(l, 'smd', 0); }
-    sliceRest(t);
-    showToast('SLICES SET', slN + ' PADS ON TRACK ' + (t + 1), slN / 16); needsRedraw = true;
+    const rm = sliceRest(t);
+    if (rm) showToast(slN + ' PADS REST OFF', '', slN / 16); else showToast('SLICES SET', slN + ' PADS ON TRACK ' + (t + 1), slN / 16); needsRedraw = true;
 }
 function sliceApply() {
     const L0 = ln(), i = smpIdx(L0);
     if (!smpInfo[i] || !smpInfo[i][0]) { showToast('NO SAMPLE', 'PICK IN SAMPLE', 0); return; }
     if (kind[sel]) {
         for (let k = 0; k < slN; k++) { const l = laneOf(sel, k); setLaneP(l, 'type', 359); setLaneP(l, 'smp', i / 63); setLaneP(l, 'sst', slm[k]); setLaneP(l, 'sen', k < slN - 1 ? slm[k + 1] : 1); setLaneP(l, 'smd', 0); }
-        sliceRest(sel);
-        showToast('SLICES SET', slN + ' PADS', slN / 16);
+        const rm = sliceRest(sel);
+        if (rm) showToast(slN + ' PADS REST OFF', '', slN / 16); else showToast('SLICES SET', slN + ' PADS', slN / 16);
     } else {
         setLaneP(L0, 'type', 359); setLaneP(L0, 'sst', slm[slSel]); setLaneP(L0, 'sen', slSel < slN - 1 ? slm[slSel + 1] : 1);
         showToast('SLICE ' + (slSel + 1), 'ON THIS TRACK', slSel / 15);
