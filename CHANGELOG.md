@@ -4,6 +4,9 @@
 - Back to the proven 1.6.5 program with only these changes
 - Recording into an empty clip: stopping with the Play button now gives the length you played too (it used to stay one bar too long, e.g. 48 instead of 32 steps); a downbeat played a little early no longer adds a bar, it goes to step 1
 - Synth tracks start Mono again; Voices = Poly lets you hold up to eight notes together (choosing a sampler sound switches that track to Poly)
+- MIC page: Shift + Gain knob switches a live monitor on (you hear the input; use headphones). It is off when you leave the page or record
+- Notes To Scale first reads the notes of the other synth tracks, sets master Key + Scale to the best match (major, minor, dorian ...) and then moves the notes of this clip into it
+- Tracks are shown as DRM1, SY1, SY2 ... instead of T01 / S02
 - Arp rate: 1/4 and 1/2 added (slower than 1/8)
 - Scale Q runs once per turn instead of again and again while the knob keeps turning
 - Full Velocity: live pad hits now play at full velocity too, like the steps they record

@@ -777,7 +777,7 @@ typedef struct {
     float root_hz;
     int mo_clk, mo_trk, mo_chn, mo_xp, mo_vp, mo_dn; float mclk; struct { int cnt; uint8_t st, d1; } mo_q[64];   /* MIDI out: clock + notes per track */
     int16_t *rec_buf; long rec_n, rec_len, rec_max; int rec_state, rec_bars, rec_src; char rec_last[48]; int rec_slot;   /* resampling (rec_src -2 = the Move's audio input, see mic_block) */
-    int mic_mon, mic_clip, mic_ok, rfx, rnorm, rfx_cnt; float *rfx_mem; long rfx_cap, rec_in_n; int rfx_dln, rfx_dp, rfx_len[12], rfx_off[12], rfx_cp[12]; float rfx_lp[8]; float mic_gain, mic_thr, mic_peak, ramt, rfx_hx[2], rfx_hy[2], rfx_hold[2];   /* MIC take: monitor flag (level only while the MIC page is open), gain, start threshold, smoothed input peak */
+    int mic_mon, mic_hear, mic_n; const int16_t *mic_in; int mic_clip, mic_ok, rfx, rnorm, rfx_cnt; float *rfx_mem; long rfx_cap, rec_in_n; int rfx_dln, rfx_dp, rfx_len[12], rfx_off[12], rfx_cp[12]; float rfx_lp[8]; float mic_gain, mic_thr, mic_peak, ramt, rfx_hx[2], rfx_hy[2], rfx_hold[2];   /* MIC take: monitor flag (level only while the MIC page is open), gain, start threshold, smoothed input peak */
     float sc_w[128], sc_lp[8], sc_env[8]; int sc_i, sc_c;
     float sc_lp2[16], sc_env2[16], sc_sl[64], sc_sr[64], sc_cll, sc_crr, sc_clr; int sc_si;   /* 16-band spectrum, stereo ring and phase correlation for the extra scope pages */            /* master scope ring (decimated) and 8 band levels for the UI scope page */
     float dk_env[NLANE], dk_c[NLANE], meter[NTRK];                 /* sidechain ducking (kick -> other tracks) and level meters */
@@ -3269,6 +3269,7 @@ static void set_param(void *instance, const char *key, const char *val) {
     }
     if (strcmp(key, "reccancel") == 0) { s->rec_state = 0; return; }
     if (strcmp(key, "micgain") == 0) { int gx = atoi(val); if (gx < 10) gx = 10; if (gx > 80) gx = 80; if (s->rec_state != 2) s->mic_gain = (float)gx * 0.1f; return; }
+    if (strcmp(key, "michear") == 0) { s->mic_hear = atoi(val) ? 1 : 0; return; }
     if (strcmp(key, "micmon") == 0) { s->mic_mon = atoi(val) ? 1 : 0; s->mic_peak = 0.0f; s->mic_clip = 0; return; }
     if (strcmp(key, "micarm") == 0) {                /* "seconds,threshold %,gain x10,source,effect,amount %,normalize": source -2 = the Move's input, -1 = master, 0..15 = one track; threshold 0 = start at once, else wait for sound (input only) */
         if (s->rec_state == 1 || s->rec_state == 2 || s->rec_state == 5) return;
@@ -3813,12 +3814,14 @@ static inline void rec_fx(inst_t *s, float *l, float *r) {
 /* MIC: reads the Move's audio input block (host mailbox, 128 frames, stereo int16). It does nothing at all (one test) unless the MIC page is open
    (level meter) or a take is running, and then it only measures and copies samples: no filter, no effect, no allocation, nothing is played back. */
 static void mic_block(inst_t *s, int frames) {
+    s->mic_in = NULL;
     int taking = (s->rec_src == -2 && (s->rec_state == 2 || s->rec_state == 5));
     if (!s->mic_mon && !taking) return;
     const int16_t *in = (g_host && g_host->mapped_memory && g_host->audio_in_offset > 0) ? (const int16_t *)(g_host->mapped_memory + g_host->audio_in_offset) : NULL;
     if (!in) { s->mic_ok = 0; s->mic_peak = 0.0f; return; }
     s->mic_ok = 1;
     int n = frames < 128 ? frames : 128;
+    s->mic_in = in; s->mic_n = n;
     int pk = 0;
     for (int i = 0; i < 2 * n; i++) { int a = in[i] < 0 ? -(int)in[i] : (int)in[i]; if (a > pk) pk = a; }
     float g = s->mic_gain > 0.05f ? s->mic_gain : 1.0f, pv = (float)pk * g * (1.0f / 32768.0f);
@@ -3849,6 +3852,10 @@ static void render_block(void *instance, int16_t *out_lr, int frames) {
     unsigned int mx_old = _mm_getcsr(); _mm_setcsr(mx_old | 0x8040u);
 #endif
     render_block_impl(instance, out_lr, frames);
+    if (s->mic_hear && s->mic_mon && s->mic_in) {                        /* MIC monitor (only while the MIC page is open): the input is heard through the output */
+        const float g = (s->mic_gain > 0.05f ? s->mic_gain : 1.0f) * 0.5f;
+        for (int i = 0; i < s->mic_n && i < frames; i++) for (int ch = 0; ch < 2; ch++) { float v = (float)out_lr[2 * i + ch] + (float)s->mic_in[2 * i + ch] * g; out_lr[2 * i + ch] = (int16_t)(v > 32767.0f ? 32767.0f : (v < -32768.0f ? -32768.0f : v)); }
+    }
 #if defined(__aarch64__)
     __asm__ volatile("msr fpcr, %0" :: "r"(fpcr_old));
 #elif defined(__SSE__)
