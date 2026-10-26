@@ -219,9 +219,9 @@ const VIEW_ITEMS = {
 };
 /* home / fx / master hubs: tiles you pick with the jogwheel (turn = choose, click = open, Back = up one level) */
 const HUBS = {
-    16: ['HOME', [['SOUND', 1], ['TRACK', 21], ['MIX', 20], ['BUS', 4], ['OPTIONS', -1], ['SONG', 31], ['TEMPO', 10], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['TAPE', 52], ['SCOPE', 42]]],      /* one list: MORE is gone, the jogwheel simply keeps scrolling to the next tiles */
+    16: ['HOME', [['SOUND', 1], ['TRACK', 21], ['MIX', 20], ['BUS', 4], ['OPTIONS', -1], ['SONG', 31], ['TEMPO', 10], ['PROJ', 35], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['TAPE', 52], ['SCOPE', 42]]],      /* one list: MORE is gone, the jogwheel simply keeps scrolling to the next tiles */
     17: ['FX', [['DELAY', 5], ['REVERB', 6], ['MULTI', 24], ['MIDI', 27], ['DUCK', 30]]],
-    18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['KIT', 34], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['TAPE', 52], ['SCOPE', 42]]],
+    18: ['MORE', [['TEMPO', 10], ['SONG', 31], ['PROJ', 35], ['RESAMP', 33], ['SYNC', 37], ['OPTION', 8], ['UNDO', 40], ['EQ', 41], ['TAPE', 52], ['SCOPE', 42]]],
 };
 let hubSel = { 16: 0, 17: 0, 18: 0 }, navStack = [], hubReturn = 0, mixPage = 0;
 
@@ -3997,10 +3997,11 @@ function fbTree() {
     const all = [{ n: 'ALL SOUNDS', l: TYPE_NAME.map((x, k) => k).filter(k => BASE_T[k] !== 359) }];
     const roleMap = { 'BASS': 'BASS', 'LEAD': 'LEAD', 'PLUCK': 'PLUCK + STABS', 'PAD + STRINGS': 'PADS + CHORDS', 'KEYS + ORGAN': 'KEYS + BELLS', 'BELLS': 'KEYS + BELLS' };
     const typed = fbSynGroups().map(g => ({ n: g.n, kids: g.kids.slice() }));      /* sorted by sound type (pad, lead, bass ...), not by genre: the new engines join each type as a NEW folder */
-    const markSyn = (n, ini) => { if (n.kids) n.kids.forEach(k => markSyn(k, ini)); else if (n.l && !n.fx && !n.smp && !n.mine) n.synInit = ini; };      /* every synth preset list starts with the INIT of its role: one plain oscillator */      /* every synth preset list starts with an INIT sound */
+    const markSyn = (n, ini) => { if (n.kids) n.kids.forEach(k => markSyn(k, ini)); else if (n.l && !n.fx && !n.smp && !n.mine && n.synInit === undefined) n.synInit = ini; };      /* every synth preset list starts with the INIT of its role: one plain oscillator */      /* every synth preset list starts with an INIT sound */
     const SYN_INIT = { BASS: 'AnaInitBs', LEAD: 'AnaInit', PLUCK: 'AnaInitPl', PADS: 'AnaInitPd', KEYS: 'AnaInitKy', BRASS: 'AnaInitBr' };
     typed.forEach(g => { const m = /^(BASS|LEAD|PLUCK|PADS|KEYS|BRASS)/.exec(g.n); if (m) markSyn(g, SYN_INIT[m[1]]); });
     const sounds = { n: 'SOUNDS', kindSw: 0, kids: typed.concat([{ n: 'MORE', kids: nx.concat([cat('FX', 4), cat('PERCUSSION', 3), cat('KICK', 0), cat('SNARE', 1, t => !isClapT(t)), cat('CLAP', 1, isClapT), cat('HATS', 2, t => !isCymT(t)), cat('CYMBALS', 2, isCymT)], all) }]) };
+    [sounds, insts].forEach(g => markSyn(g, 'AnaInit'));      /* every remaining synth list (classic, modal, vocal, FX ...) starts with the plain INIT too */
     insts.n = 'SYNTHS'; insts.kindSw = 0; { const q = insts.kids.findIndex(k => k.eng); if (q >= 0) insts.kids.splice(q, 1); }
     /* the same start for every track, like the question for a new track: SYNTHS | DRUMS | SOUNDS, each opens its list; picking the other kind switches the track */
     return { n: 'BROWSE', kids: [sounds, drums, insts, { n: 'SAMPLER', smp: true, eng: true, kindSw: 0 }].concat(kind[sel] ? [] : [{ n: 'MY PRESETS', mine: true }], my, fxK, smp) };
@@ -4020,7 +4021,7 @@ function fbItems(node) {
     if (node.initFirst) {      /* the INIT entry is the engine's own Init sound (never a removed preset mapped onto something else); families without one just list their sounds */
         const f = node.l[0], isI = /Init$/.test(TYPE_NAME[f] || ''), seen = {};
         const rest = node.l.filter((t, k) => !(isI && k === 0) && TYPE_KEEP[t] && !seen[t] && (seen[t] = 1))  .map(t => ({ label: TYPE_DISP[t], val: t }));
-        return fbSort((isI ? [{ label: 'INIT', val: f, init: true }] : []).concat(rest));
+        return fbSort([{ label: 'INIT', val: isI ? f : tIdx('AnaInit'), init: true }].concat(rest));      /* families without an Init of their own start with the plain INIT */
     }
     if (node.synInit) { const li = node.l.filter(t => TYPE_KEEP[t]).map(t => ({ label: TYPE_DISP[t], val: t })), ai = tIdx(typeof node.synInit === 'string' ? node.synInit : 'AnaInit'); return fbSort(li).filter(x => x.val !== ai).length ? [{ label: 'INIT', val: ai, init: true }].concat(fbSort(li)) : li; }
     return fbSort(node.l.filter(t => TYPE_KEEP[t]).map(t => { const ii = node.init && /^D.*Init$/.test(TYPE_NAME[t]); return { label: ii ? 'INIT' : (node.init ? TYPE_DISP[t].replace(/^Synth /, '') : TYPE_DISP[t]), val: t, init: ii || undefined }; }));
