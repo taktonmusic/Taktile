@@ -4872,6 +4872,14 @@ function drawSliceDlg() {
     fill_rect(14, 14, 100, 36, 0); draw_rect(14, 14, 100, 36, 1); txtS(20, 18, 'PUT THE SLICES ON', 1);
     for (let k = 0; k < 2; k++) { const y = 26 + k * 11, on = sliceDlg === k, t = k ? 'NEW DRUM TRACK' : 'THIS TRACK'; if (on) fill_rect(18, y, 92, 10, 1); txt(22, y + 1, t, on ? 0 : 1); }
 }
+function sliceRest(t) {                                    /* slices fill pads 1..N; the other pads that hold no notes stay silent instead of playing the default drums (tap the pad's mute to bring one back) */
+    for (let k = 0; k < 16; k++) {
+        const l = laneOf(t, k); let want = lmutes[l];
+        if (k < slN) want = 0; else { let used = false; for (let p = 0; p < NPAT && !used; p++) if (laneHas(p, l)) used = true; if (!used) want = 1; }
+        if (want !== lmutes[l]) { lmutes[l] = want; enqueue('lmute' + l, 'lmute', l + ',' + want); lmSent[l] = want; }
+    }
+    markEdited();
+}
 function sliceApply2(k) {
     if (!k) { sliceApply(); return; }
     const L0 = ln(), i = smpIdx(L0);
@@ -4880,6 +4888,7 @@ function sliceApply2(k) {
     if (t < 0) { showToast('NO FREE TRACK', 'USE THIS TRACK', 0); return; }
     chosen[t] = 1; setKind(t, 1); if (!kind[t]) return; selectTrack(t);
     for (let q = 0; q < slN; q++) { const l = laneOf(t, q); setLaneP(l, 'type', 359); setLaneP(l, 'smp', i / 63); setLaneP(l, 'sst', slm[q]); setLaneP(l, 'sen', q < slN - 1 ? slm[q + 1] : 1); setLaneP(l, 'smd', 0); }
+    sliceRest(t);
     showToast('SLICES SET', slN + ' PADS ON TRACK ' + (t + 1), slN / 16); needsRedraw = true;
 }
 function sliceApply() {
@@ -4887,6 +4896,7 @@ function sliceApply() {
     if (!smpInfo[i] || !smpInfo[i][0]) { showToast('NO SAMPLE', 'PICK IN SAMPLE', 0); return; }
     if (kind[sel]) {
         for (let k = 0; k < slN; k++) { const l = laneOf(sel, k); setLaneP(l, 'type', 359); setLaneP(l, 'smp', i / 63); setLaneP(l, 'sst', slm[k]); setLaneP(l, 'sen', k < slN - 1 ? slm[k + 1] : 1); setLaneP(l, 'smd', 0); }
+        sliceRest(sel);
         showToast('SLICES SET', slN + ' PADS', slN / 16);
     } else {
         setLaneP(L0, 'type', 359); setLaneP(L0, 'sst', slm[slSel]); setLaneP(L0, 'sen', slSel < slN - 1 ? slm[slSel + 1] : 1);

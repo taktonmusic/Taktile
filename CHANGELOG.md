@@ -70,6 +70,7 @@
 - Guide in the menu: new pages for song, knob recording and samples; manuals updated
 - Short messages (track name, play, stop, knob values) appear in the dots row on the right instead of covering the tabs; the dots slide left meanwhile
 - Step page: header in the style of the tab strip (clip as white block, tempo, mode, lane line)
+- Applying slices to a drum track: pads without a slice and without notes are muted instead of playing the default drums
 
 ## Development history (steps before 1.0.0)
 
