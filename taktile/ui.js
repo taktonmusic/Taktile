@@ -5115,18 +5115,12 @@ function drawSeq() {
     } else if (copyHeld || deleteHeld || loopHeld) {
         txt(0, 42, copyHeld ? (stepClip ? 'COPY: STEP ' + (stepClip.s + 1) + ' PICKED' : 'COPY: PICK A STEP') : (deleteHeld ? 'DELETE HELD' : 'LOOP HELD'), 1);
         txt(0, 53, copyHeld ? (stepClip ? 'PRESS TARGET STEPS' : 'THEN PRESS TARGET') : (deleteHeld ? 'STEP = CLEAR IT' : 'STEP = LOOP END'), 1);
-    } else if (!shiftHeld) {
+    } else {
         for (let i = 0; i < 8; i++) {
             const k = seqSnd()[i], v = pads[ln()][PI[k]], cx = i * 16 + 1;
             txtS(cx, 41, seqShort()[i], 1); txtS(cx, 49, fit(fmtVal(k, v), 15).toUpperCase(), 1);
             fill_rect(cx, 58, 14, 1, 1); const w = Math.round(14 * clamp(fracVal(k, v), 0, 1)); if (w > 0) fill_rect(cx, 57, w, 3, 1);
         }
-    } else {
-        const sc = (x, l, v, f, k) => { if (uiTheme >= 2) themedCell(x, 40, l, v, f, 32, false, k); else cell(x, 40, l, v, f); };
-        sc(0, 'BPM', String(bpm), (bpm - 40) / 200, 'bpm');
-        sc(32, 'Swg', String(50 + swing), swing / 25, 'swing');
-        sc(64, 'Len', String(LL()), LL() / MAXSTEP, 'len');
-        sc(96, 'Clip', String(ed[sel] + 1), ed[sel] / (NPAT - 1), 'clip');
     }
 }
 function drawExit() {
