@@ -1399,7 +1399,6 @@ static const lay_t LAYOUT[NPADS] = {
 static void reset_pad(inst_t *s, int p) {
     for (int k = 0; k < PP_N; k++) s->pp[p][k] = PD[k].def;
     const lay_t *l = &LAYOUT[p < NTRK ? p : NTRK + ((p - NTRK) & 15)];
-    if (p < NTRK) s->pp[p][PP_POLY] = 1.0f;      /* synth / sampler tracks play several notes at once */
     s->pp[p][PP_TYPE] = (float)TYPE_MAP[(l->type >= 0 && l->type < T_COUNT) ? l->type : 0];
     s->pp[p][PP_TUNE] = l->tune;
     s->pp[p][PP_DECAY] = l->decay;

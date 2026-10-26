@@ -291,7 +291,7 @@ function laneHas(p, l) { return !!steps[p][l] && steps[p][l].some(s => s[0]); }
 function activeLanes() { const a = []; for (let t = 0; t < NTRK; t++) a.push(t); for (let t = 0; t < NTRK; t++) if (kind[t]) for (const l of lanesOf(t)) a.push(l); return a; }
 function defaultPads() {
     const lay = []; for (let l = 0; l < NLANE; l++) lay.push(l < NTRK ? LAYOUT[l] : DRUM_LAYOUT[(l - NTRK) & 15]);
-    return lay.map((l, li) => { const a = [l[0], 0.8, 0.5, l[1], l[2], 1.0, 0.0, li >= NTRK ? 0 : l[5], li >= NTRK ? 0 : l[6], l[3], l[4], 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]; while (a.length < PK.length) a.push(defOf(a.length)); if (li < NTRK) a[PI.poly] = 1; return a; });      /* synth tracks start polyphonic (Voices = Poly); drum sounds keep their own one-voice behaviour */
+    return lay.map((l, li) => { const a = [l[0], 0.8, 0.5, l[1], l[2], 1.0, 0.0, li >= NTRK ? 0 : l[5], li >= NTRK ? 0 : l[6], l[3], l[4], 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]; while (a.length < PK.length) a.push(defOf(a.length)); return a; });      /* synth tracks start polyphonic (Voices = Poly); drum sounds keep their own one-voice behaviour */
 }
 function hex2(n) { return (n < 16 ? '0' : '') + n.toString(16); }
 function encStep(st) {                                    /* 12 hex chars: on+vel, prob, semi+64, ratchet|gate<<2|cond<<5, nudge, lock. The 4 spare bits (prob bits 5-6, nudge bit 7, lock bit 7) hold the exact step length 1..15 */
@@ -495,7 +495,7 @@ function loadState() {
         if (!o || o.v !== 2) { freshState = true; return; }
         attMig = !(o.av >= 2); const tuneMig = !(o.tv >= 2), polyMig = !(o.pm >= 1);
         if (Array.isArray(o.pads) && (o.pads.length === NTRK || o.pads.length === NLANE)) {
-            const loaded = o.pads.map((r, li) => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); if (tuneMig) a[PI.tune] = tuneNew(a[PI.tune]); if (polyMig && li < NTRK) a[PI.poly] = 1; return neutEng2(a, li); });
+            const loaded = o.pads.map((r, li) => { const a = r.map(Number); while (a.length < PK.length) a.push(defOf(a.length)); if (tuneMig) a[PI.tune] = tuneNew(a[PI.tune]); return neutEng2(a, li); });
             for (let l = 0; l < loaded.length; l++) pads[l] = loaded[l];
         }
         if (Array.isArray(o.ly) && o.ly.length === 2) { layS = clamp(Number(o.ly[0]) | 0, 0, 5); layD = clamp(Number(o.ly[1]) | 0, 0, 1); }
