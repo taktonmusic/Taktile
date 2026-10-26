@@ -71,6 +71,15 @@
 - Short messages (track name, play, stop, knob values) appear in the dots row on the right instead of covering the tabs; the dots slide left meanwhile
 - Step page: header in the style of the tab strip (clip as white block, tempo, mode, lane line)
 - Applying slices to a drum track: pads without a slice and without notes are muted instead of playing the default drums; the message says "N PADS REST OFF"
+- Synth and sampler tracks start in POLY: a high and a low note at once both sound (old projects are switched once)
+- Arp rate also slower: 1/4, 1/2, 1/1 and 1/8T
+- Loop held: the step buttons show the clip length (white = steps, green = bars); one button = that many steps, two or more together = that many bars
+- Recording: a note played just before the loop end no longer makes the clip a bar longer (32 steps stay 32); stopping with Play finishes the length like Rec
+- INIT in every engine family is the engine's own Init sound (it pointed to other presets before); duplicates removed from the family lists
+- MY PRESETS in the sound browser (synth tracks): + SAVE THIS SOUND stores the whole sound, click loads it, Delete + click removes it
+- Master: Groove template turns at the normal speed; the knob you turn shows on the right of the header; "Notes To Scale" runs once per touch
+- Drum tracks keep their delay and reverb sends when the sound is sent as a whole (clip change)
+- Full Velocity also applies when playing live, so live and playback sound the same
 
 ## Development history (steps before 1.0.0)
 
