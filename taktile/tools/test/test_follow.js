@@ -1,0 +1,12 @@
+const { ctx, run, cc } = require('./harness.js');
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+ctx.init && ctx.init(); T(600);
+run('splashOn=false;splashT0=0;chosen.fill(1);askKind=-1;view=0;playing=false;needsRedraw=true;songList=[[0,1,1,0,0,0],[1,1,1,0,0,0],[2,1,1,0,0,0]];songSlot=0;songHoldT=0'); T(3);
+run('view=31;songGo();songTick()');
+run('gs=2+16*1+1;songTick()');
+ok(run('songPlayIdx()') === 2 || run('songPlayIdx()') >= 1, 'song is at step ' + (run('songPlayIdx()') + 1));
+ok(run('songSlot') === run('songPlayIdx()'), 'page follows the playing step (' + run('songSlot') + ')');
+run('songHoldT=Date.now()+4000; songSlot=0;songTick()');
+ok(run('songSlot') === 0, 'a step you picked stays for a while');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

@@ -1,0 +1,16 @@
+const { ctx, run, cc } = require('./harness.js');
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+ctx.init && ctx.init(); T(600);
+run('splashOn=false;splashT0=0;chosen[0]=1;askKind=-1;setKind(0,0);selectTrack(0);setLaneP(ln(),"type",359);view=28;smpPage=0;needsRedraw=true');
+run('for(let i=0;i<3;i++){smpInfo[i]=[44100,44100,1];} smpNames[0]="A";smpNames[1]="B";smpNames[2]="C"; smpLoaded=()=>[0,1,2]; setLaneP(ln(),"smp",0)'); T(3);
+run('setLaneP(ln(),"sstr",0.7);setLaneP(ln(),"cut",0.3);setLaneP(ln(),"res",0.6);setLaneP(ln(),"sgn",0.9);setLaneP(ln(),"pan",0.2);setLaneP(ln(),"sscn",0.5)');
+run('selectSample(1,false)'); T(2);
+const g = k => run('pads[ln()][PI.' + k + ']');
+ok(run('smpIdx(ln())') === 1, 'sample changed');
+ok(Math.abs(g('sstr') - run('defOf(PI.sstr)')) < 1e-6, 'stretch back to standard');
+ok(Math.abs(g('cut') - run('defOf(PI.cut)')) < 1e-6, 'filter cutoff back to standard (' + g('cut') + ')');
+ok(Math.abs(g('res') - run('defOf(PI.res)')) < 1e-6, 'resonance back');
+ok(Math.abs(g('sgn') - run('defOf(PI.sgn)')) < 1e-6 && g('sscn') === 0, 'gain and scan back');
+ok(Math.abs(g('pan') - 0.2) < 1e-6, 'pan stays');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

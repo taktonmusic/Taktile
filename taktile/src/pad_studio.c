@@ -650,7 +650,7 @@ static void smp_scan(void) {                         /* slots stay stable: names
         if (SMP[k].d) continue;
         int onDisk = 0; for (int i = 0; i < nf; i++) if (!strcmp(found[i], names[k])) onDisk = 1;
         if (!onDisk) continue;
-        char path[400]; snprintf(path, sizeof path, "%s/%s", SMP_DIR, names[k]);
+        char path[sizeof SMP_DIR + 48]; snprintf(path, sizeof path, "%s/%.39s", SMP_DIR, names[k]);
         smp_load(&SMP[k], path);
     }
     if (changed) {

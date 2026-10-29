@@ -1,0 +1,17 @@
+const { ctx, run, cc } = require('./harness.js');
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+ctx.init && ctx.init(); T(600);
+const JC = run('CC.JOGCLICK'); const seq = () => { const a = [run('smpPage')]; for (let i = 0; i < 6; i++) { cc(JC, 127); cc(JC, 0); a.push(run('smpPage')); } return a.join(','); };
+run('splashOn=false;splashT0=0;chosen[0]=1;askKind=-1;setKind(0,0);selectTrack(0);setLaneP(ln(),"type",359);view=28;smpPage=0;needsRedraw=true'); T(3);
+ok(seq() === '0,1,2,3,4,5,0', 'sampler engine: all pages (' + seq() + ')');
+run('setLaneP(ln(),"type",1);smpPage=0;view=28;needsRedraw=true'); T(3);
+run('draw()');
+const q = seq(); ok(/^[01],[01],[01],[01],[01],[01],[01]$/.test(q) && q.indexOf('2') < 0, 'simple sample mode: only SAMPLE + SLICE (' + q + ')');
+run('setKind(0,0);selectTrack(0);setLaneP(ln(),"type",359);view=28;smpPage=1;smpInfo[0]=[44100,44100,1];setLaneP(ln(),"smp",0);slN=4;slm=[0,0.25,0.5,0.75];needsRedraw=true'); T(3);
+const JC2 = run('CC.JOGCLICK'), SH = run('CC.SHIFT'); cc(SH, 127); cc(JC2, 127); cc(JC2, 0); cc(SH, 0); T(2);
+ok(run('sliceDlg') === 0, 'Shift + jog click opens the question');
+run('draw()'); cc(run('CC.JOG'), 1); cc(JC2, 127); cc(JC2, 0); T(3);
+ok(run('sliceDlg') === -1 && run('kind.filter(k=>k).length') >= 1, 'new drum track made (drum tracks: ' + run('kind.filter(k=>k).length') + ')');
+ok(run('Math.round(pads[laneOf(sel,2)][0])') === 359, 'slice 3 sits on pad 3 of the new track');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

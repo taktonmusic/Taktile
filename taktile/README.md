@@ -8,12 +8,12 @@ A pattern-based groove box for the **Ableton Move**, written as an *overtake* mo
 
 ## Features
 - 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain
-- 456 built-in sounds, own WAV samples (64 slots / 40 MB) on synth and drum tracks, slicing, kits from 16 WAVs, time-stretch, resampling
+- 704 built-in sounds (INIT first in every list), a drum synth with lists for kicks, snares, hats and more, own WAV samples (64 slots / 40 MB) on synth and drum tracks, slicing, time-stretch, resampling
 - Track tiles (synth track): 1 PRESET, 2 SYNTH, 3 MOD, 4 FILTER (+ EQ), 5 FX (+ GRAIN), 6 FX TYPE (+ FX TIME), 7 EUCLID, 8 MIDI FX, 9 SAMPLE; drum tracks have no SYNTH tile. Tile top left, page top right, jog click = next page
-- Per-track delay, reverb, chorus, phaser, 11 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off)
+- Per-track delay, reverb, chorus, phaser, 10 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off)
 - Per-step parameter locks, per-track swing, Euclid generator (off by default), quantize with grid and strength, clips that grow while recording, MIDI clock + note out (USB-A)
 - Master: filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter
-- 32 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu
+- 32 project slots, rolling backups, undo history, in-device help (Shift+Menu), sound browser (Shift+jog), grouped menu
 
 ## Documentation
 - English manual: [docs/Taktile-Manual-EN.pdf](docs/Taktile-Manual-EN.pdf) (includes technical notes and open questions for Schwung developers)

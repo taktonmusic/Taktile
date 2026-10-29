@@ -1,0 +1,16 @@
+const { ctx, run, cc } = require('./harness.js');
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+ctx.init && ctx.init(); T(300);
+run('splashOn=false;splashT0=0'); run('view=31;needsRedraw=true'); T(5);
+ok(run('SONG_TAG.length') === 16 && run('TAG_COL.length') === 16, '16 names and colours');
+run('songList[0][5]=15'); ok(run('songNorm(songList[0])[5]') === 15, 'tag 15 survives');
+run('songNorm([0,4,1,0,0,99])'); ok(run('songNorm([0,4,1,0,0,99])[5]') === 15, 'tag clamped');
+run('clipsCur[0]=2;clipsCur[1]=5;clipsCur[2]=-1;mutes[1]=1;songBlank=false;songSlot=0');
+run('songCapture()');
+ok(run('songList.length') === 2 && run('songSlot') === 1, 'capture adds a scene');
+ok(run('songList[1][6][0]') === 2 && run('songList[1][6][1]') === 5 && run('songList[1][6][2]') === -1, 'clips captured');
+ok(run('songList[1][7][1]') === 1 && run('songList[1][7][0]') === 0, 'mutes captured');
+run('clipsCur.fill(-1);clipsQ.fill(-2);songCapture()'); ok(run('songList.length') === 2, 'nothing playing: no scene');
+run('draw()'); ok(true, 'draws');
+console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

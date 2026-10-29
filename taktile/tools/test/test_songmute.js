@@ -1,0 +1,17 @@
+const { ctx, run, cc } = require('./harness.js');
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+ctx.init && ctx.init(); T(600);
+run('splashOn=false;splashT0=0;chosen.fill(1);askKind=-1;view=0;playing=false;needsRedraw=true'); T(3);
+run('openHub(); hubSel[16]=HUBS[16][1].findIndex(t=>t[1]===31)'); T(2);
+cc(run('CC.JOGCLICK'), 127); cc(run('CC.JOGCLICK'), 0); T(5);
+const SF = run('STEP_FIRST'), pad = (n, v) => ctx.onMidiMessageInternal([v ? 0x90 : 0x80, n, v]);
+run('songSlot=0'); pad(SF, 100); T(2);
+run('songHeldAt=Date.now()-1000; songTick()');
+cc(43, 127); cc(43, 0); T(2);
+ok(run('songList[0][7] && songList[0][7][bank*4]') === 1, 'track key while a step is held mutes that track in the step');
+run('draw()');
+pad(SF, 0); T(2);
+cc(43, 127); cc(43, 0); T(2);
+ok(run('songList[0][7][bank*4]') === 1, 'without the held step the track key does not change the mute');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

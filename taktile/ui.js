@@ -1,7 +1,7 @@
 /*
  * Taktile - overtake groovebox for Ableton Move (Schwung)
  *
- * 16 tracks (synth or drum) x up to 128 steps x 8 clips per track, 240 sounds, arp, per-track filter, shared delay + reverb bus, master bus.
+ * 16 tracks (synth or drum) x up to 128 steps x 8 clips per track, 704 sounds, arp, per-track filter, shared delay + reverb bus, master bus.
  *
  *  Pads 1-16 (bottom 2 rows)  select + play a track      Pads 17-32: scale keyboard      Shift + pad: select silently
  *  Shift + Up/Down            top 16 pads per sound: PITCH keys / CLIPS (scenes + clips) / STEPS (16-step sequencer)
@@ -1028,7 +1028,7 @@ const HELP = {
     2: ['Filter: LP, HP, Crush', 'Jog: Reiter wechseln', 'Jog klick: letzter Reiter'],
     3: ['Mod: Ring, Pump, Wobble', 'Duck = Sidechain Tiefe', 'Jog: Reiter wechseln'],
     9: ['Engine: Wave, Sub, Filter', 'Jog klick: Sound-Browser', 'Jog: Reiter wechseln'],
-    28: ['Sample: Datei=Knopf 1. Shift+Jog klick: Browser. Dort Shift+Klick auf Ordner = Kit aus 16 WAVs. Jog klick: Slice/ENV/Tools. Tools: Fit, Half, Move. Slice: Add, Del, Snap.'],
+    28: ['Sample: Datei=Knopf 1. Shift+Jog klick: Browser. Dort Shift+Klick auf Ordner = 16 WAVs als Drum-Pads. Jog klick: Slice/ENV/Tools. Tools: Fit, Half, Move. Slice: Add, Del, Snap.'],
     27: ['MIDI-Effekt + Arp', 'Jog klick: MIDI FX 2', 'Jog: Reiter wechseln'],
     36: ['Euklid: 7 Seiten', 'Jog klick: Seite', 'Aendert das Pattern'],
     38: ['FX SENDS: Delay + Reverb', 'Send, Effekt, Output', 'Jog klick: Grain'],
@@ -1036,7 +1036,7 @@ const HELP = {
     46: ['FX BUS: ein Delay und', 'ein Reverb fuer alle', 'Spuren (Sends)', 'Jog klick: Seite 2'],
     50: ['Granulator: Grain = Mix', 'Size 4ms-1.2s kurz/lang, Dens', 'Reverse, Freeze, Window', 'Bild unten: Grains live'],
     16: ['SOUND = Track-Seiten', 'EDIT = Aktionen', 'MORE = Projekt, Song'],
-    18: ['Tempo, Song, Projekt', 'Kits, Resample, Sync', 'Optionen, History'],
+    18: ['Tempo, Song, Projekt', 'Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
     31: ['Pads: Tracks x Clips 1-8', 'Step-Tasten = Song-Kette', 'Jog: Tracks 1-16'],
@@ -1063,7 +1063,7 @@ const HELP_EN = {
     2: ['Filter: LP, HP, Crush', 'Jog: change tab', 'Jog click: last tab'],
     3: ['Mod: Ring, Pump, Wobble', 'Duck = sidechain depth', 'Jog: change tab'],
     9: ['Engine: Wave, Sub, Filter', 'Jog click: sound browser', 'Jog: change tab'],
-    28: ['Sample: File = knob 1. Shift+Jog click: browser. There Shift+click on a folder = kit from 16 WAVs. Jog click: Slice/ENV/Tools. Tools: Fit, Half, Move. Slice: Add, Del, Snap.'],
+    28: ['Sample: File = knob 1. Shift+Jog click: browser. There Shift+click on a folder = its 16 WAVs as drum pads. Jog click: Slice/ENV/Tools. Tools: Fit, Half, Move. Slice: Add, Del, Snap.'],
     27: ['MIDI effect + Arp', 'Jog click: MIDI FX 2', 'Jog: change tab'],
     36: ['Euclid: 7 pages', 'Jog click: page', 'Changes the pattern'],
     38: ['FX SENDS: Delay + Reverb', 'send, effect, output', 'Jog click: Grain'],
@@ -1071,7 +1071,7 @@ const HELP_EN = {
     46: ['FX BUS: one delay and', 'one reverb for all', 'tracks (sends)', 'Jog click: page 2'],
     50: ['Granulator: Grain = mix', 'Size 4ms-1.2s short/long, Dens', 'Reverse, Freeze, Window', 'Picture below: live grains'],
     16: ['SOUND = track pages', 'EDIT = actions', 'MORE = project, song'],
-    18: ['Tempo, song, project', 'Kits, resample, sync', 'Options, history'],
+    18: ['Tempo, song, project', 'Resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
     21: ['Track: type, volume', 'Pads, sound, layout', 'Color'],
     31: ['Pads: tracks x clips 1-8', 'Step buttons = song chain', 'Jog: tracks 1-16'],
@@ -2035,12 +2035,12 @@ const GUIDE = [
         ['Nicht zufrieden? Undo.', 'Genaueres Timing:', 'Menu > Quantize now', 'oder Quant auf der', 'Tempo-Seite.'],
         ['Rec + Play nimmt auch', 'Reglerbewegungen auf:', 'Sound, Mode, Delay, Hall,', 'Master, Tempo, Swing.', 'Delete + Regler loescht.']]],
     ['Sounds + synths', [
-        ['Jog click on the main', 'page opens the sound', 'browser: 450 sounds in', 'groups. Pads play the', 'highlighted sound.'],
+        ['Jog click on the main', 'page opens the sound', 'browser: 704 sounds in', 'lists. Pads play the', 'highlighted sound.'],
         ['Turn the jog on a', 'track page to walk', 'through its pages:', 'Preset, Engine, Mod,', 'Filter, FX, Euclid, LFO.'],
         ['The Engine page has', 'the synth knobs. New:', 'ACID 303, SWARM and', 'DX 6-OP FM. Sample:', 'the Sample button.'],
         ['Copy + track key', 'copies the sound to that', 'track. Shift + Copy +', 'track key copies the', 'whole track.'],
         ['Samples: the Sample key', 'opens SAMPLE + SLICE.', 'More (tools, mic, ENGINE', '2) in the SAMPLER engine', 'of the sound browser.']],
-     [['Jog-Klick auf der', 'Hauptseite oeffnet den', 'Sound-Browser: 450', 'Sounds in Gruppen. Pads', 'spielen den markierten.'],
+     [['Jog-Klick auf der', 'Hauptseite oeffnet den', 'Sound-Browser: 704', 'Sounds in Listen. Pads', 'spielen den markierten.'],
         ['Jog auf einer Track-', 'Seite drehen blaettert:', 'Preset, Engine, Mod,', 'Filter, FX, Euclid,', 'LFO.'],
         ['Die Engine-Seite hat', 'die Synth-Regler. Neu:', 'ACID 303, SWARM und', 'DX 6-OP FM. Eigene', 'Samples: Sample-Taste.'],
         ['Copy + Track-Taste', 'kopiert den Sound dort', 'hin. Shift + Copy +', 'Track-Taste kopiert den', 'ganzen Track.'],
@@ -4063,7 +4063,7 @@ function fbDiveAny(t) {                                     /* synth tracks with
     };
     const r = find(root, []); if (!r) return;
     const st = []; for (const pj of r.path) { st.push({ node: pj[0], i: pj[1] }); }
-    st.push({ node: r.node, i: Math.max(0, r.node.l.indexOf(t)) }); fb.st = st;
+    { const its = fbItems(r.node); let q = its.findIndex(x => x.val === t); if (q < 0) q = its.findIndex(x => x.val === TYPE_MAP[t]); st.push({ node: r.node, i: Math.max(0, q) }); } fb.st = st;      /* the position in the list as it is shown (INIT first, sorted), not in the raw list */
 }
 const FB_ROLE_CAT = { K: 0, S: 1, H: 2, C: 2, T: 3, P: 3 }, FB_CAT_NAME = ['KICK', 'SNARE + CLAP', 'HATS + CYMBALS', 'PERCUSSION', 'FX'];
 function fbHas(n, t) { return n.kids ? n.kids.some(k => fbHas(k, t)) : (n.l && !n.fx ? n.l.indexOf(t) >= 0 : false); }

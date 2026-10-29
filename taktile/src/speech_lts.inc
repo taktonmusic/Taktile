@@ -350,7 +350,6 @@ static const char *SPK_DE_NUM[10] = { "NULL", "EINS", "ZWEI", "DREI", "VIER", "F
 
 /* ---- single letters (PLAY = LETTER): every step of the pattern says one letter or sound. EN / DE sounds as phoneme lists ---- */
 #define SPK_NLET 33
-static const char *SPK_LET_NAME[SPK_NLET] = { "A","E","I","O","U","B","C","D","F","G","H","J","K","L","M","N","P","Q","R","S","T","V","W","X","Y","Z","SH","CH","TH","NG","AE","OE","UE" };
 static const char *SPK_LET[SPK_NLET][2] = {
     { "AE AE AE", "gaa gaa" }, { "EH EH EH", "gee gee" }, { "IH IY IY", "gii gii" }, { "AO AO AO", "goo goo" }, { "AH AH AH", "guu guu" },
     { "B AH AH", "B gax gax gax" }, { "K AH AH", "TS gee" }, { "D AH AH", "D gax gax gax" }, { "F F AH", "F F gax" }, { "G AH AH", "G gax gax gax" },

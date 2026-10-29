@@ -1,0 +1,15 @@
+const { ctx, run, cc } = require('./harness.js');
+const T = n => { for (let i = 0; i < n; i++) ctx.tick(); };
+let bad = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
+ctx.init && ctx.init(); T(600);
+run('splashOn=false;splashT0=0;chosen.fill(1);askKind=-1;view=0;playing=false;needsRedraw=true'); T(3);
+run('openHub(); hubSel[16]=HUBS[16][1].findIndex(t=>t[1]===31)'); T(2);
+cc(run('CC.JOGCLICK'), 127); cc(run('CC.JOGCLICK'), 0); T(5);
+ok(run('view') === 31, 'song page open (' + run('view') + ')');
+ok(run('songOn && playing'), 'song plays at once without Play');
+run('draw()'); ok(true, 'draws');
+cc(run('CC.BACK'), 127); cc(run('CC.BACK'), 0); T(5);
+ok(run('view') === 0, 'Back leaves to the normal page (' + run('view') + ')');
+ok(run('!songOn'), 'song mode is off again');
+ok(run('exitDlg') === -1, 'no exit dialog');
+console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

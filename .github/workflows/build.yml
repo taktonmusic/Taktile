@@ -53,6 +53,11 @@ jobs:
         run: node tools/test/test_newfeatures.js
       - name: Preset list test
         run: node tools/test/test_presets.js
+      - name: All remaining UI tests
+        run: |
+          for t in tools/test/test_*.js; do
+            echo "== $t"; node "$t" > /tmp/t.txt 2>&1 || { echo "::error::$t failed"; tail -5 /tmp/t.txt; exit 1; }
+          done
 
       - name: Native tests (MIC recording, Duck, Tape)
         run: |
@@ -99,7 +104,7 @@ jobs:
           {
             echo "## Taktile - groovebox for the Ableton Move"
             echo
-            echo "16 tracks of synths and drums, step sequencer, 1462 sounds, effects, sampler with microphone recording and live performance tools. A Schwung overtake module. **Current version: ${mv_ver}**"
+            echo "16 tracks of synths and drums, step sequencer, 704 sounds, effects, sampler with microphone recording and live performance tools. A Schwung overtake module. **Current version: ${mv_ver}**"
             echo
             echo "### What is new in ${mv_ver}"
             cat latest_changes.md

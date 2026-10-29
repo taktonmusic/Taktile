@@ -12,7 +12,7 @@
 
 <p align="center"><a href="../../releases/latest"><b>⬇ Download the latest release</b></a> &nbsp;·&nbsp; <a href="#install">Install</a> &nbsp;·&nbsp; <a href="taktile/docs/Taktile-Manual-EN.pdf">Manual (EN)</a> &nbsp;·&nbsp; <a href="taktile/docs/Taktile-Handbuch-DE.pdf">Handbuch (DE)</a></p>
 
-<p align="center"><b>A groovebox for the Ableton Move: 16 tracks of synths and drums, step sequencer, 456 sounds, effects and live performance tools – a Schwung overtake module.</b></p>
+<p align="center"><b>A groovebox for the Ableton Move: 16 tracks of synths and drums, step sequencer, 704 sounds, effects and live performance tools – a Schwung overtake module.</b></p>
 
 > [!NOTE]
 > **Status:** Developed by TaktOnMusic together with a real Ableton Move. Release 1.0.0 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
@@ -25,7 +25,7 @@ Taktile turns the Move into a pattern-based groove box built for jamming live. I
 
 - **Play:** synth and drum tracks, 32 pads with scales, repeat, chords and live FX
 - **Program:** up to 128 steps per track, parameter locks, probability, ratchets, Euclid rhythms
-- **Shape:** 456 sounds, 42 drum kits, your own samples, delay, reverb, insert effects, granulator
+- **Shape:** 704 sounds (every list starts with INIT), a drum synth with 89 drum sounds, your own samples, delay, reverb, insert effects, granulator
 - **Perform:** song mode, 8 clips per track, 32 project slots, undo almost everywhere
 
 ## On the display
@@ -45,13 +45,13 @@ Demos, tutorials and progress updates are on the [TaktOnMusic YouTube channel](h
 | | |
 |---|---|
 | 🎹 **Tracks** | 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain |
-| 🔊 **Sounds** | 456 built-in sounds, your own WAV samples (64 slots / 40 MB) on drum tracks, recording with the Move's microphone, slicing, kits from 16 WAVs, time-stretch, resampling |
+| 🔊 **Sounds** | 704 built-in sounds in sorted lists (INIT first in every list), drum synth with lists for kicks, snares, hats, cymbals, claps, toms, rims and percussion, your own WAV samples (64 slots / 40 MB) on drum tracks, recording with the Move's microphone, slicing, 16 WAVs of a folder as drum pads, time-stretch, resampling |
 | 🗂️ **Track tiles** | Synth track: 1 PRESET · 2 SYNTH · 3 MOD · 4 FILTER (+ EQ) · 5 FX (+ GRAIN) · 6 FX TYPE (+ FX TIME) · 7 EUCLID · 8 MIDI FX. Drum tracks have no SYNTH tile but a SAMPLE tile. The header shows the tile top left and the page (e.g. 2/2) top right; jog click switches the page |
-| 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 11 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off) |
+| 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 10 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off) |
 | 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator (switch, off by default), quantize grid 1/4 … 1/32 with strength, auto-growing clips while recording, MIDI clock + note out (USB-A) |
 | ⏱️ **Feel** | Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with amount next to Swing · nudge, humanize, ratchets, song steps |
 | 🧪 **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |
-| 💾 **Workflow** | 32 project slots (load, save, rename, new empty, delete), rolling backups, undo history, CPU meter and 11 scope views incl. spectrum, stereo, waterfall (Menu → EXPERT), in-device help (Shift+Menu), sound/kit folder browser (Shift+jog), grouped menu |
+| 💾 **Workflow** | 32 project slots (load, save, rename, new empty, delete), rolling backups, undo history, CPU meter and 11 scope views incl. spectrum, stereo, waterfall (Menu → EXPERT), in-device help (Shift+Menu), sound browser (Shift+jog), grouped menu |
 
 ## Signal flow
 
