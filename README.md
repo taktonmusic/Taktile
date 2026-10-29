@@ -3,57 +3,81 @@
 </p>
 
 <p align="center">
-  <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-333333">
-  <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-333333">
-  <img alt="Language" src="https://img.shields.io/badge/DSP-C-333333">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-333333">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-333333">
+  <a href="../../releases/latest"><img alt="Download" src="https://img.shields.io/badge/download-latest%20release-1a1a1a?style=flat-square"></a>
+  <a href="https://github.com/taktonmusic/Taktile/actions/workflows/build.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/taktonmusic/Taktile/build.yml?branch=main&style=flat-square&label=build"></a>
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-1a1a1a?style=flat-square">
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Ableton%20Move-1a1a1a?style=flat-square">
+  <img alt="Framework" src="https://img.shields.io/badge/framework-Schwung%20overtake-1a1a1a?style=flat-square">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-1a1a1a?style=flat-square">
 </p>
 
-<p align="center"><a href="../../releases/latest"><b>⬇ Download the latest release</b></a> &nbsp;·&nbsp; <a href="#install">Install</a> &nbsp;·&nbsp; <a href="taktile/docs/Taktile-Manual-EN.pdf">Manual (EN)</a> &nbsp;·&nbsp; <a href="taktile/docs/Taktile-Handbuch-DE.pdf">Handbuch (DE)</a></p>
+<h3 align="center">A complete groovebox for the Ableton Move</h3>
 
-<p align="center"><b>A groovebox for the Ableton Move: 16 tracks of synths and drums, step sequencer, 704 sounds, effects and live performance tools – a Schwung overtake module.</b></p>
+<p align="center">
+  16 tracks of synths and drums · step sequencer · 704 sounds · effects · live performance tools<br>
+  A <a href="https://github.com/charlesvestal/schwung">Schwung</a> overtake module with its own C sound engine.
+</p>
+
+<p align="center">
+  <a href="../../releases/latest"><b>Download</b></a> &nbsp;·&nbsp;
+  <a href="#install">Install</a> &nbsp;·&nbsp;
+  <a href="taktile/docs/Taktile-Manual-EN.pdf">Manual (EN)</a> &nbsp;·&nbsp;
+  <a href="taktile/docs/Taktile-Handbuch-DE.pdf">Handbuch (DE)</a> &nbsp;·&nbsp;
+  <a href="CHANGELOG.md">Changelog</a> &nbsp;·&nbsp;
+  <a href="https://www.youtube.com/@taktonmusic">YouTube</a>
+</p>
 
 > [!NOTE]
-> **Status:** Developed by TaktOnMusic together with a real Ableton Move. Release 1.0.0 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
+> **Status:** developed by TaktOnMusic together with a real Ableton Move. Release 1.0.0 itself was checked on a desktop (UI simulator, 60,000-event fuzz test, native builds). Please report anything that behaves differently on the device.
 
 ---
 
-## What is Taktile?
+## Why Taktile
 
-Taktile turns the Move into a pattern-based groove box built for jamming live. It takes over the pads, buttons, knobs and display, and all sound comes from its own C DSP (`dsp.so`). You get a complete instrument, not a controller for something else.
+Taktile turns the Move into a pattern-based groove box built for jamming live. It takes over pads, buttons, knobs and display, and all sound comes from its own C engine (`dsp.so`): a complete instrument, not a controller for something else.
 
-- **Play:** synth and drum tracks, 32 pads with scales, repeat, chords and live FX
-- **Program:** up to 128 steps per track, parameter locks, probability, ratchets, Euclid rhythms
-- **Shape:** 704 sounds (every list starts with INIT), a drum synth with 89 drum sounds, your own samples, delay, reverb, insert effects, granulator
-- **Perform:** song mode, 8 clips per track, 32 project slots, undo almost everywhere
-
-## On the display
+<table>
+<tr>
+<td width="25%" valign="top"><b>Play</b><br><sub>Synth and drum tracks, 32 pads with scales, note repeat, chords and live FX pads.</sub></td>
+<td width="25%" valign="top"><b>Program</b><br><sub>Up to 128 steps per track, parameter locks, probability, ratchets, Euclid rhythms, grooves.</sub></td>
+<td width="25%" valign="top"><b>Shape</b><br><sub>704 sounds, a drum synth, your own samples, delay, reverb, insert effects, granulator.</sub></td>
+<td width="25%" valign="top"><b>Perform</b><br><sub>Song mode, 8 clips per track, 32 project slots, background mode, undo almost everywhere.</sub></td>
+</tr>
+</table>
 
 <p align="center">
   <img src="taktile/docs/display-preview.png" alt="Preview of the Taktile display pages: sound, filter, FX, Euclid, granulator, sound browser and scope views" width="85%">
 </p>
+<p align="center"><sub>Display pages rendered on a desktop (simulator): sound, filter, FX, Euclid, granulator, sound browser and the scope views.</sub></p>
 
-<p align="center"><sub>Display pages rendered on a desktop (simulator): sound, filter, FX, Euclid, granulator with buffer view, sound browser and the spectrum, stereo and waterfall scope views.</sub></p>
+## Install
 
-## Videos and updates
+**Easiest (no SSH, no unpacking):**
 
-Demos, tutorials and progress updates are on the [TaktOnMusic YouTube channel](https://www.youtube.com/@taktonmusic).
+1. Download `taktile-module.tar.gz` from the [latest release](../../releases/latest). Keep the `.tar.gz` as it is, do not unpack it.
+2. Put the Move and your computer (or phone) in the **same Wi-Fi network** and open **http://move.local:7700** in a browser.
+3. Upload the file as a custom module. Restart Schwung / the Move if Taktile does not show up right away.
+
+<details>
+<summary>Manual install over SSH</summary>
+
+Unpack the archive and copy the `taktile/` folder (`module.json`, `ui.js`, `dsp.so`) to `/data/UserData/schwung/modules/overtake/` on the Move, e.g. `scp -r taktile ableton@move.local:/data/UserData/schwung/modules/overtake/`, then restart Schwung. After building it yourself, `taktile/scripts/install.sh` does the copy over SSH (`ableton@move.local`, set `DEVICE=user@host` to change it).
+</details>
 
 ## Features
 
 | | |
 |---|---|
-| 🎹 **Tracks** | 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain |
-| 🔊 **Sounds** | 704 built-in sounds in sorted lists (INIT first in every list), drum synth with lists for kicks, snares, hats, cymbals, claps, toms, rims and percussion, your own WAV samples (64 slots / 40 MB) on drum tracks, recording with the Move's microphone, slicing, 16 WAVs of a folder as drum pads, time-stretch, resampling |
-| 🗂️ **Track tiles** | Synth track: 1 PRESET · 2 SYNTH · 3 MOD · 4 FILTER (+ EQ) · 5 FX (+ GRAIN) · 6 FX TYPE (+ FX TIME) · 7 EUCLID · 8 MIDI FX. Drum tracks have no SYNTH tile but a SAMPLE tile. The header shows the tile top left and the page (e.g. 2/2) top right; jog click switches the page |
-| 🎛️ **Effects** | Per-track delay, reverb, chorus, phaser, 10 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off) |
-| 🎚️ **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator (switch, off by default), quantize grid 1/4 … 1/32 with strength, auto-growing clips while recording, MIDI clock + note out (USB-A) |
-| ⏱️ **Feel** | Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with amount next to Swing · nudge, humanize, ratchets, song steps |
-| 🧪 **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |
-| 💾 **Workflow** | 32 project slots (load, save, rename, new empty, delete), rolling backups, undo history, CPU meter and 11 scope views incl. spectrum, stereo, waterfall (Menu → EXPERT), in-device help (Shift+Menu), sound browser (Shift+jog), grouped menu |
+| **Tracks** | 16 tracks, synth or drum (16 sounds per drum track), up to 128 steps, 8 clips per track, song chain |
+| **Sounds** | 704 built-in sounds in sorted lists (INIT first in every list); drum synth with lists for kicks, snares, hats, cymbals, claps, toms, rims and percussion; your own WAV samples (64 slots / 40 MB), recording with the Move's microphone, slicing, 16 WAVs of a folder as drum pads, time-stretch, resampling |
+| **Track tiles** | Synth track: 1 PRESET · 2 SYNTH · 3 MOD · 4 FILTER (+ EQ) · 5 FX (+ GRAIN) · 6 FX TYPE (+ FX TIME) · 7 EUCLID · 8 MIDI FX. Drum tracks have no SYNTH tile but a SAMPLE tile. The header shows the tile top left and the page (e.g. 2/2) top right; jog click switches the page |
+| **Effects** | Per-track delay, reverb, chorus, phaser, 10 insert effects, 11 MIDI effects (off by default), granulator, sidechain (auto / all / off) |
+| **Sequencing** | Per-step parameter locks, per-track swing, Euclid generator (switch, off by default), quantize grid 1/4 … 1/32 with strength, auto-growing clips while recording, MIDI clock + note out (USB-A) |
+| **Feel** | Groove templates (MPC, Shuffle, Laidback, Dilla, Drunk, Push, Funk, Ghost, Human, Roll) with amount next to Swing · nudge, humanize, ratchets, song steps |
+| **Master bus** | Filter, width, saturation, compressor (with detector HPF), 3-band EQ, limiter |
+| **Workflow** | 32 project slots (load, save, rename, new empty, delete), rolling backups, undo history, CPU meter and 11 scope views incl. spectrum, stereo, waterfall (Menu → EXPERT), in-device help (Shift+Menu), sound browser (Shift+jog), grouped menu |
 
-## Signal flow
+### Signal flow
 
 <p align="center">
   <img src="assets/signal-flow.svg" alt="Signal flow: sequencer, track, insert FX, send FX, master" width="100%">
@@ -63,21 +87,28 @@ Demos, tutorials and progress updates are on the [TaktOnMusic YouTube channel](h
 
 | Language | Manual |
 |---|---|
-| 🇬🇧 English | [Taktile-Manual-EN.pdf](taktile/docs/Taktile-Manual-EN.pdf) – includes technical notes and open questions for Schwung developers |
-| 🇦🇹 Deutsch | [Taktile-Handbuch-DE.pdf](taktile/docs/Taktile-Handbuch-DE.pdf) |
+| English | [Taktile-Manual-EN.pdf](taktile/docs/Taktile-Manual-EN.pdf) – includes technical notes and open questions for Schwung developers |
+| Deutsch | [Taktile-Handbuch-DE.pdf](taktile/docs/Taktile-Handbuch-DE.pdf) |
 
-## Install
+Demos, tutorials and progress updates are on the [TaktOnMusic YouTube channel](https://www.youtube.com/@taktonmusic). An [animated guide](Taktile-Animated-Guide-EN.html) and an offline [web app](app/README-DE.md) for trying the interface in a browser are in this repository.
 
-**Easiest (no SSH, no unpacking):** download `taktile-module.tar.gz` from the [latest release](../../releases/latest) and upload it as a custom module through Schwung's web interface:
+## Playing long live sets
 
-1. Put the Move and your computer (or phone) in the **same Wi-Fi network**.
-2. Open **http://move.local:7700** in a browser.
-3. Upload the `taktile-module.tar.gz` file as a custom module. Keep the `.tar.gz` as it is, do not unpack it.
-4. Restart Schwung / the Move if Taktile does not show up right away.
+Taktile is made for sets that run for a long time without stopping the music:
 
-**Manual alternative:** unpack the archive and copy the `taktile/` folder (`module.json`, `ui.js`, `dsp.so`) to `/data/UserData/schwung/modules/overtake/` on the Move, e.g. `scp -r taktile ableton@move.local:/data/UserData/schwung/modules/overtake/`, then restart Schwung.
+- **Song list** (MORE → SONG): up to 32 entries with scenes, bars, repeats, own tempo and a way in (HARD, FILL, DRUMS 1ST)
+- **Background mode**: Back on the top level asks BACKGROUND / CLOSE, the sequencer keeps playing while you use the Move
+- **Safety**: 32 project slots, rolling backups, undo history
 
-Building it yourself: see below. After a build, `taktile/scripts/install.sh` does the copy over SSH (`ableton@move.local`, set `DEVICE=user@host` to change it).
+## Controls in short
+
+| | |
+|---|---|
+| **Jog turn** | walks through the track pages / the list on the current page |
+| **Jog click** | open or confirm (SEQ/SOUND: preset browser; menus and lists: the selected entry). On a tile with two pages (FILTER + EQ, FX + GRAIN, FX TYPE + FX TIME, SYNTH + ENGINE 2, MIDI FX + 2): switches the page |
+| **Shift + Jog click** | HOME from anywhere (on the TEMPO page: tap tempo) |
+| **Left / Right** | previous / next track. With Shift: step page. In lists and name entry: move the selection / cursor |
+| **Shift + Step 1…16** | direct jumps: project, HOME, quantize options + pad layout, live FX, tempo, metronome, swing, … (see the manual) |
 
 ## Compatibility
 
@@ -100,7 +131,8 @@ If your Schwung is a different version, build with `SCHWUNG_REF=<tag> ./scripts/
 
 If something goes wrong, Taktile writes logs to `/data/UserData/schwung/`: `taktile-error.log` (crash in a handler) and `taktile-boot.log` (start-up). Attach them to a bug report.
 
-## Build
+<details>
+<summary><b>Build it yourself</b></summary>
 
 Needs `gcc-aarch64-linux-gnu`.
 
@@ -116,8 +148,10 @@ cd taktile
 ./scripts/fetch-header.sh
 gcc -g -fsanitize=address,undefined -Isrc -Ibuild/include your_test.c src/pad_studio.c -lm
 ```
+</details>
 
-## Project layout
+<details>
+<summary><b>Project layout</b></summary>
 
 ```
 taktile/
@@ -130,24 +164,7 @@ taktile/
 ```
 
 State is stored under `/data/UserData/schwung/taktile-*`.
-
-## Controls in short
-
-| | |
-|---|---|
-| **Jog turn** | walks through the track pages / the list on the current page |
-| **Jog click** | open or confirm (SEQ/SOUND: preset browser; menus and lists: the selected entry). On a tile with two pages (FILTER + EQ, FX + GRAIN, FX TYPE + FX TIME, SYNTH + ENGINE 2, MIDI FX + 2): switches the page |
-| **Shift + Jog click** | HOME from anywhere (on the TEMPO page: tap tempo) |
-| **Left / Right** | previous / next track. With Shift: step page. In lists and name entry: move the selection / cursor |
-| **Shift + Step 1…16** | direct jumps: project, HOME, quantize options + pad layout, live FX, tempo, metronome, swing, … (see the manual) |
-
-## Playing long live sets
-
-Taktile is made for sets that run for a long time without stopping the music:
-
-- **Song list** (MORE → SONG): up to 32 entries with scenes, bars, repeats, own tempo and a way in (HARD, FILL, DRUMS 1ST)
-- **Background mode**: Back on the top level asks BACKGROUND / CLOSE, the sequencer keeps playing while you use the Move
-- **Safety**: 32 project slots, rolling backups, undo history
+</details>
 
 ## Contributing and bug reports
 
