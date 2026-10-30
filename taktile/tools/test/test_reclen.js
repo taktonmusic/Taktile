@@ -34,5 +34,16 @@ run('recStopLen()'); ok(run('lens[0]') === 48, 'a note in the middle of bar 3 ke
 /* 5. a short take (stopped inside bar 1) stays 16 */
 fresh(); run('recordHit(0, 0, 100, { g: 1, f: 0 })'); walk(2, 10); at(11, 0);
 run('recStopLen()'); ok(run('lens[0]') === 16, 'a take stopped inside bar 1: 16 steps (' + run('lens[0]') + ')');
+
+/* 6. the first note is played late in the bar (step 10): the clip still begins at the bar line, two bars played = 32 steps (it used to count from the first note and give 16) */
+fresh(); run('recordHit(0, 0, 100, { g: 10, f: 0 })'); walk(11, 32); at(33, 5);
+run('recStopLen()'); ok(run('lens[0]') === 32, 'first note late in the bar, stopped at the end of bar 2: 32 steps (' + run('lens[0]') + ')');
+fresh(); run('recordHit(0, 0, 100, { g: 14, f: 0 })'); walk(15, 48); at(48, 5);
+run('recStopLen()'); ok(run('lens[0]') === 48, 'first note on step 14, stopped at the end of bar 3: 48 steps (' + run('lens[0]') + ')');
+
+/* 7. the Rec button counts from the press: pressed in the first half of bar 3, released after the half: the stop still counts from the press (2 bars) */
+fresh(); run('recordHit(0, 0, 100, { g: 1, f: 0 })'); walk(2, 38); at(39, 0);
+cc(86, 127); at(40, 0); at(41, 50); at(42, 0); cc(86, 0);
+ok(run('lens[0]') === 32, 'Rec pressed before the half of bar 3, released after it: 32 steps (' + run('lens[0]') + ')');
 run('recArmed = false; playing = false; growTrk.fill(false)');
 console.log(bad ? bad + ' FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

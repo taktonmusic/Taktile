@@ -3015,12 +3015,14 @@ function edgeWrap(t, e, n) {                               /* a downbeat that wa
 function recFinish() {                                    /* the transport is stopped while recording an empty clip: the clip gets the length you played, like with the second Rec press (it grows one bar ahead on the last step, so it would stay a bar too long) */
     if (recArmed && playing && growTrk.some(Boolean)) { recStopLen(); growTrk.fill(false); }
 }
-function recStopLen() {                                   /* Rec pressed the second time: the clip is as long as you played (16, 32, 48 ... steps, rounded up) */
-    let gpos = gs - 1; { const r = dspGet('pos'); if (typeof r === 'string') { const a = r.split(','), g = parseInt(a[1]) || 0; if (g > 0) gpos = g - 1 + (parseInt(a[3]) || 0) / 100; } }      /* the DSP's own step counter, the same one the recorded hits use */
+function curGpos() { let gpos = gs - 1; { const r = dspGet('pos'); if (typeof r === 'string') { const a = r.split(','), g = parseInt(a[1]) || 0; if (g > 0) gpos = g - 1 + (parseInt(a[3]) || 0) / 100; } } return gpos; }      /* the DSP's own step counter, the same one the recorded hits use */
+let recPressG = null;                                     /* where the playhead was when Rec went down: the stop counts from the press, not from the release */
+function recStopLen() {
+    let gpos = curGpos(); if (recPressG !== null) { if (recPressG <= gpos) gpos = recPressG; recPressG = null; }      /* the DSP's own step counter, the same one the recorded hits use */
     for (let t = 0; t < NTRK; t++) {
         if (!growTrk[t]) continue;
-        const bs = barSteps(t), el = Math.max(0.01, (gpos - growP0[t]) * 6 / RES(t)), ne = (growEdge[t] > 0 && growMax[t] === growEdge[t] + 1) ? growEdge[t] : 0, hm = ne ? growMax[t] - 1 : growMax[t];      /* ne: the only note beyond the take is a downbeat played a little early (it snapped to the first step of the next bar) */
-        const n = clamp(Math.max(Math.round(el / bs), Math.ceil(hm / bs), 1) * bs, bs, MAXSTEP);      /* like the Move: stopped in the first half of a bar, that bar is not part of the clip; in the second half, it is */
+        const bs = barSteps(t), el = Math.max(0.01, (gpos - growP0[t]) * 6 / RES(t)), eb = (gpos - growG0[t]) * 6 / RES(t), nb = Math.round(eb / bs), near = nb >= 1 && Math.abs(eb - nb * bs) <= bs / 4, ne = (growEdge[t] > 0 && growMax[t] === growEdge[t] + 1) ? growEdge[t] : 0, hm = ne ? growMax[t] - 1 : growMax[t];      /* ne: the only note beyond the take is a downbeat played a little early (it snapped to the first step of the next bar) */
+        const n = clamp(Math.max(near ? nb : Math.round(el / bs), Math.ceil(hm / bs), 1) * bs, bs, MAXSTEP);      /* stopped close to a bar line (a quarter bar either side): the clip ends on that line, counted from the bar line where the take began; otherwise counted from the first note */      /* like the Move: stopped in the first half of a bar, that bar is not part of the clip; in the second half, it is */
         if (ne >= n) edgeWrap(t, ne, n);
         growSet(t, n);
         { const b = Math.round(n / bs * 10) / 10; showToast('REC LENGTH', b + (b === 1 ? ' BAR' : ' BARS'), n / MAXSTEP); }
@@ -6644,11 +6646,11 @@ globalThis.onMidiMessageInternal = function (data) {
     case CC.REC:
         if (d2 > 0 && shiftHeld) { const v = cycleMaster('m_met', [0, 0.6]); showToast('METRONOME', v > 0 ? 'ON' : 'OFF', v); recSwallow = true; return; }       /* Shift + Rec = metronome */
         if (d2 === 0 && recSwallow) { recSwallow = false; return; }
-        if (d2 > 0 && view === 31 && !menuOpen && !fb && !padMenu) { songCapture(); recSwallow = true; return; }        if (d2 > 0) { recDown = true; recStepUsed = false; }
+        if (d2 > 0 && view === 31 && !menuOpen && !fb && !padMenu) { songCapture(); recSwallow = true; return; }        if (d2 > 0) { recDown = true; recStepUsed = false; recPressG = (recArmed && playing && growTrk.some(Boolean)) ? curGpos() : null; }
         else {
             recDown = false;
-            if (recStepUsed) showToast('REC', 'STEP REC END', 0);
-            else { if (recArmed) recStopLen(); recArmed = !recArmed; growTrk.fill(false); if (recArmed === false) {} showToast('REC', recArmed ? 'ARMED' : 'OFF', recArmed ? 1 : 0); }
+            if (recStepUsed) { recPressG = null; showToast('REC', 'STEP REC END', 0); }
+            else { if (recArmed) recStopLen(); recPressG = null; recArmed = !recArmed; growTrk.fill(false); if (recArmed === false) {} showToast('REC', recArmed ? 'ARMED' : 'OFF', recArmed ? 1 : 0); }
             needsRedraw = true;
         }
         return;
