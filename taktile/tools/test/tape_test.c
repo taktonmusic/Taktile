@@ -33,5 +33,18 @@ int main(void) {
     double rel = sqrt(e / r); free(a); free(b); api->destroy_instance(inst);
     printf("   tape on a kick: off %.1f dB, full %.1f dB, difference signal = %.0f%% of the signal\n", t0, t1, rel * 100);
     OK(rel > 0.1, "TAPE at 100%% clearly changes the sound (difference %.0f%% of the signal, must be above 10%%)", rel * 100);
+    /* the new tape controls: each one changes the sound, none of them breaks it (no NaN, no runaway level) */
+    {
+        const char *nm[4] = { "m_tflt", "m_tage", "m_tdrp", "m_tton" }; const char *val[4] = { "1", "1", "1", "0" }; const double need[4] = { 0.01, 0.03, 0.02, 0.003 };
+        setup("0", "0", 1); float *ref = render(6.0); api->destroy_instance(inst);
+        for (int k = 0; k < 4; k++) {
+            setup("0", "0", 1); sp(nm[k], val[k]); float *y = render(6.0);
+            double e2 = 0, r2 = 0, pk = 0; int bad = 0;
+            for (int i = 4000; i < 6 * 44100; i++) { double d = y[i] - ref[i]; e2 += d * d; r2 += (double)ref[i] * ref[i]; if (!(fabs(y[i]) < 4.0)) bad = 1; if (fabs(y[i]) > pk) pk = fabs(y[i]); }
+            double rl = sqrt(e2 / r2); free(y); api->destroy_instance(inst);
+            OK(!bad && rl > need[k] && pk < 1.5, "%s changes the sound (difference %.1f%% of the signal, peak %.2f)", nm[k], rl * 100, pk);
+        }
+        free(ref);
+    }
     printf(failed ? "%d FAILED\n" : "all ok\n", failed); return failed != 0;
 }

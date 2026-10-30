@@ -12,4 +12,10 @@ run('slN=2;slm=[0,0.5];sliceApply()');
 ok(m(2) === 1 && m(6) === 0, 'pad with notes stays on, empty ones muted');
 run('slN=8;slm=[0,.1,.2,.3,.4,.5,.6,.7];sliceApply()');
 ok(m(5) === 0 && m(8) === 1, 'more slices unmute again');
+/* slices onto a NEW drum track: the pads without a slice are blank sampler pads, not the default drums */
+run('view=28; smpPage=1; selectTrack(1); slN=3; slm=[0,0.3,0.6]; smpInfo[0]=[44100,44100,1]; var nt = chosen.findIndex((c, q) => !c && !kind[q]); sliceApply2(1)'); T(3);
+const NT = run('nt');
+ok(run('kind[' + NT + ']') === 1 && run('pads[laneOf(' + NT + ',0)][0]') === 359, 'new drum track: pad 1 plays slice 1');
+ok(run('pads[laneOf(' + NT + ',3)][0]') === 359 && run('pads[laneOf(' + NT + ',15)][0]') === 359, 'and the pads without a slice are blank sampler pads (' + run('pads[laneOf(' + NT + ',3)][0]') + ')');
+ok(run('lmutes[laneOf(' + NT + ',3)]') === 1, 'and silent');
 console.log(bad ? 'FAILED' : 'all ok'); process.exit(bad ? 1 : 0);

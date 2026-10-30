@@ -222,7 +222,7 @@ static const float DT_BEATS[5] = { 0.25f, 0.5f, 0.75f, 1.0f, 2.0f };
 static const int   SCALE_TBL[NSC][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 } , { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 5, 7, 12, 17, 19 }, { 0, 5, 6, 12, 17, 18 }, { 0, 5, 7, 12, 17, 19 }, { 0, 4, 8, 12, 16, 20 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 6, 12, 15, 18 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 6, 12, 16, 18 }, { 0, 4, 6, 12, 16, 18 } };
 
 /* ---------------- global parameters ---------------- */
-enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_GRV, G_GAM, G_N };
+enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_GRV, G_GAM, G_TFLT, G_TAGE, G_TDRP, G_TTON, G_N };
 /* GROOVE templates: for each of the 16 sixteenths of a bar a delay (in steps, never early) and a velocity factor; the amount knob blends them in. Swing stays as it is and works on top. */
 static const char *const GRV_NAME[11] = { "OFF", "MPC", "SHUFFLE", "LAIDBACK", "DILLA", "DRUNK", "PUSH", "FUNK", "GHOST", "HUMAN", "ROLL" };
 static const float GRV_T[11][16] = {
@@ -284,6 +284,10 @@ static const pd_t GD[G_N] = {
     { "m_wow",    "Wow",    0, 0.00f },
     { "m_grv",    "Groove", 11, 0.0f },
     { "m_gam",    "GrvAmt", 0, 0.70f },
+    { "m_tflt",   "Flutter",0, 0.00f },
+    { "m_tage",   "Age",    0, 0.00f },
+    { "m_tdrp",   "Dropout",0, 0.00f },
+    { "m_tton",   "TapeTone",0, 0.50f },
 };
 
 /* ---------------- sound types ---------------- */
@@ -782,7 +786,7 @@ typedef struct {
     int   focused;                  /* 1..32 */
 
     float sr, inv_sr;
-    float tp_dl[2][2048], tp_lp[2], tp_hb[2], tp_hn[2], tp_ph1, tp_ph2, tp_dr, tp_drv; int tp_w; unsigned tp_rng;   /* master tape: wow / flutter delay, soft saturation, head bump, hiss */
+    float tp_dl[2][2048], tp_lp[2], tp_hb[2], tp_hn[2], tp_ph1, tp_ph2, tp_ph3, tp_dr, tp_drv, tp_dg, tp_dd; int tp_w, tp_dt; unsigned tp_rng;   /* master tape: wow / flutter delay, soft saturation, head bump, hiss */
     float root_hz;
     int mo_clk, mo_trk, mo_chn, mo_xp, mo_vp, mo_dn; float mclk; struct { int cnt; uint8_t st, d1; } mo_q[64];   /* MIDI out: clock + notes per track */
     int16_t *rec_buf; long rec_n, rec_len, rec_max; int rec_state, rec_bars, rec_src; char rec_last[48]; int rec_slot;   /* resampling (rec_src -2 = the Move's audio input, see mic_block) */
@@ -3071,7 +3075,7 @@ static void *create_instance(const char *module_dir, const char *json_defaults) 
             s->sr = (float)g_sr;
             s->inv_sr = 1.0f / s->sr;
             s->rng = 0x2545F491u + (uint32_t)i * 7919u;
-            s->tp_rng = 2463534242u;
+            s->tp_rng = 2463534242u; s->tp_dg = 1.0f;
             s->focused = 1;
             s->pend_pad = -1;
             s->rec_src = -1; s->rec_slot = -1;
@@ -4474,44 +4478,65 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
             } else s->lim_g = 1.0f;
         }
         {   /* TAPE (last stage before the output): a gentle cassette colour - soft saturation, a little head bump and top roll-off, slow pitch drift (wow), hiss. Everything is 0 = off. */
-            const float tp = s->g[G_TAPE], hs = s->g[G_HISS], ww = s->g[G_WOW];
-            if (tp > 0.01f || hs > 0.01f || ww > 0.01f) {
+            const float tp = s->g[G_TAPE], hs = s->g[G_HISS], ww = s->g[G_WOW], fl = s->g[G_TFLT], ag = s->g[G_TAGE], dp = s->g[G_TDRP], tn = s->g[G_TTON];
+            const int toned = fabsf(tn - 0.5f) > 0.02f;
+            if (tp > 0.01f || hs > 0.01f || ww > 0.01f || fl > 0.01f || ag > 0.01f || dp > 0.01f || toned) {
                 float io[2] = { L, R };
                 float dly = 0.0f;
-                if (ww > 0.01f) {                                          /* wow (0.9 Hz) + flutter (6 Hz) + a slow random drift: about +-2.5 % pitch at full = a clearly warped tape, a quarter of that at 25 % */
+                const int mod = ww > 0.01f || fl > 0.01f || ag > 0.01f;
+                if (mod) {                                                 /* wow (0.9 Hz) + flutter (6 Hz and 13 Hz) + a slow random drift (the drift grows with the tape's age): about +-2.5 % pitch at full wow = a clearly warped tape */
                     s->tp_ph1 += 0.9f * s->inv_sr; if (s->tp_ph1 >= 1.0f) s->tp_ph1 -= 1.0f;
                     s->tp_ph2 += 6.1f * s->inv_sr; if (s->tp_ph2 >= 1.0f) s->tp_ph2 -= 1.0f;
+                    s->tp_ph3 += 13.3f * s->inv_sr; if (s->tp_ph3 >= 1.0f) s->tp_ph3 -= 1.0f;
                     s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
                     s->tp_dr += 0.00005f * (((float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f) - s->tp_dr);
-                    dly = 180.0f + ww * (160.0f * sinf(6.2831853f * s->tp_ph1) + 8.0f * sinf(6.2831853f * s->tp_ph2) + 700.0f * s->tp_dr);
+                    dly = 180.0f + ww * (160.0f * sinf(6.2831853f * s->tp_ph1) + 8.0f * sinf(6.2831853f * s->tp_ph2) + 700.0f * s->tp_dr)
+                        + fl * (14.0f * sinf(6.2831853f * s->tp_ph2) + 5.0f * sinf(6.2831853f * s->tp_ph3))
+                        + ag * (40.0f * sinf(6.2831853f * s->tp_ph1) + 450.0f * s->tp_dr);
                     if (dly < 2.0f) dly = 2.0f; if (dly > 2040.0f) dly = 2040.0f;
                 }
                 const int w = s->tp_w;
-                float hz = 0.0f;                                              /* the hiss is ONE noise for both channels (mono) */
+                float hz = 0.0f;                                              /* the hiss is ONE noise for both channels (mono), kept low and quiet */
                 if (hs > 0.01f) {
                     s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
                     const float nz = (float)(s->tp_rng & 0xFFFF) / 32768.0f - 1.0f;
                     s->tp_hn[0] += 0.35f * (nz - s->tp_hn[0]);
-                    hz = (nz - s->tp_hn[0]) * 0.016f * hs * sqrtf(hs);
+                    hz = (nz - s->tp_hn[0]) * 0.010f * hs * sqrtf(hs);
                 }
+                float dg = 1.0f;                                              /* dropouts: now and then the level dips for a moment (rarer and shallower than a real worn tape) */
+                if (dp > 0.01f || s->tp_dt > 0) {
+                    s->tp_rng ^= s->tp_rng << 13; s->tp_rng ^= s->tp_rng >> 17; s->tp_rng ^= s->tp_rng << 5;
+                    if (s->tp_dt <= 0 && dp > 0.01f && (float)(s->tp_rng & 0xFFFFF) < (0.15f + 2.5f * dp * dp + 1.5f * ag * dp) * (float)(1 << 20) * s->inv_sr) {
+                        s->tp_dt = (int)((0.015f + 0.09f * (float)((s->tp_rng >> 20) & 0xFF) / 255.0f) * s->sr);
+                        s->tp_dd = 0.25f + 0.55f * dp * (0.4f + 0.6f * (float)((s->tp_rng >> 12) & 0xFF) / 255.0f);
+                    }
+                    const float tgt = s->tp_dt > 0 ? 1.0f - s->tp_dd : 1.0f;
+                    if (s->tp_dt > 0) s->tp_dt--;
+                    s->tp_dg += (tgt - s->tp_dg) * (tgt < s->tp_dg ? 0.004f : 0.0015f);
+                    dg = s->tp_dg;
+                } else s->tp_dg = 1.0f;
+                const float fcm = powf(2.0f, (tn - 0.5f) * 3.0f) * (1.0f - 0.55f * ag);
                 for (int c = 0; c < 2; c++) {
                     float x = io[c];
-                    if (ww > 0.01f) {
+                    if (mod) {
                         s->tp_dl[c][w] = x;
                         float rp = (float)w - dly; if (rp < 0.0f) rp += 2048.0f;
                         const int i0 = (int)rp, i1 = (i0 + 1) & 2047; const float fr = rp - (float)i0;
                         x = s->tp_dl[c][i0 & 2047] * (1.0f - fr) + s->tp_dl[c][i1] * fr;
                     }
                     if (tp > 0.01f) {
-                        const float dg = 1.0f + tp * 5.0f;                        /* soft tape saturation: quiet signals keep their level, loud ones are squashed and thickened */
-                        x = fast_tanh(x * dg) / dg * (1.0f + tp * 0.25f);
+                        const float dgn = 1.0f + tp * 5.0f;                       /* soft tape saturation: quiet signals keep their level, loud ones are squashed and thickened */
+                        x = fast_tanh(x * dgn) / dgn * (1.0f + tp * 0.25f);
                         s->tp_hb[c] += (1.0f - expf(-6.2831853f * 90.0f * s->inv_sr)) * (x - s->tp_hb[c]);
                         x += s->tp_hb[c] * 0.35f * tp;                            /* head bump: a warm touch around 90 Hz */
-                        const float fc = 16000.0f - 11000.0f * tp;                /* top roll-off 16 kHz -> 5 kHz */
+                    }
+                    if (tp > 0.01f || ag > 0.01f || toned) {
+                        float fc = (16000.0f - 11000.0f * tp) * fcm;              /* top roll-off 16 kHz -> 5 kHz; Tone moves it, Age darkens it */
+                        if (fc < 1200.0f) fc = 1200.0f; if (fc > 19000.0f) fc = 19000.0f;
                         s->tp_lp[c] += (1.0f - expf(-6.2831853f * fc * s->inv_sr)) * (x - s->tp_lp[c]);
                         x = s->tp_lp[c];
                     }
-                    x += hz;
+                    x = x * dg + hz;
                     io[c] = x;
                 }
                 s->tp_w = (w + 1) & 2047;
