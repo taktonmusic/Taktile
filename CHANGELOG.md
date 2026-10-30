@@ -15,6 +15,9 @@
 - Sound and preset counts are the same everywhere now (704 sounds, 10 insert effects, 11 MIDI effects) in README, module description, manuals, guide and release text; manuals and guide no longer mention drum kits
 - Web app (app/) updated to the current user interface and sound engine
 - Tests: all UI tests run in the build, plus a new browser-cursor test; two compiler warnings in the sound engine fixed
+- Song mode, transitions: tempo, mutes and transposition of the next step now change exactly on the bar line together with the clips (before, they changed one beat early)
+- Song mode, live: a step you tap while the song plays starts at the end of the bar (the title shows the step, the key blinks); tap it again to jump right away. Hold the Loop key to stay in the running step (STAY)
+- Song page: the title shows the running and the next step (STEP 02>03), dotted frames mark the clips of the next step, and the bottom line shows the whole song as boxes (the running step fills up, the next one is dotted)
 - Synth tracks start Mono again; Voices = Poly lets you hold up to eight notes together (choosing a sampler sound switches that track to Poly)
 - MIC page: Shift + Gain knob switches a live monitor on (you hear the input; use headphones). It is off when you leave the page or record
 - Notes To Scale first reads the notes of the other synth tracks, sets master Key + Scale to the best match (major, minor, dorian ...) and then moves the notes of this clip into it

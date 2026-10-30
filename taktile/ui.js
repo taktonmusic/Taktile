@@ -1039,7 +1039,7 @@ const HELP = {
     18: ['Tempo, Song, Projekt', 'Resample, Sync', 'Optionen, History'],
     20: ['Pegel aller Tracks', 'Jog klick: Vol/Dly/Rvb', 'Shift+Knopf: Pan'],
     21: ['Track: Typ, Volume', 'Pads, Sound, Layout', 'Color = Farbe'],
-    31: ['Pads: Tracks x Clips 1-8', 'Step-Tasten = Song-Kette', 'Jog: Tracks 1-16'],
+    31: ['Pads: Tracks x Clips 1-8', 'Step-Tasten = Song-Kette', 'Loop halten = im Step bleiben'],
     35: ['32 Projekt-Slots', 'New = leeres Projekt', 'Revert = Sicherung'],
     34: ['Kits: 16 Pad-Sounds. Slot 17+ = fertige Kits. Preview: rechts drehen = anhoeren, links = zurueck. Load = behalten.'],
     33: ['Resample nimmt Master', 'oder Track auf', 'Ergebnis = Sample'],
@@ -1074,7 +1074,7 @@ const HELP_EN = {
     18: ['Tempo, song, project', 'Resample, sync', 'Options, history'],
     20: ['Level of all tracks', 'Jog click: Vol/Dly/Rvb', 'Shift+knob: pan'],
     21: ['Track: type, volume', 'Pads, sound, layout', 'Color'],
-    31: ['Pads: tracks x clips 1-8', 'Step buttons = song chain', 'Jog: tracks 1-16'],
+    31: ['Pads: tracks x clips 1-8', 'Step buttons = song chain', 'Hold Loop = stay in step'],
     35: ['32 project slots', 'New = empty project', 'Revert = backup'],
     34: ['Kits: 16 pad sounds. Slot 17+ = ready-made kits. Preview: turn right = listen, left = back. Load = keep.'],
     33: ['Resample records master', 'or a track', 'Result = sample'],
@@ -2799,7 +2799,7 @@ function onStep(i, on) {
         recStepUsed = true; recHead = s; const c0 = ed[sel], L0 = ln(); if (s < LL()) { snap(c0, L0); steps[c0][L0][s] = [0, 100, 0, 0]; qStep(c0, L0, s); }
         showToast('REC HEAD', String(s + 1), s / MAXSTEP); markEdited(); return;
     }
-    if (view === 31 && !on) { if (songHeldKey === i) { const quick = !songHeldShown; songHeldKey = -1; needsRedraw = true; if (quick && songOn && playing && songSent >= 0 && songSlot < songList.length && !deleteHeld && !copyHeld && !shiftHeld) songJump(songSlot); } return; }      /* let go of the step: the options go away */
+    if (view === 31 && !on) { if (songHeldKey === i) { const quick = !songHeldShown; songHeldKey = -1; needsRedraw = true; if (quick && songOn && playing && songSent >= 0 && songSlot < songList.length && !deleteHeld && !copyHeld && !shiftHeld) songGoTo(songSlot); } return; }      /* let go of the step: the options go away */
     if (on) {
         if (loopHeld) loopT = Date.now();
         if (loopHeld && view === 0 && !deleteHeld && s >= 0) { if (!loopKeys.includes(i)) loopKeys.push(i); if (loopKeys.length >= 2) { const bs = barSteps(sel), nb = Math.min(loopKeys.length, Math.floor(MAXSTEP / bs)); setLen(nb * bs, shiftHeld); showToast('LOOP ' + nb + ' BARS', (nb * bs) + ' STEPS', nb * bs / MAXSTEP); return; } }
@@ -4798,12 +4798,13 @@ function songRestore() {
 let songPrev = null;
 const songCl = new Array(NTRK).fill(-9);
 function songTrk(t, c) { if (c >= 0) { ed[t] = c; applyClipSound(t, c); } dspSet('clip', t + ',' + c); clipsQ[t] = c; needsRedraw = true; }
-function songEnter(k) {                                         /* an entry begins: its scene, its tempo, its way in */
+function songEnter(k, q) {                                         /* an entry begins: its scene, its tempo, its way in */
     const e = songList[k];
-    if (songMuted) { songMuted = false; for (let t = 0; t < NTRK; t++) dspSet('mute', t + ',' + mutes[t]); }
-    if (e[3]) { songTempoOn = true; dspSet('bpm', String(e[3])); } else if (songTempoOn) { songTempoOn = false; dspSet('bpm', String(bpm)); }
-    if (e[7]) { songMuted = true; for (let t = 0; t < NTRK; t++) dspSet('mute', t + ',' + (e[7][t] ? 1 : 0)); }      /* this scene's own mutes */
-    dspSet('sctr', String(e[8] || 0));
+    const kb = q ? 'qbpm' : 'bpm', km = q ? 'qmute' : 'mute', ks = q ? 'qsctr' : 'sctr';      /* q: tempo, mutes and transposition wait for the bar line together with the clips */
+    if (songMuted) { songMuted = false; for (let t = 0; t < NTRK; t++) dspSet(km, t + ',' + mutes[t]); }
+    if (e[3]) { songTempoOn = true; dspSet(kb, String(e[3])); } else if (songTempoOn) { songTempoOn = false; dspSet(kb, String(bpm)); }
+    if (e[7]) { songMuted = true; for (let t = 0; t < NTRK; t++) dspSet(km, t + ',' + (e[7][t] ? 1 : 0)); }      /* this scene's own mutes */
+    dspSet(ks, String(e[8] || 0));
     const cl = songClips(e);                                      /* every track plays the clip this step chose (same clip as before = keeps looping) */
     for (let t = 0; t < NTRK; t++) if (cl[t] !== songCl[t]) { songCl[t] = cl[t]; songTrk(t, cl[t]); }
     songMutePend = e[4] === 2;
@@ -4829,16 +4830,17 @@ function songTick() {
     }
     if (st >= 12) {
         const nb = bar + 1;
-        if (songSent === nb) return;
+        if (songSent === nb && songNext < 0) return;                  /* (a jump asked for in the last beat still makes this bar line) */
         songSent = nb;
+        if (songNext < 0 && songStay()) { const r0 = songEntryAt(nb); if (r0[1]) songNext = cur[0]; }      /* STAY (Loop key held): the step starts again instead of the next one */
         if (songNext >= 0) {                                       /* a pad jump waits for the end of the bar */
             const k = songNext; songNext = -1;
             songOff = ((songStart(k) - nb) % songTotal() + songTotal()) % songTotal();
-            songEnter(k); dspSet('qbar', '1'); return;
+            songEnter(k, true); dspSet('qbar', '1'); return;
         }
         if (!songLoop && nb >= songTotal()) { songOn = false; songSent = -1; songRestore(); showToast('SONG', 'END', 0); dirty = true; return; }
         const r = songEntryAt(nb);
-        if (r[1]) { songEnter(r[0]); dspSet('qbar', '1'); }      /* hard cut on the bar line */
+        if (r[1]) { songEnter(r[0], true); dspSet('qbar', '1'); }      /* hard cut on the bar line */
     }
 }
 let songBlank = true, songDelOn = false, songDelUsed = false, songCopySrc = -1;
@@ -4861,11 +4863,16 @@ function songPad(k) {
     if (shiftHeld && k < L) { songSlot = k; songIns(); return; }
     if (k < L) {
         songSlot = k; needsRedraw = true;
-        if (songOn && playing && songSent >= 0) { if (!songDefer) songJump(k); }
+        if (songOn && playing && songSent >= 0) { if (!songDefer) songGoTo(k); }
         else showToast('SONG', 'STEP ' + (k + 1) + (songList[k][5] ? ' ' + SONG_TAG[songList[k][5]] : ''), k / (SONG_MAX - 1));
     } else if (k === L && L < SONG_MAX) { songSlot = L - 1; songIns(); }
 }
-function songJump(k) { const bar = Math.floor(Math.max(0, gs - 1) / 16); songNext = -1; songSent = bar; songOff = ((songStart(k) - bar) % songTotal() + songTotal()) % songTotal(); songEnter(k); dspSet('qnow', '1'); showToast('SONG', 'LIVE: STEP ' + (k + 1), k / (SONG_MAX - 1)); }
+function songStay() { return loopHeld && view === 31 && songOn && playing; }
+function songGoTo(k) {                                           /* a step pressed while the song plays: it starts on the next bar line (NEXT); pressed again while it waits = right now */
+    if (songNext === k) { songJump(k); return; }
+    songNext = k; showToast('SONG', 'NEXT ' + (k + 1) + ' AT BAR END', k / (SONG_MAX - 1)); needsRedraw = true;
+}
+function songJump(k) { const bar = Math.floor(Math.max(0, gs - 1) / 16); songNext = -1; songSent = bar; songOff = ((songStart(k) - bar) % songTotal() + songTotal()) % songTotal(); songEnter(k, true); dspSet('qnow', '1'); showToast('SONG', 'LIVE: STEP ' + (k + 1), k / (SONG_MAX - 1)); }
 let songDefer = false;                                          /* a step key was just pressed: jump only when it is let go quickly (holding it = its options) */
 function songPadK(i) { return (3 - (i >> 3)) * 8 + (i & 7); }
 /* pad layout of the song page (seen from the top):
@@ -5318,7 +5325,14 @@ function drawSong() {
     const L = songList.length, e = songList[songSlot] || [0, 4, 1, 0, 0, 0], cl = songClips(e), pl = songPlayIdx(), tot = songTotal();
     let bs = (e[2] > 16 ? e[1] + ' BARS HOLD' : (e[2] > 1 ? e[1] + 'x' + e[2] : e[1] + ' BARS')); if (songOn && playing && pl === songSlot) { const tt = songTotal(), bb = Math.floor(Math.max(0, gs - 1) / 16), q = (((bb + songOff) % tt) + tt) % tt; bs = e[2] > 16 ? 'BAR ' + ((q - songStart(songSlot)) % e[1] + 1) + '/' + e[1] + ' HOLD' : 'BAR ' + (q - songStart(songSlot) + 1) + '/' + songLen(e); }
     const hotS = (hot.t > 0 && hot.v === 31 && VIEW_ITEMS[31][hot.i]) ? (() => { const it = VIEW_ITEMS[31][hot.i]; return [String(it[1]).toUpperCase(), String(fmtVal(it[0], getVal(scopeOf(it[0]), it[0]))).toUpperCase()]; })() : null;      /* while a knob is turned: its name and value on top */
-    titleBar(hotS ? hotS[0] : (pl === songSlot ? '>' : '') + (songNext >= 0 && songOn && playing ? 'NEXT ' + p2(songNext + 1) + ' ' : 'STEP ' + p2(songSlot + 1) + '/' + p2(L)) + (e[5] ? ' ' + SONG_TAG[e[5]] : '') + (songOn ? (songLoop ? ' LOOP' : ' ONCE') : ''), hotS ? hotS[1] : bs);
+    const live = songOn && playing && pl >= 0, stay = songStay();
+    let nx = -1;      /* the step that comes next: the one asked for, or the one after this bar line (the same one while STAY) */
+    if (live) { nx = songNext >= 0 ? songNext : (stay ? pl : songEntryAt(Math.floor(Math.max(0, gs - 1) / 16) + 1)[0]); }
+    let ttl = (pl === songSlot ? '>' : '') + 'STEP ' + p2(songSlot + 1) + '/' + p2(L);
+    if (live && pl === songSlot) ttl = 'STEP ' + p2(pl + 1) + (stay ? ' STAY' : (songNext >= 0 ? '>' + p2(songNext + 1) : (nx !== pl ? '>' + p2(nx + 1) : '/' + p2(L))));
+    else if (live && songNext >= 0) ttl = 'NEXT ' + p2(songNext + 1);
+    if (!live) ttl += (e[5] ? ' ' + SONG_TAG[e[5]] : '') + (songOn ? (songLoop ? ' LOOP' : ' ONCE') : '');
+    titleBar(hotS ? hotS[0] : ttl, hotS ? hotS[1] : bs);
     if (songHeldKey >= 0 && songHeldShown) {                         /* options of the held step: 2 x 4 tiles */
         for (let i = 0; i < 8; i++) {
             const it = VIEW_ITEMS[31][i], x = (i & 3) * 32, y = 12 + (i >> 2) * 22, v = getVal(scopeOf(it[0]), it[0]), vs = String(fmtVal(it[0], v)), fr = fracVal(it[0], v);
@@ -5329,6 +5343,7 @@ function drawSong() {
         for (let r = 0; r < 4; r++) { const t = bank * 4 + r, x = 26 + r * 26, mu = sceneMuted(t); if (mu) { NHskip = true; fill_rect(x, 57, 24, 7, 1); NHskip = false; } txtS(x + 2, 58, tl(t), mu ? 0 : 1); }      /* track keys = mute this track in the held step */
         return;
     }
+    const nxCl = (live && pl === songSlot && nx >= 0 && nx !== pl && songList[nx]) ? songClips(songList[nx]) : null;
     for (let r = 0; r < 4; r++) {                                   /* tracks as rows, the clip this step plays is filled */
         const t = bank * 4 + r, y = 11 + r * 11, isSel = (t === sel);
         const nm = kind[t] ? 'DRM' + (slot[t] + 1) : tl(t);
@@ -5339,11 +5354,27 @@ function drawSong() {
             if (ch) { fill_rect(x, y, 11, 9, 1); if (pl === songSlot && clipsCur[t] === c) { if (playing) { const lt = lens[t] * RES(t), prog = Math.round(9 * (((gl(t) * 6) % lt + lt) % lt) / lt); fill_rect(x + 1 + prog, y + 7, 1, 2, 0); } else fill_rect(x + 3, y + 7, 5, 1, 0); } }
             else if (has) { draw_rect(x, y, 11, 9, 1); clipBars(c, t, x, y - 1); }
             else { set_pixel(x + 5, y + 4, 1); }
+            if (nxCl && nxCl[t] === c && !ch) { for (let d = 1; d < 10; d++) { if ((d & 1)) { set_pixel(x + d, y + 1, 1); set_pixel(x + d, y + 7, 1); } } for (let d = 1; d < 8; d++) { if ((d & 1)) { set_pixel(x + 1, y + d, 1); set_pixel(x + 9, y + d, 1); } } }      /* dotted frame: the clip this track plays in the next step */
         }
     }
     fill_rect(0, 56, 128, 1, 1);
     if (!songOn && L <= 2) { txtS(2, 58, 'PADS = CLIPS  STEPS = CHAIN  PLAY', 1); return; }
-    let bw = 0; for (let k = 0; k < L; k++) { const w = Math.max(1, Math.round(126 * songLen(songList[k]) / tot)); if (k === songSlot) fill_rect(1 + bw, 58, w, 5, 1); else if (k === pl) fill_rect(1 + bw, 59, w, 3, 1); else fill_rect(1 + bw, 60, w, 1, 1); bw += w; if (bw > 126) break; }
+    {                                                                // the whole song as boxes: the step that plays fills up, the next one is dotted, the one you look at has a double frame
+        const avail = 124 - (L - 1), wv = []; let sum = 0;
+        for (let k = 0; k < L; k++) { const w = Math.max(3, Math.round(avail * songLen(songList[k]) / tot)); wv.push(w); sum += w; }
+        while (sum > avail && wv.some(w => w > 3)) { const j = wv.indexOf(Math.max.apply(null, wv)); wv[j]--; sum--; }
+        let fr = 0;
+        if (live) { const tt = songTotal(), g0 = Math.max(0, gs - 1), q = (((Math.floor(g0 / 16) + songOff) % tt) + tt) % tt; fr = clamp(((q - songStart(pl)) + (g0 % 16) / 16) / songLen(songList[pl]), 0, 1); }
+        let x = 2;
+        for (let k = 0; k < L; k++) {
+            const w = wv[k]; if (x + w > 126) break;
+            if (k === nx && nx !== pl) { for (let d = 0; d < w; d++) { if ((d & 1) === 0) { set_pixel(x + d, 58, 1); set_pixel(x + d, 62, 1); } } for (let d = 0; d < 5; d++) { if ((d & 1) === 0) { set_pixel(x, 58 + d, 1); set_pixel(x + w - 1, 58 + d, 1); } } }
+            else draw_rect(x, 58, w, 5, 1);
+            if (k === pl && live) fill_rect(x, 58, Math.max(1, Math.round(w * fr)), 5, 1);
+            if (k === songSlot && w > 4) draw_rect(x + 1, 59, w - 2, 3, 1);
+            x += w + 1;
+        }
+    }
 }
 let grains = [], grEnv = '', grT = 0;
 function grainPoll() {                                     /* live picture of the granulator of the selected sound (only asked for while the page is open) */
@@ -5917,7 +5948,7 @@ globalThis.tick = function () {
     if (!bootReady && ++bootTicks > 100) { bootReady = true; crumb('ready'); if (safeNote) { safeNote = false; showToast('SAFE START', 'LAST START DID NOT FINISH', 0); } }
     ticksSinceEdit++;
     sg('clip', clipTick);
-    if (loopHeld && Date.now() - loopT > 4000) { loopHeld = false; needsRedraw = true; }
+    if (loopHeld && view !== 31 && Date.now() - loopT > 4000) { loopHeld = false; needsRedraw = true; }
     if ((ticksSinceEdit & 7) === 0) { sg('misc', miscCheck); sg('chord', chordReconcile); }
     if (view === 50 && !menuOpen && pads[ln()][PI.grn] >= 0.01 && (ticksSinceEdit % 5) === 0) { grainPoll(); needsRedraw = true; }
     if (backTicks > 0) backTicks--;
@@ -6093,7 +6124,7 @@ globalThis.onMidiMessageInternal = function (data) {
     case CC.COPY:   copyHeld = d2 > 0; if (!copyHeld) { stepClip = null; } return;      /* the picked song step stays picked after you let go of Copy: Copy + step, then Copy + the spot */
     case CC.DELETE: if (view === 31 && !menuOpen && (d2 > 0 || songDelOn)) { if (d2 > 0) { deleteHeld = true; songDelOn = true; songDelUsed = false; delAge = 0; } else { songDelOn = false; deleteHeld = false; if (!songDelUsed) songDel(); } needsRedraw = true; return; }      /* song: Delete held + step pad = delete that step; a plain tap deletes the selected step */
         if (d2 > 0 && view === 45 && !menuOpen && !fb) { devClear(); return; } deleteHeld = d2 > 0 && !deleteHeld; delAge = 0; needsRedraw = true; return;      /* pressing again while it seems stuck (lost release) switches it off */
-    case CC.LOOP:   loopHeld = d2 > 0; loopKeys = []; loopT = Date.now(); if (d2 > 0) { snapEu = false; showToast('LOOP HELD', 'TURN JOG = LENGTH', LL() / MAXSTEP); } return;
+    case CC.LOOP:   loopHeld = d2 > 0; loopKeys = []; loopT = Date.now(); if (d2 > 0) { snapEu = false; if (view === 31) showToast('SONG', songOn && playing ? 'STAY IN THIS STEP' : 'PLAY FIRST', 1); else showToast('LOOP HELD', 'TURN JOG = LENGTH', LL() / MAXSTEP); } return;
     case CC.UNDO:   if (d2 > 0) { if (shiftHeld) doRedo(); else doUndo(); } return;
     case CC.SAMPLE: if (d2 > 0) { if (micPageOn()) { micGo(); return; } if (copyHeld) opVary(); else randomize(shiftHeld); } return;
     case CC.MENU:

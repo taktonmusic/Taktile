@@ -62,7 +62,7 @@ jobs:
       - name: Native tests (MIC recording, Duck, Tape)
         run: |
           ./scripts/fetch-header.sh
-          for t in mic duck tape groove preset newsynth lfo pingpong warp; do
+          for t in mic duck tape groove preset newsynth lfo pingpong warp songq; do
             gcc -O2 -Wno-misleading-indentation -Ibuild/include -o /tmp/${t}_test tools/test/${t}_test.c src/pad_studio.c -lm
             /tmp/${t}_test
           done

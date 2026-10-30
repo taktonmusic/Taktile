@@ -845,6 +845,7 @@ typedef struct {
     unsigned pd_blk, pd_on[128], dd_on[128];                                        /* pad note-ons seen (block counter): a pad that sends its note-on again while held (deeper press) does not trigger twice */
     int   tres[NTRK];                       /* ticks per step of a track's grid: 6 = 1/16 (default), 3 = 1/32, 4 = 1/16T, 8 = 1/8T, 12 = 1/8 */
     int   clip[NTRK], qclip[NTRK];   /* active clip per track (-1 = stopped), pending (-2 = none) */
+    int   pq_sctr_on, pq_sctr, pq_bpm_on, pq_mute_on[NTRK], pq_mute[NTRK]; float pq_bpm;      /* song: tempo, mutes and transposition of the next scene wait for the bar line together with its clips */
     int   scq[NPAT], pend_on, pend_qm;   /* launch quantisation of one scene (0 = global setting) and the one used by the pending scene launch */
     float bpm, swing;
     float pump_ph, wob_ph;
@@ -2776,6 +2777,9 @@ static void clip_activate(inst_t *s, int t, int c) {
     else clip_activate_lane(s, t, c);
 }
 static void apply_pending(inst_t *s) {
+    if (s->pq_bpm_on) { s->bpm = s->pq_bpm; s->pq_bpm_on = 0; }
+    if (s->pq_sctr_on) { s->sctr = s->pq_sctr; s->pq_sctr_on = 0; }
+    for (int t = 0; t < NTRK; t++) if (s->pq_mute_on[t]) { s->mute[t] = s->pq_mute[t]; s->pq_mute_on[t] = 0; }
     for (int t = 0; t < NTRK; t++) if (s->qclip[t] != -2) {
         clip_activate(s, t, s->qclip[t]); s->qclip[t] = -2;
         if (s->playing && s->clip[t] >= 0) s->tph[t] = (int)s->gs;      /* a launched clip always starts from its own first step (not from wherever the global counter is in a longer loop) */
@@ -2836,7 +2840,7 @@ static int sw_ph(const inst_t *s, long g) {
     return (int)(g & 1);
 }
 static void seq_step(inst_t *s) {
-    const float L = s->sr * 60.0f / s->bpm / 4.0f;
+    float L = s->sr * 60.0f / s->bpm / 4.0f;
     const int sub = s->sub; const long gtk = (long)s->gs * 6 + sub;       /* tick counter: 6 per 1/16 */
     if (sub == 0) {   /* everything that lives on the 1/16 grid */
     {   /* follow actions: when a clip has played its loops, queue the next one */
@@ -2873,7 +2877,7 @@ static void seq_step(inst_t *s) {
         int qi = (int)(qv * 7.0f); if (qi < 0) qi = 0; if (qi > 6) qi = 6;
         int qm = QM[qi];
         if (s->pend_on) qm = s->pend_qm;
-        if ((s->gs & qm) == 0) { apply_pending(s); s->pend_on = 0; }
+        if ((s->gs & qm) == 0) { apply_pending(s); s->pend_on = 0; L = s->sr * 60.0f / s->bpm / 4.0f; }      /* a queued tempo counts from this very step */
     }
     if (s->rec_state == 1 && (s->gs & 15) == 0) { s->rec_state = 2; s->rec_n = 0; s->rec_len = (long)((float)(s->rec_bars * 16) * L); if (s->rec_len > s->rec_max) s->rec_len = s->rec_max; }
     if (s->g[G_MET] > 0.01f && (s->gs & 3) == 0) { s->met_amp = s->g[G_MET]; s->met_env = 1.0f; s->met_ph = 0.0f; s->met_f = ((s->gs & 15) == 0) ? 1700.0f : 1100.0f; }
@@ -3378,7 +3382,7 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "play") == 0) {
         if (val[0] == '2') { if (!s->playing && s->ci_left == 0) { s->ci_b = (int)(s->sr * 60.0f / s->bpm); if (s->ci_b < 1) s->ci_b = 1; s->ci_t = 0; s->ci_left = 4 * s->ci_b; } return; }
         s->ci_left = 0;
-        if (val[0] == '1') seq_start(s); else seq_stop(s);
+        if (val[0] == '1') seq_start(s); else { seq_stop(s); s->pq_bpm_on = 0; s->pq_sctr_on = 0; for (int t = 0; t < NTRK; t++) s->pq_mute_on[t] = 0; }
         return;
     }
     if (strcmp(key, "fol") == 0) {                 /* "track,clip,value" follow action of one clip */
@@ -3454,6 +3458,10 @@ static void set_param(void *instance, const char *key, const char *val) {
         if (c && t >= 0 && t < NLANE) { int l = atoi(c + 1); if (l >= 0 && l <= MAXSTEP) s->llen[t] = l; }
         return;
     }
+    if (strcmp(key, "qbpm") == 0) { s->pq_bpm = clampf((float)atof(val), 40.0f, 240.0f); s->pq_bpm_on = 1; return; }      /* song: applied with the queued clips on the bar line */
+    if (strcmp(key, "qsctr") == 0) { int v = atoi(val); s->pq_sctr = v < -24 ? -24 : (v > 24 ? 24 : v); s->pq_sctr_on = 1; return; }
+    if (strcmp(key, "qmute") == 0) { int t = atoi(val); const char *c = strchr(val, ','); if (c && t >= 0 && t < NTRK) { s->pq_mute[t] = atoi(c + 1) ? 1 : 0; s->pq_mute_on[t] = 1; } return; }
+    if (strcmp(key, "qclr") == 0) { s->pq_bpm_on = 0; s->pq_sctr_on = 0; for (int t = 0; t < NTRK; t++) s->pq_mute_on[t] = 0; return; }
     if (strcmp(key, "sctr") == 0) { int v = atoi(val); s->sctr = v < -24 ? -24 : (v > 24 ? 24 : v); return; }      /* song scene: transposition of the synth tracks */
     if (strcmp(key, "mute") == 0) {                /* "track,0|1" */
         int t = atoi(val); const char *c = strchr(val, ',');
