@@ -77,6 +77,7 @@ static inline float sin2pi(float ph) { ph -= floorf(ph); return sin2pi_raw(ph); 
 #define DT_SIZE    8192
 #define DT_MASK    (DT_SIZE - 1)
 #define NLINES     4
+#define LK_N       64                                   /* limiter look-ahead in samples (1.5 ms) */
 #define NTRK       16
 #define NPAT       8
 #define MAXSTEP    128
@@ -217,12 +218,12 @@ static const char *KEY_NAME[12]  = { "C", "C#", "D", "D#", "E", "F", "F#", "G", 
 static const char *SCALE_NAME[NSC] = { "Minor", "Phryg", "Major", "Dorian", "Lydian", "Mixol", "Locr", "HarmMin", "MelMin", "PhrDom", "DblHarm", "HungMin", "PentMaj", "PentMin", "Blues", "MajBlue", "Hirajo", "InSen", "Iwato", "Egypt", "Whole", "DimWH", "DimHW", "BebopD", "NeapMin", "LydDom", "Altered", "Persian" };
 static const char *DT_NAME[5]  = { "1/16", "1/8", "3/16", "1/4", "1/2" };
 static const char *DMODE_NAME[3] = { "PING", "TAPE", "DUB" };
-static const char *RMODE_NAME[3] = { "HALL", "ECHO", "SHIM" };
+static const char *RMODE_NAME[5] = { "HALL", "ECHO", "SHIM", "SPRG", "DARK" };
 static const float DT_BEATS[5] = { 0.25f, 0.5f, 0.75f, 1.0f, 2.0f };
 static const int   SCALE_TBL[NSC][6] = { { 0, 3, 7, 12, 15, 19 }, { 0, 1, 7, 12, 13, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 } , { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 5, 7, 12, 17, 19 }, { 0, 5, 6, 12, 17, 18 }, { 0, 5, 7, 12, 17, 19 }, { 0, 4, 8, 12, 16, 20 }, { 0, 3, 6, 12, 15, 18 }, { 0, 3, 6, 12, 15, 18 }, { 0, 4, 7, 12, 16, 19 }, { 0, 3, 7, 12, 15, 19 }, { 0, 4, 7, 12, 16, 19 }, { 0, 4, 6, 12, 16, 18 }, { 0, 4, 6, 12, 16, 18 } };
 
 /* ---------------- global parameters ---------------- */
-enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_GRV, G_GAM, G_TFLT, G_TAGE, G_TDRP, G_TTON, G_N };
+enum { G_VOL, G_KEY, G_SCALE, G_DLYT, G_DLYFB, G_DLYRET, G_RVSIZE, G_RVDARK, G_RVRET, G_FILT, G_SAT, G_WID, G_COMP, G_HUM, G_MET, G_QNT, G_EQL, G_EQM, G_EQH, G_LIM, G_CHP, G_DMODE, G_DTN, G_DWD, G_RMODE, G_RWD, G_RLC, G_TAPE, G_HISS, G_WOW, G_GRV, G_GAM, G_TFLT, G_TAGE, G_TDRP, G_TTON, G_TPRE, G_N };
 /* GROOVE templates: for each of the 16 sixteenths of a bar a delay (in steps, never early) and a velocity factor; the amount knob blends them in. Swing stays as it is and works on top. */
 static const char *const GRV_NAME[11] = { "OFF", "MPC", "SHUFFLE", "LAIDBACK", "DILLA", "DRUNK", "PUSH", "FUNK", "GHOST", "HUMAN", "ROLL" };
 static const float GRV_T[11][16] = {
@@ -288,6 +289,7 @@ static const pd_t GD[G_N] = {
     { "m_tage",   "Age",    0, 0.00f },
     { "m_tdrp",   "Dropout",0, 0.00f },
     { "m_tton",   "TapeTone",0, 0.50f },
+    { "m_tpre",   "TapePre",0, 0.00f },                                  /* only the name of the chosen tape preset (the sound is the seven knobs); the screen keeps the number */
 };
 
 /* ---------------- sound types ---------------- */
@@ -856,8 +858,9 @@ typedef struct {
     int fullvel;        /* FULL VEL: every live pad hit plays at 127, like the step it records */
     float mf_z[2][2], mf_a, comp_env; int mf_mode;
     float eq_c[NLANE][3][5], eq_z[NLANE][3][2][2], eq_g[NLANE][3], eq_p[NLANE][4], eq_og[NLANE], eq_ogp[NLANE]; int eq_on[NLANE];       /* per-sound 3-band EQ (low shelf, peak, high shelf) */
+    float sp_z[6];                                                  /* spring reverb: dispersion allpass states */
     float rm_buf[4][4096], rm_lp, rm_env, rm_hp; int rm_w, rm_act;       /* kick rumble bus: dark comb reverb, ducked by the kicks */
-    float eq_lo[2], eq_hi[2], lim_g;                              /* master EQ band splitters + limiter gain */
+    float eq_lo[2], eq_hi[2], lim_g, lk_buf[2][LK_N], lk_tg[LK_N]; int lk_i;                              /* master EQ band splitters + limiter gain */
     float met_env, met_ph, met_f, met_amp;
     int   ci_left, ci_t, ci_b;                 /* count-in: samples left, samples elapsed, samples per beat */
     uint8_t fol[NTRK][NPAT];                   /* follow action per clip: bits 0-2 action, bits 3-5 loops index */
@@ -1362,8 +1365,9 @@ static void update_global(inst_t *s) {
     (void)key; s->root_hz = 32.7032f * powf(2.0f, 5.0f / 12.0f);        /* the sounds keep their pitch: KEY only tells the MIDI effects (scale snap, diatonic chords) where the scale starts */
     {                                                          /* the shared reverb: size = decay time, dark = damping */
         const float rt60 = 0.5f * powf(12.0f, s->g[G_RVSIZE]);
-        static const int BASE_H[NLINES] = { 1033, 1327, 1759, 2143 }, BASE_E[NLINES] = { 1999, 2713, 3331, 3989 };
-        const int *BASE = ((int)(s->g[G_RMODE] + 0.5f) == 1) ? BASE_E : BASE_H;
+        static const int BASE_H[NLINES] = { 1033, 1327, 1759, 2143 }, BASE_E[NLINES] = { 1999, 2713, 3331, 3989 }, BASE_S[NLINES] = { 463, 587, 709, 853 }, BASE_D[NLINES] = { 1559, 2111, 2749, 3407 };
+        const int rmi = (int)(s->g[G_RMODE] + 0.5f);
+        const int *BASE = rmi == 1 ? BASE_E : (rmi == 3 ? BASE_S : (rmi == 4 ? BASE_D : BASE_H));
         for (int i = 0; i < NLINES; i++) {
             int d = (int)((float)BASE[i] * sr / 44100.0f + 0.5f);
             if (d > RV_SIZE - 2) d = RV_SIZE - 2;
@@ -1371,7 +1375,7 @@ static void update_global(inst_t *s) {
             s->rv_len[i] = d;
             s->rv_g[i] = powf(10.0f, -3.0f * (float)d / (sr * rt60));
         }
-        s->rv_a = onepole_a(6000.0f * powf(0.05f, s->g[G_RVDARK]), sr);
+        s->rv_a = onepole_a((rmi == 4 ? 2600.0f : (rmi == 3 ? 4200.0f : 6000.0f)) * powf(0.05f, s->g[G_RVDARK]), sr);      /* DARK: a warm, dim room; SPRING: bright but not harsh */
         float dec = powf(10.0f, -1.05f / rt60); if (dec > 0.93f) dec = 0.93f;
         s->dt_dec = dec;
         static const int DL[26] = { 142, 107, 379, 277, 672, 4453, 1800, 3720, 908, 4217, 2656, 3163, 266, 2974, 1913, 1996, 1990, 187, 1066, 353, 3627, 1228, 2673, 2111, 335, 121 };
@@ -3079,7 +3083,7 @@ static void *create_instance(const char *module_dir, const char *json_defaults) 
             s->focused = 1;
             s->pend_pad = -1;
             s->rec_src = -1; s->rec_slot = -1;
-            for (int k = 0; k < G_N; k++) s->g[k] = GD[k].def; s->lim_g = 1.0f;
+            for (int k = 0; k < G_N; k++) s->g[k] = GD[k].def; s->lim_g = 1.0f; for (int k = 0; k < LK_N; k++) s->lk_tg[k] = 1.0f;
             s->bpm = 120.0f; s->swing = 0.5f; s->rep_idx = 8;
             for (int t = 0; t < NTRK; t++) { s->seqlen[t] = 16; s->baselen[t] = 16; s->tg[t] = 1.0f; s->tres[t] = 6; }
             for (int d = 0; d < 4; d++) s->dtrk[d] = -1;
@@ -3601,7 +3605,7 @@ static void set_param(void *instance, const char *key, const char *val) {
         else if (k == G_SCALE) { int e = enum_index(val, SCALE_NAME, NSC);  if (e < 0) return; v = (float)e; }
         else if (k == G_DLYT)  { int e = enum_index(val, DT_NAME, 5);   if (e < 0) return; v = (float)e; }
         else if (k == G_DMODE) { int e = enum_index(val, DMODE_NAME, 3); if (e < 0) return; v = (float)e; }
-        else if (k == G_RMODE) { int e = enum_index(val, RMODE_NAME, 3); if (e < 0) return; v = (float)e; }
+        else if (k == G_RMODE) { int e = enum_index(val, RMODE_NAME, 5); if (e < 0) return; v = (float)e; }
         else if (k == G_GRV)   { int e = enum_index(val, GRV_NAME, 11); if (e < 0) return; v = (float)e; }
         else v = clampf((float)atof(val), 0.0f, 1.0f);
         s->g[k] = v;
@@ -4037,6 +4041,11 @@ static void bus_fx(inst_t *s, float sd, float sr_in, int dlen, float *outL, floa
                 if (!(fabsf(shv) < 8.0f)) { shv = 0.0f; memset(s->shb, 0, sizeof s->shb); }
                 in += fast_tanh(shv) * 0.14f;
             }
+            if (rm == 3) {                                                            /* SPRING: the input runs through a chain of allpasses (the dispersion of a coil makes the typical chirp), then the short lines ring */
+                float x = in;
+                for (int k = 0; k < 6; k++) { const float y = 0.62f * x + s->sp_z[k]; s->sp_z[k] = x - 0.62f * y; x = y; }
+                in = x * 0.8f;
+            }
             if (rm == 1) {
                 s->rv[0][s->rw] = o[0] * 0.92f + in + 1e-20f;
                 s->rv[1][s->rw] = o[1] * 0.92f + in * 0.8f - 1e-20f;
@@ -4470,11 +4479,16 @@ static void render_block_impl(void *instance, int16_t *out_lr, int frames) {
         L *= mvol; R *= mvol;
         {   /* master limiter: instant attack, slow release; ceiling falls from 1.0 to 0.3 */
             const float lm = fmaxf(s->g[G_LIM], 0.07f);      /* never fully off: the ceiling stays at 0.95 so two loud sounds together do not run into the converter */
-            if (lm > 0.01f) {
+            if (lm > 0.01f) {                                /* look-ahead: the sound is delayed by 1.5 ms, the gain starts to come down before the peak arrives (a soft ramp instead of a hard step) */
                 const float thr = 1.0f - 0.7f * lm, pk = fmaxf(fabsf(L), fabsf(R));
                 const float tg = pk > thr ? thr / pk : 1.0f;
-                if (tg < s->lim_g) s->lim_g = tg; else s->lim_g += (1.0f - s->lim_g) * 0.0006f;
-                L *= s->lim_g; R *= s->lim_g;
+                const int wi = s->lk_i;
+                const float dL = s->lk_buf[0][wi], dR = s->lk_buf[1][wi], dtg = s->lk_tg[wi];
+                s->lk_buf[0][wi] = L; s->lk_buf[1][wi] = R; s->lk_tg[wi] = tg; s->lk_i = (wi + 1) & (LK_N - 1);
+                float mn = 1.0f; for (int k = 0; k < LK_N; k++) if (s->lk_tg[k] < mn) mn = s->lk_tg[k];
+                if (mn < s->lim_g) s->lim_g += (mn - s->lim_g) * 0.12f; else s->lim_g += (mn - s->lim_g) * 0.0006f;
+                const float gf = fminf(s->lim_g, dtg);         /* never above the ceiling, even if the ramp is not yet down */
+                L = dL * gf; R = dR * gf;
             } else s->lim_g = 1.0f;
         }
         {   /* TAPE (last stage before the output): a gentle cassette colour - soft saturation, a little head bump and top roll-off, slow pitch drift (wow), hiss. Everything is 0 = off. */

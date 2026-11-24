@@ -21,6 +21,11 @@
 - Recording into an empty clip: pressing Rec the second time near a bar line now ends the clip on that bar line, counted from the bar line where the take began (a first note late in the bar no longer costs a bar); the stop counts from the moment Rec is pressed, not released
 - TAPE page extended (HOME > TAPE, 8 knobs): new Flutter (fast fine shake), Age (darker, less steady worn tape), Dropout (short level dips) and Tone (top end brighter or darker); the tape hiss is quieter now; everything at 0 (Tone in the middle) is off
 - Slices on a NEW DRUM TRACK: the pads without a slice are blank (silent sampler pads) instead of the default drums
+- Reverb: two new types, SPRING (a coil with the typical chirp) and DARK (a warm, dim room), next to HALL, ECHO and SHIM
+- Master limiter now looks ahead (1.5 ms): the gain comes down before a loud peak arrives instead of jumping, so loud mixes stay clean
+- TAPE page: the last knob is now a Preset (CASSETTE, OLD TAPE, LO-FI, WARM, DUB TAPE) that sets Tape, Hiss, Wow, Flutter, Age, Dropout and Tone together; the knobs can still be turned by hand afterwards (the Vol knob of this page is on the master page)
+- Menu: "Undo track type" takes back the last Synth / Drum switch (nothing is lost either way: the synth notes and the drum kit stay stored)
+- First-time tips: the first time a less obvious page opens (Mod + Duck, Sample, Song, Resample, Chord, Granular, Tape) its help shows once; Menu > "First-time tips on/off"
 - Synth tracks start Mono again; Voices = Poly lets you hold up to eight notes together (choosing a sampler sound switches that track to Poly)
 - MIC page: Shift + Gain knob switches a live monitor on (you hear the input; use headphones). It is off when you leave the page or record
 - Notes To Scale first reads the notes of the other synth tracks, sets master Key + Scale to the best match (major, minor, dorian ...) and then moves the notes of this clip into it

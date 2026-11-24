@@ -519,7 +519,8 @@ const ENUMS = {
     mfx: ['OFF','OCTV','CHRD','ARP','STRM','ECHO','RNDP','RNDV','COMP','SCAL','TRNS','DIAT'],
     xfx: ['OFF','STUT','REV','FLNG','TREM','APAN','COMB','WAH','GATE','LOFI','DJ','-'],      /* 11 was the GRAN insert: removed (old projects load it as off); the real granulator keeps its own GRAIN page */
     dmode: ['PING','TAPE','DUB'],
-    rmode: ['HALL','ECHO','SHIM'],
+    rmode: ['HALL','ECHO','SHIM','SPRING','DARK'],
+    m_tpre: ['CUSTOM','CASSETTE','OLD TAPE','LO-FI','WARM','DUB TAPE'],
     mono: ['STEREO','MONO','DRY'],
     dtime: ['1/16','1/8','3/16','1/4','1/2'],
     arp: ['Off','Up','Down','UpDn','Rand','Roll'],
@@ -537,7 +538,7 @@ ENUMS.m2fx = ENUMS.mfx; ENUMS.x2fx = ENUMS.xfx; ENUMS.dly_mode = ENUMS.dmode; EN
 const PK = ['type','vol','pan','tune','decay','tone','drive','dly','rvb','arp','rate','crush','locut','ring','pump','wob','cut','res','fenv','wave','det','sub','att','poly','dtime','dfb','rsize','rdark','chor','chrt','chdp','phas','phrt','phfb','xfx','xmix','xrt','xdp','mfx','mamt','mprm','smp','sst','sen','smd','duck','duckr','sgn','satk','srel','sstr','scs','tsw','fdec','fkey','fmode','rmb','rmt','eql','eqm','eqh','x2fx','x2mix','x2rt','x2dp','m2fx','m2amt','m2prm','dmode','rmode','mono','snz','fatk','sfld','schp','trem','trat','apan','vflt','grn','gsz','gsp','gpi','mch','mvb','trn','vhm','vmn','vmx','orn','eqlf','eqmf','eqhf','eqq','eqo','pcv','rfq','dtn','dwd','rwd','rlc','gdn','grv','gfz','gtn','dsw','dst','dnz','dck','dln','dmd','dlt','tkey','tscl'];
 const PDEF = { 105: 0.5, 106: 0.5, 107: 0.5, 108: 0.5, 97: 0.5, 98: 0.5, 99: 0.5, 101: 0.4, 104: 1, 83: 1, 84: 0.5, 85: 0.5, 88: 1, 90: 0.5, 91: 0.5, 92: 0.5, 93: 0.5, 94: 0.5, 80: 0.4, 81: 0.5, 76: 0.4, 70: 1, 57: 0.5, 58: 0.5, 59: 0.5, 60: 0.5, 16: 1, 24: 1, 25: 0.4, 26: 0.55, 27: 0.5, 29: 0.3, 30: 0.5, 32: 0.3, 33: 0.5, 35: 0.5, 36: 0.5, 37: 0.5, 39: 0.5, 40: 0.5, 43: 1, 46: 0.4, 47: 0.5, 50: 0.5, 52: 0.5, 53: 0.5, 62: 0.5, 63: 0.5, 64: 0.5, 66: 0.5, 67: 0.5 };
 function defOf(i) { return PDEF[i] !== undefined ? PDEF[i] : 0; }
-const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low','m_tape','m_hiss','m_wow','m_grv','m_gam','m_tflt','m_tage','m_tdrp','m_tton'];
+const MK = ['m_vol','key','scale','dly_time','dly_fb','dly_ret','rvb_size','rvb_dark','rvb_ret','m_filt','m_sat','m_wid','m_comp','m_hum','m_met','m_qnt','m_eql','m_eqm','m_eqh','m_lim','m_chp','dly_mode','dly_tone','dly_wide','rvb_mode','rvb_wide','rvb_low','m_tape','m_hiss','m_wow','m_grv','m_gam','m_tflt','m_tage','m_tdrp','m_tton','m_tpre'];
 PK.push('gtr');      /* grain pitch: -24 .. +24 semitones */
 for (let n = 1; n <= 4; n++) for (const c of 'tsrydp') PK.push('l' + n + c);      /* four LFOs per track: Target, Shape, Rate, Sync, Depth, Phase */
 PK.push('sscn', 'sunv', 'sunp', 'stps');      /* sampler play page: scan position, unison voices, unison spread, tape stop (appended: old projects load with them off) */
@@ -547,6 +548,8 @@ for (let n = 1; n <= 4; n++) { PDEF[PI['l' + n + 'r']] = 0.4; PDEF[PI['l' + n + 
 const LFO_RE = /^l[1-4][tsrydp]$/;
 const FAV_MAP = { dtime: 'dly_time', dfb: 'dly_fb', rsize: 'rvb_size', rdark: 'rvb_dark', dmode: 'dly_mode', rmode: 'rvb_mode', dtn: 'dly_tone', dwd: 'dly_wide', rwd: 'rvb_wide', rlc: 'rvb_low', chor: 'dly', phas: 'rvb', chrt: 'dly_time', chdp: 'dly_fb', phrt: 'rvb_size', phfb: 'rvb_dark' };     /* favourites saved before the shared FX bus */
 const MI = {}; MK.forEach((k, i) => MI[k] = i);
+const TAPE_KEYS = ['m_tape','m_hiss','m_wow','m_tflt','m_tage','m_tdrp','m_tton'];
+const TAPE_PRE = [null, [0.45,0.12,0.25,0.25,0.20,0.10,0.45], [0.60,0.18,0.45,0.35,0.75,0.35,0.35], [0.80,0.25,0.60,0.50,0.90,0.50,0.25], [0.50,0.00,0.00,0.00,0.10,0.00,0.40], [0.55,0.10,0.30,0.20,0.35,0.15,0.40]];      /* Tape, Hiss, Wow, Flutter, Age, Dropout, Tone */
 const SCALE7 = [[0,2,3,5,7,8,10],[0,1,3,5,7,8,10],[0,2,4,5,7,9,11],[0,2,3,5,7,9,10],[0,2,4,6,7,9,11],[0,2,4,5,7,9,10],[0,1,3,5,6,8,10],[0,2,3,5,7,8,11],[0,2,3,5,7,9,11],[0,1,4,5,7,8,10],[0,1,4,5,7,8,11],[0,2,3,6,7,8,11],[0,2,4,7,9],[0,3,5,7,10],[0,3,5,6,7,10],[0,2,3,4,7,9],[0,2,3,7,8],[0,1,5,7,10],[0,1,5,6,10],[0,2,5,7,10],[0,2,4,6,8,10],[0,2,3,5,6,8,9,11],[0,1,3,4,6,7,9,10],[0,2,4,5,7,9,10,11],[0,1,3,5,7,8,11],[0,2,4,6,7,9,10],[0,1,3,4,6,8,10],[0,1,4,5,6,8,11]];
 const NSC = SCALE7.length;
 const PROB_PCT = Array.from({ length: 32 }, (_, i) => Math.round(100 - i * 100 / 32));   /* 32 levels */
@@ -562,7 +565,7 @@ const LAYOUT = [
 ];
 const INIT_DRUMS = 'DKick808 DKickHse DSnr909 DClap DHatCl DHatOp DRim DTomMid DHatSoft DHatOp2 DHatTght DTomLo DCowbell DTomHi DClave DCowHi'.split(' ');      /* the INIT drum kit: pure synth drums, every one of them editable like a synth sound */
 const DRUM_LAYOUT = INIT_DRUMS.map(n => [Math.max(0, TYPE_NAME.indexOf(n)), .5, .5, 0, 1, 0, 0]);
-const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0, 0, 0.7, 0, 0, 0, 0.5];
+const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0, 0, 0.7, 0, 0, 0, 0.5, 0];
 const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
 const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 53: 'LFO', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
@@ -639,7 +642,7 @@ const VIEW_ITEMS = {
     46: [['dly_time','DlyTime','Time'],['dly_fb','DlyFdbk','Fdbk'],['dly_tone','DlyTone','Tone'],['dly_ret','DlyRet','Ret'],['rvb_size','RvbSize','Size'],['rvb_dark','RvbDark','Dark'],['rvb_mode','RvbType','Type'],['rvb_ret','RvbRet','Ret']],
     50: [['grn','Grain','Grn'],['gsz','Size'],['gsp','Spread','Sprd'],['gtr','Pitch','Ptch'],['gdn','Density','Dens'],['grv','Reverse','Rev'],['gfz','Freeze','Frz'],['gtn','Window','Win']],
     39: [['dly_mode','DlyType','Type'],['dly_wide','DlyWide','Wide'],['rvb_wide','RvbWide','Wide'],['rvb_low','RvbLow','Low'],['m_tape','Tape'],['m_hiss','Hiss'],['m_wow','Wow']],
-    52: [['m_tape','Tape'],['m_hiss','Hiss'],['m_wow','Wow'],['m_tflt','Flutter'],['m_tage','Age'],['m_tdrp','Dropout'],['m_tton','Tone'],['m_vol','Vol']],
+    52: [['m_tape','Tape'],['m_hiss','Hiss'],['m_wow','Wow'],['m_tflt','Flutter'],['m_tage','Age'],['m_tdrp','Dropout'],['m_tton','Tone'],['m_tpre','Preset']],
     41: [['m_eql','Low'],['m_eqm','Mid'],['m_eqh','High'],['m_lim','Limiter','Lim'],['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_comp','Comp']],
     4: [['m_vol','Vol'],['m_filt','Filter','Flt'],['m_sat','Satur','Sat'],['m_wid','Width','Wid'],['m_comp','Comp'],['dly_ret','DlyRet','DRet'],['rvb_ret','RvbRet','RRet'],['m_lim','Limiter','Lim']],
     5: [['dly','Send'],['dly_time','Time'],['dly_fb','Fdbk'],['dly_mode','Type'],['dly_tone','Tone'],['dly_wide','Wide'],['dly_ret','Return','Ret']],
@@ -1254,6 +1257,14 @@ function editParam(scope, key, delta, idx) {
     if (key === 'smd') { acc[idx] += delta; if (Math.abs(acc[idx]) < 6) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'smd', [0, 0.5, 1, 0.75][clamp([0, 0.5, 1, 0.75].indexOf(smdSnap(pads[ln()][PI.smd])) + d, 0, 3)]); return { v: pads[ln()][PI.smd] }; }
     if (key === 'dlt') { acc[idx] += delta; if (Math.abs(acc[idx]) < 6) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; const L = ln(), ni = clamp(letIdx(pads[L][PI.dlt]) + d, 0, SPK_NLET - 1); setLaneP(L, 'dlt', ni / (SPK_NLET - 1)); showToast('LETTER', SPK_LET[ni], ni / (SPK_NLET - 1)); return { v: pads[L][PI.dlt] }; }      /* the letter brush: the next step you press says this letter */
     if (key === 'fmode') { acc[idx] += delta; if (Math.abs(acc[idx]) < 6) return false; const d = acc[idx] > 0 ? 1 : -1; acc[idx] = 0; setLaneP(ln(), 'fmode', clamp(Math.round(pads[ln()][PI.fmode] * 2) + d, 0, 2) / 2); return { v: pads[ln()][PI.fmode] }; }
+    if (key === 'm_tpre') {                                                  /* TAPE PRESET: one turn sets Tape, Hiss, Wow, Flutter, Age, Dropout and Tone together; the knobs can be turned further by hand (the name stays) */
+        acc[idx] += delta; if (Math.abs(acc[idx]) < 8) return false;
+        const ni = clamp(Math.round(master[MI.m_tpre]) + (acc[idx] > 0 ? 1 : -1), 0, TAPE_PRE.length - 1); acc[idx] = 0;
+        if (ni === Math.round(master[MI.m_tpre])) return false;
+        pSnap('master', 0, key); master[MI.m_tpre] = ni; enqueue('mm_tpre', 'm_tpre', String(ni));
+        if (ni > 0) TAPE_KEYS.forEach((k, i) => { master[MI[k]] = TAPE_PRE[ni][i]; enqueue('m' + k, k, TAPE_PRE[ni][i].toFixed(3)); });
+        showToast('TAPE', ENUMS.m_tpre[ni], 1); return { v: ni };
+    }
     let v = getVal(scope, key);
     if (ENUMS[key]) {
         acc[idx] += delta;
@@ -2156,7 +2167,17 @@ function shiftStep(i) {
 }
 const SYM_VIEW_SET = {}; Object.keys(SYM_VIEW).forEach(k => SYM_VIEW_SET[SYM_VIEW[k]] = true);
 
-function setView(v) { if (v === 39) { v = 38; fxPage = 1; } if (v !== view) loopHeld = false; view = v; acc.fill(0); needsRedraw = true; if (typeof syncPadsOff === 'function') syncPadsOff(); }
+/* ---- first-time tips: the first time one of the less obvious pages opens, its help text shows once (any key closes it); the menu entry turns them off ---- */
+const TIPS_FILE = '/data/UserData/schwung/taktile-tips.json', TIP_VIEWS = [3, 28, 30, 31, 33, 44, 50, 52];
+let tipsOn = true, tipsSeen = {}, tipsLoaded = false, tipsArmed = false;
+function tipsSave() { try { host_write_file(TIPS_FILE, JSON.stringify({ on: tipsOn, seen: Object.keys(tipsSeen).map(Number) })); } catch (e) { /* ignore */ } }
+function tipCheck(v) {
+    if (!tipsArmed || v === view) return;
+    if (!tipsLoaded) { tipsLoaded = true; try { const t = host_read_file(TIPS_FILE); const o = t ? JSON.parse(t) : null; if (o) { tipsOn = o.on !== false; (o.seen || []).forEach(k => tipsSeen[k] = 1); } } catch (e) { /* first start: tips on */ } }
+    if (!tipsOn || tipsSeen[v] || TIP_VIEWS.indexOf(v) < 0 || !HELP[v]) return;
+    tipsSeen[v] = 1; tipsSave(); helpOpen = true; menuOpen = false; symOpen = -1; padMenu = false;
+}
+function setView(v) { if (v === 39) { v = 38; fxPage = 1; } tipCheck(v); if (v !== view) loopHeld = false; view = v; acc.fill(0); needsRedraw = true; if (typeof syncPadsOff === 'function') syncPadsOff(); }
 /* ---- FAVORITES: 8 knobs you choose yourself (any parameter from any page) ---- */
 let favK = ['cut', 'res', 'decay', 'tone', 'drive', 'dly', 'rvb', 'm_filt'], favNext = 0, lastKnob = '';
 let KEYNAME = null;
@@ -2589,6 +2610,7 @@ const MENU_ITEMS = [
     ['Random sound', () => randomSound(false)],
     ['Random sound wild', () => randomSound(true)],
     ['Undo sound', () => undoSound()],
+    ['Undo track type', () => undoKind()],
     ['Vary pattern', () => opVary()],
     ['Clear clip', () => opClear()],
     ['Reverse clip', () => opReverse()],
@@ -2603,6 +2625,7 @@ const MENU_ITEMS = [
     ['Prob 100%', () => opProb(2)],
     ['Pump on kick', () => opPump()],
     ['Start animation on/off', () => { splashOn = !splashOn; markEdited(); showToast('START ANIMATION', splashOn ? 'ON' : 'OFF', splashOn ? 1 : 0); }],
+    ['First-time tips on/off', () => { tipsOn = !tipsOn; tipsLoaded = true; tipsSave(); showToast('FIRST-TIME TIPS', tipsOn ? 'ON' : 'OFF', tipsOn ? 1 : 0); }],
     ['Idle screen on/off', () => { idleOn = !idleOn; noteInput(); markEdited(); showToast('IDLE SCREEN', idleOn ? 'ON 5 MIN' : 'OFF', idleOn ? 1 : 0); }],
     ['Note repeat on/off', () => { repAllowed = !repAllowed; if (!repAllowed) { for (let t = 0; t < NTRK; t++) if (topModes[t] === 1) topModes[t] = 0; padsOffSent = -1; } markEdited(); needsRedraw = true; showToast('NOTE REPEAT', repAllowed ? 'AVAILABLE' : 'OFF', repAllowed ? 1 : 0); }],
     ['Slow knobs on/off', () => { slowKnobs = !slowKnobs; slowAcc = {}; markEdited(); showToast('SLOW KNOBS', slowKnobs ? 'ON (HALF SPEED)' : 'OFF', slowKnobs ? 1 : 0); }],
@@ -2664,7 +2687,7 @@ function knobTouch(i) {
 }
 const LONG_NAME = { dly_time: 'Delay Time', dly_fb: 'Delay Feedback', dly_mode: 'Delay Type', dly_tone: 'Delay Tone', dly_wide: 'Delay Width', dly_ret: 'Delay Return', rvb_size: 'Reverb Size', rvb_dark: 'Reverb Damping', rvb_mode: 'Reverb Type', rvb_wide: 'Reverb Width', rvb_low: 'Reverb Low Cut', dmode: 'Delay Type', rmode: 'Reverb Type', dtime: 'Delay Time', dfb: 'Delay Feedback', rsize: 'Reverb Size', rdark: 'Reverb Damping', chrt: 'Chorus Rate', chdp: 'Chorus Depth', phrt: 'Phaser Rate', phfb: 'Phaser Feedback',
     dly: 'Delay Send', rvb: 'Reverb Send', cut: 'Lowpass Cutoff', locut: 'Highpass Cutoff', res: 'Resonance', fenv: 'Filter Envelope', crush: 'Bit Crusher', ring: 'Ring Modulator', pump: 'Pump', wob: 'Wobble',
-    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_tape: 'Tape Colour', m_hiss: 'Tape Hiss', m_wow: 'Tape Wow', m_tflt: 'Tape Flutter', m_tage: 'Tape Age', m_tdrp: 'Tape Dropouts', m_tton: 'Tape Tone', m_grv: 'Groove Template', m_gam: 'Groove Amount', m_wid: 'Stereo Width',
+    arp: 'Arpeggiator', rate: 'Arp Rate', duck: 'Sidechain Duck', duckr: 'Duck Release', scs: 'Duck Source', m_vol: 'Master Volume', m_filt: 'Master Filter', m_sat: 'Saturation', m_tape: 'Tape Colour', m_hiss: 'Tape Hiss', m_wow: 'Tape Wow', m_tflt: 'Tape Flutter', m_tage: 'Tape Age', m_tdrp: 'Tape Dropouts', m_tton: 'Tape Tone', m_tpre: 'Tape Preset', m_grv: 'Groove Template', m_gam: 'Groove Amount', m_wid: 'Stereo Width',
     m_comp: 'Compressor', dly_ret: 'Delay Return', rvb_ret: 'Reverb Return', eql: 'Sound EQ Low', eqm: 'Sound EQ Mid', eqh: 'Sound EQ High', m_eql: 'EQ Low', m_eqm: 'EQ Mid', m_eqh: 'EQ High', m_lim: 'Limiter', poly: 'Voices', wave: 'Waveform', det: 'Detune',
     sub: 'Sub Oscillator', att: 'Attack', vol: 'Volume', tvol: 'Track Volume', pmode: 'Pad Mode', dsel: 'Drum Sound', lay: 'Pad Layout', tcol: 'Track Color', tsw: 'Track Swing', rdens: 'Random Density',
     rvar: 'Random Velocity', rkey: 'Random In Key', rrat: 'Random Ratchet', rqoff: 'Record Snap', fullvel: 'Full Velocity', m_hum: 'Humanize', m_met: 'Metronome', m_qnt: 'Launch Quantize',
@@ -2705,6 +2728,7 @@ function menuVal(n) {                                      /* the current state 
         case 'Invert display': return o(dispInv);
         case 'Button lights': return btnBright ? 'BRIGHT' : 'NORMAL';
         case 'Start animation on/off': return o(splashOn);
+        case 'First-time tips on/off': return o(tipsOn);
         case 'Idle screen on/off': return o(idleOn);
         case 'Knob lights on/off': return knobLedsOn ? (knobLvlOn ? 'LEVEL' : 'ON') : 'OFF';
         case 'Count-in on/off': return o(ciOn);
@@ -2727,13 +2751,13 @@ function menuVal(n) {                                      /* the current state 
 const MENU_GROUPS = [
     ['GUIDE', GUIDE.map((g, i) => 'Guide ' + (i + 1) + ' ' + g[0])],
     ['LANGUAGE', LANGS.map(n => 'Language ' + n)],
-    ['DESIGN', ['Language', 'Big values on/off', 'Page slide on/off', 'Invert display', 'Button lights', 'Start animation on/off', 'Idle screen on/off', 'Knob lights on/off']],
+    ['DESIGN', ['First-time tips on/off', 'Language', 'Big values on/off', 'Page slide on/off', 'Invert display', 'Button lights', 'Start animation on/off', 'Idle screen on/off', 'Knob lights on/off']],
     ['GLOBAL', ['Count-in on/off', 'Note repeat on/off', 'Slow knobs on/off', 'Save now', 'Exit Taktile']],
     ['EXPERT', ['CPU meter', 'Load info', 'MIDI monitor', 'Scope', 'Scope latch', 'Export clip (MIDI)', 'Export all clips (MIDI)']],
     ['PLAY', ['Play / Stop', 'Stop + Reset', 'Record on/off', 'Metronome', 'Mono check', 'Tap tempo', 'Stop all clips']],
     ['EDIT CLIP', ['Quantize now', 'Undo', 'Redo', 'Undo history', 'Clear clip', 'Reverse clip', 'Rotate left', 'Rotate right', 'All loops 16', 'Double length', 'Half length', 'Fill (1 bar)', 'Follow action', 'Follow after', 'Follow preset', 'Name scene', 'Scene launch']],
     ['RANDOM + FEEL', ['Random clip', 'Random wild', 'Random sound', 'Random sound wild', 'Undo sound', 'Vary pattern', 'Randomize vel', 'Prob random', 'Prob curve', 'Prob 100%', 'Humanize', 'Launch quant']],
-    ['SOUND', ['Sound / kit browser', 'Favorite sound', 'Reset pad sound', 'Sound A/B', 'Pump on kick', 'Normalize sample', 'Track: Synth / Drum', 'Pad mode (pitch/repeat/steps)', 'Live FX pads on/off', 'Device chain']],
+    ['SOUND', ['Sound / kit browser', 'Favorite sound', 'Reset pad sound', 'Sound A/B', 'Pump on kick', 'Normalize sample', 'Track: Synth / Drum', 'Undo track type', 'Pad mode (pitch/repeat/steps)', 'Live FX pads on/off', 'Device chain']],
     ['GO TO PAGE', ['View TRACK', 'View SEQ', 'View SOUND', 'View FILTER FX', 'View MOD/ARP', 'View MASTER', 'View DELAY', 'View REVERB', 'View SESSION', 'View OPTIONS', 'View FAVORITES', 'Pin last knob to FAV', 'Reset favorites']],
 ].map(g => [g[0], g[1].map(n => MENU_ITEMS.find(m => m[0] === n)).filter(Boolean)]);
 MENU_GROUPS.unshift(['QUICK', []]); MENU_GROUPS.splice(1, 0, ['FIND', []]);
@@ -2965,10 +2989,16 @@ function pushLanes(t, full) {                             /* send a drum track's
     for (let p = 0; p < NPAT; p++) for (const l of lanesOf(t)) if (full || laneHas(p, l)) qSeq(p, l);
     if (clipsCur[t] >= 0 || !playing) enqueue('clip' + t, 'clip', t + ',' + ed[t]);
 }
+let kindBak = null;
+function undoKind() {
+    if (!kindBak) { showToast('UNDO TYPE', 'NOTHING', 0); return; }
+    const b = kindBak; kindBak = null; setKind(b.t, b.k); kindBak = null;
+}
 function setKind(t, k) {                                  /* every track is a synth or a drum track (max 4 drum tracks, 16 sounds each) */
     k = k ? 1 : 0;
     if (kind[t] === k) { showToast('TRACK ' + tl(t), k ? 'DRUM' : 'SYNTH', k); return; }
     if (topModes[t] === 4) { topModes[t] = 0; chordReconcile(); }
+    kindBak = { t: t, k: kind[t] ? 1 : 0 };                   /* Undo track type goes back to this (the synth sound and the drum kit both stay stored, so nothing is lost either way) */
     if (k === 1) {
         let n = 0; for (let i = 0; i < NTRK; i++) if (kind[i]) n++;
         if (n >= 4) { showToast('MAX 4 DRUM', 'TRACKS', 1); return; }
@@ -6483,6 +6513,7 @@ globalThis.tick = function () {
 
 globalThis.onMidiMessageInternal = function (data) {
     if (!data) return;
+    if (!tipsArmed && !globalThis.__NOTIPS && (data[0] & 0xF0) === 0xB0 && (data[2] | 0) !== 0 && !splashActive()) tipsArmed = true;      /* tips only start once a person is really using the device */
     if (slowKnobs && (data[0] & 0xF0) === 0xB0 && (data[2] | 0) !== 0 && (data[1] === CC.JOG || (data[1] >= CC.KNOB1 && data[1] <= CC.KNOB8))) {
         const id = data[1], dl0 = decodeDelta(data[2] | 0);
         if (dl0) {
