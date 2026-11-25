@@ -26,6 +26,7 @@
 - TAPE page: the last knob is now a Preset (CASSETTE, OLD TAPE, LO-FI, WARM, DUB TAPE) that sets Tape, Hiss, Wow, Flutter, Age, Dropout and Tone together; the knobs can still be turned by hand afterwards (the Vol knob of this page is on the master page)
 - Menu: "Undo track type" takes back the last Synth / Drum switch (nothing is lost either way: the synth notes and the drum kit stay stored)
 - First-time tips: the first time a less obvious page opens (Mod + Duck, Sample, Song, Resample, Chord, Granular, Tape) its help shows once; Menu > "First-time tips on/off"
+- Small-screen tidy-up: the Filter page has a smaller curve and fully written tile names, the EQ pages show clear names (LOW DB, LOW HZ, MID Q; LOW, MID, HI, LIM, VOL, FLT, SAT, CMP), the Song hint fits the line, and the value bars never touch the value text any more; the Tape, Engine 2, Slice tools, MIDI FX 2 and Grains pages show proper page titles (no more "UNDEFINED")
 - Synth tracks start Mono again; Voices = Poly lets you hold up to eight notes together (choosing a sampler sound switches that track to Poly)
 - MIC page: Shift + Gain knob switches a live monitor on (you hear the input; use headphones). It is off when you leave the page or record
 - Notes To Scale first reads the notes of the other synth tracks, sets master Key + Scale to the best match (major, minor, dorian ...) and then moves the notes of this clip into it

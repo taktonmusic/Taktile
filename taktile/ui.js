@@ -113,7 +113,7 @@ const LAYOUT = [
 const INIT_DRUMS = 'DKick808 DKickHse DSnr909 DClap DHatCl DHatOp DRim DTomMid DHatSoft DHatOp2 DHatTght DTomLo DCowbell DTomHi DClave DCowHi'.split(' ');      /* the INIT drum kit: pure synth drums, every one of them editable like a synth sound */
 const DRUM_LAYOUT = INIT_DRUMS.map(n => [Math.max(0, TYPE_NAME.indexOf(n)), .5, .5, 0, 1, 0, 0]);
 const MASTER_DEF = [0.8, 5, 0, 1, 0.4, 0.5, 0.6, 0.5, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0.64, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0, 0.5, 0, 0, 0, 0, 0, 0.7, 0, 0, 0, 0.5, 0];
-const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ'];
+const VIEWS = ['SEQ', 'SOUND', 'FILTER', 'MOD/ARP', 'BUS', 'DELAY', 'REVERB', 'CLIPS', 'OPTIONS', 'SYNTH', 'TEMPO', 'METRO', 'GROOVE', 'FULL VEL', 'CHORUS', 'QUANT', 'HOME', 'FX', 'MASTER', 'PHASER', 'MIX', 'TRACK', 'TEMPO', 'SWING', 'MULTI', 'KEY', 'REPEAT', 'MIDI FX', 'SAMPLE', 'SLICE', 'DUCK', 'SONG', 'ENV', 'RESAMPLE', 'KIT', 'PROJECT', 'EUCLID', 'MIDI OUT', 'FX SEND', 'FX TIME', 'HISTORY', 'MASTER EQ', 'SCOPE', 'TRACK EQ', 'FAVORITES', 'DEVICE', 'FX BUS', 'ENGINE 2', 'SLICE TOOLS', 'MIDI FX 2', 'GRAINS', 'CPU', 'TAPE'];
 const TAB_NAME = { 44: 'CHORD', 50: 'GRANULAR', 43: 'SOUND EQ', 1: 'PRESET', 9: 'SYNTH ENGINE', 28: 'SAMPLE', 2: 'FILTER', 3: 'MOD + DUCK', 38: 'TRACK FX', 39: 'FX BUS 2', 27: 'MIDI FX', 53: 'LFO', 36: 'EUCLID', 46: 'FX BUS' };
 function stepWinView() { return view === 0 || (isTab(view) && view !== 36 && !(view === 28 && broOpen)); }   /* a held step opens its edit window on the SEQ page and on the sound tabs */
 function isTab(v) { return v === 53 || v === 43 || v === 1 || v === 9 || v === 28 || v === 2 || v === 3 || v === 38 || v === 39 || v === 46 || v === 27 || v === 36 || v === 50; }
@@ -3335,8 +3335,8 @@ function engTile(x, y, cw, lab, vs, fr, hotE) {
     if (SIMPLE) { simpleTile(x, y - 2, cw, lab, vs, fr, hotE); return; }               /* the tile of the ENGINE page: small name, bold value, bar */
     const c = 1, bw = cw - 4;      /* the tile you are turning is not filled white any more: its bar is just a little thicker */
     txtS(x + 2, y, String(tr(lab)).substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c);
-    if (tw(vs) > cw - 4) txtS(x + 2, y + 7, vs.substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c); else txtB(x + 2, y + 6, vs, c);
-    fill_rect(x + 2, y + 15, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(x + 2, y + (hotE ? 13 : 14), w, hotE ? 4 : 2, c);
+    if (tw(vs) > cw - 4) txtS(x + 2, y + 7, vs.substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c); else txtB(x + 2, y + 5, vs, c);
+    fill_rect(x + 2, y + 15, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(x + 2, y + (hotE ? 13 : 14), w, hotE ? 3 : 2, c);
 }
 function drawBlocks(bl, items) {
     if (SIMPLE && bl.length <= 2 && bl.every(b => b[1] <= 4)) {   /* no block headings: every block is one row of tiles */
@@ -3356,8 +3356,8 @@ function drawBlocks(bl, items) {
             const i = i0 + k, it = items[i]; if (!it) continue;
             const v = getVal(scopeOf(it[0]), it[0]), vs = fmtVal(it[0], v), fr = fracVal(it[0], v), hotE = hot.t > 0 && hot.v === view && hot.i === i;
             const cx = k * cw, y = y0 + 6, c = 1, bw = cw - 4, lab = String(tr(itemLabel(view, i, Math.floor((cw - 3) / 4))));
-            txtS(cx + 2, y, lab.substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c); txtB(cx + 2, y + 6, fit(vs, cw - 4), c);
-            fill_rect(cx + 2, y + 15, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 2, y + (hotE ? 13 : 14), w, hotE ? 4 : 2, c);
+            txtS(cx + 2, y, lab.substring(0, Math.floor((cw - 3) / 4)).toUpperCase(), c); txtB(cx + 2, y + 5, fit(vs, cw - 4), c);
+            fill_rect(cx + 2, y + 15, bw, 1, c); const w = Math.round(bw * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 2, y + (hotE ? 13 : 14), w, hotE ? 3 : 2, c);
         }
         i0 += n;
     }
@@ -3437,12 +3437,14 @@ function cellVertS(x, y, label, value, f, cw, bh) {          /* short fader (mas
     const bx = x + Math.floor(cw / 2) - 5, by = y + 10; draw_rect(bx, by, 11, bh, 1);
     const h = Math.round((bh - 4) * clamp(f, 0, 1)); if (h > 0) fill_rect(bx + 2, by + bh - 2 - h, 7, h, 1);
     fill_rect(bx - 2, by + Math.floor(bh / 2), 2, 1, 1); fill_rect(bx + 11, by + Math.floor(bh / 2), 2, 1, 1);
-    const ls = fit(label, cw - 2); txt(x + Math.floor((cw - tw(ls)) / 2), by + bh + 2, ls, 1);
+    txtS(x + Math.floor((cw - String(label).length * 4) / 2), by + bh + 2, String(label), 1);
 }
+const F2_NAMES = ['CUTOFF', 'RESO', 'HP CUT', 'ENV AMT', 'ENV DEC', 'KEY TRK', 'MODE', 'CRUSH'];      /* filter page: names written out as far as the 4 px letters allow */
+const EQ_NAMES = ['LOW DB', 'MID DB', 'HIGH DB', 'LOW HZ', 'MID HZ', 'HIGH HZ', 'MID Q', 'OUTPUT'], MEQ_NAMES = ['LOW', 'MID', 'HI', 'LIM', 'VOL', 'FLT', 'SAT', 'CMP'];
 function drawFilterCurve() {                                 /* the filter's frequency response, drawn from Cutoff, Reso and HPCut */
     const cut = pads[ln()][PI.cut], res = pads[ln()][PI.res], hp = pads[ln()][PI.locut];
     const fc = 30 * Math.pow(16000 / 30, cut), fh = 20 * Math.pow(2000 / 20, hp), Q = 0.7 + res * 7;
-    const TN = tabStrip && TAB_NEW, X0 = 2, W = 124, Y0 = TN ? 17 : 12, H = TN ? 9 : 12, md = Math.min(2, Math.round(pads[ln()][PI.fmode] * 2));
+    const TN = tabStrip && TAB_NEW, X0 = 2, W = 124, Y0 = TN ? 17 : 12, H = TN ? 6 : 12, md = Math.min(2, Math.round(pads[ln()][PI.fmode] * 2));
     for (let i = 0; i < W; i++) {
         const f = 20 * Math.pow(1000, i / (W - 1));
         const rl = f / fc, a1 = 1 - rl * rl, dn = Math.sqrt(a1 * a1 + (rl / Q) * (rl / Q)), mL = md === 0 ? 1 / dn : (md === 1 ? (rl / Q) / dn * 1.4 : rl * rl / dn);
@@ -5391,7 +5393,7 @@ function drawSong() {
         }
     }
     fill_rect(0, 56, 128, 1, 1);
-    if (!songOn && L <= 2) { txtS(2, 58, 'PADS = CLIPS  STEPS = CHAIN  PLAY', 1); return; }
+    if (!songOn && L <= 2) { txtS(2, 58, 'PADS=CLIPS STEPS=CHAIN PLAY=GO', 1); return; }
     {                                                                // the whole song as boxes: the step that plays fills up, the next one is dotted, the one you look at has a double frame
         const avail = 124 - (L - 1), wv = []; let sum = 0;
         for (let k = 0; k < L; k++) { const w = Math.max(3, Math.round(avail * songLen(songList[k]) / tot)); wv.push(w); sum += w; }
@@ -5477,7 +5479,7 @@ function drawParams2() {
             const TN = tabStrip && TAB_NEW;
             if (view === 43 && TN) {         /* EQ: a bigger curve on top, small names and values below */
                 const ex = (i & 3) * 32, ey = 36 + (i >> 2) * 14;
-                txtS(ex + 2, ey, String(lab).substring(0, 7).toUpperCase(), 1); txtS(ex + 2, ey + 6, String(vs).substring(0, 7).toUpperCase(), 1);
+                txtS(ex + 2, ey, EQ_NAMES[i], 1); txtS(ex + 2, ey + 6, String(vs).substring(0, 7).toUpperCase(), 1);
                 const ew = Math.round(28 * clamp(fr, 0, 1)); fill_rect(ex + 2, ey + 12, 28, 1, 1); if (ew > 0) fill_rect(ex + 2, ey + 11, ew, 2, 1);
                 continue;
             }
@@ -5490,11 +5492,12 @@ function drawParams2() {
             const cx = (i & 3) * 32, cy = (view === 43 ? (TN ? 27 : 26) : (TN ? 17 : 12)) + (i >> 2) * (TN ? (view === 50 ? 17 : 18) : 19), hotE = hot.t > 0 && hot.v === view && hot.i === i;
             const cc = 1;
             txt(cx + 3, cy + 1, fit(lab, 28), cc); txtB(cx + 3, cy + 9, fit(vs, 28), cc);
-            const w = Math.round(28 * clamp(fr, 0, 1)); fill_rect(cx + 2, cy + 17, 28, 1, cc); if (w > 0) fill_rect(cx + 2, cy + 16, w, 2, cc);
+            const w = Math.round(28 * clamp(fr, 0, 1)); fill_rect(cx + 2, cy + 18, 28, 1, cc); if (w > 0) fill_rect(cx + 2, cy + 17, w, 2, cc);
             continue;
         }
         if (SIMPLE && view === 2) { if (i === 0) miniGrid(items, 29, (k, v) => fracVal(k, v)); continue; }
-        if (view === 2) { const TN = tabStrip && TAB_NEW, cx = (i & 3) * 32 + 1, cy = (TN ? 27 : 25) + (i >> 2) * (TN ? 18 : 20); txt(cx + 1, cy, fit(lab, 30), 1); txtB(cx + 1, cy + 9, fit(vs, 30), 1); fill_rect(cx + 1, cy + 18, 28, 1, 1); const w = Math.round(28 * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 1, cy + 17, w, 2, 1); continue; }
+        if (view === 2) { const TN = tabStrip && TAB_NEW; if (TN) { engTile((i & 3) * 32, 26 + (i >> 2) * 19, 32, F2_NAMES[i], String(vs), fr, hot.t > 0 && hot.v === view && hot.i === i); continue; }
+            const cx = (i & 3) * 32 + 1, cy = 25 + (i >> 2) * 20; txt(cx + 1, cy, fit(lab, 30), 1); txtB(cx + 1, cy + 9, fit(vs, 30), 1); fill_rect(cx + 1, cy + 18, 28, 1, 1); const w = Math.round(28 * clamp(fr, 0, 1)); if (w > 0) fill_rect(cx + 1, cy + 17, w, 2, 1); continue; }
         const isHot = hot.t > 0 && hot.v === view && hot.i === i;
         if (((tabStrip && TAB_NEW) || sysTile) && cw >= 32 && ps !== 2 && ps !== 3) {       /* one tile look for every page and every theme: the one of the ENGINE page */
             const nm = view === 1 && items[i][0] === 'type' ? (TYPE_DISP[Math.round(v)] || vs) : (view === 1 && items[i][0] === 'wave' ? (ENUMS.wave[Math.round(v)] || vs) : vs);
@@ -5507,7 +5510,7 @@ function drawParams2() {
         if (ps === 2) { const n = items.length; per = n > 4 ? 2 : 1; cw = 128 / per; rh = Math.min(15, Math.floor(50 / Math.ceil(n / per))); x = (i % per) * cw; y = 14 + ((i / per) | 0) * rh; cellList(x, y, lab, vs, fr, cw, rh, isHot); }
         else if (ps === 1) { if (isHot) cell(x, y, lab, vs, fr, cw); else cellInv(x, y, lab, vs, fr, cw); }
         else if (ps === 3 && view === 43) { cw = 42; eqCellH(i * 42 + 1, 40, lab, vs, fr, cw, isHot); }
-        else if (ps === 3 && view === 41) { cw = Math.floor(128 / items.length); x = i * cw + ((128 - cw * items.length) >> 1); cellVertS(x, SIMPLE ? 26 : 29, lab, vs, fr, cw, SIMPLE ? 17 : 19); }
+        else if (ps === 3 && view === 41) { cw = Math.floor(128 / items.length); x = i * cw + ((128 - cw * items.length) >> 1); cellVertS(x, SIMPLE ? 26 : 29, MEQ_NAMES[i], vs, fr, cw, 17); }
         else if (ps === 3) { cw = Math.floor(128 / items.length); x = i * cw + ((128 - cw * items.length) >> 1); cellVert(x, 13, lab, vs, fr, cw); }
         else if (ps === 4) { if (isHot) cellInv(x, y, lab, vs, fr, cw); else cellThick(x, y, lab, vs, fr, cw); }
         else if (isHot) cellInv(x, y, lab, vs, fr, cw);
